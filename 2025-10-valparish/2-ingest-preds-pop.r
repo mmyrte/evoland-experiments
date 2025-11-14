@@ -147,35 +147,35 @@ for (i in seq_len(nrow(raw_mun_popdata))) {
 
 if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
   # get the indices of columns that represent the years
-  Time_points <- na.omit(as.numeric(gsub(
+  time_points <- na.omit(as.numeric(gsub(
     ".*?([0-9]+).*",
     "\\1",
     colnames(raw_mun_popdata)
   )))
 
   # create a empty df for results
-  Muni_pop_final <- as.data.frame(matrix(
-    ncol = length(Time_points),
+  muni_pop_final <- as.data.frame(matrix(
+    ncol = length(time_points),
     nrow = length(unique(raw_mun_popdata$BFS_NUM))
   ))
-  colnames(Muni_pop_final) <- Time_points
+  colnames(muni_pop_final) <- time_points
 
   # Add column for BFS number
-  Muni_pop_final$BFS_NUM <- sort(unique(raw_mun_popdata$BFS_NUM))
+  muni_pop_final$BFS_NUM <- sort(unique(raw_mun_popdata$BFS_NUM))
 
   # loop over date cols and rows summing values where BFS number is non-unique
-  for (j in Time_points) {
+  for (j in time_points) {
     for (i in seq_along(unique(raw_mun_popdata$BFS_NUM))) {
-      Muni_pop_final[i, paste(j)] <- sum(
+      muni_pop_final[i, paste(j)] <- sum(
         raw_mun_popdata[
-          raw_mun_popdata$BFS_NUM == Muni_pop_final[i, "BFS_NUM"],
+          raw_mun_popdata$BFS_NUM == muni_pop_final[i, "BFS_NUM"],
           paste(j)
         ]
       )
     }
   }
   # replace old data with revised data
-  raw_mun_popdata <- Muni_pop_final
+  raw_mun_popdata <- muni_pop_final
 } # close if statement
 
 ### Create historic municipality population rasters
