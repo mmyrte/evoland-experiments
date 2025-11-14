@@ -11,9 +11,9 @@ db$set_coords(
   type = "square",
   epsg = 2056,
   extent = terra::ext(c(
-    xmin = 2697000,
+    xmin = 2696000,
     xmax = 2698000,
-    ymin = 1252000,
+    ymin = 1251000,
     ymax = 1253000
   )),
   resolution = 100
