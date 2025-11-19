@@ -2,7 +2,7 @@
 devtools::load_all("~/github-repos/evoland-plus")
 
 db <- evoland_db$new(
-  path = "valparish.evolanddb",
+  path = "fullch.evolanddb",
   report_name = "valparish",
   report_name_pretty = "ValPar.CH inspired model setup"
 )
@@ -11,10 +11,10 @@ db$set_coords(
   type = "square",
   epsg = 2056,
   extent = terra::ext(c(
-    xmin = 2696000,
-    xmax = 2698000,
-    ymin = 1251000,
-    ymax = 1253000
+    xmin = 2480000,
+    xmax = 2840000,
+    ymin = 1070000,
+    ymax = 1300000
   )),
   resolution = 100
 )

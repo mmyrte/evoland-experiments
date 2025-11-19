@@ -1,6 +1,6 @@
 devtools::load_all("~/github-repos/evoland-plus/")
 
-db <- evoland_db$new(path = "valparish.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 coords_minimal <- db$coords_minimal
 
 sources_detailed <- tibble::tribble(

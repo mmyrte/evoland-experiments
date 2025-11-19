@@ -1,6 +1,6 @@
 devtools::load_all("~/github-repos/evoland-plus/")
 
-db <- evoland_db$new(path = "valparish.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 coords_minimal <- db$coords_minimal
 
 sonbase_spec <- list(
@@ -37,12 +37,27 @@ sonbase_sources <-
 
 # data is at 10m
 # extent plus 1km, given metres for unit; enough for all resampling strategies
-extent_wide <- db$extent |> terra::extend(1000)
+minimal_extent <-
+  purrr::map(
+    sonbase_sources$local_path,
+    \(x) terra::rast(x) |> terra::ext()
+  ) |>
+  c(terra::extend(db$extent, 100)) |> # if the extent of the coords is less, use that
+  purrr::map(as.list) |>
+  dplyr::bind_rows() |>
+  dplyr::summarise(
+    xmin = max(xmin),
+    xmax = min(xmax),
+    ymin = max(ymin),
+    ymax = min(ymax)
+  ) |>
+  unlist() |>
+  terra::ext()
 
 sonbase_max <-
   purrr::map(
     sonbase_sources$local_path,
-    \(x) terra::rast(x) |> terra::crop(extent_wide)
+    \(x) terra::rast(x) |> terra::crop(minimal_extent)
   ) |>
   terra::rast() |>
   max(na.rm = TRUE) |>

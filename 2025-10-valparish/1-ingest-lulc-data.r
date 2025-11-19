@@ -6,7 +6,7 @@ devtools::load_all("~/github-repos/evoland-plus")
 # this is also linked to the inclusion threshold, which might not be compatible with these very
 # small areas of interest
 
-db <- evoland_db$new(path = "valparish.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 lulc_files <-
   data.frame(
     url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/32376216/appendix",
@@ -138,9 +138,8 @@ id_coord_yr_lulc_dt <-
   na.omit(cols = "id_lulc")
 
 id_coord_yr_lulc_dt[,
-  year := data.table::as.IDate(paste0(year, "-01-01"))
+  year := lubridate::make_date(year)
 ]
-
 
 lulc_data_t <-
   as_lulc_data_t(
@@ -162,14 +161,9 @@ lulc_data_t <-
 
 db$lulc_data_t <- lulc_data_t
 
-DBI::dbExecute(
-  db$connection,
-  r"{
-  DELETE FROM 
-    coords_t 
-  WHERE 
-    id_coord NOT IN (
-    SELECT DISTINCT id_coord FROM lulc_data_t
-  );
-  }"
+id_coord_keep <- lulc_data_t[, id_coord]
+db$commit(
+  x = db$coords_t[id_coord %in% id_coord_keep],
+  table_name = "coords_t",
+  mode = "overwrite"
 )
