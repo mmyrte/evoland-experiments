@@ -1,6 +1,6 @@
 devtools::load_all("~/github-repos/evoland-plus/")
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "smaller.evolanddb")
 coords_minimal <- db$coords_minimal
 
 sonbase_spec <- list(

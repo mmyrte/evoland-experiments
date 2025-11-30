@@ -180,7 +180,7 @@ if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
 
 ### Create historic municipality population rasters
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "smaller.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 

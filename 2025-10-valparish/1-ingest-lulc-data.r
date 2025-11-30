@@ -6,7 +6,7 @@ devtools::load_all("~/github-repos/evoland-plus")
 # this is also linked to the inclusion threshold, which might not be compatible with these very
 # small areas of interest
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "smaller.evolanddb")
 lulc_files <-
   data.frame(
     url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/32376216/appendix",
@@ -14,13 +14,12 @@ lulc_files <-
   ) |>
   download_and_verify(target_dir = getOption("evoland.cachedir"))
 
-db$commit(
+db$commit_append(
   data.frame(
     key = c("lulc_data_url", "lulc_data_md5sum", "lulc_data_provider"),
     value = c(lulc_files$url, lulc_files$md5sum, "BFS Arealstatistik")
   ),
-  table_name = "reporting_t",
-  mode = "append"
+  table_name = "reporting_t"
 )
 
 zippath <- file.path(
@@ -162,8 +161,7 @@ lulc_data_t <-
 db$lulc_data_t <- lulc_data_t
 
 id_coord_keep <- lulc_data_t[, id_coord]
-db$commit(
+db$commit_overwrite(
   x = db$coords_t[id_coord %in% id_coord_keep],
-  table_name = "coords_t",
-  mode = "overwrite"
+  table_name = "coords_t"
 )

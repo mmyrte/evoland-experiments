@@ -183,7 +183,7 @@ local_pred_sources <-
   data.table::rbindlist() |>
   download_and_verify()
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "smaller.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 extent_wide <- db$extent |> terra::extend(1000)
