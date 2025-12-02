@@ -14,12 +14,13 @@ lulc_files <-
   ) |>
   download_and_verify(target_dir = getOption("evoland.cachedir"))
 
-db$commit_append(
+db$commit(
   data.frame(
     key = c("lulc_data_url", "lulc_data_md5sum", "lulc_data_provider"),
     value = c(lulc_files$url, lulc_files$md5sum, "BFS Arealstatistik")
   ),
-  table_name = "reporting_t"
+  table_name = "reporting_t",
+  method = "append"
 )
 
 zippath <- file.path(
@@ -161,7 +162,8 @@ lulc_data_t <-
 db$lulc_data_t <- lulc_data_t
 
 id_coord_keep <- lulc_data_t[, id_coord]
-db$commit_overwrite(
+db$commit(
   x = db$coords_t[id_coord %in% id_coord_keep],
-  table_name = "coords_t"
+  table_name = "coords_t",
+  method = "overwrite"
 )

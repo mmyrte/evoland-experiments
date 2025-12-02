@@ -35,27 +35,11 @@ devtools::load_all("~/github-repos/evoland-plus/")
 
 db <- evoland_db$new(path = "smaller.evolanddb")
 
-transitions <- db$transitions_v
-db$trans_meta_t <- create_trans_meta_t(transitions)
 
-# covariance filter
-trans_meta <- db$trans_meta_t
+db$trans_meta_t <- create_trans_meta_t(db$transitions_v, min_cardinality_abs = 4000)
 
-# rough outline: for each id_trans, fetch all
-
-for (r in split(trans_meta[is_viable == TRUE], by = "id_trans")) {
-  r <- r[[1]]
-  transitions_preds_dt <- transitions[r, on = c("id_lulc_anterior", "id_lulc_posterior")]
-  preds <- db$fetch("pred_data_t_float", where = NULL)
-}
-
-db$attach_table("pred_data_t_float")
-db$attach_table("pred_data_t_int")
-db$attach_table("pred_data_t_bool")
-
-db$get_query(
-  r"{
-  
-
-  }"
-)
+devtools::load_all("~/github-repos/evoland-plus/")
+db <- evoland_db$new(path = "fullch.evolanddb")
+# db$set_full_trans_preds(overwrite = TRUE)
+db$prune_trans_preds(filter_fun = covariance_filter, corcut = 0.7, na_value = 0)
+db$prune_trans_preds(filter_fun = grrf_filter, num.trees = 200, max.depth = 30, gamma = 0.8)
