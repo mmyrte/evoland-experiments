@@ -1,37 +1,5 @@
 devtools::load_all("~/github-repos/evoland-plus/")
 
-#' How it works in the olden evoland:
-#' 1. dataset prep makes
-#'  - trans_result: 0 where no transition occurs, 1 where one occurs - only looking at
-#'    those cells that had a given class to begin with
-#'  - cov_data is a dataframe over whose columns we later iterate
-#'  - non_cov_data is never used again
-#'  - collin_weights: a vector of weights for the GLM fits later on; presuming there are
-#'    always more transitions than there are non-transitions, the weight is 1 for
-#'    non-transitions, whereas it is trans_weight = round(number_of_nontrans / number_of_trans)
-#'  - embed_weights is a label of weights for each class, i.e. c("0" = 1, "1" =
-#'    trans_weight) which is used for a feature selection using GRRF (Embedded feature
-#'    selection with Guided Regularized Random Forests)
-#'  - imbalance ratio: non-rounded trans_weight; currently only used to determine
-#'    whether to downsample for final model fit. hard coded to use downsampling if
-#'    imbalance between 0.05 and 60 (which isn't reciprocal, so i don't get it?)
-#' 2. once these data are in place, pass them (ultimately) to a hot loop that fits
-#'    binomial GLMs of trans_result ~ poly(x, degree = 2) where x = a single
-#'    neighbourhood covariate; get the lower p value for each of the degrees.
-#' 3. the p-values for all covariates are sorted ascending and returned as a dataframe
-#'    (covariate name / p value)
-#'      ATTN: it may happen that none of the GLM fits converge and that all p-vals are
-#'      0, which will bias the ordering for the while loop in 6.
-#' 4. the order of the dataframe is used to reorder the underlying predictors with
-#'    better p-vals earlier
-#' 5. get the absolutes of complete pairwise correlations between all (neighbor)
-#'    predictors
-#' 6. iteratively subset the first col of the correlation matrix, subset to all
-#'    variables smaller than or equal to a correlation cutoff, add the active column
-#'    name (i.e. predictor against which we're checking correlations) to the subset to
-#'    be returned. subset the correlation matrix to those predictors that are below the
-#'    correlation threshold. keep iterating until the correlation matrix is exhausted.
-#' 7. return the variables selected by the correlation selection
 
 db <- evoland_db$new(path = "smaller.evolanddb")
 
@@ -40,6 +8,28 @@ db$trans_meta_t <- create_trans_meta_t(db$transitions_v, min_cardinality_abs = 4
 
 devtools::load_all("~/github-repos/evoland-plus/")
 db <- evoland_db$new(path = "fullch.evolanddb")
-# db$set_full_trans_preds(overwrite = TRUE)
-db$prune_trans_preds(filter_fun = covariance_filter, corcut = 0.7, na_value = 0)
-db$prune_trans_preds(filter_fun = grrf_filter, num.trees = 200, max.depth = 30, gamma = 0.8)
+db$set_full_trans_preds(overwrite = TRUE)
+trans_preds_covfiltered <- db$get_pruned_trans_preds_t(
+  filter_fun = covariance_filter,
+  corcut = 0.7,
+  na_value = 0
+)
+
+db$commit(trans_preds_covfiltered, "trans_preds_t", method = "overwrite")
+
+trans_preds_grrffiltered <- db$get_pruned_trans_preds_t(
+  filter_fun = grrf_filter,
+  num.trees = 100,
+  max.depth = 20,
+  gamma = 0.8
+)
+
+stopifnot(
+  # check that we've actually covered all viable predictions before committing
+  setequal(
+    trans_preds_grrffiltered$id_trans,
+    db$trans_meta_t[is_viable == TRUE]$id_trans
+  )
+)
+
+db$commit(trans_preds_grrffiltered, "trans_preds_t", method = "overwrite")
