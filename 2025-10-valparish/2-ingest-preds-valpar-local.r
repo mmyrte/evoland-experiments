@@ -174,7 +174,7 @@ local_pred_specs <- list(
   )
 )
 
-devtools::load_all("~/github-repos/evoland-plus/")
+devtools::load_all("~/github-repos/evoland/evoland-plus/")
 
 local_pred_sources <-
   local_pred_specs |>
@@ -183,7 +183,7 @@ local_pred_sources <-
   data.table::rbindlist() |>
   download_and_verify()
 
-db <- evoland_db$new(path = "smaller.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 extent_wide <- db$extent |> terra::extend(1000)

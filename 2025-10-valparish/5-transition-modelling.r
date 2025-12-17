@@ -1,4 +1,4 @@
-devtools::load_all("~/github-repos/evoland-plus/")
+devtools::load_all("~/github-repos/evoland/evoland-plus/")
 db <- evoland_db$new(path = "fullch.evolanddb")
 
 # Example usage: Fit GLM models
@@ -35,6 +35,7 @@ glm_full <- db$fit_full_models(
   gof_criterion = "auc",
   maximize = TRUE
 )
+
 rf_full <- db$fit_full_models(
   partial_models = rf_models,
   gof_criterion = "auc",

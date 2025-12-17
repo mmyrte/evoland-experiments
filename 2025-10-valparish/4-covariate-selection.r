@@ -1,13 +1,9 @@
-devtools::load_all("~/github-repos/evoland-plus/")
-
-
-db <- evoland_db$new(path = "smaller.evolanddb")
-
-
-db$trans_meta_t <- create_trans_meta_t(db$transitions_v, min_cardinality_abs = 4000)
-
-devtools::load_all("~/github-repos/evoland-plus/")
+devtools::load_all("~/github-repos/evoland/evoland-plus/")
 db <- evoland_db$new(path = "fullch.evolanddb")
+
+
+db$trans_meta_t <- create_trans_meta_t(db$trans_v, min_cardinality_abs = 4000)
+
 db$set_full_trans_preds(overwrite = TRUE)
 trans_preds_covfiltered <- db$get_pruned_trans_preds_t(
   filter_fun = covariance_filter,

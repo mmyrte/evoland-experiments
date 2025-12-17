@@ -1,6 +1,6 @@
-devtools::load_all("~/github-repos/evoland-plus/")
+devtools::load_all("~/github-repos/evoland/evoland-plus/")
 
-db <- evoland_db$new(path = "smaller.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 
 # attn this may take a couple minutes
 db$set_neighbors(

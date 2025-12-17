@@ -1,4 +1,4 @@
-devtools::load_all("~/github-repos/evoland-plus/")
+devtools::load_all("~/github-repos/evoland/evoland-plus/")
 
 spec <- list(
   pop = list(
@@ -180,7 +180,7 @@ if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
 
 ### Create historic municipality population rasters
 
-db <- evoland_db$new(path = "smaller.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 
