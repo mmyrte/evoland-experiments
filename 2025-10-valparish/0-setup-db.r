@@ -1,5 +1,6 @@
 #' Setup valpar-ish database. Aimed at Arealstatistik + Swiss Predictors
-devtools::load_all("~/github-repos/evoland/evoland-plus")
+pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
+devtools::load_all(pkg_path)
 
 db <- evoland_db$new(
   path = "fullch.evolanddb",
@@ -11,10 +12,12 @@ db$set_coords(
   type = "square",
   epsg = 2056,
   extent = terra::ext(c(
+    # somewhere in the middle of the country
     # xmin = 2697000,
     # xmax = 2698000,
     # ymin = 1252000,
     # ymax = 1253000
+
     # full extent
     xmin = 2480000,
     xmax = 2840000,
@@ -26,7 +29,7 @@ db$set_coords(
 
 db$set_periods(
   period_length_str = "P10Y",
-  start_observed = "1975-01-01",
+  start_observed = "1985-01-01",
   end_observed = "2020-01-01",
   end_extrapolated = "2060-01-01"
 )

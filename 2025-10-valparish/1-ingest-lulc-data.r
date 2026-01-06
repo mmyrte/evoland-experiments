@@ -1,4 +1,6 @@
-devtools::load_all("~/github-repos/evoland/evoland-plus")
+pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
+devtools::load_all(pkg_path)
+library(data.table)
 
 # TODO set bioregions
 # https://data.geo.admin.ch/ch.bafu.biogeographische_regionen/biogeographische_regionen/biogeographische_regionen_2056.shp.zip
@@ -14,14 +16,13 @@ lulc_files <-
   ) |>
   download_and_verify(target_dir = getOption("evoland.cachedir"))
 
-db$commit(
-  data.frame(
-    key = c("lulc_data_url", "lulc_data_md5sum", "lulc_data_provider"),
-    value = c(lulc_files$url, lulc_files$md5sum, "BFS Arealstatistik")
-  ),
-  table_name = "reporting_t",
-  method = "append"
-)
+db$reporting_t <-
+  as_reporting_t(data.table::rowwiseDT(
+    key=, value=,
+    "lulc_data_url",      lulc_files$url,
+    "lulc_data_md5sum",   lulc_files$md5sum, 
+    "lulc_data_provider", "BFS Arealstatistik"
+  ))
 
 zippath <- file.path(
   getOption("evoland.cachedir"),
@@ -53,25 +54,57 @@ arealstat_dt <-
   )
 close(csv_con)
 
+# the src_classes relate to the Arealstatistik NOAS04 nomenclature for 72 LULC
+# categories and are later used for aggregation purposes; they could also be left empty
 db$lulc_meta_t <- create_lulc_meta_t(
   list(
-    closed_forest = list(
-      pretty_name = "Dense Forest",
-      description = "Normal forest; Forest strips; Afforestations; Felling areas; Brush forest",
-      src_classes = c(50:53, 57L)
+    # agricultural classes
+    alp_past = list(
+      pretty_name = "Alpine Pastures",
+      description = "Favorable alpine pastures; Brush alpine pastures; Rocky alpine pastures; Sheep pastures",
+      src_classes = 46:49
+    ),
+    grassland = list(
+      pretty_name = "Grassland Or Meadows",
+      description = "Meadows; Farm pastures; Brush meadows and farm pastures; Alpine meadows",
+      src_classes = 42:45
     ),
     arable = list(
       pretty_name = "Arable Land",
       src_classes = 41L
     ),
+    perm_crops = list(
+      pretty_name = "Permanent Crops",
+      description = "Intensive orchards; Field fruit trees; Vineyards; Horticulture",
+      src_classes = 37:40
+    ),
+
+    # forest classes
+    closed_forest = list(
+      pretty_name = "Closed Forest",
+      description = "Normal forest; Forest strips; Afforestations; Felling areas; Brush forest",
+      src_classes = c(50:53, 57L)
+    ),
+    open_forest = list(
+      pretty_name = "Open Forest",
+      description = "Damaged forest areas; Open forest (on agricultural areas); Open forest (on unproductive areas); Groves, hedges; Clusters of trees (on agricultural areas); Clusters of trees (on unproductive areas)",
+      src_classes = c(54:56, 58:60)
+    ),
+    shrubland = list(
+      pretty_name = "Shrubland",
+      description = "Scrub vegetation; Unproductive grass und shrubs",
+      src_classes = 64:65
+    ),
+
+    # urban / static classes
     urban = list(
-      pretty_name = "Urban areas",
+      pretty_name = "Urban Areas",
       description = "Industrial and commercial buildings; Surroundings of industrial and commercial buildings; One- and two-family houses; Surroundings of one- and two-family houses; Terraced houses; Surroundings of terraced houses; Blocks of flats; Surroundings of blocks of flats; Public buildings; Surroundings of public buildings; Agricultural buildings; Surroundings of agricultural buildings; Unspecified buildings; Surroundings of unspecified buildings; Parking areas; Construction sites; Unexploited urban areas; Public parks; Sports facilities; Golf courses; Camping areas; Garden allotments; Cemeteries",
       src_classes = c(1:14, 19L, 29:36)
     ),
     static = list(
-      pretty_name = "Static / immutable classes",
-      description = "Motorways; Green motorway environs; Roads and paths; Green road environs;  Sealed railway areas; Green railway environs;  Airports; Airfields, green airport environs;  Energy supply plants; Waste water treatment plants; Other supply or waste treatment plants; Dumps; Quarries, mines;  Lakes; Rivers; Flood protection structures; Avalanche and rockfall barriers;  Wetlands; Alpine sports facilities; Rocks; Screes, sand; Landscape interventions",
+      pretty_name = "Static / Immutable Classes",
+      description = "Motorways; Green motorway environs; Roads and paths; Green road environs; Sealed railway areas; Green railway environs;  Airports; Airfields, green airport environs;  Energy supply plants; Waste water treatment plants; Other supply or waste treatment plants; Dumps; Quarries, mines;  Lakes; Rivers; Flood protection structures; Avalanche and rockfall barriers;  Wetlands; Alpine sports facilities; Rocks; Screes, sand; Landscape interventions",
       src_classes = c(15:18, 20:28, 61:63, 66:71)
     )
   )

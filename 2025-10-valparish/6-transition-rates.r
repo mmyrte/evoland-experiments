@@ -2,7 +2,8 @@
 # This script calculates historical transition rates from observed data
 # and extrapolates them to future periods using linear regression
 
-devtools::load_all("../evoland-plus-linux/")
+pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
+devtools::load_all(pkg_path)
 db <- evoland_db$new(path = "fullch.evolanddb")
 
 # Step 1: Calculate observed (historical) transition rates

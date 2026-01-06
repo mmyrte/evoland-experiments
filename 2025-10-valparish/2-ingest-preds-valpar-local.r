@@ -174,7 +174,8 @@ local_pred_specs <- list(
   )
 )
 
-devtools::load_all("~/github-repos/evoland/evoland-plus/")
+pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
+devtools::load_all(pkg_path)
 
 local_pred_sources <-
   local_pred_specs |>
