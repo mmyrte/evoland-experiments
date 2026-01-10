@@ -1,7 +1,9 @@
 if (!file.exists("/.dockerenv")) {
   # Don't activate renv if running in a docker container -
   # The assumption is that we use the system library there
-  source("renv/activate.R")
+  # source("renv/activate.R")
+  source("rv/scripts/rvr.R")
+  source("rv/scripts/activate.R")
 }
 options(
   "menu.graphics" = FALSE,
