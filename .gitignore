@@ -50,3 +50,4 @@ rsconnect/
 
 *.evolanddb
 *.duckdb
+dinamica_rundir/*

@@ -9,7 +9,8 @@ db$set_full_trans_preds(overwrite = TRUE)
 trans_preds_covfiltered <- db$get_pruned_trans_preds_t(
   filter_fun = covariance_filter,
   corcut = 0.7,
-  na_value = 0
+  na_value = 0,
+  cores = parallel::detectCores()
 )
 
 db$commit(trans_preds_covfiltered, "trans_preds_t", method = "overwrite")
@@ -18,7 +19,8 @@ trans_preds_grrffiltered <- db$get_pruned_trans_preds_t(
   filter_fun = grrf_filter,
   num.trees = 100,
   max.depth = 20,
-  gamma = 0.8
+  gamma = 0.8,
+  cores = parallel::detectCores()
 )
 
 stopifnot(

@@ -16,15 +16,15 @@ db$trans_models_t <- glm_models
 
 # Example usage: Fit Random Forest models
 # The fit_ranger and gof_ranger functions are exported from the evoland package
-rf_models <- db$fit_partial_models(
-  fit_fun = fit_ranger,
-  gof_fun = gof_ranger,
-  sample_pct = 30,
-  seed = 42,
-  num.trees = 100
-)
+# rf_models <- db$fit_partial_models(
+#   fit_fun = fit_ranger,
+#   gof_fun = gof_ranger,
+#   sample_pct = 30,
+#   seed = 42,
+#   num.trees = 100
+# )
 
-db$trans_models_t <- rf_models
+# db$trans_models_t <- rf_models
 
 # View results
 print(glm_models)
@@ -37,11 +37,11 @@ glm_full <- db$fit_full_models(
   maximize = TRUE
 )
 
-rf_full <- db$fit_full_models(
-  partial_models = rf_models,
-  gof_criterion = "auc",
-  maximize = TRUE
-)
+# rf_full <- db$fit_full_models(
+#   partial_models = rf_models,
+#   gof_criterion = "auc",
+#   maximize = TRUE
+# )
 
 db$trans_models_t <- glm_full
-db$trans_models_t <- rf_full
+# db$trans_models_t <- rf_full
