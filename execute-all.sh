@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # Check if pattern argument is provided
 if [[ $# -ne 1 ]]; then
@@ -9,7 +9,9 @@ fi
 pattern="$1"
 
 # Find all matching .r and .R files (case insensitive)
-r_files=(${~pattern})
+shopt -s nullglob
+r_files=( $pattern )
+shopt -u nullglob
 
 # Check if any R files exist
 if [[ ${#r_files[@]} -eq 0 ]]; then
@@ -30,7 +32,7 @@ done
 sorted_files=($(printf '%s\n' "${r_files[@]}" | sort -t/ -k2 -n))
 
 # Get the directory where this script is located
-script_dir="${0:A:h}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Execute each R file with Rscript, respecting .Rprofile
 for file in "${sorted_files[@]}"; do
