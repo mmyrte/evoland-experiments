@@ -179,6 +179,7 @@ lulc_data_t <-
     id_coord_yr_lulc_dt[
       db$periods_t,
       .(
+        id_run = 0L,
         id_coord,
         id_lulc,
         id_period

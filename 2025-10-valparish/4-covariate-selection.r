@@ -1,16 +1,18 @@
-pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
-devtools::load_all(pkg_path)
-db <- evoland_db$new(path = "fullch.evolanddb")
+library(evoland)
+db <- evoland_db$new(path = "small.evolanddb")
 
-
-db$trans_meta_t <- create_trans_meta_t(db$trans_v, min_cardinality_abs = 4000)
+db$trans_meta_t <- create_trans_meta_t(
+  db$trans_v
+  # min_cardinality_abs = 10000, # TODO set this to some value we deem appropriate
+  # exclude_anterior = 9
+)
 
 db$set_full_trans_preds(overwrite = TRUE)
 trans_preds_covfiltered <- db$get_pruned_trans_preds_t(
   filter_fun = covariance_filter,
   corcut = 0.7,
   na_value = 0,
-  cores = parallel::detectCores()
+  cores = 6 # going higher thrashes my memory (on M3 Pro!)
 )
 
 db$commit(trans_preds_covfiltered, "trans_preds_t", method = "overwrite")
@@ -20,7 +22,7 @@ trans_preds_grrffiltered <- db$get_pruned_trans_preds_t(
   num.trees = 100,
   max.depth = 20,
   gamma = 0.8,
-  cores = parallel::detectCores()
+  cores = 6 # going higher thrashes my memory (on M3 Pro!)
 )
 
 stopifnot(

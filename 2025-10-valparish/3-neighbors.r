@@ -1,7 +1,6 @@
-pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
-devtools::load_all(pkg_path)
+library(evoland)
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "small.evolanddb")
 
 # attn this may take a couple minutes
 db$set_neighbors(

@@ -27,7 +27,7 @@ db$set_coords(
   resolution = 100
 )
 
-db$set_periods(
+db$periods_t <- create_periods_t(
   period_length_str = "P10Y",
   start_observed = "1985-01-01",
   end_observed = "2020-01-01",

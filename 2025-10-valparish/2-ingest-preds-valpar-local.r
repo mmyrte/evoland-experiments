@@ -174,8 +174,7 @@ local_pred_specs <- list(
   )
 )
 
-pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
-devtools::load_all(pkg_path)
+library(evoland)
 
 local_pred_sources <-
   local_pred_specs |>
@@ -184,7 +183,7 @@ local_pred_sources <-
   data.table::rbindlist() |>
   download_and_verify()
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "small.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 extent_wide <- db$extent |> terra::extend(1000)

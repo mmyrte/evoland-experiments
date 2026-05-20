@@ -1,15 +1,15 @@
-pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
-devtools::load_all(pkg_path)
-db <- evoland_db$new(path = "fullch.evolanddb")
+library(evoland)
+db <- evoland_db$new(path = "small.evolanddb")
 
 # Example usage: Fit GLM models
 # The fit_glm and gof_glm functions are exported from the evoland package
 glm_models <- db$fit_partial_models(
   fit_fun = fit_glm,
   gof_fun = gof_glm,
-  sample_pct = 30,
+  sample_frac = 0.3, # TODO what is a sensible split?
   seed = 42,
-  na_value = 0
+  na_value = 0,
+  cores = 6
 )
 
 db$trans_models_t <- glm_models
@@ -19,7 +19,7 @@ db$trans_models_t <- glm_models
 # rf_models <- db$fit_partial_models(
 #   fit_fun = fit_ranger,
 #   gof_fun = gof_ranger,
-#   sample_pct = 30,
+#   sample_frac = 30,
 #   seed = 42,
 #   num.trees = 100
 # )
@@ -33,14 +33,14 @@ print(rf_models)
 # Fit full models using best partial models (based on AUC)
 glm_full <- db$fit_full_models(
   partial_models = glm_models,
-  gof_criterion = "auc",
-  maximize = TRUE
+  select_score = "classif.auc",
+  select_maximize = TRUE
 )
 
 # rf_full <- db$fit_full_models(
 #   partial_models = rf_models,
-#   gof_criterion = "auc",
-#   maximize = TRUE
+#   select_score = "classif.auc",
+#   select_maximize = TRUE
 # )
 
 db$trans_models_t <- glm_full

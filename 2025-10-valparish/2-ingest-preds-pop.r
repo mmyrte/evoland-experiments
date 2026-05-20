@@ -1,38 +1,27 @@
-pkg_path <- paste0("../evoland-plus-", Sys.info()[["sysname"]] |> tolower())
-devtools::load_all(pkg_path)
+library(evoland)
 
-spec <- list(
-  pop = list(
-    unit = "mean_pop",
-    pretty_name = "Mean Population over a given period",
-    orig_format = "number per commune per year",
-    description = "The FSO statistic for each commune's inhabitants is averaged over each period",
-    sources = list(
-      list(
-        # this is the Demographic balance by institutional units
-        # this could be replaced by a call to the pxweb API
-        # maybe use the pxweb package and this URL
-        # "https://www.pxweb.bfs.admin.ch/api/v1/en/px-x-0102020000_201/px-x-0102020000_201.px"
-        url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/23164063/master",
-        md5sum = "528209137ea5c74a30e477a1ddc3da84"
-      ),
-      list(
-        # swissboundaries3d
-        url = "https://data.geo.admin.ch/ch.swisstopo.swissboundaries3d/swissboundaries3d_2021-07/swissboundaries3d_2021-07_2056_5728.shp.zip",
-        md5sum = "6d217867b7bf6dfb2927b12f12481a8b"
-      )
+sources_pop <-
+  list(
+    list(
+      # this is the Demographic balance by institutional units
+      # this could be replaced by a call to the pxweb API
+      # maybe use the pxweb package and this URL
+      # "https://www.pxweb.bfs.admin.ch/api/v1/en/px-x-0102020000_201/px-x-0102020000_201.px"
+      url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/23164063/master",
+      md5sum = "528209137ea5c74a30e477a1ddc3da84"
+    ),
+    list(
+      # swissboundaries3d
+      url = "https://data.geo.admin.ch/ch.swisstopo.swissboundaries3d/swissboundaries3d_2021-07/swissboundaries3d_2021-07_2056_5728.shp.zip",
+      md5sum = "6d217867b7bf6dfb2927b12f12481a8b"
     )
-  )
-)
-
-sources <-
-  spec$pop$sources |>
+  ) |>
   data.table::rbindlist() |>
   download_and_verify()
 
 # read in PX data from http and convert to DF
 px_data <- as.data.frame(pxR::read.px(
-  sources$local_path[1]
+  sources_pop$local_path[1]
 ))
 
 # subset to desired rows based on conditions:
@@ -85,7 +74,7 @@ raw_mun_popdata <- raw_mun_popdata[raw_mun_popdata$`2021` > 0, ]
 
 hoheitsgebiet_path <- paste0(
   "/vsizip/",
-  sources$local_path[2],
+  sources_pop$local_path[2],
   # TODO check that 1_3 and 1_5 are interchangeable
   "/swissBOUNDARIES3D_1_5_TLM_HOHEITSGEBIET.shp"
 )
@@ -181,7 +170,7 @@ if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
 
 ### Create historic municipality population rasters
 
-db <- evoland_db$new(path = "fullch.evolanddb")
+db <- evoland_db$new(path = "small.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 
@@ -230,11 +219,15 @@ predvals <- extract_using_coords_t(
   coords_minimal
 )
 
-
 db$add_predictor(
-  pred_spec = spec,
-  pred_data = predvals[,
+  pred_data_raw = predvals[,
     .(id_coord, id_period = as.integer(attribute), value)
   ],
-  pred_type = "float"
+  name = "pop",
+  fill_value = 0,
+  unit = "mean_pop",
+  pretty_name = "Mean Population over a given period",
+  orig_format = "number per commune per year",
+  description = "The FSO statistic for each commune's inhabitants is averaged over each period",
+  sources = sources_pop
 )
