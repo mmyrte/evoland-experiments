@@ -29,6 +29,7 @@ dependencies = [
     "rlang",
     "rmarkdown",
     "writexl",
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "a8b0750ca01e3e29a248392ba3baaed2fa5d00d7", install_suggestions = true },
+    "svglite",
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "ce4c319d44236fdcb41c5b7fb8662e4b745a979e", install_suggestions = true },
     # { name = "evoland", path = "../evoland-plus-darwin" , install_suggestions = true },
 ]
