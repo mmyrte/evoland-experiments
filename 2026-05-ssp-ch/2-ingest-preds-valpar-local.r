@@ -48,6 +48,10 @@ indicators_1985 <- rowwiseDT(
   #' relatively mild winters) to continental climate (5; low mean air humidity, high variations in
   #' temperature and cold winters)
   "continentality_100m", "preds/prepared/layers/climatic/continentality_100m.tif",
+  #' Possible alternative to some of the ecological indicator values:
+  #' Soil data from
+  #' https://zenodo.org/search?q=metadata.creators.person_or_org.name%3A%22Gupta%2C%20Surya%22&l=list&p=1&s=10&sort=bestmatch
+  #' Let's not worry about soil moisture variability if data is not easy to come by; this will be supplied by the WASIM hydro model integration eventually.
 
   #' See 2-ingest-preds-dem.r for DHM25 version
   #' Derived Originally SwissAlti3D? Came via valpar.ch, and thence via Speedmind?
@@ -78,7 +82,9 @@ indicators_1985 <- rowwiseDT(
   "avg_chg_fte_sec2", "preds/prepared/socio_economic/employment/avg_chg_fte_1985_1997_sec2.tif",
   "avg_chg_fte_sec3", "preds/prepared/socio_economic/employment/avg_chg_fte_1985_1997_sec3.tif",
 
-  # derive from chelsa
+  #' derive from chelsa
+  #' Is there a way to interface with the CHELSA S3 bucket directly?
+  #' Check https://gitlabext.wsl.ch/karger/chelsa_cmip6/-/tree/ch_hr for API url construction
   "average_avg_ann_temp", "preds/prepared/layers/climatic/average_avg_ann_temp_1985_1997.tif",
   "average_avg_precip", "preds/prepared/layers/climatic/average_avg_precip_1985_1997.tif",
   "average_sum_gdays_0deg", "preds/prepared/layers/climatic/average_sum_gdays_0deg_1985_1997.tif",
