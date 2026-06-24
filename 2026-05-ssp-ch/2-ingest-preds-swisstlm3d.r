@@ -1,0 +1,124 @@
+#' Purpose: ingest swissTLM3D and derive distance-to-feature rasters
+#' date: 2026-06-24
+#' auth: jhartman@ethz.ch
+#'
+#' Source: swisstopo swissTLM3D (ch.swisstopo.swisstlm3d)
+#' Successor to VECTOR25 and GWN07.
+#' https://www.swisstopo.admin.ch/en/topographic-landscape-model-swisstlm3d
+#' STAC: https://data.geo.admin.ch/browser/index.html#/collections/ch.swisstopo.swisstlm3d
+#'
+#' Note on lineage: the original valpar-local.r described lake and river distances as
+#' derived from GWN07
+#' (https://www.geocat.ch/geonetwork/srv/api/records/0351bc2e-3cdc-4e8a-b422-0142e494e7b4).
+#' GWN07 is no longer available as a direct download (WMS/WMTS only); swissTLM3D is its
+#' current successor. The road distance was (probably?) originally from swissTLM3D via
+#' valpar.ch/Speedmind.
+
+library(data.table)
+library(evoland)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+extent_wide <- db$extent |> terra::extend(1000)
+
+sources_tlm3d <-
+  list(
+    list(
+      url = "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2026-02-24/swisstlm3d_2026-02-24_2056_5728.gpkg.zip",
+      md5sum = "b02f23b984cd848d63743005e7e75ce3" # the md5 of the zip, not the gpkg
+    )
+  ) |>
+  data.table::rbindlist() |>
+  download_and_verify()
+
+
+if (grepl("zip$", sources_tlm3d[["local_path"]])) {
+  # skipped if we have the gpkg cached already
+  zip_path <- sources_tlm3d[["local_path"]]
+  zip_dir <- dirname(zip_path)
+  # operating on /vsizip/ is too slow, unpacking and deleting zip. increases
+  # storage from 4 to 10GiB
+  unzip(zip_path, exdir = zip_dir)
+  unlink(zip_path)
+
+  sources_tlm3d[["local_path"]] <- list.files(zip_dir, pattern = "\\.gpkg$", full.names = TRUE)
+}
+
+# To inspect available layers: terra::vector_layers(gpkg_path)
+gpkg_path <- sources_tlm3d[["local_path"]]
+
+lakes <- terra::vect(gpkg_path, layer = "tlm_gewaesser_stehendes_gewaesser")
+rivers <- terra::vect(gpkg_path, layer = "tlm_gewaesser_fliessgewaesser")
+
+# tlm_strassen_strasse contains all road classes (Autobahn through Fahrweg/track).
+# No OBJEKTART filter is applied, matching the "distance to nearest road"
+# intent of the original predictor. Filter by OBJEKTART if a class-specific
+# distance is needed.
+roads <- terra::vect(gpkg_path, layer = "tlm_strassen_strasse")
+
+# 100m raster template aligned to the analysis extent; used as the spatial
+# reference for rasterization and distance computation.
+template_100m <- terra::rast(extent_wide, resolution = 100, crs = "EPSG:2056")
+
+# Rasterize each layer to a binary presence raster, then use the 1-argument
+# terra::distance() to compute the distance from each NA cell to the nearest
+# non-NA (present) cell. This is more efficient than terra::distance(template,
+# vector) for dense networks such as the road and river layers.
+lakes_rast <- terra::rasterize(lakes, template_100m, field = 1)
+rivers_rast <- terra::rasterize(rivers, template_100m, field = 1)
+roads_rast <- terra::rasterize(roads, template_100m, field = 1)
+
+dist_lakes <- terra::distance(lakes_rast)
+dist_rivers <- terra::distance(rivers_rast)
+dist_roads <- terra::distance(roads_rast)
+
+pred_specs <- list(
+  distance_to_lakes_mean_100m = list(
+    rast = dist_lakes,
+    unit = "m",
+    pretty_name = "Distance to nearest lake (m)",
+    description = paste0(
+      "Euclidean distance (m) to the nearest standing water body polygon ",
+      "(tlm_gewaesser_stehendes_gewaesser) from swissTLM3D 2026-02-24 at 100m. ",
+      "Successor to GWN07 (ch.swisstopo.vec25-gewaessernetz_referenz)."
+    )
+  ),
+  distance_to_rivers_mean_100m = list(
+    rast = dist_rivers,
+    unit = "m",
+    pretty_name = "Distance to nearest river or stream (m)",
+    description = paste0(
+      "Euclidean distance (m) to the nearest flowing watercourse line ",
+      "(tlm_gewaesser_fliessgewaesser) from swissTLM3D 2026-02-24 at 100m. ",
+      "Successor to GWN07 (ch.swisstopo.vec25-gewaessernetz_referenz)."
+    )
+  ),
+  distance_to_roads_mean_100m = list(
+    rast = dist_roads,
+    unit = "m",
+    pretty_name = "Distance to nearest road of any class (m)",
+    description = paste0(
+      "Euclidean distance (m) to the nearest road line of any class ",
+      "(tlm_strassen_strasse, all OBJEKTART values) from swissTLM3D 2026-02-24 at 100m."
+    )
+  )
+)
+
+for (pred_name in names(pred_specs)) {
+  spec <- pred_specs[[pred_name]]
+  r <- spec[["rast"]]
+  terra::set.names(r, pred_name)
+
+  pred_data <- extract_using_coords_t(r, coords_minimal)
+
+  db$add_predictor(
+    pred_data_raw = pred_data[, .(id_coord, id_period = 0L, value)],
+    name = pred_name,
+    fill_value = NA,
+    unit = spec[["unit"]],
+    pretty_name = spec[["pretty_name"]],
+    orig_format = "swissTLM3D GeoPackage (EPSG:2056), rasterized to 100m, Euclidean distance",
+    description = spec[["description"]],
+    sources = sources_tlm3d[, .(url, md5sum)]
+  )
+}
