@@ -145,7 +145,7 @@ for (pred_name in names(eiv_specs)) {
     fill_value = NA,
     unit = spec[["unit"]],
     pretty_name = spec[["pretty_name"]],
-    orig_format = "93m Mercator GeoTIFF, bilinear resampled to EPSG:2056 100m",
+    orig_format = "93m EPSG:3395 World Mercator GeoTIFF, bilinear resampled to EPSG:2056 100m",
     description = spec[["description"]],
     sources = sources_eiv[, .(url, md5sum)]
   )

@@ -1,0 +1,112 @@
+#' Purpose: ingest DHM25 digital elevation model and derive terrain layers
+#' date: 2026-06-23
+#' auth: jhartman@ethz.ch
+#'
+#' Source: swisstopo DHM25 (ch.swisstopo.digitales-hoehenmodell_25)
+#' Resolution: ~25m, LV03 (EPSG:21781), vertical datum LN02, survey vintage ~1980s.
+#' https://www.swisstopo.admin.ch/en/height-model-dhm25
+#'
+#' NOTE: DHM25 is not available through the swisstopo STAC API. Direct download
+#' from the geo.admin.ch OGD topology server is used here.
+#'
+#' OPTIONAL EXPANSION: For terrain roughness, maximum slope, or other fine-scale
+#' terrain metrics at the hectare level, swissALTI3D (STAC collection
+#' ch.swisstopo.swissalti3d, 2m Cloud Optimised GeoTIFFs, ~44k tiles, ~44 GB)
+#' would be the appropriate source. Deferred due to data volume.
+
+library(data.table)
+library(evoland)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+extent_wide <- db$extent |> terra::extend(1000)
+
+sources_dhm25 <-
+  list(
+    list(
+      url = "https://cms.geo.admin.ch/ogd/topography/DHM25_MM_ASCII_GRID.zip",
+      md5sum = "511ffe2512f1445e2f179ec74136ebbd"
+    )
+  ) |>
+  data.table::rbindlist() |>
+  download_and_verify()
+
+zip_path <- sources_dhm25[["local_path"]][[1L]]
+
+# Discover all ASCII grid tiles inside the ZIP.
+# DHM25 tiles are in LV03 (EPSG:21781) and may lack embedded CRS metadata in
+# the .asc files; assign it explicitly after reading.
+asc_file <-
+  unzip(zip_path, list = TRUE)[["Name"]] |>
+  purrr::keep(stringr::str_detect, "\\.asc$")
+
+dem_25m <- terra::rast(paste0("/vsizip/", zip_path, "/", asc_file))
+terra::crs(dem_25m) <- "EPSG:21781"
+
+# Mosaic all tiles, then project and resample to EPSG:2056 at 100m.
+# DHM25 covers only Switzerland (~70M cells at 25m, ~280 MB float32), so
+# the full in-memory mosaic is feasible before the reprojection step.
+# Bilinear interpolation is appropriate for continuous elevation values.
+dem_100m <-
+  dem_25m |>
+  terra::project(y = "EPSG:2056", method = "bilinear", res = 100) |>
+  terra::crop(extent_wide)
+
+# Terrain derivatives are computed on the 100m DEM, which matches the spatial
+# resolution of all other predictors in the model.
+slope_100m <- terra::terrain(dem_100m, v = "slope", unit = "deg")
+aspect_100m <- terra::terrain(dem_100m, v = "aspect", unit = "deg")
+
+pred_specs <- list(
+  elevation_mean_100m = list(
+    rast = dem_100m,
+    unit = "masl",
+    pretty_name = "Elevation (metres above sea level)",
+    description = paste0(
+      "Elevation at 100m resolution, bilinear resampled from DHM25 (~25m, LV03/LN02, ",
+      "survey vintage ~1980s). swisstopo ch.swisstopo.digitales-hoehenmodell_25. ",
+      "https://www.swisstopo.admin.ch/en/height-model-dhm25"
+    )
+  ),
+  slope_mean_100m = list(
+    rast = slope_100m,
+    unit = "degrees",
+    pretty_name = "Slope (degrees)",
+    description = paste0(
+      "Slope in degrees computed with terra::terrain(v='slope', unit='degrees') on ",
+      "the 100m DHM25-derived DEM (ch.swisstopo.digitales-hoehenmodell_25)."
+    )
+  ),
+  aspect_mean_100m = list(
+    rast = aspect_100m,
+    unit = "degrees",
+    pretty_name = "Aspect (degrees from North, clockwise)",
+    description = paste0(
+      "Aspect in degrees computed with terra::terrain(v='aspect', unit='degrees') on ",
+      "the 100m DHM25-derived DEM. 0 = North, 90 = East."
+    )
+  )
+
+  #' TODO hillshade was included, but probably meant to be proxy for insolation - which
+  #' is arguably already available for modelling in slope and aspect. If anything,
+  #' should be ray tracing?
+)
+
+for (pred_name in names(pred_specs)) {
+  spec <- pred_specs[[pred_name]]
+  r <- spec[["rast"]]
+  terra::set.names(r, pred_name)
+
+  pred_data <- extract_using_coords_t(r, coords_minimal)
+
+  db$add_predictor(
+    pred_data_raw = pred_data[, .(id_coord, id_period = 0L, value)],
+    name = pred_name,
+    fill_value = NA,
+    unit = spec[["unit"]],
+    pretty_name = spec[["pretty_name"]],
+    orig_format = "DHM25 ASCII grid tiles (~25m, LV03/EPSG:21781), bilinear resampled to EPSG:2056 100m",
+    description = spec[["description"]],
+    sources = sources_dhm25[, .(url, md5sum)]
+  )
+}
