@@ -31,5 +31,6 @@ dependencies = [
     "writexl",
     "svglite",
     { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "b40175fd048c1615ff66e4fa556f6a0cd863b3fe", install_suggestions = true },
-    # { name = "evoland", path = "../evoland-plus-darwin" , install_suggestions = true },
+    "mapview",
+    "stars",
 ]

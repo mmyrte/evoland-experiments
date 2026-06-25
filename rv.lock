@@ -18,6 +18,20 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "KernSmooth"
+version = "2.23-26"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "MASS"
+version = "7.3-65"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "Matrix"
 version = "1.7-5"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -113,6 +127,13 @@ dependencies = []
 [[packages]]
 name = "S7"
 version = "0.2.2"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "abind"
+version = "1.4-8"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
@@ -259,6 +280,26 @@ dependencies = [
 ]
 
 [[packages]]
+name = "class"
+version = "7.3-23"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "MASS",
+]
+
+[[packages]]
+name = "classInt"
+version = "0.4-11"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "e1071",
+    "class",
+    "KernSmooth",
+]
+
+[[packages]]
 name = "cli"
 version = "3.6.6"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -329,6 +370,18 @@ dependencies = [
     "curl",
     "jsonlite",
     "askpass",
+]
+
+[[packages]]
+name = "crosstalk"
+version = "1.2.2"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "htmltools", requirement = "(>= 0.3.6)" },
+    "jsonlite",
+    "lazyeval",
+    "R6",
 ]
 
 [[packages]]
@@ -488,6 +541,16 @@ dependencies = [
 ]
 
 [[packages]]
+name = "e1071"
+version = "1.7-17"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "class",
+    "proxy",
+]
+
+[[packages]]
 name = "ellipsis"
 version = "0.3.3"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -630,6 +693,28 @@ version = "0.1.4"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "geojsonsf"
+version = "2.0.5"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 1.1.0)" },
+    { name = "geometries", requirement = "(>= 0.2.5)" },
+    { name = "jsonify", requirement = "(>= 1.2.3)" },
+    { name = "rapidjsonr", requirement = "(>= 1.2.1)" },
+    { name = "sfheaders", requirement = "(>= 0.4.5)" },
+]
+
+[[packages]]
+name = "geometries"
+version = "0.2.5"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 1.1.0)" },
+]
 
 [[packages]]
 name = "gert"
@@ -926,6 +1011,16 @@ dependencies = [
 ]
 
 [[packages]]
+name = "jsonify"
+version = "1.2.3"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 1.1.0)" },
+    { name = "rapidjsonr", requirement = "(>= 1.2.1)" },
+]
+
+[[packages]]
 name = "jsonlite"
 version = "2.0.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -989,6 +1084,78 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "lazyeval"
+version = "0.2.3"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "rlang",
+]
+
+[[packages]]
+name = "leafem"
+version = "0.2.5"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "base64enc",
+    "geojsonsf",
+    { name = "htmltools", requirement = "(>= 0.3)" },
+    "htmlwidgets",
+    "jsonlite",
+    { name = "leaflet", requirement = "(>= 2.0.1)" },
+    "raster",
+    "sf",
+    "png",
+]
+
+[[packages]]
+name = "leaflet"
+version = "2.2.3"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "crosstalk",
+    "htmltools",
+    { name = "htmlwidgets", requirement = "(>= 1.5.4)" },
+    "jquerylib",
+    { name = "leaflet.providers", requirement = "(>= 2.0.0)" },
+    "magrittr",
+    "png",
+    { name = "raster", requirement = "(>= 3.6.3)" },
+    "RColorBrewer",
+    "rlang",
+    { name = "scales", requirement = "(>= 1.0.0)" },
+    { name = "sf", requirement = "(>= 0.9-6)" },
+    "viridisLite",
+    "xfun",
+]
+
+[[packages]]
+name = "leaflet.providers"
+version = "3.0.0"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "htmltools",
+]
+
+[[packages]]
+name = "leafpop"
+version = "0.1.0"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "base64enc",
+    "brew",
+    "htmltools",
+    "htmlwidgets",
+    "sf",
+    "svglite",
+    "uuid",
+]
+
+[[packages]]
 name = "lgr"
 version = "0.5.2"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -1048,6 +1215,28 @@ version = "2.0.5"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "mapview"
+version = "2.11.4"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "base64enc",
+    "htmltools",
+    "htmlwidgets",
+    "lattice",
+    "leafem",
+    { name = "leaflet", requirement = "(>= 2.0.0)" },
+    "leafpop",
+    "png",
+    { name = "raster", requirement = "(>= 3.6.3)" },
+    "satellite",
+    { name = "scales", requirement = "(>= 0.2.5)" },
+    "servr",
+    "sf",
+    "sp",
+]
 
 [[packages]]
 name = "memoise"
@@ -1335,6 +1524,13 @@ dependencies = [
 ]
 
 [[packages]]
+name = "png"
+version = "0.1-9"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "praise"
 version = "1.0.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -1395,6 +1591,13 @@ dependencies = [
     "R6",
     "rlang",
 ]
+
+[[packages]]
+name = "proxy"
+version = "0.4-29"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "ps"
@@ -1481,11 +1684,29 @@ dependencies = [
 ]
 
 [[packages]]
+name = "rapidjsonr"
+version = "1.2.1"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "rappdirs"
 version = "0.3.4"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "raster"
+version = "3.6-32"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "sp", requirement = "(>= 1.4-5)" },
+    "Rcpp",
+    { name = "terra", requirement = "(>= 1.8-5)" },
+]
 
 [[packages]]
 name = "rcmdcheck"
@@ -1681,6 +1902,16 @@ dependencies = [
 ]
 
 [[packages]]
+name = "s2"
+version = "1.1.11"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "Rcpp",
+    { name = "wk", requirement = "(>= 0.6.0)" },
+]
+
+[[packages]]
 name = "sass"
 version = "0.4.10"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -1691,6 +1922,18 @@ dependencies = [
     { name = "htmltools", requirement = "(>= 0.5.1)" },
     "R6",
     "rappdirs",
+]
+
+[[packages]]
+name = "satellite"
+version = "1.0.6"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "raster",
+    "plyr",
+    { name = "Rcpp", requirement = "(>= 0.10.3)" },
+    "terra",
 ]
 
 [[packages]]
@@ -1721,12 +1964,47 @@ dependencies = [
 ]
 
 [[packages]]
+name = "servr"
+version = "0.33"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "mime", requirement = "(>= 0.2)" },
+    { name = "httpuv", requirement = "(>= 1.5.2)" },
+    { name = "xfun", requirement = "(>= 0.58)" },
+    "jsonlite",
+]
+
+[[packages]]
 name = "sessioninfo"
 version = "1.2.4"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
     { name = "cli", requirement = "(>= 3.1.0)" },
+]
+
+[[packages]]
+name = "sf"
+version = "1.1-1"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "classInt", requirement = "(>= 0.4-1)" },
+    { name = "DBI", requirement = "(>= 0.8)" },
+    { name = "s2", requirement = "(>= 1.1.0)" },
+    { name = "units", requirement = "(>= 0.7-0)" },
+    "Rcpp",
+]
+
+[[packages]]
+name = "sfheaders"
+version = "0.4.5"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 1.1.0)" },
+    { name = "geometries", requirement = "(>= 0.2.5)" },
 ]
 
 [[packages]]
@@ -1763,6 +2041,28 @@ version = "0.1.7-2"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "sp"
+version = "2.2-1"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "lattice",
+]
+
+[[packages]]
+name = "stars"
+version = "0.7-2"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "abind",
+    { name = "sf", requirement = "(>= 1.0-19)" },
+    { name = "classInt", requirement = "(>= 0.4-1)" },
+    "rlang",
+    "units",
+]
 
 [[packages]]
 name = "stringfish"
@@ -2023,6 +2323,15 @@ dependencies = [
 ]
 
 [[packages]]
+name = "units"
+version = "1.0-1"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = [
+    "Rcpp",
+]
+
+[[packages]]
 name = "urlchecker"
 version = "1.0.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
@@ -2148,6 +2457,13 @@ dependencies = []
 [[packages]]
 name = "withr"
 version = "3.0.2"
+source = { repository = "https://stat.ethz.ch/CRAN" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "wk"
+version = "0.9.5"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
