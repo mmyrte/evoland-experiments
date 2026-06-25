@@ -60,25 +60,31 @@ published md5sum.
 | Description XLSX (15 KB) | `https://www.envidat.ch/dataset/4ab13d14-6f96-41fd-96b0-b3ea45278b3d/resource/81c046c3-8d1d-45bc-a833-7d8240cebd12/download/predictors_description.xlsx` |
 | All predictors ZIP (~975 MB) | `https://www.envidat.ch/dataset/4ab13d14-6f96-41fd-96b0-b3ea45278b3d/resource/e0faab13-0d1b-492a-8539-5370d48b9e35/download/predictors.zip` |
 
-Raster specs: 93 m resolution, Mercator projection (`+proj=merc +ellps=WGS84 ...`). Must
-reproject to EPSG:2056 and resample to 100 m in-script.
+Raster specs: **continuous float (community-weighted means)**, 93 m resolution, Mercator
+projection (`+proj=merc +ellps=WGS84 ...`). Must reproject to EPSG:2056 and resample to
+100 m in-script using bilinear interpolation.
 
-**Exact filenames inside the ZIP are not yet confirmed** — the XLSX describes them. The
-expected names based on the paper and field names in `indicators_1985`:
+**Important:** the SPEEDMIND layers are *not* discrete class indices as implied by the
+Landolt scale descriptions. They are community-weighted means (CWMs) interpolated
+continuously across space:
 
-| Predictor | Expected filename in ZIP |
-|---|---|
-| `soil_ph` | `EIV_R.tif` or similar |
-| `soil_nutrients` | `EIV_N.tif` |
-| `soil_moisture` | `EIV_F.tif` |
-| `soil_moisture_variability` | `EIV_W.tif` |
-| `soil_aeration` | `EIV_D.tif` |
-| `soil_humus` | `EIV_H.tif` |
-| `light_100m` | `EIV_L.tif` |
-| `continentality_100m` | `EIV_K.tif` |
+| Predictor | Observed range | Note |
+|---|---|---|
+| `soil_ph` | 4.7 – 7.1 | Stored as actual pH units, not Landolt 1–5 class index |
+| `soil_nutrients` | 1.7 – 3.9 | CWM of Landolt N (1–5) |
+| `soil_moisture` | 1.3 – 4.7 | CWM of Landolt F (1–5) |
+| `soil_moisture_variability` | 1.1 – 2.9 | CWM of Landolt W (1–3) |
+| `soil_aeration` | 1.0 – 4.5 | CWM of Landolt D (1/3/5) |
+| `soil_humus` | 1.7 – 4.9 | CWM of Landolt H (1/3/5) |
+| `light_100m` | 1.8 – 4.9 | CWM of Landolt L (1–5) |
+| `continentality_100m` | 2.4 – 4.3 | CWM of Landolt K (1–5) |
 
-> **Please check:** do you know the actual filenames, or should the script download the
-> XLSX first and parse it to determine which TIF corresponds to which EIV?
+Filenames inside ZIP confirmed via `unzip(zip_path, list = TRUE)`:  
+`Predictors/SPEEDMIND_Soil{R,N,F,W,D,H,L,K}.tif`
+
+md5sums confirmed from cache (populated by `download_and_verify` on first run):
+- XLSX: `9a49a27141863f37a5c39c87509f20c7`
+- ZIP: `a8e3bd3a7e929e48a73e7df293ea735d`
 
 ---
 
@@ -177,7 +183,7 @@ only as 1981–2010 averages — not suitable here.
 
 | Script | Status |
 |---|---|
-| `2-ingest-preds-envidat-eiv.r` | ✅ written; filenames confirmed as `Predictors/SPEEDMIND_Soil{R,N,F,W,D,H,L,K}.tif` |
-| `2-ingest-preds-dem.r` | ⏳ ready to write; DHM25 ZIP confirmed |
-| `2-ingest-preds-swisstlm3d.r` | ⏳ ready to write |
+| `2-ingest-preds-envidat-eiv.r` | ✅ complete; continuous floats (CWMs), bilinear resample; md5sums confirmed |
+| `2-ingest-preds-dem.r` | ✅ written; DHM25 ZIP, LV03→EPSG:2056 100m, bilinear; swissALTI3D expansion noted |
+| `2-ingest-preds-swisstlm3d.r` | ✅ written; single GPKG ZIP, rasterize→distance for all three layers |
 | `2-ingest-preds-chelsa.r` | ⏳ ready to write; /vsicurl/ confirmed |
