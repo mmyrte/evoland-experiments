@@ -215,7 +215,7 @@ munis_pops <- terra::merge(
 )
 
 predvals <- extract_using_coords_t(
-  munis_pops[, -1],
+  munis_pops[, -1], # drop BFS_NUMMER attribute
   coords_minimal
 )
 
