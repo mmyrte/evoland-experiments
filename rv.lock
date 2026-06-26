@@ -2,7 +2,6 @@
 # It is not intended for manual editing.
 version = 2
 r_version = "4.5"
-r_version = "4.5"
 
 [[packages]]
 name = "AsioHeaders"
@@ -21,21 +20,21 @@ dependencies = []
 [[packages]]
 name = "KernSmooth"
 version = "2.23-26"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+source = { builtin = true }
 force_source = false
 dependencies = []
 
 [[packages]]
 name = "MASS"
 version = "7.3-65"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+source = { builtin = true }
 force_source = false
 dependencies = []
 
 [[packages]]
 name = "Matrix"
-version = "1.7-5"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+version = "1.7-4"
+source = { builtin = true }
 force_source = false
 dependencies = [
     "lattice",
@@ -172,7 +171,6 @@ dependencies = []
 [[packages]]
 name = "bit64"
 version = "4.8.2"
-version = "4.8.2"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -206,7 +204,6 @@ dependencies = []
 [[packages]]
 name = "broom"
 version = "1.0.13"
-version = "1.0.13"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -225,7 +222,6 @@ dependencies = [
 
 [[packages]]
 name = "bslib"
-version = "0.11.0"
 version = "0.11.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -256,11 +252,9 @@ dependencies = [
 [[packages]]
 name = "callr"
 version = "3.8.0"
-version = "3.8.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
-    { name = "otel", requirement = "(>= 0.2.0)" },
     { name = "otel", requirement = "(>= 0.2.0)" },
     { name = "processx", requirement = "(>= 3.6.1)" },
     "R6",
@@ -288,7 +282,7 @@ dependencies = [
 [[packages]]
 name = "class"
 version = "7.3-23"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+source = { builtin = true }
 force_source = false
 dependencies = [
     "MASS",
@@ -315,7 +309,6 @@ dependencies = []
 [[packages]]
 name = "clipr"
 version = "0.8.1"
-version = "0.8.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
@@ -323,7 +316,7 @@ dependencies = []
 [[packages]]
 name = "codetools"
 version = "0.2-20"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+source = { builtin = true }
 force_source = false
 dependencies = []
 
@@ -407,7 +400,7 @@ dependencies = []
 
 [[packages]]
 name = "dbplyr"
-version = "2.5.2"
+version = "2.6.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -540,7 +533,7 @@ dependencies = [
 
 [[packages]]
 name = "duckdb"
-version = "1.5.2"
+version = "1.5.4"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -576,7 +569,6 @@ dependencies = []
 [[packages]]
 name = "evoland"
 version = "0.0.1.9000"
-source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "b40175fd048c1615ff66e4fa556f6a0cd863b3fe" }
 source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "b40175fd048c1615ff66e4fa556f6a0cd863b3fe" }
 force_source = true
 dependencies = [
@@ -758,7 +750,6 @@ dependencies = [
 [[packages]]
 name = "gh"
 version = "1.6.0"
-version = "1.6.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -769,7 +760,6 @@ dependencies = [
     "ini",
     "jsonlite",
     "lifecycle",
-    { name = "rlang", requirement = "(>= 1.1.0)" },
     { name = "rlang", requirement = "(>= 1.1.0)" },
 ]
 
@@ -844,7 +834,7 @@ dependencies = [
 
 [[packages]]
 name = "gridExtra"
-version = "2.3"
+version = "2.3.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -966,7 +956,7 @@ dependencies = [
 
 [[packages]]
 name = "httr2"
-version = "1.2.2"
+version = "1.2.3"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -1089,7 +1079,7 @@ dependencies = [
 [[packages]]
 name = "lattice"
 version = "0.22-9"
-source = { repository = "https://stat.ethz.ch/CRAN" }
+source = { builtin = true }
 force_source = false
 dependencies = []
 
@@ -1204,7 +1194,7 @@ dependencies = [
 
 [[packages]]
 name = "listenv"
-version = "0.10.1"
+version = "1.0.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
@@ -1278,7 +1268,6 @@ dependencies = [
 [[packages]]
 name = "mirai"
 version = "2.7.1"
-version = "2.7.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -1294,7 +1283,6 @@ dependencies = []
 
 [[packages]]
 name = "mlr3"
-version = "1.7.1"
 version = "1.7.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -1348,7 +1336,6 @@ dependencies = [
 [[packages]]
 name = "mlr3misc"
 version = "0.22.0"
-version = "0.22.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -1394,14 +1381,12 @@ dependencies = [
 [[packages]]
 name = "nanonext"
 version = "1.9.1"
-version = "1.9.1"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
 
 [[packages]]
 name = "openssl"
-version = "2.4.2"
 version = "2.4.2"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -1418,7 +1403,6 @@ dependencies = []
 
 [[packages]]
 name = "pak"
-version = "0.10.0"
 version = "0.10.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -1515,7 +1499,6 @@ dependencies = [
 
 [[packages]]
 name = "pkgload"
-version = "1.5.3"
 version = "1.5.3"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -1651,7 +1634,6 @@ dependencies = [
 [[packages]]
 name = "qs2"
 version = "0.2.2"
-version = "0.2.2"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -1770,13 +1752,11 @@ dependencies = [
 [[packages]]
 name = "readxl"
 version = "1.5.0"
-version = "1.5.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
     "cellranger",
     { name = "tibble", requirement = "(>= 2.0.1)" },
-    { name = "cpp11", requirement = "(>= 0.5.5)" },
     { name = "cpp11", requirement = "(>= 0.5.5)" },
     "progress",
 ]
@@ -1891,7 +1871,6 @@ dependencies = []
 [[packages]]
 name = "rstudioapi"
 version = "0.19.0"
-version = "0.19.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
@@ -1976,11 +1955,10 @@ dependencies = [
 
 [[packages]]
 name = "selectr"
-version = "0.5-1"
+version = "0.6-0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
-    "stringr",
     "R6",
 ]
 
@@ -1998,7 +1976,6 @@ dependencies = [
 
 [[packages]]
 name = "sessioninfo"
-version = "1.2.4"
 version = "1.2.4"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -2031,7 +2008,7 @@ dependencies = [
 
 [[packages]]
 name = "shiny"
-version = "1.13.0"
+version = "1.14.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -2170,7 +2147,7 @@ dependencies = [
 
 [[packages]]
 name = "terra"
-version = "1.9-27"
+version = "1.9-34"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -2318,7 +2295,6 @@ dependencies = []
 
 [[packages]]
 name = "tinytex"
-version = "0.60"
 version = "0.60"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
@@ -2479,7 +2455,7 @@ dependencies = []
 
 [[packages]]
 name = "withr"
-version = "3.0.2"
+version = "3.0.3"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
@@ -2500,15 +2476,14 @@ dependencies = []
 
 [[packages]]
 name = "xfun"
-version = "0.58"
-version = "0.58"
+version = "0.59"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = []
 
 [[packages]]
 name = "xml2"
-version = "1.5.2"
+version = "1.6.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
 dependencies = [
@@ -2549,12 +2524,8 @@ dependencies = []
 [[packages]]
 name = "zip"
 version = "3.0.0"
-version = "3.0.0"
 source = { repository = "https://stat.ethz.ch/CRAN" }
 force_source = false
-dependencies = [
-    "cli",
-]
 dependencies = [
     "cli",
 ]
