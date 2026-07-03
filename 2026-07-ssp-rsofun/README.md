@@ -113,17 +113,22 @@ separately**. This is the single most important open item.
 |---|---|---|---|
 | `temp` (tas) | ✓ | direct | — |
 | `tmin` / `tmax` | ✓ | tasmin / tasmax | — |
-| `prec` (rain+snow) | ✓ | `pr`; SPLASH splits rain/snow by temperature | — |
-| `vpd` | ✗ | derive from tmin/tmax/tas: VPD = ē_sat(tmax,tmin) − e_a, with dewpoint ≈ tmin | **Alpine dry-air bias** in the dewpoint≈tmin assumption — validate vs MeteoSwiss RH stations |
-| `ppfd` (shortwave/PAR) | ✗ | **DECIDED: Hargreaves** — Rs = k·√(tmax−tmin)·Ra, with extraterrestrial Ra(lat, DOY); PPFD = Rs·0.5·4.57 µmol J⁻¹. rsofun's SOLAR already computes Ra + topographic corrections, so this becomes internal after the R prototype. | k (≈0.16 interior / 0.19 coastal) needs a CH tuning; validate a subset vs MeteoSwiss/CM SAF |
-| `netrad` | ✗ | computed inside `waterbal_splash` from PPFD + temperature (longwave empirical) — **verify** it is optional in the rsofun forcing spec; otherwise derive alongside ppfd | verify |
-| `patm` | ✗ | from DEM elevation via barometric formula (`calc_patm(elv)`) | low |
-| `co2` | ✗ | SSP concentration pathway, annual global mean (Meinshausen et al. 2020) — one series per SSP | low |
-| `ccov` (cloud) | ✗ | only needed if PPFD is derived from cloudiness; **N/A** on the Hargreaves route | — |
-| `fapar` | ✗ | **land-cover coupling handle** — see §3.3 | central |
+| `rain` **and** `snow` | ✓ | **two separate required columns** — the P-model interface does **not** split precip internally, so split `pr` in preprocessing (temperature threshold / Kienzle sigmoid, à la SPLASH) into rain + snow (mm) | low |
+| `vpd` | ✗ | derive from tmin/tmax/tas: VPD = ē_sat(tmax,tmin) − e_a, with dewpoint ≈ tmin (Pa) | **Alpine dry-air bias** in the dewpoint≈tmin assumption — validate vs MeteoSwiss RH stations |
+| `ppfd` (mol m⁻² d⁻¹) | ✗ | **DECIDED: Hargreaves** — Rs = k·√(tmax−tmin)·Ra, Ra(lat, DOY); PPFD = Rs·0.5·4.57. Migrate into the Fortran later (SOLAR already computes Ra). | k (≈0.16 interior / 0.19 coastal) needs a CH tuning; validate vs MeteoSwiss/CM SAF |
+| `fsun` (sunshine frac) | ✗ | **REQUIRED regardless of ppfd** — `waterbal_splash` needs it for τ and net-longwave (`run_pmodel_f_bysite.R:322`, `waterbal_splash.mod.f90:201/213`). Derive from the Hargreaves transmissivity τ = Rs/Ra via Ångström–Prescott: fsun = (τ − a)/b. One derivation yields both ppfd and fsun. | ties to the same k tuning |
+| `netrad` | — | **NOT needed** — currently *ignored* as forcing; SPLASH computes net radiation internally (`run_pmodel_f_bysite.R:319`, docstring). Do not supply. | — |
+| `patm` | ✗ | from DEM elevation via barometric formula (`calc_patm(elv)`), Pa | low |
+| `co2` | ✗ | SSP concentration pathway, annual global mean (Meinshausen et al. 2020) — one series per SSP, ppm | low |
+| `fapar` | ✗ | **land-cover coupling handle** — WASIM LAI→fAPAR, see §3.3 | central |
 
-Two genuine gaps: **shortwave radiation/PPFD** (absent from CH2025 entirely) and
-**fAPAR**. Everything else is either present or cheaply derivable.
+Mandatory columns the interface NA-checks: `temp, rain, vpd, snow, co2, fapar, patm,
+tmin, tmax`, plus one of {`ppfd`, `fsun`} — but `fsun` is needed anyway (above), so we
+supply both. `tsoil` is optional (unused here). Verified against the fork at
+`R/run_pmodel_f_bysite.R:205-247`.
+
+Two genuine gaps remain: **shortwave (Hargreaves-derived → ppfd + fsun)** and **fAPAR**.
+Everything else is present or cheaply derivable — and `netrad` drops out entirely.
 
 ### 3.2 Soil — Swiss Soil Property Map (Gupta et al. 2024)
 
@@ -150,15 +155,23 @@ Aggregate the SSPM 30 m properties to the 100 m model grid (area-weighted mean o
 texture/OM; propagate the PI as an uncertainty layer if we want a soil-uncertainty
 `id_run`).
 
-### 3.3 Land cover — evoland SSP output → fAPAR / whc / rooting
+### 3.3 Land cover — WASIM classification → fAPAR / whc / rooting
 
-The SSP-CH LULC schema (`2026-05-ssp-ch/1-ingest-lulc-data.r`) aggregates Arealstatistik
-NOAS04 (72 categories) into **9 classes**: `arable`, `perm_crops`, `grassland`,
-`alp_past`, `closed_forest`, `open_forest`, `shrubland`, `urban`, `static`. The seven
-vegetated classes are the ones that carry a meaningful fAPAR/rooting signature; `urban`
-and `static` get minimal-vegetation defaults.
+**DECIDED (2026-07-03): use the WASIM land-use classification directly**, *not* the
+9-class SSP-CH schema. The land-cover state feeding rsofun is expressed in WASIM's
+categories (the 17-category `[multilayer_landuse]` / 19-entry `[landuse_table]`), so each
+class maps 1:1 to its own `[landuse_table]` entry — no semantic aggregation or
+evoland-9→WASIM crosswalk guesswork. The SSP-CH land cover is brought into this scheme
+via the existing `AS0409_17Cat_to_WaSiM_LansuseTable.rmp`. The **9-class SSP-CH labelling
+is backported later, without rsofun** (a relabelling of the same pixels), so nothing is
+lost by deviating here.
 
-**DECIDED: populate fAPAR the WASIM way.** The WASIM `[landuse_table]` (verified in
+Consequence: `3-landcover-crosswalk.r` becomes a straight **parser** of the
+`[landuse_table]` (now committed at `2026-07-ssp-rsofun/wasim_control_sample.txt`) into a
+per-class daily table of fAPAR / albedo / whc, keyed by WASIM land-use ID — no mapping
+decisions, and one source of truth shared with WASIM.
+
+**Populate fAPAR the WASIM way.** The WASIM `[landuse_table]` (verified in
 `wasim_control_sample.txt`, 19 single land-use classes) gives, per class, **12 monthly
 values** (at mid-month Julian days 15, 46, 74, … 349) for `LAI`, `VCF`, `Albedo`,
 `RootDepth`, and `rsc`, with `k_extinct = 0.3` from `[multilayer_landuse]`. We build
@@ -187,19 +200,14 @@ Handling notes when consuming the WASIM arrays in rsofun:
 - **`whc` is static, RootDepth is monthly:** collapse RootDepth to one representative
   value per class (growing-season max) for the single `whc`.
 
-**Proposed evoland-9 → WASIM-landuse crosswalk (needs confirmation — see §8):**
-
-| evoland class | → WASIM class (ID) | peak LAI | note |
-|---|---|---|---|
-| arable | Intensiv-Ackerland_unbewaessert (7) | ~5 | strong crop phenology |
-| perm_crops | horticulture (17) | ~5 | orchards/vineyards; late-season peak |
-| grassland | Intensiv-Gruenland (5) | ~4 | lowland meadows/pastures |
-| alp_past | Extensiv-Gruenland (6) | ~3 | + AltDep for alpine season |
-| closed_forest | Mischwald (13) | ~8 | default mixed; could split 11 Laubwald / 12 Nadelwald by a forest-type map |
-| open_forest | locker_baumbestanden (14) | ~4 | loosely treed |
-| shrubland | Busch-Kraut-Vegetation (10) | ~5 | scrub/dwarf-shrub |
-| urban | teilversiegelte_Flaechen (1) | 1 | partly sealed, some green |
-| static | vegetationslose_Flaechen (3) | 0.5 | catch-all default; water→16, wetland→15, ice/firn→22/23 if resolvable |
+The 19 `[landuse_table]` classes are used as-is (IDs → names, peak growing-season LAI):
+1 teilversiegelte_Flaechen (1) · 2 versiegelte_Flaechen (1) · 3 vegetationslose_Flaechen
+(0.5) · 4 spaerliche_Vegetation (2) · 5 Intensiv-Gruenland (4) · 6 Extensiv-Gruenland (3)
+· 7 Intensiv-Ackerland (5) · 8 Extensiv-Ackerland (4) · 9 Heidevegetation (4) · 10
+Busch-Kraut-Vegetation (5) · 11 Laubwald (8) · 12 Nadelwald (10) · 13 Mischwald (8) · 14
+locker_baumbestanden (4) · 15 Moore_Suempfe (4) · 16 Wasserflaechen (1) · 17 horticulture
+(5) · 22 Eisflaechen (1) · 23 Firnflaechen (1). Forest type (Laub/Nadel/Misch) is a
+first-class distinction here, resolved by the input land-cover map rather than a default.
 
 ### 3.4 Terrain — already ingested
 
@@ -285,10 +293,10 @@ highest-risk item):**
 
 ```
 0-setup-db.r                 # reuse/attach ssp-ch.evolanddb (baseline); add rsofun run(s)
-1-forcing-climate.r          # CH2025 daily → derive vpd, ppfd (Hargreaves+SOLAR), patm, co2
+1-forcing-climate.r          # CH2025 daily → vpd, ppfd+fsun (Hargreaves), rain/snow, patm, co2
 2-forcing-soil-whc.r         # SSPM (Gupta 2024) → PTF (soil_hydro) → whc, rooting ceiling
-3-landcover-crosswalk.r      # evoland 9-class → fAPAR/whc-mod/rootdepth (WASIM-consistent)
-4-run-rsofun.r               # per-pixel P-model over decades; warm-start; chunked parallel
+3-landcover-fapar.r          # parse WASIM [landuse_table] → daily fAPAR/albedo/whc per class
+4-run-rsofun.r               # per-pixel P-model (+BiomeE) over decades; warm-start; chunked
 5-aggregate-indicators.r     # daily → decadal α, wscal, soil moisture, GPP → add_predictor
 6-couple-decadal-loop.r      # feed predictors to transition model; re-run per decade
 ```
@@ -296,11 +304,15 @@ highest-risk item):**
 ## 8. Open questions / decisions
 
 Resolved 2026-07-03: radiation = Hargreaves (→ into Fortran); fAPAR = WASIM LAI→fAPAR;
-BiomeE included; keep R↔Fortran. Remaining:
+BiomeE included; keep R↔Fortran; **land cover = WASIM classification directly** (SSP-9
+relabelled later, no crosswalk); netrad not required; forcing needs `fsun` + a rain/snow
+split (verified against the fork). Remaining:
 
-1. **evoland-9 → WASIM-landuse crosswalk** (§3.3 table) — confirm/adjust. Main blocker
-   for `3-landcover-crosswalk.r`. Key sub-decision: split `closed_forest` into
-   Laubwald/Nadelwald/Mischwald via a forest-type map, or keep the Mischwald default?
+1. **Daily CH2025 input format** — the baseline ingests CH2025 *summary indicators*; the
+   process run needs the *daily* gridded netCDFs (pr/tas/tasmax/tasmin, 30 members) that
+   live on the target machine. Need their on-disk layout (paths, netCDF var names, ensemble
+   dim) to wire `1-forcing-climate.r` I/O. The derivation core is format-independent and
+   can be written now against a defined input contract.
 2. **VPD from tmin/tmax** — quantify the Alpine dewpoint≈tmin bias against station RH.
 3. **Hargreaves coefficient `k`** — single CH value vs elevation/region tuning; validate
    a subset vs MeteoSwiss/CM SAF radiation.
@@ -308,8 +320,7 @@ BiomeE included; keep R↔Fortran. Remaining:
 5. **Which SSPs** — baseline excludes SSP2; confirm SSP1/3/4/5 CO₂ pathways for the runs.
 6. **Ensemble handling** — run all ≤30 CH2025 members (→ predictor uncertainty via
    `id_run`) or a representative subset for the prototype.
-6. **Rewrite trigger** — only after Phase 1 profiling; decide batch-driver vs full Rcpp.
-7. **9-class ↔ 17-category** reconciliation against the WASIM `.rmp`.
+7. **Rewrite trigger** — only after Phase 1 profiling; decide batch-driver vs full Rcpp.
 
 ## References
 
