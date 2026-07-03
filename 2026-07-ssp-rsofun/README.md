@@ -216,9 +216,23 @@ DHM25 (EPSG:2056). Elevation → `patm` and radiation; slope/aspect → SPLASH t
 radiation corrections; latitude from the grid. swissALTI3D (2 m) is noted there as the
 higher-resolution upgrade if hectare-scale terrain roughness is wanted.
 
-### 3.5 CO₂
+### 3.5 CO₂ and the CH2025 GWL structure
 
-SSP concentration pathway, annual global-mean CO₂ per scenario (one short series each).
+The CH2025 daily-gridded files are organised by **global warming level (GWL) × model
+chain**, encoded in the filename
+(`…_ch_{var}_{modelchain}_{gwl}.nc`, e.g. `…_pr_clmcom-cclm4-cccma_gwl1.5.nc`), each a
+**30-year, 365-day-calendar** slice (10950 days) on the 1 km LV95 grid. So:
+
+- the **ensemble/scenario axis is the file set** (model chain × GWL), not a netCDF
+  dimension — parsed by `ch2025_inventory()` in `1-forcing-climate.r`;
+- future **`id_period` maps to GWL** (not calendar decade), which matches the deferred
+  `-gwl` progression already sketched in `2-ingest-preds-ch2025-2-etl.r`; model chain
+  (× quantile) maps to `id_run`.
+
+CO₂ is **not uniquely determined by a GWL** (different SSPs reach a GWL at different CO₂),
+so it is a per-run input: a `{gwl → co2_ppm}` lookup passed into
+`derive_pmodel_forcing(co2=)`. Needs a decision (see §8): pick a representative SSP per
+GWL, or treat CO₂ as an explicit axis.
 
 ## 4. WASIM consistency (make the interim reusable, not throwaway)
 
@@ -308,11 +322,9 @@ BiomeE included; keep R↔Fortran; **land cover = WASIM classification directly*
 relabelled later, no crosswalk); netrad not required; forcing needs `fsun` + a rain/snow
 split (verified against the fork). Remaining:
 
-1. **Daily CH2025 input format** — the baseline ingests CH2025 *summary indicators*; the
-   process run needs the *daily* gridded netCDFs (pr/tas/tasmax/tasmin, 30 members) that
-   live on the target machine. Need their on-disk layout (paths, netCDF var names, ensemble
-   dim) to wire `1-forcing-climate.r` I/O. The derivation core is format-independent and
-   can be written now against a defined input contract.
+1. **CO₂ per GWL** — the CH2025 files are GWL-sliced, and CO₂ is not fixed by GWL.
+   Pick a representative SSP per GWL, or make CO₂ an explicit run axis? (Blocks the
+   `co2` argument in `4-run-rsofun.r`; `1-forcing-climate.r` already takes it as input.)
 2. **VPD from tmin/tmax** — quantify the Alpine dewpoint≈tmin bias against station RH.
 3. **Hargreaves coefficient `k`** — single CH value vs elevation/region tuning; validate
    a subset vs MeteoSwiss/CM SAF radiation.
