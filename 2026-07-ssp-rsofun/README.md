@@ -55,6 +55,32 @@ table below.
 the basin DAG, canopy interception loss, aerodynamic/roughness effects, wet-side
 (aeration) stress, and multi-layer canopies.
 
+### Two model tracks
+
+Both rsofun models are in scope, because the point of the coupling is **ecosystem
+productivity** as a land-use-change indicator:
+
+1. **P-model** (fAPAR-forced) — the primary track. Land cover enters diagnostically via
+   fAPAR + whc; emits GPP + the SPLASH water balance. Light, and the natural fit for the
+   forced-land-cover design.
+2. **BiomeE** (prognostic) — the productivity track. Cohort-explicit forest demography;
+   emits NPP, biomass, prognostic LAI, and stand dynamics. Note the design difference: it
+   is **not** fAPAR-forced — it is *initialised* with a PFT per land-cover class and
+   simulates vegetation forward, so it delivers richer productivity/succession indicators
+   at higher cost. Run in parallel to the P-model, not in series.
+
+### Decisions locked (2026-07-03)
+
+- **Radiation:** Hargreaves (√(tmax−tmin)·Ra) for shortwave/PPFD — chosen for
+  self-containedness. Prototype the estimate in R; **migrate into the rsofun Fortran**
+  (SPLASH/SOLAR already computes Ra) once validated, so PPFD becomes internal.
+- **fAPAR:** the WASIM way — mechanistic LAI→fAPAR from the WASIM `[landuse_table]`
+  monthly arrays (see §3.3). Guarantees cross-model consistency.
+- **BiomeE:** included (productivity track, above).
+- **Compute:** keep the stock R↔Fortran (`runread_pmodel_f`) path for now; the per-site
+  marshalling over 4.1M locations is expected to bottleneck, but the rewrite is deferred
+  (see §6).
+
 ## 2. Coupling architecture
 
 rsofun sits **outside** evoland's inner allocation loop, as a decadal forcing generator:
@@ -89,7 +115,7 @@ separately**. This is the single most important open item.
 | `tmin` / `tmax` | ✓ | tasmin / tasmax | — |
 | `prec` (rain+snow) | ✓ | `pr`; SPLASH splits rain/snow by temperature | — |
 | `vpd` | ✗ | derive from tmin/tmax/tas: VPD = ē_sat(tmax,tmin) − e_a, with dewpoint ≈ tmin | **Alpine dry-air bias** in the dewpoint≈tmin assumption — validate vs MeteoSwiss RH stations |
-| `ppfd` (shortwave/PAR) | ✗ | **major gap.** Option A: Hargreaves/Bristow-Campbell — Rs ∝ √(tmax−tmin)·Ra, with extraterrestrial Ra(lat, DOY) (the `rsplash` SOLAR module already computes Ra + topographic corrections). Option B: source a radiation product (CM SAF SARAH-3 satellite, or MeteoSwiss operational global-radiation grids, or ERA5-Land `ssrd`). | High: √ΔT estimation is uncertain; recommend A for prototyping, validate, swap to B for production |
+| `ppfd` (shortwave/PAR) | ✗ | **DECIDED: Hargreaves** — Rs = k·√(tmax−tmin)·Ra, with extraterrestrial Ra(lat, DOY); PPFD = Rs·0.5·4.57 µmol J⁻¹. rsofun's SOLAR already computes Ra + topographic corrections, so this becomes internal after the R prototype. | k (≈0.16 interior / 0.19 coastal) needs a CH tuning; validate a subset vs MeteoSwiss/CM SAF |
 | `netrad` | ✗ | computed inside `waterbal_splash` from PPFD + temperature (longwave empirical) — **verify** it is optional in the rsofun forcing spec; otherwise derive alongside ppfd | verify |
 | `patm` | ✗ | from DEM elevation via barometric formula (`calc_patm(elv)`) | low |
 | `co2` | ✗ | SSP concentration pathway, annual global mean (Meinshausen et al. 2020) — one series per SSP | low |
@@ -132,28 +158,48 @@ NOAS04 (72 categories) into **9 classes**: `arable`, `perm_crops`, `grassland`,
 vegetated classes are the ones that carry a meaningful fAPAR/rooting signature; `urban`
 and `static` get minimal-vegetation defaults.
 
-For each class we author a **class → biophysical-parameter crosswalk** (the interim
-equivalent of WASIM's `[landuse_table]`):
+**DECIDED: populate fAPAR the WASIM way.** The WASIM `[landuse_table]` (verified in
+`wasim_control_sample.txt`, 19 single land-use classes) gives, per class, **12 monthly
+values** (at mid-month Julian days 15, 46, 74, … 349) for `LAI`, `VCF`, `Albedo`,
+`RootDepth`, and `rsc`, with `k_extinct = 0.3` from `[multilayer_landuse]`. We build
 
-| evoland class | fAPAR (seasonal) | rooting depth → whc modifier | albedo | notes |
-|---|---|---|---|---|
-| arable | crop phenology, low winter | shallow–medium | moderate | strong seasonal cycle |
-| perm_crops | orchard/vineyard | medium | moderate | |
-| grassland | high growing-season | shallow | moderate | |
-| alp_past | short season, snow-limited | shallow | moderate–high | elevation-modulated |
-| closed_forest | high, evergreen/deciduous split | deep | low | highest LAI |
-| open_forest | intermediate | deep | low–moderate | |
-| shrubland | low–moderate | medium | moderate | |
-| urban / static | ~0 vegetated fraction | n/a | high/variable | minimal-veg defaults |
+    fAPAR_month = VCF · (1 − exp(−k_extinct · LAI))      # Beer–Lambert, k_extinct = 0.3
 
-Two ways to populate fAPAR (decide in Phase 0):
+per class, interpolate the 12 monthly points to daily (linear — the same reconstruction
+WASIM does internally between sample days), and pass that as the rsofun `fapar` forcing.
+Albedo (monthly) feeds net radiation; RootDepth × soil PAWC feeds `whc`. This reuses
+WASIM's exact phenology, so the interim and eventual WASIM runs share one source of
+truth.
 
-1. **Remote-sensing climatology per class × bioregion** — MODIS/Copernicus/Sentinel
-   fAPAR, composited by class and biogeographic region (see the `static` biogeographic
-   regions TODO in `1-ingest-lulc-data.r`). Preferred for the observed baseline.
-2. **LAI → fAPAR mechanistically** — fAPAR = VCF·(1 − exp(−k·LAI)) (Beer–Lambert). This
-   is the **same equation WASIM uses** (`k_extinct` in its `[multilayer_landuse]` table),
-   so a class→LAI phenology table authored here is directly reusable for WASIM later.
+Handling notes when consuming the WASIM arrays in rsofun:
+
+- **Monthly → daily:** linear interpolation across the mid-month JulDays (cyclic at
+  year boundary).
+- **Elevation (`AltDep`):** each WASIM entry carries an `AltDep` altitude-dependence term
+  that shifts phenology up-slope. This matters across Switzerland's elevation gradient
+  (delayed/compressed alpine growing season). Apply it using the 100 m DEM; make it a
+  toggle so we can test its impact.
+- **Multi-layer classes:** WASIM stacks canopies (e.g. `Wald` = tree layer + understory).
+  The P-model is big-leaf/single-layer, so use an **effective LAI** (sum of layers) →
+  single fAPAR.
+- **`rsc` is ignored:** the P-model derives stomatal conductance endogenously (optimality),
+  so WASIM's canopy resistance is not used — fewer free parameters, by design.
+- **`whc` is static, RootDepth is monthly:** collapse RootDepth to one representative
+  value per class (growing-season max) for the single `whc`.
+
+**Proposed evoland-9 → WASIM-landuse crosswalk (needs confirmation — see §8):**
+
+| evoland class | → WASIM class (ID) | peak LAI | note |
+|---|---|---|---|
+| arable | Intensiv-Ackerland_unbewaessert (7) | ~5 | strong crop phenology |
+| perm_crops | horticulture (17) | ~5 | orchards/vineyards; late-season peak |
+| grassland | Intensiv-Gruenland (5) | ~4 | lowland meadows/pastures |
+| alp_past | Extensiv-Gruenland (6) | ~3 | + AltDep for alpine season |
+| closed_forest | Mischwald (13) | ~8 | default mixed; could split 11 Laubwald / 12 Nadelwald by a forest-type map |
+| open_forest | locker_baumbestanden (14) | ~4 | loosely treed |
+| shrubland | Busch-Kraut-Vegetation (10) | ~5 | scrub/dwarf-shrub |
+| urban | teilversiegelte_Flaechen (1) | 1 | partly sealed, some green |
+| static | vegetationslose_Flaechen (3) | 0.5 | catch-all default; water→16, wetland→15, ice/firn→22/23 if resolvable |
 
 ### 3.4 Terrain — already ingested
 
@@ -195,7 +241,9 @@ described in `2-ingest-preds-ch2025-2-etl.r`:
 - **α = AET/PET** (Cramer–Prentice moisture index) — canonical plant-available-moisture
 - **`wscal`** — P-model water-stress scalar
 - **soil moisture** (growing-season mean, and driest-month for extremes)
-- **GPP** — productivity suitability
+- **GPP** (P-model) — productivity suitability
+- **NPP, biomass, prognostic LAI** (BiomeE) — ecosystem-productivity / succession
+  indicators, the motivation for including BiomeE
 - optionally net radiation / PPFD, snow (SWE, snow-cover duration)
 
 Report decadal means/sums **and** variability/extremes (the tails often drive suitability).
@@ -207,7 +255,8 @@ Scale: ~4.1M hectare pixels × ~30 yr × 365 d ≈ 4.5×10¹⁰ cell-days per me
 9 `*_pmodel.mod.f90` modules + `waterbal_splash.mod.f90`, bridged by `wrappersc.c`); the
 Fortran itself is fast. The likely bottleneck is **R↔Fortran marshalling per site**
 (`runread_pmodel_f` is called one gridcell at a time, rebuilding nested forcing frames),
-not the numerics.
+not the numerics. **DECIDED:** keep the stock R↔Fortran path for now and accept the
+per-site overhead; the rewrite stays deferred until Phase 1 profiling quantifies it.
 
 **Phased plan — do not rewrite before the science is validated (the translation is the
 highest-risk item):**
@@ -223,9 +272,9 @@ highest-risk item):**
     - (a) **Batch driver** in Fortran/C that loops sites internally without per-site R
     round-trips — low risk, reuses the already-validated biophysics. Likely sufficient.
     - (b) **Full Rcpp/C++ SoA-vectorised rewrite** across locations for maximum throughput
-    and headless HPC use (no R in the hot path). Translate **only** `waterbal_splash` +
-    the P-model `gpp`/`photosynth`/`plant` modules; **skip BiomeE** (not needed for the
-    forced-fAPAR design).
+    and headless HPC use (no R in the hot path). Translate `waterbal_splash` + the
+    P-model `gpp`/`photosynth`/`plant` modules first; BiomeE is heavier (cohort linked
+    lists) and would be a later, separate translation effort.
     - Either path requires the workflow the user described: a **golden-master test
     harness** capturing stock-rsofun outputs on a representative pixel sample →
     port → assert **numerical consistency within tolerance** → then optimise.
@@ -246,13 +295,18 @@ highest-risk item):**
 
 ## 8. Open questions / decisions
 
-1. **Radiation source** — Hargreaves-derived Rs (self-contained) vs a satellite/ERA5
-   product. Blocks §3.1; pick in Phase 0.
+Resolved 2026-07-03: radiation = Hargreaves (→ into Fortran); fAPAR = WASIM LAI→fAPAR;
+BiomeE included; keep R↔Fortran. Remaining:
+
+1. **evoland-9 → WASIM-landuse crosswalk** (§3.3 table) — confirm/adjust. Main blocker
+   for `3-landcover-crosswalk.r`. Key sub-decision: split `closed_forest` into
+   Laubwald/Nadelwald/Mischwald via a forest-type map, or keep the Mischwald default?
 2. **VPD from tmin/tmax** — quantify the Alpine dewpoint≈tmin bias against station RH.
-3. **fAPAR source** — RS climatology vs mechanistic LAI→fAPAR (the latter buys WASIM
-   reuse).
+3. **Hargreaves coefficient `k`** — single CH value vs elevation/region tuning; validate
+   a subset vs MeteoSwiss/CM SAF radiation.
 4. **Coarse fragments & soil depth** — assumption vs Pelletier (2016) ingest.
-5. **Ensemble handling** — run all ≤30 CH2025 members (→ predictor uncertainty via
+5. **Which SSPs** — baseline excludes SSP2; confirm SSP1/3/4/5 CO₂ pathways for the runs.
+6. **Ensemble handling** — run all ≤30 CH2025 members (→ predictor uncertainty via
    `id_run`) or a representative subset for the prototype.
 6. **Rewrite trigger** — only after Phase 1 profiling; decide batch-driver vs full Rcpp.
 7. **9-class ↔ 17-category** reconciliation against the WASIM `.rmp`.
