@@ -230,9 +230,15 @@ chain**, encoded in the filename
   (× quantile) maps to `id_run`.
 
 CO₂ is **not uniquely determined by a GWL** (different SSPs reach a GWL at different CO₂),
-so it is a per-run input: a `{gwl → co2_ppm}` lookup passed into
-`derive_pmodel_forcing(co2=)`. Needs a decision (see §8): pick a representative SSP per
-GWL, or treat CO₂ as an explicit axis.
+and CH2025 does not provide a 30-year climatology at every SSP×level (e.g. SSP5-8.5's
+~3 °C has no clean window in the ensemble). **DECIDED (2026-07-03):** use a coarse,
+period-dependent SSP→GWL remap as the best available approximation, per IPCC AR6 WG1
+SPM.8 — e.g. SSP1 and SSP2 → GWL1.5 through 2060, then → GWL2, etc. So each run is
+`(SSP, id_period) → (GWL climate slice, CO₂ from that SSP's pathway for the period mid-year)`.
+The GWL selects the CH2025 file; CO₂ comes from the SSP concentration pathway
+(Meinshausen et al. 2020), passed to `derive_pmodel_forcing(co2=)`. This
+`{SSP × period → GWL, CO₂}` lookup lives in the run/coupling step (4/6), not in the
+forcing scripts.
 
 ## 4. WASIM consistency (make the interim reusable, not throwaway)
 
@@ -322,9 +328,9 @@ BiomeE included; keep R↔Fortran; **land cover = WASIM classification directly*
 relabelled later, no crosswalk); netrad not required; forcing needs `fsun` + a rain/snow
 split (verified against the fork). Remaining:
 
-1. **CO₂ per GWL** — the CH2025 files are GWL-sliced, and CO₂ is not fixed by GWL.
-   Pick a representative SSP per GWL, or make CO₂ an explicit run axis? (Blocks the
-   `co2` argument in `4-run-rsofun.r`; `1-forcing-climate.r` already takes it as input.)
+1. **AltDep elevation phenology** — the WASIM shift formula is not yet transcribed;
+   `3-landcover-fapar.r` parses `AltDep` but leaves it off. Transcribe the exact WASIM
+   elevation adjustment before enabling (matters across the CH gradient).
 2. **VPD from tmin/tmax** — quantify the Alpine dewpoint≈tmin bias against station RH.
 3. **Hargreaves coefficient `k`** — single CH value vs elevation/region tuning; validate
    a subset vs MeteoSwiss/CM SAF radiation.
