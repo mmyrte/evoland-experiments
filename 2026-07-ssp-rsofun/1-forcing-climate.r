@@ -7,8 +7,11 @@
 #' from first principles (FAO-56 / SPLASH) and assembles the forcing contract verified
 #' against the fork at mmyrte/rsofun R/run_pmodel_f_bysite.R:205-247:
 #'
-#'   mandatory : temp, rain, snow, vpd, co2, fapar, patm, tmin, tmax   (+ ppfd or fsun)
-#'   supplied  : ppfd AND fsun  (fsun is needed for tau / net-longwave regardless)
+#'   mandatory : temp, rain, snow, vpd, co2, fapar, patm, tmin, tmax
+#'   radiation : supply `ccov` (cloud cover %); the interface derives fsun=(100-ccov)/100
+#'               and, with ppfd=NA, SPLASH computes PPFD internally from its own SOLAR
+#'               (incl. topographic corrections) -- matching "radiation inside rsofun".
+#'               We set ccov = 100*(1 - fsun_Hargreaves); ppfd is left NA (optional).
 #'   NOT needed: netrad         (SPLASH computes net radiation internally)
 #'
 #' `fapar` is left as NA here; it is joined from 3-landcover-fapar.r (WASIM LAI->fAPAR).
@@ -142,13 +145,13 @@ derive_pmodel_forcing <- function(pr, tas, tasmin, tasmax, lat_deg, elv, co2,
     tmax = tasmax,
     rain = ps$rain,
     snow = ps$snow,
-    vpd = calc_vpd(tasmin, tasmax),
-    ppfd = rs$ppfd,
-    fsun = rs$fsun,
+    vpd = calc_vpd(tasmin, tasmax), # Pa
+    ccov = 100 * (1 - rs$fsun), # -> interface derives fsun; SPLASH computes PPFD
+    ppfd = NA_real_, # let SPLASH compute; set rs$ppfd to force Hargreaves PPFD instead
     netrad = NA_real_, # ignored by rsofun; SPLASH computes it
-    co2 = co2,
+    co2 = co2, # ppm
     fapar = NA_real_, # joined from 3-landcover-fapar.r
-    patm = calc_patm(elv)
+    patm = calc_patm(elv) # Pa
   )
 }
 

@@ -115,17 +115,17 @@ separately**. This is the single most important open item.
 | `tmin` / `tmax` | ✓ | tasmin / tasmax | — |
 | `rain` **and** `snow` | ✓ | **two separate required columns** — the P-model interface does **not** split precip internally, so split `pr` in preprocessing (temperature threshold / Kienzle sigmoid, à la SPLASH) into rain + snow (mm) | low |
 | `vpd` | ✗ | derive from tmin/tmax/tas: VPD = ē_sat(tmax,tmin) − e_a, with dewpoint ≈ tmin (Pa) | **Alpine dry-air bias** in the dewpoint≈tmin assumption — validate vs MeteoSwiss RH stations |
-| `ppfd` (mol m⁻² d⁻¹) | ✗ | **DECIDED: Hargreaves** — Rs = k·√(tmax−tmin)·Ra, Ra(lat, DOY); PPFD = Rs·0.5·4.57. Migrate into the Fortran later (SOLAR already computes Ra). | k (≈0.16 interior / 0.19 coastal) needs a CH tuning; validate vs MeteoSwiss/CM SAF |
-| `fsun` (sunshine frac) | ✗ | **REQUIRED regardless of ppfd** — `waterbal_splash` needs it for τ and net-longwave (`run_pmodel_f_bysite.R:322`, `waterbal_splash.mod.f90:201/213`). Derive from the Hargreaves transmissivity τ = Rs/Ra via Ångström–Prescott: fsun = (τ − a)/b. One derivation yields both ppfd and fsun. | ties to the same k tuning |
-| `netrad` | — | **NOT needed** — currently *ignored* as forcing; SPLASH computes net radiation internally (`run_pmodel_f_bysite.R:319`, docstring). Do not supply. | — |
-| `patm` | ✗ | from DEM elevation via barometric formula (`calc_patm(elv)`), Pa | low |
-| `co2` | ✗ | SSP concentration pathway, annual global mean (Meinshausen et al. 2020) — one series per SSP, ppm | low |
-| `fapar` | ✗ | **land-cover coupling handle** — WASIM LAI→fAPAR, see §3.3 | central |
+| `ccov` (cloud %) | ✗ | **the radiation handle.** The interface derives `fsun=(100-ccov)/100` and, with `ppfd=NA`, lets **SPLASH compute PPFD internally** (its SOLAR incl. topographic corrections) — matching "radiation inside rsofun". We set `ccov = 100·(1−fsun)`, with `fsun` from the Hargreaves transmissivity τ=Rs/Ra via Ångström–Prescott. | k (≈0.16/0.19) needs CH tuning; validate vs MeteoSwiss/CM SAF |
+| `ppfd` (mol m⁻² d⁻¹) | ✗ | left **NA** (SPLASH computes from ccov). Optionally force the Hargreaves PPFD = Rs·0.5·4.57 directly instead. | — |
+| `netrad` | — | **NOT needed** — *ignored* as forcing; SPLASH computes net radiation internally (`run_pmodel_f_bysite.R:319`). Do not supply. | — |
+| `patm` (Pa) | ✗ | DEM elevation → barometric formula (`calc_patm(elv)`) | low |
+| `co2` (ppm) | ✗ | per-GWL value (see §3.5) | see §8 |
+| `fapar` | ✗ | **land-cover coupling handle** — WASIM LAI→fAPAR, joined from §3.3 | central |
 
-Mandatory columns the interface NA-checks: `temp, rain, vpd, snow, co2, fapar, patm,
-tmin, tmax`, plus one of {`ppfd`, `fsun`} — but `fsun` is needed anyway (above), so we
-supply both. `tsoil` is optional (unused here). Verified against the fork at
-`R/run_pmodel_f_bysite.R:205-247`.
+Verified column contract (fork `R/run_pmodel_f_bysite.R:205-247`): interface consumes a
+`ccov` column (→`fsun`), NA-checks `temp,rain,vpd,snow,co2,fapar,patm,tmin,tmax`, and
+computes PPFD + net radiation in SPLASH when `ppfd`/`netrad` are NA. Units: vpd & patm in
+**Pa**, co2 in **ppm**, ppfd in **mol m⁻² d⁻¹** (all confirmed in `man/p_model_drivers.Rd`).
 
 Two genuine gaps remain: **shortwave (Hargreaves-derived → ppfd + fsun)** and **fAPAR**.
 Everything else is present or cheaply derivable — and `netrad` drops out entirely.
