@@ -1,6 +1,6 @@
 # SSP-CH × rsofun: process-based land-use suitability predictors
 
-**Status:** planning · **Author:** jan.hartman@ethz.ch · **Date:** 2026-07-03
+**Status:** planning · **Date:** 2026-07-03
 
 ## 1. Purpose and relationship to `2026-05-ssp-ch`
 
@@ -220,13 +220,13 @@ highest-risk item):**
   across cores/nodes (`future`/`mirai` or a Slurm array), stock rsofun per chunk.
   **Profile** to confirm where time goes.
 - **Phase 2 — optimise only if Phase 1 profiling demands it.** Two options:
-  - (a) **Batch driver** in Fortran/C that loops sites internally without per-site R
+    - (a) **Batch driver** in Fortran/C that loops sites internally without per-site R
     round-trips — low risk, reuses the already-validated biophysics. Likely sufficient.
-  - (b) **Full Rcpp/C++ SoA-vectorised rewrite** across locations for maximum throughput
+    - (b) **Full Rcpp/C++ SoA-vectorised rewrite** across locations for maximum throughput
     and headless HPC use (no R in the hot path). Translate **only** `waterbal_splash` +
     the P-model `gpp`/`photosynth`/`plant` modules; **skip BiomeE** (not needed for the
     forced-fAPAR design).
-  - Either path requires the workflow the user described: a **golden-master test
+    - Either path requires the workflow the user described: a **golden-master test
     harness** capturing stock-rsofun outputs on a representative pixel sample →
     port → assert **numerical consistency within tolerance** → then optimise.
 - **Spin-up:** warm-start each decade from the previous decade's end state (the loop is
@@ -260,10 +260,11 @@ highest-risk item):**
 ## References
 
 - Sandoval, Prentice & Nóbrega (2024). SPLASH v.2.0. *Geosci. Model Dev.* 17, 4229–4309.
-  https://doi.org/10.5194/gmd-17-4229-2024
+  <https://doi.org/10.5194/gmd-17-4229-2024>
 - Stocker et al. (2020). P-model v1.0. *Geosci. Model Dev.* 13, 1545–1581.
-  https://doi.org/10.5194/gmd-13-1545-2020
+  <https://doi.org/10.5194/gmd-13-1545-2020>
 - Gupta, Hasler & Alewell (2024). Swiss Soil Property Map. *Geoderma Regional* 36, e00747.
-  https://doi.org/10.1016/j.geodrs.2023.e00747
-- rsofun (fork): https://github.com/mmyrte/rsofun
-- WASIM documentation (2025), §2.8.3, §4.10 (land-use & soil parameterisation).
+  <https://doi.org/10.1016/j.geodrs.2023.e00747>
+- rsofun (fork): <https://github.com/mmyrte/rsofun>
+- WASIM documentation (2025), §2.8.3, §4.10 (land-use & soil parameterisation) 
+  <https://www.wasim.ch/downloads/doku/wasim/wasim_2025_en.pdf>
