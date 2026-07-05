@@ -155,6 +155,15 @@ Aggregate the SSPM 30 m properties to the 100 m model grid (area-weighted mean o
 texture/OM; propagate the PI as an uncertainty layer if we want a soil-uncertainty
 `id_run`).
 
+Data: Zenodo record 7821650, per-property GeoTIFFs `{property}_{depth}cm_mean_30m.tif`
+(sand/clay/OC × 0/30/60/100 cm; `_error` layers deferred). **EPSG:4326**, 30 m,
+NoData −3.4e38 — so the reader builds a 2056 SpatVector and lets terra reproject on
+extract. `2-forcing-soil-download.r` fetches the 12 mean layers (~6 GB) into the evoland
+cache via `download_and_verify` (md5-checked); `2-forcing-soil-whc.r` consumes that
+inventory. whc is a **joint** soil×land-cover product, so script 2 emits the
+land-cover-independent per-layer AWC profile and `whc_from_profile()` integrates it to
+the class rooting depth (from §3.3) at run assembly.
+
 ### 3.3 Land cover — WASIM classification → fAPAR / whc / rooting
 
 **DECIDED (2026-07-03): use the WASIM land-use classification directly**, *not* the
@@ -313,9 +322,10 @@ highest-risk item):**
 
 ```
 0-setup-db.r                 # reuse/attach ssp-ch.evolanddb (baseline); add rsofun run(s)
-1-forcing-climate.r          # CH2025 daily → vpd, ppfd+fsun (Hargreaves), rain/snow, patm, co2
-2-forcing-soil-whc.r         # SSPM (Gupta 2024) → PTF (soil_hydro) → whc, rooting ceiling
-3-landcover-fapar.r          # parse WASIM [landuse_table] → daily fAPAR/albedo/whc per class
+1-forcing-climate.r          # CH2025 daily → vpd, ccov (Hargreaves), rain/snow, patm; SPLASH does PPFD
+2-forcing-soil-download.r    # fetch SSPM mean tifs (Zenodo 7821650) → evoland cache
+2-forcing-soil-whc.r         # SSPM (PTF, soil_hydro) → per-layer AWC; whc_from_profile() at run time
+3-landcover-fapar.r          # parse WASIM [landuse_table] → daily fAPAR/albedo/rootdepth per class
 4-run-rsofun.r               # per-pixel P-model (+BiomeE) over decades; warm-start; chunked
 5-aggregate-indicators.r     # daily → decadal α, wscal, soil moisture, GPP → add_predictor
 6-couple-decadal-loop.r      # feed predictors to transition model; re-run per decade

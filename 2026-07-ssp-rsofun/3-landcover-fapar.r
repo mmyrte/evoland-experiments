@@ -17,6 +17,14 @@
 #' 17 [multilayer_landuse] combinations). Land cover enters rsofun in WASIM's own
 #' classification (project decision), so each map class maps 1:1 to an entry here.
 #'
+#' DB linkage: the per-pixel, per-period land cover lives in the evoland DB
+#' (`db$lulc_data_t`: id_coord, id_lulc, id_period; hive-partitioned) and class identity
+#' in `db$lulc_meta_t`. WASIM class *numbers* need not match evoland's `id_lulc` — the
+#' bridge is `lulc_meta_t`, which carries the class identity for the WASIM-classified run.
+#' `build_landuse_daily_table()` is keyed by WASIM `landuse_id`; 4-run-rsofun.r joins it
+#' to `id_lulc` via `lulc_meta_t` (a `landuse_id` column or a name match), then to pixels
+#' through `lulc_data_t`. So this file stays DB-agnostic and purely parametric.
+#'
 #' NOTE (AltDep): each entry carries an altitude-dependence array that shifts phenology
 #' up-slope. The exact WASIM shift formula is not yet transcribed, so `apply_altdep` is
 #' FALSE by default (lowland phenology) -- see README open items before enabling.

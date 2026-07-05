@@ -90,39 +90,30 @@ whc_from_profile <- function(layers, root_depth_m) {
 # single contract to fill once the on-disk SSPM layout is known.
 # =============================================================================
 
-#' Build the {property, depth} -> raster-path table. Expected properties: sand, clay,
-#' oc (each at depths 0,30,60,100 cm). Override `pattern` to match the SSPM filenames.
-sspm_layer_paths <- function(root,
-                             properties = c("sand", "clay", "oc"),
-                             depths_cm = c(0, 30, 60, 100),
-                             pattern = "{property}_{depth}cm.tif") {
-  grid <- CJ(property = properties, depth_cm = depths_cm, sorted = FALSE)
-  grid[, file := file.path(root, mapply(function(p, d) {
-    sub("\\{property\\}", p, sub("\\{depth\\}", d, pattern))
-  }, property, depth_cm))]
-  missing <- grid[!file.exists(file)]
-  if (nrow(missing)) {
-    warning("SSPM layers not found (adjust `pattern`/`root`):\n  ",
-      paste(missing$file, collapse = "\n  "))
-  }
-  grid[]
-}
+#' The SSPM layer inventory is produced by 2-forcing-soil-download.r as a data.table with
+#' columns property ("sand"/"clay"/"OC"), depth_cm (0/30/60/100) and local_path. This
+#' reader consumes that inventory directly, so filenames live in the download script only.
 
-#' Extract SSPM properties at model coords (nearest cell) and return per-layer AWC (mm).
-#' @param coords data.table with id_coord, lon, lat (EPSG:2056)
+#' Extract SSPM properties at model coords and return per-layer AWC (mm).
+#' The SSPM tiles are EPSG:4326 (WGS84); model coords are EPSG:2056, so we build a
+#' SpatVector in 2056 and let terra reproject on extract (NoData -3.4e38 -> NA).
+#' @param sspm_files inventory: data.table(property, depth_cm, local_path)
+#' @param coords data.table with id_coord, lon, lat (EPSG:2056 E/N)
 #' @return data.table(id_coord, top_cm, bot_cm, thickness_m, awc_mm)
-sspm_awc_profile <- function(layer_paths, coords, coarse_frac = 0) {
-  xy <- as.matrix(coords[, c("lon", "lat")])
+sspm_awc_profile <- function(sspm_files, coords, coarse_frac = 0) {
+  pts <- terra::vect(as.data.frame(coords[, c("lon", "lat")]),
+    geom = c("lon", "lat"), crs = "EPSG:2056")
   read_prop <- function(prop, depth) {
-    p <- layer_paths[property == prop & depth_cm == depth, file]
-    terra::extract(terra::rast(p), xy)[, 1]
+    p <- sspm_files[property == prop & depth_cm == depth, local_path]
+    if (length(p) != 1) stop("expected one SSPM file for ", prop, " @", depth, "cm")
+    terra::extract(terra::rast(p), pts, ID = FALSE)[[1]]
   }
   out <- lapply(seq_len(nrow(SSPM_LAYERS)), function(i) {
     lyr <- SSPM_LAYERS[i]
     # layer mean = mean of the horizon values bounding the interval
     sand <- (read_prop("sand", lyr$top_cm) + read_prop("sand", lyr$bot_cm)) / 2
     clay <- (read_prop("clay", lyr$top_cm) + read_prop("clay", lyr$bot_cm)) / 2
-    oc <- (read_prop("oc", lyr$top_cm) + read_prop("oc", lyr$bot_cm)) / 2
+    oc <- (read_prop("OC", lyr$top_cm) + read_prop("OC", lyr$bot_cm)) / 2
     data.table(
       id_coord = coords$id_coord,
       top_cm = lyr$top_cm, bot_cm = lyr$bot_cm, thickness_m = lyr$thickness_m,
