@@ -101,6 +101,15 @@ db$lulc_meta_t <- create_lulc_meta_t(
       description = "Industrial and commercial buildings; Surroundings of industrial and commercial buildings; One- and two-family houses; Surroundings of one- and two-family houses; Terraced houses; Surroundings of terraced houses; Blocks of flats; Surroundings of blocks of flats; Public buildings; Surroundings of public buildings; Agricultural buildings; Surroundings of agricultural buildings; Unspecified buildings; Surroundings of unspecified buildings; Parking areas; Construction sites; Unexploited urban areas; Public parks; Sports facilities; Golf courses; Camping areas; Garden allotments; Cemeteries",
       src_classes = c(1:14, 19L, 29:36)
     ),
+
+    glacier = list(
+      pretty_name = "Glaciers and Firn",
+      description = "Glaciers and firn fields",
+      src_classes = 72L
+    ),
+
+    # static: large catch-all category of immutable classes
+    # TODO needs disaggregating to represent succession on deglaciating areas
     static = list(
       pretty_name = "Static / Immutable Classes",
       description = "Motorways; Green motorway environs; Roads and paths; Green road environs; Sealed railway areas; Green railway environs;  Airports; Airfields, green airport environs;  Energy supply plants; Waste water treatment plants; Other supply or waste treatment plants; Dumps; Quarries, mines;  Lakes; Rivers; Flood protection structures; Avalanche and rockfall barriers;  Wetlands; Alpine sports facilities; Rocks; Screes, sand; Landscape interventions",
