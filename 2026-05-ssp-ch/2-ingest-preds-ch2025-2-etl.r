@@ -1,6 +1,5 @@
 #' Purpose: ETL cached CH2025 observation netCDFs into the predictor tables
 #' date: 2026-06-25
-#' auth: jhartman@ethz.ch
 #'
 #' Reads the -obs netCDFs cached by 2-ingest-preds-ch2025-1-download.r and ingests
 #' each as a predictor at id_period = 0 (baseline), under the active id_run (= 0).

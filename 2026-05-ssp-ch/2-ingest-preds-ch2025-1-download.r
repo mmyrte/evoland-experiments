@@ -1,6 +1,5 @@
 #' Purpose: discover and download CH2025 climate indicator netCDFs
 #' date: 2026-06-25
-#' auth: jhartman@ethz.ch
 #'
 #' Source: MeteoSwiss CH2025 web atlas
 #' https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/ext/climate-ch2025-maps.html

@@ -1,6 +1,5 @@
 #' Purpose: ingest swissTLM3D and derive distance-to-feature rasters
 #' date: 2026-06-24
-#' auth: jhartman@ethz.ch
 #'
 #' Source: swisstopo swissTLM3D (ch.swisstopo.swisstlm3d)
 #' Successor to VECTOR25 and GWN07.

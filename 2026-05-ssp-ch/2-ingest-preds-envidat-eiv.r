@@ -1,6 +1,5 @@
 #' Purpose: ingest Descombes et al. 2020 ecological indicator values (EIVs)
 #' date: 2026-06-23
-#' auth: jhartman@ethz.ch
 #'
 #' Descombes, P., Walthert, L., Baltensweiler, A., Meuli, R. G., Karger, D. N.,
 #' Ginzler, C., Zurell, D., & Zimmermann, N. E. (2020). Spatial modelling of

@@ -1,4 +1,5 @@
 library(evoland)
+library(terra)
 
 sources_pop <-
   list(

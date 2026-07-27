@@ -1,6 +1,6 @@
 #' purpose: ingest local geotiffs from valpar
 #' date: 2025-10-31
-#' auth: jhartman@ethz.ch
+
 library(data.table)
 indicators_1985 <- rowwiseDT(
   name=, path=, # nolint

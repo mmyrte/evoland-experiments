@@ -1,6 +1,5 @@
 #' Purpose: ingest DHM25 digital elevation model and derive terrain layers
 #' date: 2026-06-23
-#' auth: jhartman@ethz.ch
 #'
 #' Source: swisstopo DHM25 (ch.swisstopo.digitales-hoehenmodell_25)
 #' Resolution: ~25m, LV03 (EPSG:21781), vertical datum LN02, survey vintage ~1980s.

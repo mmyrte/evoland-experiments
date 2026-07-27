@@ -1,6 +1,5 @@
 #' Purpose: turn the WASIM [landuse_table] into daily fAPAR / albedo / rooting depth
 #' date: 2026-07-03
-#' auth: jan.hartman@ethz.ch
 #'
 #' fAPAR is rsofun's land-cover coupling handle. Per the project decision we populate it
 #' "the WASIM way": each WASIM land-use class carries 12 monthly values (at mid-month
@@ -45,7 +44,9 @@ DOY <- 1:365
   lines <- sub("#.*$", "", readLines(path, warn = FALSE)) # drop inline comments
   starts <- grep("^\\s*\\[", lines)
   hit <- grep(paste0("^\\s*\\[", name, "\\]"), lines)
-  if (length(hit) != 1) stop("section [", name, "] not found uniquely in ", path)
+  if (length(hit) != 1) {
+    stop("section [", name, "] not found uniquely in ", path)
+  }
   nxt <- starts[starts > hit]
   end <- if (length(nxt)) min(nxt) - 1L else length(lines)
   paste(lines[(hit + 1L):end], collapse = "\n")
@@ -58,12 +59,21 @@ parse_landuse_table <- function(path = WASIM_CONTROL) {
   # entries: "<id> <name> { ... }" (no nested braces inside the body)
   m <- gregexpr("(\\d+)\\s+(\\S+)\\s*\\{([^}]*)\\}", body, perl = TRUE)
   entries <- regmatches(body, m)[[1]]
-  if (!length(entries)) stop("no [landuse_table] entries parsed from ", path)
+  if (!length(entries)) {
+    stop("no [landuse_table] entries parsed from ", path)
+  }
   get_arr <- function(txt, param) {
-    r <- regmatches(txt, regexpr(
-      paste0(param, "\\s*=\\s*([^;]*);"), txt, perl = TRUE
-    ))
-    if (!length(r)) return(NA_real_)
+    r <- regmatches(
+      txt,
+      regexpr(
+        paste0(param, "\\s*=\\s*([^;]*);"),
+        txt,
+        perl = TRUE
+      )
+    )
+    if (!length(r)) {
+      return(NA_real_)
+    }
     v <- sub(paste0(param, "\\s*=\\s*"), "", sub(";\\s*$", "", r))
     as.numeric(strsplit(trimws(v), "\\s+")[[1]])
   }
@@ -72,7 +82,8 @@ parse_landuse_table <- function(path = WASIM_CONTROL) {
     id <- as.integer(sub("\\s.*$", "", hdr))
     nm <- trimws(sub("^\\d+\\s+", "", hdr))
     data.table(
-      landuse_id = id, name = nm,
+      landuse_id = id,
+      name = nm,
       juldays = list(get_arr(e, "JulDays")),
       albedo = list(get_arr(e, "Albedo")),
       lai = list(get_arr(e, "LAI")),
@@ -91,8 +102,10 @@ parse_multilayer <- function(path = WASIM_CONTROL) {
   rbindlist(lapply(entries, function(e) {
     hdr <- regmatches(e, regexpr("^(\\d+)\\s+(\\S+)", e, perl = TRUE))
     layers_txt <- regmatches(e, regexpr("Landuse_Layers\\s*=\\s*([^;]*);", e, perl = TRUE))
-    layers <- as.integer(strsplit(trimws(sub("Landuse_Layers\\s*=\\s*", "",
-      sub(";\\s*$", "", layers_txt))), "\\s*,\\s*")[[1]])
+    layers <- as.integer(strsplit(
+      trimws(sub("Landuse_Layers\\s*=\\s*", "", sub(";\\s*$", "", layers_txt))),
+      "\\s*,\\s*"
+    )[[1]])
     layers <- layers[layers > 0] # drop -9999 padding
     kx <- regmatches(e, regexpr("k_extinct\\s*=\\s*([0-9.]+)", e, perl = TRUE))
     data.table(
@@ -111,7 +124,9 @@ parse_multilayer <- function(path = WASIM_CONTROL) {
 #' Cyclic linear interpolation of monthly sample values to daily (doy 1..365).
 #' Scalars (single-value classes, JulDays=365) become a constant series.
 interp_cyclic <- function(juldays, vals, doy = DOY) {
-  if (length(vals) == 1L) return(rep(vals, length(doy)))
+  if (length(vals) == 1L) {
+    return(rep(vals, length(doy)))
+  }
   x <- c(juldays - 365, juldays, juldays + 365)
   y <- c(vals, vals, vals)
   approx(x, y, xout = doy, method = "linear", rule = 2)$y
@@ -121,7 +136,9 @@ interp_cyclic <- function(juldays, vals, doy = DOY) {
 #' @return data.table(doy, fapar, albedo, rootdepth)
 landuse_daily <- function(tbl, id, k_extinct = K_EXTINCT) {
   row <- tbl[landuse_id == id]
-  if (!nrow(row)) stop("landuse_id ", id, " not in table")
+  if (!nrow(row)) {
+    stop("landuse_id ", id, " not in table")
+  }
   jd <- row$juldays[[1]]
   lai_d <- interp_cyclic(jd, row$lai[[1]])
   vcf_d <- interp_cyclic(jd, row$vcf[[1]])
@@ -137,13 +154,18 @@ landuse_daily <- function(tbl, id, k_extinct = K_EXTINCT) {
 #' VCF from the uppermost layer. @return data.table(doy, fapar, albedo, rootdepth)
 landuse_daily_multilayer <- function(tbl, ml, id) {
   mrow <- ml[ml_id == id]
-  if (!nrow(mrow)) stop("ml_id ", id, " not in multilayer table")
+  if (!nrow(mrow)) {
+    stop("ml_id ", id, " not in multilayer table")
+  }
   layers <- mrow$layers[[1]]
   k <- if (is.na(mrow$k_extinct)) K_EXTINCT else mrow$k_extinct
-  lai_tot <- Reduce(`+`, lapply(layers, function(l) {
-    r <- tbl[landuse_id == l]
-    interp_cyclic(r$juldays[[1]], r$lai[[1]])
-  }))
+  lai_tot <- Reduce(
+    `+`,
+    lapply(layers, function(l) {
+      r <- tbl[landuse_id == l]
+      interp_cyclic(r$juldays[[1]], r$lai[[1]])
+    })
+  )
   top <- tbl[landuse_id == layers[1]]
   vcf_d <- interp_cyclic(top$juldays[[1]], top$vcf[[1]])
   data.table(
@@ -188,8 +210,13 @@ local({
     )
     ml <- parse_multilayer()
     stopifnot(nrow(ml) >= 16, all(lengths(ml$layers) >= 1))
-    message("3-landcover-fapar.r: sanity checks passed (parsed ", nrow(tbl),
-      " classes, ", nrow(ml), " multilayer combos).")
+    message(
+      "3-landcover-fapar.r: sanity checks passed (parsed ",
+      nrow(tbl),
+      " classes, ",
+      nrow(ml),
+      " multilayer combos)."
+    )
   } else {
     message("3-landcover-fapar.r: pure checks passed (WASIM control file not on path).")
   }

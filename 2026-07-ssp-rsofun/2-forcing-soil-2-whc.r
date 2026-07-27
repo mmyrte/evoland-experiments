@@ -1,6 +1,5 @@
 #' Purpose: derive soil water-holding capacity (whc) from the Swiss Soil Property Map
 #' date: 2026-07-03
-#' auth: jan.hartman@ethz.ch
 #'
 #' rsofun's P-model takes a single site parameter `whc` (mm) = plant-available water in
 #' the root zone; its SPLASH bucket sets the water-stress threshold at theta* = 0.6*whc.
@@ -80,8 +79,14 @@ awc_layer_mm <- function(sand, clay, OM, thickness_m, bd = NA_real_, coarse_frac
 #' @return whc, mm
 whc_from_profile <- function(layers, root_depth_m) {
   root_cm <- root_depth_m * 100
-  frac <- pmin(pmax((root_cm - layers$top_cm) /
-    (layers$bot_cm - layers$top_cm), 0), 1)
+  frac <- pmin(
+    pmax(
+      (root_cm - layers$top_cm) /
+        (layers$bot_cm - layers$top_cm),
+      0
+    ),
+    1
+  )
   sum(layers$awc_mm * frac, na.rm = TRUE)
 }
 
@@ -101,11 +106,16 @@ whc_from_profile <- function(layers, root_depth_m) {
 #' @param coords data.table with id_coord, lon, lat (EPSG:2056 E/N)
 #' @return data.table(id_coord, top_cm, bot_cm, thickness_m, awc_mm)
 sspm_awc_profile <- function(sspm_files, coords, coarse_frac = 0) {
-  pts <- terra::vect(as.data.frame(coords[, c("lon", "lat")]),
-    geom = c("lon", "lat"), crs = "EPSG:2056")
+  pts <- terra::vect(
+    as.data.frame(coords[, c("lon", "lat")]),
+    geom = c("lon", "lat"),
+    crs = "EPSG:2056"
+  )
   read_prop <- function(prop, depth) {
     p <- sspm_files[property == prop & depth_cm == depth, local_path]
-    if (length(p) != 1) stop("expected one SSPM file for ", prop, " @", depth, "cm")
+    if (length(p) != 1) {
+      stop("expected one SSPM file for ", prop, " @", depth, "cm")
+    }
     terra::extract(terra::rast(p), pts, ID = FALSE)[[1]]
   }
   out <- lapply(seq_len(nrow(SSPM_LAYERS)), function(i) {
@@ -116,9 +126,10 @@ sspm_awc_profile <- function(sspm_files, coords, coarse_frac = 0) {
     oc <- (read_prop("OC", lyr$top_cm) + read_prop("OC", lyr$bot_cm)) / 2
     data.table(
       id_coord = coords$id_coord,
-      top_cm = lyr$top_cm, bot_cm = lyr$bot_cm, thickness_m = lyr$thickness_m,
-      awc_mm = awc_layer_mm(sand, clay, oc * OM_PER_OC, lyr$thickness_m,
-        coarse_frac = coarse_frac)
+      top_cm = lyr$top_cm,
+      bot_cm = lyr$bot_cm,
+      thickness_m = lyr$thickness_m,
+      awc_mm = awc_layer_mm(sand, clay, oc * OM_PER_OC, lyr$thickness_m, coarse_frac = coarse_frac)
     )
   })
   rbindlist(out)
@@ -137,8 +148,7 @@ local({
   awc_loam <- awc_layer_mm(40, 20, 2, 1)
   stopifnot(awc_sand > 0, awc_sand < 400, awc_loam > 0, awc_loam < 400)
   # profile integration: 3 layers of 100 mm-ish, root depth prorates the last
-  prof <- data.table(top_cm = c(0, 30, 60), bot_cm = c(30, 60, 100),
-    awc_mm = c(30, 30, 40))
+  prof <- data.table(top_cm = c(0, 30, 60), bot_cm = c(30, 60, 100), awc_mm = c(30, 30, 40))
   stopifnot(
     abs(whc_from_profile(prof, 1.0) - 100) < 1e-9, # full profile
     abs(whc_from_profile(prof, 0.30) - 30) < 1e-9, # first layer only

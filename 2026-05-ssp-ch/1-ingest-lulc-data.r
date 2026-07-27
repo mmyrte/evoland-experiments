@@ -3,9 +3,10 @@ library(data.table)
 
 # TODO set bioregions
 # https://data.geo.admin.ch/ch.bafu.biogeographische_regionen/biogeographische_regionen/biogeographische_regionen_2056.shp.zip
-# TODO introduce new land use class "deglaciated area" based on glacier inventory
-# this is also linked to the inclusion threshold, which might not be compatible with these very
-# small areas of interest
+
+# TODO after SSP implementation: introduce new land use class "deglaciated
+# area", probably based on glacier inventory. these areas might be very small
+# and thus not meet the inclusion threshold
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 lulc_files <-

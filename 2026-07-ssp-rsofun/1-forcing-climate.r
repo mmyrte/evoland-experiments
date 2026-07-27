@@ -1,6 +1,5 @@
 #' Purpose: derive the rsofun P-model daily forcing from CH2025 daily-gridded climate
 #' date: 2026-07-03
-#' auth: jan.hartman@ethz.ch
 #'
 #' CH2025 daily-gridded delivers only pr, tas, tasmax, tasmin (1 km, EPSG:2056,
 #' 365_day calendar). The rsofun P-model needs more, so this script derives the rest
@@ -89,16 +88,14 @@ extraterrestrial_radiation <- function(doy, lat_deg) {
   # sunset hour angle, guarding polar day/night
   x <- -tan(phi) * tan(decl)
   ws <- acos(pmin(pmax(x, -1), 1))
-  (24 * 60 / pi) * GSC_MJ * dr *
-    (ws * sin(phi) * sin(decl) + cos(phi) * cos(decl) * sin(ws))
+  (24 * 60 / pi) * GSC_MJ * dr * (ws * sin(phi) * sin(decl) + cos(phi) * cos(decl) * sin(ws))
 }
 
 #' Hargreaves shortwave radiation, plus the derived PPFD and sunshine fraction.
 #' Rs = k * sqrt(tmax - tmin) * Ra, capped at clear-sky Rso = (0.75 + 2e-5*elv)*Ra.
 #' fsun (n/N) inverted from Angstrom-Prescott Rs/Ra = a_s + b_s*(n/N).
 #' @return list(rs [MJ m-2 d-1], ppfd [mol m-2 d-1], fsun [0..1])
-hargreaves <- function(tmin, tmax, doy, lat_deg, elv,
-                       k = 0.17, a_s = 0.25, b_s = 0.50) {
+hargreaves <- function(tmin, tmax, doy, lat_deg, elv, k = 0.17, a_s = 0.25, b_s = 0.50) {
   ra <- extraterrestrial_radiation(doy, lat_deg)
   rso <- (0.75 + 2e-5 * elv) * ra
   rs <- pmin(k * sqrt(pmax(tmax - tmin, 0)) * ra, rso)
@@ -116,7 +113,8 @@ hargreaves <- function(tmin, tmax, doy, lat_deg, elv,
 #' @param base_year first nominal year
 ch2025_dates <- function(nt, base_year = 2001) {
   n_years <- ceiling(nt / 365)
-  d <- seq(as.Date(paste0(base_year, "-01-01")),
+  d <- seq(
+    as.Date(paste0(base_year, "-01-01")),
     as.Date(paste0(base_year + n_years, "-12-31")),
     by = "day"
   )
@@ -130,8 +128,7 @@ ch2025_dates <- function(nt, base_year = 2001) {
 #' @param co2 atmospheric CO2, ppm (scalar per GWL run, or a vector of length(pr))
 #' @param base_year nominal first year for the no-leap date axis
 #' @return data.table with the rsofun forcing columns; `fapar` = NA (joined later)
-derive_pmodel_forcing <- function(pr, tas, tasmin, tasmax, lat_deg, elv, co2,
-                                  base_year = 2001) {
+derive_pmodel_forcing <- function(pr, tas, tasmin, tasmax, lat_deg, elv, co2, base_year = 2001) {
   nt <- length(tas)
   stopifnot(length(pr) == nt, length(tasmin) == nt, length(tasmax) == nt)
   dates <- ch2025_dates(nt, base_year)
@@ -163,9 +160,10 @@ derive_pmodel_forcing <- function(pr, tas, tasmin, tasmax, lat_deg, elv, co2,
 #' Filenames: ogd-climate-scenarios-ch2025-grid_ch_{var}_{modelchain}_{gwl}.nc
 ch2025_inventory <- function(root) {
   files <- list.files(root, pattern = "\\.nc$", recursive = TRUE, full.names = TRUE)
-  inv <- data.table(path = files, tail = sub("\\.nc$", "",
-    sub("^ogd-climate-scenarios-ch2025-grid_ch_", "", basename(files))
-  ))
+  inv <- data.table(
+    path = files,
+    tail = sub("\\.nc$", "", sub("^ogd-climate-scenarios-ch2025-grid_ch_", "", basename(files)))
+  )
   # tail = {var}_{modelchain}_{gwl}; modelchain may contain "_", so take var as the
   # first token and gwl as the last (^gwl...), modelchain as everything between.
   inv[, var := sub("_.*$", "", tail)]
@@ -180,14 +178,15 @@ ch2025_inventory <- function(root) {
 
 #' Open the four forcing variables for one (modelchain, gwl) as terra SpatRasters.
 #' @return named list(pr, tas, tasmax, tasmin) of SpatRaster (time as layers)
-ch2025_open <- function(inventory, modelchain, gwl,
-                        vars = c("pr", "tas", "tasmax", "tasmin")) {
+ch2025_open <- function(inventory, modelchain, gwl, vars = c("pr", "tas", "tasmax", "tasmin")) {
   mc <- modelchain
   gw <- gwl
   sub <- inventory[modelchain == mc & gwl == gw]
   out <- lapply(vars, function(v) {
     p <- sub[var == v, path]
-    if (length(p) != 1) stop("expected exactly one file for var=", v, "; got ", length(p))
+    if (length(p) != 1) {
+      stop("expected exactly one file for var=", v, "; got ", length(p))
+    }
     r <- terra::rast(p)
     terra::crs(r) <- "EPSG:2056" # LV95 per swiss_lv95_coordinates grid_mapping
     r
@@ -223,7 +222,8 @@ local({
   sp <- split_precip(c(10, 10, 10), c(-5, 1, 8))
   stopifnot(
     all(abs(sp$rain + sp$snow - 10) < 1e-9),
-    sp$snow[1] == 10, sp$rain[3] == 10
+    sp$snow[1] == 10,
+    sp$rain[3] == 10
   )
   # Ra at the equator near equinox ~ 36-38 MJ/m2/d (FAO-56)
   ra_eq <- extraterrestrial_radiation(80, 0)

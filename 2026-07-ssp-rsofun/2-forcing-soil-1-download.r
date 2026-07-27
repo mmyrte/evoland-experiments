@@ -1,6 +1,5 @@
 #' Purpose: download the Swiss Soil Property Map (SSPM) mean layers to the evoland cache
 #' date: 2026-07-03
-#' auth: jan.hartman@ethz.ch
 #'
 #' Source: Gupta, Hasler & Alewell (2024), "Mining soil data of Switzerland" —
 #' Swiss Soil Property Map, Zenodo record 7821650 (doi:10.1016/j.geodrs.2023.e00747).
@@ -14,6 +13,11 @@
 #' Mirrors the download pattern of 2026-05-ssp-ch/2-ingest-preds-dem.r: build a
 #' url+md5sum table and hand it to download_and_verify(), which caches each file under
 #' {cachedir}/{md5sum}/{filename} and returns the local paths (md5-verified).
+
+# TODO this should be implemented in the same pattern as with
+# 2026-05-ssp-ch/2-ingest-preds-ch2025-1-download.r
+# and
+# 2026-05-ssp-ch/2-ingest-preds-ch2025-2-etl.r
 
 library(data.table)
 library(evoland)
@@ -41,12 +45,21 @@ OC   100 40792da49a13a221fcb5f70f53cc7a30
 )
 
 sspm_mean_md5[, filename := sprintf("%s_%dcm_mean_30m.tif", property, depth_cm)]
-sspm_mean_md5[, url := sprintf(
-  "https://zenodo.org/records/%s/files/%s?download=1", zenodo_record, filename
-)]
+sspm_mean_md5[,
+  url := sprintf(
+    "https://zenodo.org/records/%s/files/%s?download=1",
+    zenodo_record,
+    filename
+  )
+]
 
-message("Downloading ", nrow(sspm_mean_md5), " SSPM mean layers (~",
-  round(nrow(sspm_mean_md5) * 0.51, 1), " GB) to the evoland cache...")
+message(
+  "Downloading ",
+  nrow(sspm_mean_md5),
+  " SSPM mean layers (~",
+  round(nrow(sspm_mean_md5) * 0.51, 1),
+  " GB) to the evoland cache..."
+)
 
 downloaded <- download_and_verify(
   sspm_mean_md5[, .(url, md5sum)],
