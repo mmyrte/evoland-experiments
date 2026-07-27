@@ -1,58 +1,29 @@
 # Spack environment replicating the evoland-experiments R toolchain on HPC.
-# Generated from rv.lock (rv project "evoland-plus-darwin", R 4.5, 222 packages).
+# Generated from rv.lock (rv project "evoland-plus-darwin", R 4.5) and FILTERED against
+# this site's Spack catalog (2026-07-ssp-rsofun/spack-available.txt): of the 215 CRAN
+# packages in the lock, 189 are packaged here and listed below. The remaining 26 are not
+# in this Spack -> install them with `Rscript 2026-07-ssp-rsofun/install-missing.R` after
+# `spack install` (see hpc-setup.md). The 6 base-R recommended packages are bundled by `r`.
 #
-# WHAT THIS COVERS
-#   - r@4.5 and the build toolchain (gfortran/g++ for rsofun & rsplash native code).
-#   - Every CRAN package pinned in rv.lock, as `r-<name>` (name lowercased, "." -> "-").
-#     The 6 base-R "recommended" packages in the lock (KernSmooth, MASS, Matrix, class,
-#     codetools, lattice) are omitted: Spack's `r` already bundles them.
-#   - System libraries (GDAL/GEOS/PROJ/libcurl/...) come in automatically as
-#     dependencies of r-sf / r-terra / r-stars / r-curl; listed explicitly below only
-#     so a site can pin external providers via packages.yaml.
+# NOT in Spack (git installs, post-activation): evoland (ethzplus/evoland-plus@b40175fd),
+# rsofun (mmyrte/rsofun), rsplash (mmyrte/rsplash). rsofun/rsplash need gfortran.
 #
-# NOT COVERED BY SPACK (install after activating the env, see hpc-setup.md):
-#   - evoland   : git ethzplus/evoland-plus @ b40175fd (rproject.toml pin)
-#   - rsofun    : git mmyrte/rsofun (the P-model/SPLASH/BiomeE engine)
-#   - rsplash   : git mmyrte/rsplash (if used standalone)
-#
-# EXACT VERSIONS: Spack picks its own package versions, which will not match rv.lock
-# exactly. If you need the pinned versions, use the HYBRID in hpc-setup.md: Spack for
-# R + toolchain + system libs, then `rv sync` to install the locked CRAN packages.
-#
-# Any `r-*` below that `spack concretize` reports as missing is not yet packaged in
-# Spack -> drop it here and install it via rv/install.packages into the project library
-# (or add a custom package.py). See hpc-setup.md.
+# Spack picks its own package versions (not the exact rv.lock pins). For version-exact
+# reproduction use the hybrid in hpc-setup.md (Spack toolchain + `rv sync`).
 spack:
   concretizer:
     unify: true
   view: true
   specs:
-    # --- interpreter + toolchain -------------------------------------------------
     - r@4.5
     - gmake
-    # rsofun/rsplash compile Fortran & C++: build the R stack with a gcc that has
-    # gfortran (set in the site compilers.yaml, e.g. `%gcc@12`).
-    # --- system libraries (usually auto-pulled; here for explicit external pinning) -
     - gdal
     - geos
     - proj
     - sqlite
     - udunits
     - curl
-    # --- CRAN packages from rv.lock (r-<name>) ----------------------------------
-    - r-asioheaders
-    - r-dbi
-    - r-prroc
-    - r-r-cache
-    - r-r-methodss3
-    - r-r-oo
-    - r-r-utils
-    - r-r6
-    - r-rcolorbrewer
-    - r-rcpp
-    - r-rcppeigen
-    - r-rcppparallel
-    - r-s7
+    # --- 189 CRAN packages from rv.lock available in this Spack ---
     - r-abind
     - r-askpass
     - r-backports
@@ -71,7 +42,6 @@ spack:
     - r-classint
     - r-cli
     - r-clipr
-    - r-collections
     - r-commonmark
     - r-conflicted
     - r-cpp11
@@ -80,6 +50,7 @@ spack:
     - r-crosstalk
     - r-curl
     - r-data-table
+    - r-dbi
     - r-dbplyr
     - r-desc
     - r-devtools
@@ -88,7 +59,6 @@ spack:
     - r-downlit
     - r-dplyr
     - r-dtplyr
-    - r-duckdb
     - r-e1071
     - r-ellipsis
     - r-evaluate
@@ -119,7 +89,6 @@ spack:
     - r-hms
     - r-htmltools
     - r-htmlwidgets
-    - r-httpgd
     - r-httpuv
     - r-httr
     - r-httr2
@@ -131,16 +100,13 @@ spack:
     - r-jsonlite
     - r-knitr
     - r-labeling
-    - r-languageserver
     - r-later
     - r-lazyeval
     - r-leafem
     - r-leaflet
     - r-leaflet-providers
     - r-leafpop
-    - r-lgr
     - r-lifecycle
-    - r-lintr
     - r-listenv
     - r-lubridate
     - r-magrittr
@@ -148,20 +114,9 @@ spack:
     - r-memoise
     - r-mime
     - r-miniui
-    - r-mirai
     - r-mlbench
-    - r-mlr3
-    - r-mlr3filters
-    - r-mlr3measures
-    - r-mlr3misc
-    - r-mlr3viz
     - r-modelr
-    - r-nanonext
     - r-openssl
-    - r-otel
-    - r-pak
-    - r-palmerpenguins
-    - r-paradox
     - r-parallelly
     - r-pillar
     - r-pkgbuild
@@ -179,15 +134,21 @@ spack:
     - r-proxy
     - r-ps
     - r-purrr
-    - r-pxr
-    - r-qs2
-    - r-quarto
+    - r-r-cache
+    - r-r-methodss3
+    - r-r-oo
+    - r-r-utils
+    - r-r6
     - r-ragg
     - r-ranger
     - r-rapidjsonr
     - r-rappdirs
     - r-raster
     - r-rcmdcheck
+    - r-rcolorbrewer
+    - r-rcpp
+    - r-rcppeigen
+    - r-rcppparallel
     - r-readr
     - r-readxl
     - r-rematch
@@ -230,10 +191,8 @@ spack:
     - r-tidyselect
     - r-tidyverse
     - r-timechange
-    - r-tinytest
     - r-tinytex
     - r-tzdb
-    - r-unigd
     - r-units
     - r-urlchecker
     - r-usethis
@@ -250,9 +209,7 @@ spack:
     - r-writexl
     - r-xfun
     - r-xml2
-    - r-xmlparsedata
     - r-xopen
     - r-xtable
     - r-yaml
     - r-zip
-  # (evoland, rsofun, rsplash installed from git post-activation)

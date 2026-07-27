@@ -68,20 +68,30 @@ This is the most robust path on HPC: Spack handles the parts that are painful to
 `evoland` from its pinned commit. Keep a `slim` `spack.yaml` variant with just the
 foundation specs for this mode.
 
-## Missing packages
+## Missing packages (resolved against this site's catalog)
 
-If `spack concretize` cannot resolve an `r-*` spec, that package is not yet in Spack.
-Candidates to verify with `spack list r-<name>` (newer / niche packages most at risk):
-`r-pxr`, `r-httpgd`, `r-unigd`, `r-languageserver`, `r-collections`, `r-qs2`,
-`r-stringfish`, `r-jsonify`, `r-geometries`, `r-sfheaders`, `r-geojsonsf`,
-`r-rapidjsonr`, `r-leafem`, `r-leafpop`, `r-satellite`, `r-mirai`, `r-nanonext`,
-`r-quarto`, `r-writexl`, `r-s7`, `r-otel`, and the `r-mlr3*` / `r-paradox` stack.
+Cross-referencing `rv.lock` against `spack-available.txt`: **189 of the 215** CRAN
+packages are in this Spack (now the full `spack.yaml` list). **26 are missing** and are
+installed on top of the Spack R by `install-missing.R` at their exact locked versions —
+the Spack view already provides shared dependencies, so `upgrade = "never"` leaves them
+untouched:
 
-For each missing one, either: (a) drop it from `spack.yaml` and let `rv`/`install.packages`
-add it into the project library against Spack's R; or (b) contribute a `package.py` to a
-local Spack repo. The dev-only tools (`r-httpgd`, `r-languageserver`, `r-lintr`,
-`r-styler`, `r-devtools`, `r-roxygen2`, `r-pkgdown`, `r-testthat`) are not needed on batch
-compute nodes — dropping them slims the env considerably.
+```bash
+spack env activate evoland && spack install
+Rscript 2026-07-ssp-rsofun/install-missing.R          # 15 runtime gaps
+Rscript 2026-07-ssp-rsofun/install-missing.R --dev    # + 11 dev/IDE tools
+```
+
+- **Runtime gaps (15):** `duckdb` (DB backend), `mirai`+`nanonext` (parallelism), the
+  `mlr3` stack `mlr3`/`mlr3filters`/`mlr3measures`/`mlr3misc`/`mlr3viz`/`paradox`/`lgr`
+  (evoland's transition model), `PRROC`, `pxR`, `qs2`, `S7`, `otel`.
+- **Dev/IDE gaps (11, `--dev`, skip on batch nodes):** `httpgd`, `unigd`,
+  `languageserver`, `collections`, `lintr`, `xmlparsedata`, `pak`, `tinytest`,
+  `palmerpenguins`, `quarto`, `AsioHeaders`.
+
+So the pure-Spack route **is** viable here — Spack covers the compiled heavy hitters
+(`r-duckdb` is the notable one it lacks, hence the source build in the gap step). If even
+the gap installs prove painful, fall back to the hybrid (`rv sync`) below.
 
 ## Notes for the rsofun run specifically
 
