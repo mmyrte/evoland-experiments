@@ -114,18 +114,18 @@ eiv_specs <- list(
       "gradient from shaded areas (1) to sunny areas (5). ",
       "Mapped by Descombes et al. 2020, doi:10.1111/ecog.05117"
     )
-  ),
-  continentality_100m = list(
-    zip_file = "Predictors/SPEEDMIND_SoilK.tif",
-    unit = "Landolt K CWM",
-    pretty_name = "Continentality (EIV-K)",
-    description = paste0(
-      "Community-weighted mean of Landolt EIV-K across plant communities; ",
-      "gradient from atlantic climate (1; high humidity, mild winters) to ",
-      "continental climate (5; low humidity, cold winters). ",
-      "Mapped by Descombes et al. 2020, doi:10.1111/ecog.05117"
-    )
   )
+  # continentality_100m = list(
+  #   zip_file = "Predictors/SPEEDMIND_SoilK.tif",
+  #   unit = "Landolt K CWM",
+  #   pretty_name = "Continentality (EIV-K)",
+  #   description = paste0(
+  #     "Community-weighted mean of Landolt EIV-K across plant communities; ",
+  #     "gradient from atlantic climate (1; high humidity, mild winters) to ",
+  #     "continental climate (5; low humidity, cold winters). ",
+  #     "Mapped by Descombes et al. 2020, doi:10.1111/ecog.05117"
+  #   )
+  # )
 )
 
 for (pred_name in names(eiv_specs)) {
