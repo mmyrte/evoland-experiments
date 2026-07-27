@@ -15,6 +15,8 @@
 #' underlying Landolt EIV classes across plant communities, not discrete class indices.
 #' SoilR is an exception: it is stored as modelled soil pH (approx. 4.7-7.1) rather
 #' than the Landolt R class index (1-5).
+#'
+#' TODO replace soil data using 2026-07-ssp-rsofun/2-forcing-soil-1-download.r
 
 library(data.table)
 library(evoland)
