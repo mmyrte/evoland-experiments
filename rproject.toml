@@ -6,7 +6,7 @@ r_version = "4.5"
 # The alias is only used in this file if you want to specifically require a dependency to come from a certain repository.
 # Example: { alias = "PPM", url = "https://packagemanager.posit.co/cran/latest" },
 repositories = [
-    { alias = "CRAN", url = "https://stat.ethz.ch/CRAN/" },
+    { alias = "CRAN", url = "https://p3m.dev/cran/__linux__/opensuse156/latest" },
 ]
 
 # A list of packages to install and any additional configuration
@@ -33,4 +33,6 @@ dependencies = [
     { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "b40175fd048c1615ff66e4fa556f6a0cd863b3fe", install_suggestions = true },
     "mapview",
     "stars",
+    "methods",
+    "terra",
 ]
