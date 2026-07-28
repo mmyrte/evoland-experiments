@@ -1,102 +1,75 @@
-# HPC environment setup (Spack)
+# Euler setup
 
-Replicating the `evoland-experiments` R environment (rv project `evoland-plus-darwin`,
-R 4.5) on an HPC cluster with [Spack](https://spack.io). `spack.yaml` in this folder is
-the environment; this file explains how to use it and the trade-offs.
-
-## The R-package name mapping
-
-rv/CRAN names map to Spack package names by **lower-casing and replacing `.` with `-`**,
-with the `r-` prefix:
-
-| CRAN | Spack |
-|---|---|
-| `curl` | `r-curl` |
-| `data.table` | `r-data-table` |
-| `DBI` | `r-dbi` |
-| `R.utils` | `r-r-utils` |
-| `R6` | `r-r6` |
-| `RcppEigen` | `r-rcppeigen` |
-
-`spack.yaml` was generated from `rv.lock` with exactly this rule, so all 215 CRAN
-packages in the lock are listed (the 6 base-R "recommended" packages — KernSmooth, MASS,
-Matrix, class, codetools, lattice — are omitted because Spack's `r` bundles them).
-
-## Quick start (pure Spack)
+Tried setting this up on Euler using spack; for some reason spack install r@4.5 doesn't work.
 
 ```bash
-spack env create evoland 2026-07-ssp-rsofun/spack.yaml
-spack env activate evoland
-spack concretize            # <-- read the output: any r-* it can't resolve is
-                            #     not yet in Spack (see "Missing packages" below)
-spack install
+/cluster/software/stacks/2026-06/setup-env.sh
 ```
 
-Then install the packages Spack does **not** carry (from Git), into the active R:
+## TODO
+
+For now, tried to `rv sync` from p3m x86_64 ubuntu jammy (<https://p3m.dev/cran/__linux__/jammy/latest>) using the following:
 
 ```bash
-R -q -e 'remotes::install_github("ethzplus/evoland-plus", ref="b40175fd048c1615ff66e4fa556f6a0cd863b3fe")'
-R -q -e 'remotes::install_github("mmyrte/rsofun")'   # P-model / SPLASH / BiomeE
-R -q -e 'remotes::install_github("mmyrte/rsplash")'  # if used standalone
+module load stack/2024-06 gcc gdal proj r/4.5 zsh cmake
+cd ~/github-repos/evoland-experiments
+rv sync
 ```
 
-`rsofun`/`rsplash` compile Fortran and C++, so the R stack must be built with a `gcc`
-that provides **gfortran** — set that in the site `compilers.yaml` (e.g. build with
-`%gcc@12`). GDAL/GEOS/PROJ/libcurl arrive automatically as dependencies of
-`r-sf`/`r-terra`/`r-stars`/`r-curl`; they are also listed explicitly in `spack.yaml` so a
-site can force external system providers via `packages.yaml`.
+This complains that terra cannot be installed; however, the `stack/2024-06` does not contain sqlite, libcurl is not found, libtiff unclear.
+**NEXT STEP** try to figure out deps within 2024-06 stack OR try anew creating my own minimal R spack env.
 
-## Recommended: hybrid (Spack toolchain + rv for exact versions)
-
-Pure Spack gives you *a* working R stack, but Spack's package versions will **not** match
-`rv.lock` exactly, and a few CRAN packages are not in Spack at all. For reproducible runs
-that honour the lockfile, use Spack only for the heavy, compiled foundation and let `rv`
-install the exact pinned CRAN packages on top:
-
-```bash
-# 1. Spack provides R + toolchain + system libraries (a slim env):
-#    r@4.5, gmake, gdal, geos, proj, sqlite, udunits, curl   (+ gfortran-capable gcc)
-spack env activate evoland-slim
-spack install
-
-# 2. rv installs the exact rv.lock versions into the project library:
-rv sync                     # reads rproject.toml + rv.lock, builds against Spack's R
+```log
+Failed to install dependencies.
+    Failed to install terra:
+        * installing *source* package ‘terra’ ...
+        ** this is package ‘terra’ version ‘1.9-34’
+        ** package ‘terra’ successfully unpacked and MD5 sums checked
+        ** using staged installation
+        configure: CC: /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-11.4.0/gcc-12.2.0-bj2twcnwcownogkldo6ndfylxx5sqpbn/bin/gcc
+        configure: CXX: /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-11.4.0/gcc-12.2.0-bj2twcnwcownogkldo6ndfylxx5sqpbn/bin/g++ -std=gnu++17
+        checking for gdal-config... /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-12.2.0/gdal-3.7.3-rmhlatqryf2c4izusktcv63oj3abmime/bin/gdal-config
+        checking gdal-config usability... yes
+        configure: GDAL: 3.7.3
+        checking GDAL version >= 2.0.1... yes
+        checking for gcc... /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-11.4.0/gcc-12.2.0-bj2twcnwcownogkldo6ndfylxx5sqpbn/bin/gcc
+        checking whether the C compiler works... yes
+        checking for C compiler default output file name... a.out
+        checking for suffix of executables...
+        checking whether we are cross compiling... no
+        checking for suffix of object files... o
+        checking whether the compiler supports GNU C... yes
+        checking whether /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-11.4.0/gcc-12.2.0-bj2twcnwcownogkldo6ndfylxx5sqpbn/bin/gcc accepts -g... yes
+        checking for /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-11.4.0/gcc-12.2.0-bj2twcnwcownogkldo6ndfylxx5sqpbn/bin/gcc option to enable C11 features... none needed
+        checking for stdio.h... yes
+        checking for stdlib.h... yes
+        checking for string.h... yes
+        checking for inttypes.h... yes
+        checking for stdint.h... yes
+        checking for strings.h... yes
+        checking for sys/stat.h... yes
+        checking for sys/types.h... yes
+        checking for unistd.h... yes
+        checking for gdal.h... yes
+        checking GDAL: linking with --libs only... yes
+        checking GDAL: /cluster/software/stacks/2024-06/spack/opt/spack/linux-ubuntu22.04-x86_64_v3/gcc-12.2.0/gdal-3.7.3-rmhlatqryf2c4izusktcv63oj3abmime/share/gdal/pcs.csv readable... no
+        checking GDAL: checking whether PROJ is available for linking:... yes
+        checking GDAL: checking whether PROJ is available for running:... yes
+        configure: GDAL: 3.7.3
+        configure: pkg-config proj exists, will use it
+        Package sqlite3 was not found in the pkg-config search path.
+        Perhaps you should add the directory containing `sqlite3.pc'
+        to the PKG_CONFIG_PATH environment variable
+        Package 'sqlite3', required by 'proj', not found
+        Package 'libtiff-4', required by 'proj', not found
+        Package 'libcurl', required by 'proj', not found
+        configure: using proj.h.
+        configure: PROJ: 9.2.1
+        checking PROJ: checking whether PROJ and sqlite3 are available for linking:... no
+        configure: error: libproj or sqlite3 not found in standard or given locations.
+        *** Installing this package from source requires the prior
+        *** installation of external software, see for details
+        *** https://r-spatial.github.io/sf/#installing
+        ERROR: configuration failed for package ‘terra’
+        * removing ‘/tmp/.tmpLeUvtD/terra’
 ```
-
-This is the most robust path on HPC: Spack handles the parts that are painful to compile
-(GDAL stack, R itself, compilers), while `rv` guarantees the exact CRAN versions and pulls
-`evoland` from its pinned commit. Keep a `slim` `spack.yaml` variant with just the
-foundation specs for this mode.
-
-## Missing packages (resolved against this site's catalog)
-
-Cross-referencing `rv.lock` against `spack-available.txt`: **189 of the 215** CRAN
-packages are in this Spack (now the full `spack.yaml` list). **26 are missing** and are
-installed on top of the Spack R by `install-missing.R` at their exact locked versions —
-the Spack view already provides shared dependencies, so `upgrade = "never"` leaves them
-untouched:
-
-```bash
-spack env activate evoland && spack install
-Rscript 2026-07-ssp-rsofun/install-missing.R          # 15 runtime gaps
-Rscript 2026-07-ssp-rsofun/install-missing.R --dev    # + 11 dev/IDE tools
-```
-
-- **Runtime gaps (15):** `duckdb` (DB backend), `mirai`+`nanonext` (parallelism), the
-  `mlr3` stack `mlr3`/`mlr3filters`/`mlr3measures`/`mlr3misc`/`mlr3viz`/`paradox`/`lgr`
-  (evoland's transition model), `PRROC`, `pxR`, `qs2`, `S7`, `otel`.
-- **Dev/IDE gaps (11, `--dev`, skip on batch nodes):** `httpgd`, `unigd`,
-  `languageserver`, `collections`, `lintr`, `xmlparsedata`, `pak`, `tinytest`,
-  `palmerpenguins`, `quarto`, `AsioHeaders`.
-
-So the pure-Spack route **is** viable here — Spack covers the compiled heavy hitters
-(`r-duckdb` is the notable one it lacks, hence the source build in the gap step). If even
-the gap installs prove painful, fall back to the hybrid (`rv sync`) below.
-
-## Notes for the rsofun run specifically
-
-- The forcing/soil/land-cover scripts (`1-`, `2-`, `3-`) need: `r-data-table`, `r-terra`,
-  plus `r-curl`/`httr2` for downloads. `4-run-rsofun.r` additionally needs `rsofun`
-  (Git) and, for the grid sweep, `r-mirai`/`r-future`/`r-future-apply`.
-- `duckdb` backs the evoland DB (`db$…`); ensure `r-duckdb` (or the rv-installed version)
-  resolves — it is a large compiled package.
