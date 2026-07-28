@@ -1,8 +1,8 @@
 # TODO — 2026-05-ssp-ch
 
-Task tracker for the SSP-CH baseline (MS9 phase 1/3, plus the phase-3 validation
-that lives here). Grouped by pipeline stage; each item notes its origin
-(reminder, inline `file:line`, or reference doc).
+Task tracker for the SSP-CH baseline (MS9 phase 1, plus the phase-3 backcasting
+validation that lives here). Mirrors the pipeline table in
+[`README.md`](README.md); inline `file:line` refs point at the relevant code.
 
 Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 
@@ -12,18 +12,32 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 
 - [x] `0-setup-db.r` — `ssp-ch.evolanddb`, full-CH 100 m coords grid, decadal
       periods (1985–2020 observed → 2060 extrapolated).
-- [x] `1-ingest-lulc-data.r` — Arealstatistik NOAS04 LULC ingestion (1985/97/09/18).
-- [x] Reproducible predictor ingestion refactor (replaces ValPar `file://`
-      sources) — see `REFACTOR-valpar-local.md`:
-    - [x] `2-ingest-preds-envidat-eiv.r` (SPEEDMIND EIV, continuous CWMs, md5 verified)
-    - [x] `2-ingest-preds-dem.r` (DHM25 → elevation/slope/aspect/hillshade)
-    - [x] `2-ingest-preds-swisstlm3d.r` (distance to lakes/rivers/roads)
-    - [x] `2-ingest-preds-pop.r`, `2-ingest-preds-statent.r`
+- [x] `1-ingest-lulc-data.r` — Arealstatistik NOAS04 LULC (1985/97/09/18). *(AS2025,
+      bioregions, deglaciation still open — see below.)*
+- [x] Reproducible predictor ingestion (replaces the ValPar local GeoTIFFs of
+      partly unclear provenance; provenance in `REFACTOR-valpar-local.md`):
+      `2-ingest-preds-dem.r`, `2-ingest-preds-envidat-eiv.r`,
+      `2-ingest-preds-swisstlm3d.r`, `2-ingest-preds-pop.r`.
 - [x] `2-ingest-preds-ch2025-1-download.r` — probe + throttled download of all 399
       CH2025 candidate URLs to cache.
 - [x] `2-ingest-preds-ch2025-2-etl.r` — **observed** CH2025 predictors ingested
-      (41 predictors, 1991–2020 → `id_period 0`).
-- [x] `3-neighbors.r` — neighbourhood predictors.
+      (41 predictors, 1991–2020 → `id_period 0`). *(projected `-gwl` still open.)*
+- [x] `3-neighbors.r` — neighbourhood predictors. *(currently land-use categories
+      only; extending to other predictors is open.)*
+
+---
+
+## Scenario scope & SSP realisation
+
+Decided (README): **SSP0/1/3/4/5**; SSP2 excluded (business-as-usual biases against
+spanning a maximally diverse set of futures).
+
+- [ ] **Implement SSP0** ("positive normative visioning", newly added) — bring in
+      its interventions (`NCCS-SSP-scenarios/Tools/SSP0_interventions.yml`) and
+      demand curves. SSP0 → GWL1.5 (we may already be there).
+- [ ] **Realise each SSP against two climate framings** — (a) current climatology
+      and (b) the SSP→GWL mapping — keeping socioeconomic and climatological
+      pathways orthogonal as in the original work. Encode via `id_run` / `id_period`.
 
 ---
 
@@ -39,19 +53,23 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
       bioclim variables; decide which to derive/source. (`…ch2025-2-etl.r:49`;
       wishlist table in `ch2025-todo.md`)
 
+### Economic (STATENT)
+- [ ] 🟡 **STATENT under SSP logic.** `2-ingest-preds-statent.r` currently ingests
+      only the historical employment state; it needs to be projected to match each
+      SSP scenario's socioeconomic logic. (`2-ingest-preds-statent.r`)
+
 ### Soil
 - [ ] **Replace EIV soil layers** (`soil_ph`, `soil_nutrients`, `soil_moisture`,
       `soil_moisture_variability`, `soil_aeration`, `soil_humus`) with the Swiss
       Soil Property Map ingested by `2026-07-ssp-rsofun/2-forcing-soil-1-download.r`.
       (`2-ingest-preds-envidat-eiv.r:19`)
 
-### New predictors (from reminders)
+### New predictors
 - [ ] **Region ID as indicator.** Ingest biogeographic regions
       (`ch.bafu.biogeographische_regionen`, 2056 shp) as a categorical predictor.
-      (reminder "ssp-ch: ingestion region ID as indicator"; `1-ingest-lulc-data.r:5`)
+      (`1-ingest-lulc-data.r:5`)
 - [ ] **Coordinates as predictors?** Evaluate whether raw E/N (or a smooth basis of
-      them) should be added as predictors, and whether that is desirable vs. leakage
-      of location identity. (reminder "ssp-ch: ingest coordinates as predictors?")
+      them) should be added as predictors, weighed against location-identity leakage.
 - [ ] **DEM hillshade semantics.** Hillshade was ingested but is probably meant as
       an insolation proxy — reconsider / replace with a proper insolation term.
       (`2-ingest-preds-dem.r:89`)
@@ -71,39 +89,43 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 
 ## Feature selection
 
-- [ ] 🟡 **Finalise covariate selection.** `4-covariate-selection.r` runs GRRF
-      importance + covariance filtering but key thresholds are placeholders:
-      transition `min_cardinality_abs` (currently 1000, uses the
-      `4-no-obs-trans.svg` graph to justify), GRRF `gamma`/`num.trees`/`max.depth`,
-      covariance `corcut`. Decide and document defensible values. (reminder
-      "ssp-ch: feature selection"; `4-covariate-selection.r`)
+- [ ] 🟡 **Finalise `4-covariate-selection.r`.** The viable-transition threshold is
+      not set (`min_cardinality_abs`, currently 1000; use the `4-no-obs-trans.svg`
+      graph to justify), alongside the GRRF (`gamma`/`num.trees`/`max.depth`) and
+      covariance (`corcut`) parameters. May need **splitting** into two scripts —
+      viable-transition selection and feature selection. (`4-covariate-selection.r`)
 
 ---
 
-## Transition modelling & validation  (MS9 phase 1 core + phase 3)
+## Transition modelling, validation & extrapolation
 
-The `5`/`6`/`7` stages exist in `2025-10-valparish/` but are **not yet ported**
-here, and the SSP demand curves are not yet wired in.
+Steps `5`/`6` have reference implementations in `2025-10-valparish/` (as GLM);
+`7`/`8`/`9` are new to this experiment. The SSP demand curves are not yet wired in.
+This is the bulk of the remaining MS9-phase-1 work.
 
-- [ ] **`5-transition-modelling.r`** — port mlr3 transition modelling to SSP-CH.
-      Decide learner(s) and a **justified train/test split** (valparish left
-      `sample_frac = 0.3` unmotivated).
-- [ ] **`6-transition-rates.r` / demand curves.** Wire in the SSP land-use demand
-      curves from `NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` (per SSP1/3/4/5)
-      as the future transition-rate targets, replacing valparish's naive linear
-      extrapolation.
-- [ ] **`7-alloc-params.r`** — allocation parameters for the SSP runs.
-- [ ] **MS9 phase 3 — validate transition models.** Validate the mlr3 models,
-      including **backcasting** against observed Arealstatistik periods (predict a
-      held-out historical period from earlier ones and score it). Define the metrics
-      and acceptance criteria. (reminder "MS9 phase 3/3: validate transition models
-      (mlr3 → backcasting)")
+- [ ] **`5-transition-modelling.r`** — mlr3 transition-potential models (valparish
+      used GLM). Decide learner(s) and a **justified train/test split** (valparish
+      left `sample_frac = 0.3` unmotivated).
+- [ ] **`6-transition-rates.r`** — wire in the SSP land-use demand curves from
+      `NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` (per SSP0/1/3/4/5) as the
+      future transition-rate targets, replacing valparish's linear extrapolation.
+- [ ] **`7-validate-backcasting.r`** — validate allocation parameters and
+      transition-potential models by **backcasting** against observed Arealstatistik
+      periods (predict a held-out historical period from earlier ones and score it).
+      Define metrics and acceptance criteria. (MS9 phase 3)
+- [ ] **`8-extrapolate.r` / `9-extrapolate.r`** — stochastic extrapolation.
+      ⚠️ Both steps currently carry the **same** description in the README; the
+      intended split is undecided (see Open questions).
 
 ---
 
 ## Open questions
 
-- [ ] Confirm the naming (`2026-05` vs `2026-06`) — rename the directory or keep
-      the alias note in the README.
-- [ ] Confirm SSP set (SSP1/3/4/5; SSP2 excluded) and each scenario's CO₂/GWL
-      mapping for the projected runs.
+- [ ] **Allocation parameters have no creation step.** `7-validate-backcasting.r`
+      validates them, but no step builds them (valparish had a dedicated
+      `7-alloc-params.r`). Decide where allocation-parameter creation lives — folded
+      into `6-transition-rates.r`, a new dedicated step, or inside `8`/`9`.
+- [ ] **`8` vs `9` extrapolation.** Clarify the distinction between the two
+      extrapolation scripts (currently identical descriptions in the README).
+- [ ] **SSP→GWL / CO₂ mapping.** Finalise the per-SSP, per-period GWL and CO₂
+      assignment (SSP0 → GWL1.5 fixed; the SSP5-8.5 tail is unresolved, above).
