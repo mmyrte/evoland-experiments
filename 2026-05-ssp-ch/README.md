@@ -60,9 +60,9 @@ extension is the separate `2026-07-ssp-rsofun/` experiment.
 | `4-covariate-selection.r`              | GRRF importance / covariance feature selection                        | 🟡 viable transition threshold not set; may need to be split (individual scripts for viable trans + feature selection) |
 | _(missing)_ `5-transition-modelling.r` | mlr3 transition models                                                | ⬜ not started                                                                                                         |
 | _(missing)_ `6-transition-rates.r`     | Demand curves (Transition_Tables.xlsx) → rates                        | ⬜ not started                                                                                                         |
-| _(missing)_ `7-validate-backcasting.r` | Validate allocation parameters & trans. pot. models using backcasting | ⬜ not started                                                                                                         |
+| _(missing)_ `7-validate-backcasting.r` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started                                                                                                         |
 | _(missing)_ `8-extrapolate.r`          | Extrapolation: stochastic extrapolation                               | ⬜ not started                                                                                                         |
-| _(missing)_ `9-extrapolate.r`          | Extrapolation: stochastic extrapolation                               | ⬜ not started                                                                                                         |
+| _(missing)_ `9-report.r`          | Reporting: figures, tables, maps                               | ⬜ not started                                                                                                         |
 | `999-dump-preds-raster.r`              | Debug: dump predictors to raster                                      | ✅ (utility)                                                                                                           |
 
 The `5`/`6`/`7` steps exist in `2025-10-valparish/` as reference implementations

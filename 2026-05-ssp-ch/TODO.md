@@ -109,23 +109,22 @@ This is the bulk of the remaining MS9-phase-1 work.
 - [ ] **`6-transition-rates.r`** — wire in the SSP land-use demand curves from
       `NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` (per SSP0/1/3/4/5) as the
       future transition-rate targets, replacing valparish's linear extrapolation.
-- [ ] **`7-validate-backcasting.r`** — validate allocation parameters and
-      transition-potential models by **backcasting** against observed Arealstatistik
-      periods (predict a held-out historical period from earlier ones and score it).
-      Define metrics and acceptance criteria. (MS9 phase 3)
-- [ ] **`8-extrapolate.r` / `9-extrapolate.r`** — stochastic extrapolation.
-      ⚠️ Both steps currently carry the **same** description in the README; the
-      intended split is undecided (see Open questions).
+- [ ] **`7-validate-backcasting.r`** (MS9 phase 3) — three sub-steps:
+    - [ ] (a) **estimate patch/allocation parameters** from historical data (this is
+          where allocation-parameter creation lives — no separate `alloc-params` step);
+    - [ ] (b) **run the backcasting exercise** over different parameter choices;
+    - [ ] (c) **validate** the backcast against observed Arealstatistik periods,
+          for now using the **fuzzy similarity** metric available in evoland-plus.
+          Define acceptance criteria.
+- [ ] **`8-extrapolate.r`** — stochastic extrapolation (forward scenario projection
+      to 2060 per SSP × climate framing).
+- [ ] **`9-report.r`** — reporting: figures, tables, maps. Optional/diagnostic
+      (produces human-facing outputs, does not mutate the DB); a natural candidate
+      for the diagnostic-step nomenclature under discussion.
 
 ---
 
 ## Open questions
 
-- [ ] **Allocation parameters have no creation step.** `7-validate-backcasting.r`
-      validates them, but no step builds them (valparish had a dedicated
-      `7-alloc-params.r`). Decide where allocation-parameter creation lives — folded
-      into `6-transition-rates.r`, a new dedicated step, or inside `8`/`9`.
-- [ ] **`8` vs `9` extrapolation.** Clarify the distinction between the two
-      extrapolation scripts (currently identical descriptions in the README).
 - [ ] **SSP→GWL / CO₂ mapping.** Finalise the per-SSP, per-period GWL and CO₂
       assignment (SSP0 → GWL1.5 fixed; the SSP5-8.5 tail is unresolved, above).
