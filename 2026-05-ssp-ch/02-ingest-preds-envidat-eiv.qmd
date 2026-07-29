@@ -52,8 +52,9 @@ zip_path <- sources_eiv[["local_path"]][[2L]]
 ## Predictor specs
 
 One spec per EIV layer; `zip_file` names are confirmed from `unzip(zip_path, list = TRUE)`.
-**Continentality (`SoilK`) is intentionally omitted** here (kept commented) — see the open
-question in the wrap-up / `TODO.md`.
+**Continentality (`SoilK`) is intentionally omitted** (kept commented): it is very likely
+redundant with — or weaker than — the CH2025 climatological predictors, and the
+to-be-added bioregions (see `TODO.md`) are likely collinear with it as well.
 
 ```{r}
 #| label: ingest-envidat-eiv-specs

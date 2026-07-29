@@ -46,9 +46,19 @@ obs_reference_period <- "1991-2020"
 One spec per indicator (pattern mirrors the swissTLM3D step), tied to files via the
 indicator token parsed from each file name. `unit`/`pretty_name` track the netCDF
 `long_name` & `units`; `description` adds the CH2025 definition + provenance. Commenting a
-spec out skips that indicator at ingest even if its netCDF is already on disk — the
-**heating/cooling degree-day** indicators (`HDD`, `HED`, `CoDD`, `COD`) are currently
-skipped this way.
+spec out skips that indicator at ingest even if its netCDF is already on disk.
+
+The **heating/cooling degree-day** indicators (`HDD`, `HED`, `CoDD`, `COD`) are skipped this
+way: they are **energy-demand** indices, not biophysical-suitability signals. Where people
+build is essentially indifferent to temperature — cheap (for now, fossil) energy lets them
+heat or cool as needed — so degree days carry little information about *historical* land-use
+transitions.
+
+> **Remark — future cooling demand.** Cooling degree days *may* become negatively correlated
+> with urbanisation in a warmer future (heat avoidance). But there is no heat-avoidance
+> signal in the historical construction record, so representing it would require an
+> **expert-calibrated transition-potential model** rather than a fit to observed transitions
+> — it cannot simply be read off the data.
 
 > **TODO:** this set is missing bioclimatic indicators — see
 > <https://www.chelsa-climate.org/datasets/chelsa_bioclim> and `2-ingest-preds-ch2025-todo.md`.
