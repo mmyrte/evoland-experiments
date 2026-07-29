@@ -52,10 +52,9 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | --- | --- | --- |
 | `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods | ✅ |
 | `01-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
-| `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect/hillshade | ✅ |
+| `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | ✅ (hillshade discarded) |
 | `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers to be replaced by rsofun soil) |
 | `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
-| `02-ingest-preds-pop.qmd` | Municipal population | ✅ |
 | `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | 🟡 historical only; needs SSP scenario logic |
 | `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
 | `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 → predictors | 🟡 obs only; projected `-gwl` deferred |
@@ -73,6 +72,30 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 `06`/`07` have reference implementations in `2025-10-valparish/` (as GLM); `08`/`09`/`09d`
 are new. The SSP demand curves are **not** yet wired in — this is the bulk of the
 remaining MS9-phase-1 work. See [`TODO.md`](TODO.md).
+
+## Predictor provenance vs. the original SSP-CH
+
+The predictor set is **not** a straight copy of the original SSP-CH implementation. Its
+covariates are catalogued in `NCCS-SSP-scenarios/Tools/Predictor_table.xlsx` (one sheet per
+timestep); comparing those sheets against this pipeline gives the reused / replaced /
+discarded / added picture below. Note in particular that the original's **future** (SSP)
+sheets already drop `Muni_pop`, and its employment predictor is an annual *change* in FTE,
+not a level.
+
+| Original predictor(s) | Original source | Here | Notes |
+| --- | --- | --- | --- |
+| Soil EIVs: pH, nutrients, moisture, moisture variability, aeration, humus | Descombes et al. 2020 (EnviDat) | **Reused** — `02-ingest-preds-envidat-eiv` | Same source; soil layers slated for SSPM (rsofun) replacement. |
+| `light_100m` (EIV-L) | Descombes et al. 2020 | **Reused** — same step | — |
+| Continentality (EIV-K) | Descombes et al. 2020 | **Discarded** | Redundant with / weaker than CH2025 climate, and likely collinear with the planned bioregions. |
+| Elevation, slope, aspect | swissALTI3D 2 m (ValPar local) | **Reused, source replaced** — `02-ingest-preds-dem` (DHM25) | Reproducible HTTP download; swissALTI3D noted as an optional higher-res upgrade. |
+| Hillshade | swissALTI3D | **Discarded** | Insolation proxy, redundant with slope/aspect; ray-traced insolation would be the proper form. |
+| Distance to lakes / rivers / roads | GWN07 / VECTOR25 / swissTLM3D (ValPar local) | **Reused, source replaced** — `02-ingest-preds-swisstlm3d` | GWN07 / VECTOR25 discontinued → swissTLM3D successor, downloaded directly. |
+| `chg_FTE_Sec1/2/3` — annual *change* in FTE per labour-market region | FSO Business Census + STATENT | **Reused, redefined** — `02-ingest-preds-statent` (absolute FTE *levels* per period) | Levels, not change-rates: keeps local signal (e.g. "a farm is here") at the cost of easy extrapolation (see the step's note). |
+| Urban neighbourhood matrices (`n9`/`n11` × versions) | Project internal | **Reused, reimplemented** — `03-neighbors` | evoland generic neighbour predictors over distance bands rather than hand-built kernels. |
+| `Muni_pop` — municipal population | FSO | **Discarded** | Not used in the original *future* (SSP) sheets either; the ingestion is retained only in `2025-10-valparish/2-ingest-preds-pop.r`. |
+| `noise_mean_100m` (sonBASE) | BAFU sonBASE | **Not carried over** | Present in `2025-10-valparish/2-ingest-preds-sonbase.r`; decide whether to re-include (TODO). |
+| — (no direct climate predictor in the original suitability set) | — | **Added** — `02-ingest-preds-ch2025-*` | CH2025 temperature/precip/heat/cold/snow/drought indices, SSP→GWL mapped. Heating/cooling degree-days excluded (energy-demand, not suitability). |
+| — | — | **Added (planned)** | Bioregions (region ID) and coordinates — see `TODO.md`. |
 
 ## Data-source & design reference docs
 

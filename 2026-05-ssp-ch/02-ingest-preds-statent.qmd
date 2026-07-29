@@ -156,7 +156,8 @@ s <-
 The BC files predate STATENT's naming. Their FTE columns are *not* named consistently by
 NOGA, but the number at the end of each `VZA…` variable is the sector, so we select every
 `VZA` column and derive the sector later. BC coordinates are LV03 (EPSG:21781) — not
-declared in the files, but it fits — so we reproject to EPSG:2056.
+declared in the files, but it fits, and these datasets predate the widespread switch to
+LV95/EPSG:2056 in Switzerland — so we reproject to EPSG:2056.
 
 ```{r}
 #| label: ingest-statent-read-bc

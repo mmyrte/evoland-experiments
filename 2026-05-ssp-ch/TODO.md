@@ -22,7 +22,12 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 - [x] Reproducible predictor ingestion (replaces the ValPar local GeoTIFFs of
       partly unclear provenance; provenance in `REFACTOR-valpar-local.md`):
       `02-ingest-preds-dem.qmd`, `02-ingest-preds-envidat-eiv.qmd`,
-      `02-ingest-preds-swisstlm3d.qmd`, `02-ingest-preds-pop.qmd`.
+      `02-ingest-preds-swisstlm3d.qmd`.
+- [x] **Predictor provenance reconciled** against the original SSP-CH
+      (`NCCS-SSP-scenarios/Tools/Predictor_table.xlsx`); see the README table.
+      Discarded: municipal population (`Muni_pop` — unused in the original SSP
+      sheets; the ingestion is dropped, retained only in valparish), hillshade,
+      continentality.
 - [x] `02-ingest-preds-ch2025-1-download.qmd` — probe + throttled download of all 399
       CH2025 candidate URLs to cache.
 - [x] `02-ingest-preds-ch2025-2-etl.qmd` — **observed** CH2025 predictors ingested
@@ -135,6 +140,8 @@ remaining MS9-phase-1 work.
 - [ ] **Fold the reference `.md` docs into `.qmd` prose** (literate programming), then
       delete them: `REFACTOR-valpar-local.md`, `2-ingest-preds-ch2025-todo.md`,
       `2-ingest-preds-ch2025-urls.md`. (The `fig-spm8a-ar6-wg1.png` asset stays.)
+- [ ] **sonBASE noise predictor** — decide whether to re-include `noise_mean_100m`
+      (present in `2025-10-valparish/2-ingest-preds-sonbase.r`, not carried to ssp-ch).
 
 ---
 
