@@ -51,10 +51,26 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
 
 ## Conventions
 
-- **Numbered pipelines.** Scripts within a sub-project run in numeric order
-  (`0-setup-db.r`, `1-…`, `2-…`). Steps sharing a number are independent (e.g.
-  the several `2-ingest-preds-*.r`). Run a whole stage with
-  `./execute-all.sh '2026-05-ssp-ch/2-*.r'`.
+- **Numbered, ordered pipelines.** Each sub-project is a sequence of numbered steps
+  run in order. New pipelines use **two-digit, zero-padded** stages (`00-`, `01-`,
+  `02-`, …); steps sharing a stage number are independent (e.g. the several
+  `02-ingest-preds-*`), sub-ordered by slug where needed. `2026-05-ssp-ch/` follows
+  this; `2025-10-valparish/` and `2026-07-ssp-rsofun/` still use the older single-digit
+  `.r` scheme.
+- **Core vs. diagnostic steps.** `NN-slug.qmd` is a **core** step (mutates the DuckDB /
+  produces canonical outputs). `NNd-slug.qmd` is an **optional diagnostic** for stage
+  `NN` — read-only, renders a verification/visualisation report, safe to skip. The `d`
+  tag sorts the diagnostic right after its stage and before the next
+  (`02-… < 02d-… < 03-…`).
+- **Literate Quarto pipelines.** Steps are `.qmd` rendered to self-contained HTML, so
+  rationale lives beside the code. A repo-root `_quarto.yml` sets `execute-dir: project`
+  (so the root `.Rprofile` / rv activation and relative paths resolve) and
+  `freeze: auto` (expensive core steps execute once — re-rendering a report never
+  re-runs the model or re-downloads data). Run a stage with
+  `./execute-all.sh '2026-05-ssp-ch/02-*.qmd'`; add `--core` to skip diagnostics or
+  `--diagnostics` for only them. Needs the Quarto CLI + git-lfs on the run machine.
+- **Reports via git-LFS.** Rendered HTML reports are git-LFS-tracked (`.gitattributes`)
+  and committed ad-hoc at checkpoints; the `_freeze/` cache is git-ignored.
 - **State lives in DuckDB.** Each experiment builds a `*.evolanddb` (folder of parquet
   files) via the evoland-plus `evoland_db` R6 class; predictors are ingested through
   `db$add_predictor` as a cheap way of ensuring foreign relations (no constraint checks

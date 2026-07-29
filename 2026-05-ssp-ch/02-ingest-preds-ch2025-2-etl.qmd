@@ -1,3 +1,13 @@
+---
+title: "02 — CH2025 climate: ETL"
+---
+
+Stage 2 of CH2025 climate ingestion: extract the cached netCDFs at the model
+coordinates and load them as predictors. Observed (`-obs`) ingested at `id_period 0`;
+projected `-gwl` deferred — see `TODO.md`.
+
+```{r}
+#| label: ch2025-etl
 #' Purpose: ETL cached CH2025 observation netCDFs into the predictor tables
 #' date: 2026-06-25
 #'
@@ -297,3 +307,5 @@ for (i in seq_len(nrow(inventory))) {
 }
 
 message("Done. Ingested ", nrow(inventory), " obs predictors at id_period = 0.")
+
+```

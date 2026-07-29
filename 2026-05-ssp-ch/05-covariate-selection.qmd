@@ -1,0 +1,52 @@
+---
+title: "05 — Covariate selection"
+---
+
+Score and prune predictors for the viable transitions committed in `04`. Uses a
+guided regularised random forest (GRRF) importance filter plus a covariance filter,
+via evoland's `get_pred_filter_score`, and commits the retained predictors to
+`trans_preds_t`.
+
+> **Open (see `TODO.md`):** the GRRF (`gamma`/`num.trees`/`max.depth`) and covariance
+> (`corcut`) parameters are not yet finalised with justification.
+
+```{r}
+#| label: covariate-selection
+library(evoland)
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+# score usefulness of covariates ####
+db$set_full_trans_preds(overwrite = TRUE)
+# db$trans_preds_t
+db$runs_t
+
+grrf_learner <- LearnerClassifGrrf$new()
+grrf_learner$param_set$values <- list(gamma = 0.9, num.trees = 50L)
+
+clust <- mirai::make_cluster(n = 2) # going higher thrashes my memory (on M3 Pro!)
+
+trans_preds_covfiltered <- db$get_pred_filter_score(
+  filter = mlr3filters::FilterImportance$new(learner = grrf_learner),
+  cluster = clust
+)
+
+db$trans_preds_t <- trans_preds_covfiltered
+
+trans_preds_grrffiltered <- db$get_pred_filter_score(
+  filter_fun = grrf_filter,
+  num.trees = 100,
+  max.depth = 20,
+  gamma = 0.8,
+  cores = 6 # going higher thrashes my memory (on M3 Pro!)
+)
+
+stopifnot(
+  # check that we've actually covered all viable predictions before committing
+  setequal(
+    trans_preds_grrffiltered$id_trans,
+    db$trans_meta_t[is_viable == TRUE]$id_trans
+  )
+)
+
+db$commit(trans_preds_grrffiltered, "trans_preds_t", method = "overwrite")
+```

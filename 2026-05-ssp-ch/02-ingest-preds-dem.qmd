@@ -1,3 +1,11 @@
+---
+title: "02 — Predictors: DEM (DHM25)"
+---
+
+Ingest 100 m terrain predictors (elevation, slope, aspect, hillshade) derived from DHM25.
+
+```{r}
+#| label: ingest-dem
 #' Purpose: ingest DHM25 digital elevation model and derive terrain layers
 #' date: 2026-06-23
 #'
@@ -109,3 +117,5 @@ for (pred_name in names(pred_specs)) {
     sources = sources_dhm25[, .(url, md5sum)]
   )
 }
+
+```

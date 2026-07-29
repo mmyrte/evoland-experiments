@@ -1,0 +1,27 @@
+---
+title: "04 — Viable transition identification"
+---
+
+Commit the set of **viable** transitions to model: `trans_meta_t` with `is_viable`
+set by a minimum observed-transition count (`min_cardinality_abs`). Static classes are
+excluded as anterior states. The threshold below is chosen from the observed-transition
+diagnostic in `04d-viable-transition-identification.qmd` — see that report to justify
+the value.
+
+```{r}
+#| label: viable-trans-identification
+library(evoland)
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+lulc_meta <- db$lulc_meta_t
+
+# commit with is_viable flag set according to criterion derived from the 04d graph
+db$trans_meta_t <-
+  create_trans_meta_t(
+    db$trans_v,
+    # min_frequency_rel = 0.005, # this is what ben used: the change rate relative
+    # to the other change rates
+    min_cardinality_abs = 1000, # chosen per the 04d observed-transitions diagnostic
+    exclude_anterior = lulc_meta[name == "static", id_lulc]
+  )
+```

@@ -1,0 +1,40 @@
+---
+title: "02d — CH2025 ingestion check (precip rasters)"
+---
+
+Diagnostic for the CH2025 climate ingestion (`02-ingest-preds-ch2025-*`). Rebuilds the
+seasonal precipitation predictors (`pr_DJF/JJA/MAM/SON`) from `pred_data_t` back onto
+the coordinate grid and plots them, as a visual sanity check that the extract/load
+produced sensible spatial fields. Read-only.
+
+> Note: `id_pred in (11, 12, 13, 14)` assumes those ids are the four seasonal `pr`
+> predictors under `id_run = 0`, `id_period = 0`; confirm against `db$pred_meta_t`
+> (printed below) if the ids have shifted.
+
+```{r}
+#| label: ch2025-precip-check
+#| fig-width: 9
+#| fig-height: 7
+library(evoland)
+library(terra)
+library(data.table)
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+
+# check for pr_DJF, pr_JJA, pr_MAM, pr_SON
+db$pred_meta_t
+dat <- db$fetch(
+  table_name = "pred_data_t",
+  cols = c("id_pred", "id_coord", "value"), # assuming that id_run = 0 and id_period = 0
+  where = "id_pred in (11, 12, 13, 14)"
+)
+
+precip_rast <- tabular_to_raster(
+  dat,
+  coords_minimal,
+  value_col = "value"
+)
+
+# render inline (Quarto captures the figure; no writeRaster to disk)
+terra::plot(precip_rast)
+```

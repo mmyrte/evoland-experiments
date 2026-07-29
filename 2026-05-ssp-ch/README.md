@@ -45,37 +45,41 @@ extension is the separate `2026-07-ssp-rsofun/` experiment.
 
 ## Pipeline
 
-| Script                                 | Step                                                                  | Status                                                                                                                 |
-| -------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `0-setup-db.r`                         | Create `ssp-ch.evolanddb`, coords grid, periods                       | ✅                                                                                                                     |
-| `1-ingest-lulc-data.r`                 | Arealstatistik NOAS04 LULC (1985/97/09/18)                            | ✅ (AS2025, bioregions, deglaciation open)                                                                             |
-| `2-ingest-preds-dem.r`                 | DHM25 → elevation/slope/aspect/hillshade                              | ✅                                                                                                                     |
-| `2-ingest-preds-envidat-eiv.r`         | SPEEDMIND EIV biophysical indicators (CWMs)                           | ✅ (soil layers to be replaced by rsofun soil)                                                                         |
-| `2-ingest-preds-swisstlm3d.r`          | Distance to lakes/rivers/roads                                        | ✅                                                                                                                     |
-| `2-ingest-preds-pop.r`                 | Municipal population                                                  | ✅                                                                                                                     |
-| `2-ingest-preds-statent.r`             | STATENT employment (FTE by sector)                                    | 🟡 Only ingested historical state, needs to match SSP scenario logic                                                   |
-| `2-ingest-preds-ch2025-1-download.r`   | Probe + download CH2025 climate netCDFs                               | ✅                                                                                                                     |
-| `2-ingest-preds-ch2025-2-etl.r`        | CH2025 → predictors                                                   | 🟡 obs only; projected `-gwl` deferred                                                                                 |
-| `3-neighbors.r`                        | Neighbourhood predictors                                              | ✅ for now only considering land use categories as neighbors                                                           |
-| `4-covariate-selection.r`              | GRRF importance / covariance feature selection                        | 🟡 viable transition threshold not set; may need to be split (individual scripts for viable trans + feature selection) |
-| _(missing)_ `5-transition-modelling.r` | mlr3 transition models                                                | ⬜ not started                                                                                                         |
-| _(missing)_ `6-transition-rates.r`     | Demand curves (Transition_Tables.xlsx) → rates                        | ⬜ not started                                                                                                         |
-| _(missing)_ `7-validate-backcasting.r` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started                                                                                                         |
-| _(missing)_ `8-extrapolate.r`          | Extrapolation: stochastic extrapolation                               | ⬜ not started                                                                                                         |
-| _(missing)_ `9-report.r`          | Reporting: figures, tables, maps                               | ⬜ not started                                                                                                         |
-| `999-dump-preds-raster.r`              | Debug: dump predictors to raster                                      | ✅ (utility)                                                                                                           |
+Steps are Quarto documents (see the top-level README "Conventions"): `NN-` = core
+step, `NNd-` = optional diagnostic that renders a verification report.
 
-The `5`/`6`/`7` steps exist in `2025-10-valparish/` as reference implementations
-but have **not** yet been ported here, and the SSP demand curves are **not** yet
-wired in. This is the bulk of the remaining MS9-phase-1 work — see
-[`TODO.md`](TODO.md).
+| Step | Purpose | Status |
+| --- | --- | --- |
+| `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods | ✅ |
+| `01-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
+| `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect/hillshade | ✅ |
+| `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers to be replaced by rsofun soil) |
+| `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
+| `02-ingest-preds-pop.qmd` | Municipal population | ✅ |
+| `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | 🟡 historical only; needs SSP scenario logic |
+| `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
+| `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 → predictors | 🟡 obs only; projected `-gwl` deferred |
+| `02d-ingest-preds-ch2025-check.qmd` | _diag:_ precip-raster sanity check (was `999-dump-preds-raster`) | ✅ |
+| `03-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
+| `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised |
+| `04d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
+| `05-covariate-selection.qmd` | GRRF importance / covariance feature selection | 🟡 GRRF/covariance params not finalised |
+| `06-transition-modelling.qmd` | mlr3 transition models | ⬜ not started |
+| `07-transition-rates.qmd` | Demand curves (`Transition_Tables.xlsx`) → rates | ⬜ not started |
+| `08-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started |
+| `09-extrapolate.qmd` | Stochastic extrapolation (forward projection) | ⬜ not started |
+| `09d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |
+
+`06`/`07` have reference implementations in `2025-10-valparish/` (as GLM); `08`/`09`/`09d`
+are new. The SSP demand curves are **not** yet wired in — this is the bulk of the
+remaining MS9-phase-1 work. See [`TODO.md`](TODO.md).
 
 ## Data-source & design reference docs
 
 - [`REFACTOR-valpar-local.md`](REFACTOR-valpar-local.md) — full predictor
   inventory and per-source provenance (EnviDat EIV, DHM25, swissTLM3D, CHELSA,
   CH2025), with URLs and md5sums. Most of the refactor is **done**; treated as
-  reference.
+  reference. _(Follow-up: fold into the per-step `.qmd` prose — see `TODO.md`.)_
 - [`2-ingest-preds-ch2025-todo.md`](2-ingest-preds-ch2025-todo.md) — rationale for
   CH2025 (GWL structure) and the missing **bioclimatic indicators** wishlist
   (CHELSA-BIOCLIM+).

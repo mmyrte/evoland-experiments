@@ -1,3 +1,12 @@
+---
+title: "02 — Predictors: STATENT employment"
+---
+
+Ingest STATENT full-time-equivalent employment by sector. Currently the historical
+state only; projecting it to each SSP scenario's socioeconomic logic is open — see `TODO.md`.
+
+```{r}
+#| label: ingest-statent
 library(evoland)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
@@ -203,3 +212,5 @@ db$add_predictor(
   description = "The tertiary sector describes all other work",
   sources = sources_detailed |> dplyr::select(url, md5sum)
 )
+
+```

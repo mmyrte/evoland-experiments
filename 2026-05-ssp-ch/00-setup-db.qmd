@@ -1,3 +1,12 @@
+---
+title: "00 — Setup DB"
+---
+
+Create the `ssp-ch.evolanddb` DuckDB, the full-Switzerland 100 m coordinate grid,
+and the decadal periods (1985–2020 observed, extrapolated to 2060).
+
+```{r}
+#| label: setup-db
 #' Setup SSP-CH experiment.
 #' Aimed at Arealstatistik + Swiss Predictors
 library(evoland)
@@ -32,3 +41,5 @@ db$periods_t <- create_periods_t(
   end_observed = "2020-01-01",
   end_extrapolated = "2060-01-01"
 )
+
+```

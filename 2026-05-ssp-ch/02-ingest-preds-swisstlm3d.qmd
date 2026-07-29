@@ -1,3 +1,11 @@
+---
+title: "02 — Predictors: swissTLM3D distances"
+---
+
+Ingest distance-to-lakes / rivers / roads predictors, rasterised from swissTLM3D.
+
+```{r}
+#| label: ingest-swisstlm3d
 #' Purpose: ingest swissTLM3D and derive distance-to-feature rasters
 #' date: 2026-06-24
 #'
@@ -121,3 +129,5 @@ for (pred_name in names(pred_specs)) {
     sources = sources_tlm3d[, .(url, md5sum)]
   )
 }
+
+```

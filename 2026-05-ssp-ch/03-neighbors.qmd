@@ -1,3 +1,11 @@
+---
+title: "03 — Neighbourhood predictors"
+---
+
+Compute neighbourhood predictors (currently land-use categories only).
+
+```{r}
+#| label: neighbors
 library(evoland)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
@@ -10,3 +18,5 @@ db$set_neighbors(
 
 # this however is pretty fast
 db$generate_neighbor_predictors()
+
+```

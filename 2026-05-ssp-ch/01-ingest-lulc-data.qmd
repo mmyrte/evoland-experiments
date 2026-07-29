@@ -1,3 +1,12 @@
+---
+title: "01 — Ingest LULC (Arealstatistik)"
+---
+
+Ingest the Arealstatistik NOAS04 land-use/land-cover history (1985/1997/2009/2018)
+from BFS as the observed LULC states.
+
+```{r}
+#| label: ingest-lulc
 library(evoland)
 library(data.table)
 
@@ -210,3 +219,5 @@ db$commit(
   table_name = "coords_t",
   method = "overwrite"
 )
+
+```

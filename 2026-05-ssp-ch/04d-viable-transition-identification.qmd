@@ -1,0 +1,58 @@
+---
+title: "04d — Viable transitions: observed-transition diagnostic"
+---
+
+Diagnostic for step `04`. Plots the number of observed transitions per
+anterior→posterior LULC pair (log scale). The viability threshold
+(`min_cardinality_abs`) committed in `04-viable-transition-identification.qmd` is
+chosen **by reading this plot** — transitions with too few observations to model are
+excluded. Read-only: computes nothing that is written back to the DB.
+
+```{r}
+#| label: viable-trans-diagnostic
+#| fig-width: 9
+#| fig-height: 6
+library(evoland)
+library(ggplot2)
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+lulc_meta <- db$lulc_meta_t
+
+trans_investigate <-
+  create_trans_meta_t(
+    db$trans_v,
+    # min_frequency_rel = 0.005, # this is what ben used: the change rate relative
+    # to the other change rates
+    # min_cardinality_abs = 5000, # what might be appropriate value?
+    exclude_anterior = lulc_meta[name == "static", id_lulc]
+  )[
+    lulc_meta[, .(id_lulc, name, pretty_name)],
+    on = .(id_lulc_anterior = id_lulc)
+  ]
+
+n_obs_ransitions <-
+  ggplot(
+    trans_investigate,
+    aes(
+      color = paste0(id_lulc_anterior, ": ", pretty_name),
+      x = pretty_name,
+      y = cardinality,
+      label = paste0(id_lulc_anterior, "=>", id_lulc_posterior)
+    )
+  ) +
+  geom_text(
+    size = 3,
+    check_overlap = TRUE
+  ) +
+  scale_y_log10() +
+  labs(
+    title = "Numbers of observed transitions",
+    y = "Cardinality (# of observed transitions)",
+    x = NULL,
+    color = "Anterior Class w/ID"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+# render inline (Quarto captures the figure; no ggsave to graphs/)
+n_obs_ransitions
+```

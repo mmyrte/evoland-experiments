@@ -1,0 +1,19 @@
+# Quarto project config shared by any sub-experiment whose pipeline is authored
+# as .qmd (currently 2026-05-ssp-ch). Rendering + execution happen on the run
+# machine (needs the Quarto CLI + git-lfs); this repo only authors the sources.
+project:
+  type: default
+  # Execute every doc from the repo root, so the root .Rprofile (which activates
+  # rv) is sourced and the relative `ssp-ch.evolanddb` path resolves as before.
+  execute-dir: project
+
+format:
+  html:
+    embed-resources: true   # self-contained single-file report
+    toc: true
+    code-fold: false
+
+execute:
+  freeze: auto              # expensive core steps run once, reused until the .qmd changes
+  warning: true
+  message: true

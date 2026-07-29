@@ -51,3 +51,9 @@ rsconnect/
 *.evolanddb
 *.duckdb
 dinamica_rundir/*
+
+# Quarto
+/_freeze/
+**/_freeze/
+.quarto/
+/**/*_files/

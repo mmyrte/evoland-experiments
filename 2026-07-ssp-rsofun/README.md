@@ -220,7 +220,7 @@ first-class distinction here, resolved by the input land-cover map rather than a
 
 ### 3.4 Terrain — already ingested
 
-`2026-05-ssp-ch/2-ingest-preds-dem.r` provides 100 m **elevation, slope, aspect** from
+`2026-05-ssp-ch/02-ingest-preds-dem.qmd` provides 100 m **elevation, slope, aspect** from
 DHM25 (EPSG:2056). Elevation → `patm` and radiation; slope/aspect → SPLASH topographic
 radiation corrections; latitude from the grid. swissALTI3D (2 m) is noted there as the
 higher-resolution upgrade if hectare-scale terrain roughness is wanted.
@@ -235,7 +235,7 @@ chain**, encoded in the filename
 - the **ensemble/scenario axis is the file set** (model chain × GWL), not a netCDF
   dimension — parsed by `ch2025_inventory()` in `1-forcing-climate.r`;
 - future **`id_period` maps to GWL** (not calendar decade), which matches the deferred
-  `-gwl` progression already sketched in `2-ingest-preds-ch2025-2-etl.r`; model chain
+  `-gwl` progression already sketched in `02-ingest-preds-ch2025-2-etl.qmd`; model chain
   (× quantile) maps to `id_run`.
 
 CO₂ is **not uniquely determined by a GWL** (different SSPs reach a GWL at different CO₂),
@@ -273,7 +273,7 @@ bridge both (the `.rmp` is the reference for the WASIM side).
 Per pixel, aggregate rsofun daily/monthly outputs to **decadal** statistics (matching
 `periods_t` P10Y), and ingest via `db$add_predictor` keyed by `id_coord`, `id_period`
 (decade / GWL), `id_run` (SSP × quantile), mirroring the deferred `-gwl` ingestion
-described in `2-ingest-preds-ch2025-2-etl.r`:
+described in `02-ingest-preds-ch2025-2-etl.qmd`:
 
 - **α = AET/PET** (Cramer–Prentice moisture index) — canonical plant-available-moisture
 - **`wscal`** — P-model water-stress scalar

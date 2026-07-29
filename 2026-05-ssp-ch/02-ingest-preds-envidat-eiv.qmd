@@ -1,3 +1,13 @@
+---
+title: "02 — Predictors: EnviDat EIV (SPEEDMIND)"
+---
+
+Ingest SPEEDMIND ecological-indicator-value predictors (continuous community-weighted
+means) from EnviDat. The soil layers here are slated for replacement by the rsofun/SSPM
+soil ingestion — see `TODO.md`.
+
+```{r}
+#| label: ingest-envidat-eiv
 #' Purpose: ingest Descombes et al. 2020 ecological indicator values (EIVs)
 #' date: 2026-06-23
 #'
@@ -151,3 +161,5 @@ for (pred_name in names(eiv_specs)) {
     sources = sources_eiv[, .(url, md5sum)]
   )
 }
+
+```
