@@ -2,38 +2,38 @@
 title: "02 — CH2025 climate: probe & download"
 ---
 
-Stage 1 of CH2025 climate ingestion: probe the reverse-engineered atlas URLs and
-download the live netCDFs to the cache. Rationale (GWL structure) in
-`2-ingest-preds-ch2025-todo.md`; URL patterns in `2-ingest-preds-ch2025-urls.md`.
+Discover and download the CH2025 climate-indicator netCDFs from the MeteoSwiss
+[CH2025 web atlas](https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/ext/climate-ch2025-maps.html).
+This is stage 1 (**probe**) + stage 2 (**download**); the ETL that reads the cached files
+into the DB is `02-ingest-preds-ch2025-2-etl.qmd`. That ETL recovers all dimensions from
+the cached **file names**, so nothing is passed between the two steps in memory.
+
+**Two product families** share the same indicator set:
+
+- `-gwl` — projections, indexed by global warming level × uncertainty quantile (annual
+  aggregate only).
+- `-obs` — observed climatologies, indexed by reference period × time of year (four seasons
+  + annual; no uncertainty quantile).
+
+Not every indicator × dimension combination is published, so candidate URLs are first
+**probed** with a HEAD request and only the live ones are downloaded. Background on the GWL
+structure is in `2-ingest-preds-ch2025-todo.md`; the reverse-engineered URL patterns are in
+`2-ingest-preds-ch2025-urls.md`.
+
+> **Out of scope (TODO).** SSP5-8.5 late-century (~2071–2100) implies ~5–6 °C of warming,
+> exceeding the highest GWL probed here (GWL3.0); those steps cannot be mapped to an
+> existing CH2025 aggregate.
+
+## Parameters
+
+The dimension levels and the category → `scenarioIndicator` mapping, as observed from the
+atlas URL patterns. The same indicator sets back both the `-gwl` and `-obs` families.
 
 ```{r}
-#| label: ch2025-download
-#' Purpose: discover and download CH2025 climate indicator netCDFs
-#' date: 2026-06-25
-#'
-#' Source: MeteoSwiss CH2025 web atlas
-#' https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/ext/climate-ch2025-maps.html
-#'
-#' Stage 1 (probe) + Stage 2 (download). The ETL that reads the cached netCDFs into
-#' the DB lives in 2-ingest-preds-ch2025-2-etl.r, which recovers all dimensions from
-#' the cached file names, so nothing is passed between the two scripts in memory.
-#'
-#' Two product families share the same set of climate indicators:
-#'   -gwl  projections, indexed by global warming level × uncertainty quantile
-#'         (annual aggregate only).
-#'   -obs  observed climatologies, indexed by reference period × time of year
-#'         (four seasons + annual; no uncertainty quantile).
-#' Not every indicator × dimension combination is published, so candidate URLs are
-#' first probed with a HEAD request and only the live ones are downloaded.
-#'
-#' TODO: SSP5-8.5 late-century (~2071–2100) implies ~5–6 °C global warming, which
-#' exceeds the highest GWL probed here (GWL3.0). Those time steps cannot be mapped to
-#' an existing CH2025 aggregate and are out of scope for now.
-
+#| label: ch2025-download-params
 library(data.table)
 library(evoland)
 
-# ---- Parameters -------------------------------------------------------------
 base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
 
 gwl_levels <- c("GWL1.5", "GWL2.0", "GWL3.0")
@@ -41,8 +41,6 @@ uncertainty_levels <- c("q5", "q50", "q95")
 reference_periods <- c("1961-1990", "1991-2020")
 times_of_year <- c("DJF", "MAM", "JJA", "SON", "yearly")
 
-# Climate categories and their scenarioIndicators, observed from the CH2025 atlas
-# URL patterns. The same indicator sets back both the -gwl and -obs product families.
 category_indicators <-
   tibble::tribble(
     ~category, ~indicator,
@@ -54,10 +52,16 @@ category_indicators <-
     "drought", c("CDD")
   ) |>
   tidyr::unnest_longer(indicator)
+```
 
-# ---- Build candidate URL matrix ---------------------------------------------
+## Build the candidate URL matrix
 
-# Projections: indicators × (GWL × uncertainty), annual aggregate only.
+Projections are indicators × (GWL × uncertainty), annual only; observations are indicators
+× (reference period × time of year), no uncertainty. `bind_rows` leaves each family's
+inapplicable dimensions as `NA` (reference period for `-gwl`; GWL/uncertainty for `-obs`).
+
+```{r}
+#| label: ch2025-download-candidates
 gwl_candidates <-
   category_indicators |>
   dplyr::cross_join(tidyr::expand_grid(
@@ -69,7 +73,6 @@ gwl_candidates <-
     time_of_year = "yearly"
   )
 
-# Observations: indicators × (reference period × time of year), no uncertainty.
 obs_candidates <-
   category_indicators |>
   dplyr::cross_join(tidyr::expand_grid(
@@ -80,26 +83,33 @@ obs_candidates <-
     product = paste0("climate-ch2025-maps-", category, "-obs")
   )
 
-# bind_rows fills the dimensions absent from each family with NA
-# (reference_period for -gwl; gwl / uncertainty for -obs).
 candidates <- dplyr::bind_rows(gwl_candidates, obs_candidates)
+```
 
-# Politeness: cap the rate at which we hit the MeteoSwiss host. capacity tokens
-# refill over fill_time_s, sustaining ~2 req/s with a small burst. req_throttle
-# buckets by host (default realm), so the probe and download stages share one
-# budget, and req_perform_parallel honours it across concurrent requests.
+## Rate limiting
+
+Politeness cap on how hard we hit the MeteoSwiss host: capacity tokens refill over
+`fill_time_s`, sustaining ~2 req/s with a small burst. `req_throttle` buckets by host
+(default realm), so the probe and download stages share one budget and
+`req_perform_parallel` honours it across concurrent requests.
+
+```{r}
+#| label: ch2025-download-throttle
 throttle <- function(req) {
   httr2::req_throttle(req, capacity = 10, fill_time_s = 5)
 }
+```
 
-# ---- Stage 1: probe ---------------------------------------------------------
-# Build one HEAD request per row with purrr::pmap, then probe in parallel.
-# req_error(is_error = FALSE) prevents httr2 from throwing on 4xx/5xx responses,
-# so req_perform_parallel can return the response object for every row.
-# httr2::req_url_query() handles percent-encoding, including the slash in
-# "application/netcdf" → "application%2Fnetcdf", matching the observed API pattern.
-# NA-valued query parameters are dropped so the same builder serves both families.
+## Stage 1 — probe
 
+Build one HEAD request per candidate and probe in parallel. `req_error(is_error = FALSE)`
+stops httr2 throwing on 4xx/5xx, so `req_perform_parallel` returns a response object for
+every row. `req_url_query()` handles percent-encoding (including the slash in
+`application/netcdf` → `application%2Fnetcdf`), and `NA`-valued query parameters are dropped
+so one builder serves both families.
+
+```{r}
+#| label: ch2025-download-probe
 make_request <- function(product, indicator, gwl, uncertainty, reference_period, time_of_year) {
   drop_na <- function(x) if (is.na(x)) NULL else x
   httr2::request(paste0(base_url, "/", product, "/realizations")) |>
@@ -139,16 +149,21 @@ candidates$live <- vapply(probe_resps, is_live, logical(1))
 
 message(sum(candidates$live), " / ", nrow(candidates), " URLs live")
 print(dplyr::count(candidates, product, live), n = Inf)
+```
 
-# ---- Stage 2: download ------------------------------------------------------
+## Stage 2 — download
 
+Download only the live candidates. The file name encodes the `-gwl`/`-obs` suffix plus the
+dimensions that apply to that family (the other family's `NA`s are dropped); the encoding
+must stay **reversible** because the ETL parses these tokens back out. Already-cached files
+are skipped.
+
+```{r}
+#| label: ch2025-download-fetch
 cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
 evoland:::ensure_dir(cache_dir)
 
 nc_filename <- function(product, indicator, gwl, uncertainty, reference_period, time_of_year) {
-  # keep the -gwl / -obs suffix from the product, then append the dimensions that
-  # actually apply to this family (NAs from the other family are dropped). The ETL
-  # script parses these tokens back out, so the encoding must stay reversible.
   stem <- sub("^climate-ch2025-maps-", "", product)
   tokens <- c(indicator, gwl, uncertainty, reference_period, time_of_year)
   paste0(stem, "_", paste(tokens[!is.na(tokens)], collapse = "_"), ".nc")
@@ -176,5 +191,4 @@ live_candidates$local_path <- purrr::pmap_chr(
 )
 
 message("Done. ", nrow(live_candidates), " files written to ", cache_dir)
-
 ```

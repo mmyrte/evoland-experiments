@@ -2,19 +2,26 @@
 title: "02 — Predictors: population"
 ---
 
-Ingest municipal population predictors from BFS.
+Ingest a **mean municipal population** predictor per period. This is more involved than the
+other predictors because municipal boundaries and identities change over time: the raw
+population series is keyed by BFS municipality number, but municipalities are renamed and
+merged across the 1985–2020 window, so the series must be **reconciled to a single set of
+BFS numbers** before it can be joined to boundary polygons and rasterised.
+
+**Sources:** BFS *Demographic balance by institutional units* (PX) + swissBOUNDARIES3D
+municipal boundaries. (The PX file could instead be pulled from the pxweb API —
+`px-x-0102020000_201` — via the `pxweb` package.)
 
 ```{r}
-#| label: ingest-pop
+#| label: ingest-pop-download
 library(evoland)
 library(terra)
 
 sources_pop <-
   list(
     list(
-      # this is the Demographic balance by institutional units
-      # this could be replaced by a call to the pxweb API
-      # maybe use the pxweb package and this URL
+      # Demographic balance by institutional units.
+      # Alternative: pxweb API
       # "https://www.pxweb.bfs.admin.ch/api/v1/en/px-x-0102020000_201/px-x-0102020000_201.px"
       url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/23164063/master",
       md5sum = "528209137ea5c74a30e477a1ddc3da84"
@@ -27,23 +34,36 @@ sources_pop <-
   ) |>
   data.table::rbindlist() |>
   download_and_verify()
+```
 
-# read in PX data from http and convert to DF
+## Read and filter the PX table
+
+Keep the total-population series: end-of-year stock ("Bestand am 31. Dezember"), all
+nationalities (Swiss + foreign), both sexes.
+
+```{r}
+#| label: ingest-pop-read
 px_data <- as.data.frame(pxR::read.px(
   sources_pop$local_path[1]
 ))
 
-# subset to desired rows based on conditions:
-# Total population on 1st of January;
-# Total populations (Swiss and foreigners)
-# Total population (Men and Women)
+# Total population, end-of-year stock, nationality total, sex total
 raw_mun_popdata <- px_data[
   px_data$Demografische.Komponente == "Bestand am 31. Dezember" &
     px_data$Staatsangehörigkeit..Kategorie. == "Staatsangehörigkeit (Kategorie) - Total" &
     px_data$Geschlecht == "Geschlecht - Total",
 ]
+```
 
-# Identify municipalities records by matching on the numeric contained in their name
+## Clean municipality identifiers
+
+Municipality records carry the BFS number inside the name string. Extract it into its own
+column, strip it (and stray periods) from the name, pivot years to columns, and keep only
+municipalities that still existed in 2021 (population > 0).
+
+```{r}
+#| label: ingest-pop-clean
+# Identify municipality records by the numeric contained in their name
 raw_mun_popdata <- raw_mun_popdata[
   grepl(
     ".*?([0-9]+).*",
@@ -64,7 +84,7 @@ raw_mun_popdata$Name_Municipality <- gsub(
   as.character(raw_mun_popdata$Name_Municipality)
 )
 
-# Seperate BFS number from name
+# Separate BFS number from name
 raw_mun_popdata$BFS_NUM <- as.numeric(gsub(
   ".*?([0-9]+).*",
   "\\1",
@@ -80,11 +100,21 @@ raw_mun_popdata$Name_Municipality <- gsub(
 
 # subset to only municipalities existing in 2021
 raw_mun_popdata <- raw_mun_popdata[raw_mun_popdata$`2021` > 0, ]
+```
 
+## Municipal boundaries
+
+Read the swissBOUNDARIES3D *Hoheitsgebiet* (territory) layer and keep Swiss municipal
+polygons only.
+
+> **To verify (TODO):** the shapefile is `swissBOUNDARIES3D_1_5_…`; confirm the `1_3` vs
+> `1_5` product versions are interchangeable for our purposes.
+
+```{r}
+#| label: ingest-pop-boundaries
 hoheitsgebiet_path <- paste0(
   "/vsizip/",
   sources_pop$local_path[2],
-  # TODO check that 1_3 and 1_5 are interchangeable
   "/swissBOUNDARIES3D_1_5_TLM_HOHEITSGEBIET.shp"
 )
 
@@ -95,12 +125,19 @@ muni_shp <- muni_shp[
   muni_shp$ICC == "CH" &
     muni_shp$OBJEKTART == "Gemeindegebiet",
 ]
+```
 
-# Import data of municipality mutations from FSO web service using conditions:
-# 1. Mutations between 01/01/1981 and 01/05/2022
-# 2. Name change mutations only (other mutations captured by shapefile)
+## Reconcile municipality mutations
 
-# scrape content from html address
+Municipal identities drift over 1981–2022 through **name changes** and **mergers**. We
+scrape the BFS mutation register (name-change mutations only — mergers are captured by the
+boundary shapefile), remap each population row's BFS number to its current one, and where a
+remap collapses several old municipalities onto one current BFS number, **sum** their
+populations (a merger).
+
+```{r}
+#| label: ingest-pop-mutations
+# Municipality mutations 01/01/1981–01/05/2022, name-change mutations only
 content <- rvest::read_html(paste0(
   "https://www.agvchapp.bfs.admin.ch/de/mutated-communes/results?",
   "EntriesFrom=01.01.1981&EntriesTo=01.05.2022&NameChange=True"
@@ -110,7 +147,6 @@ muni_mutations <- rvest::html_table(content, fill = TRUE)[[1]]
 # remove 1st row because it contains additional column names
 muni_mutations <- muni_mutations[-1, ]
 
-# rename columns
 colnames(muni_mutations) <- c(
   "Mutation_Number",
   "Pre_canton_ID",
@@ -127,11 +163,7 @@ colnames(muni_mutations) <- c(
 # identify which municipalities have mutations associated with them
 mutation_index <- match(raw_mun_popdata$BFS_NUM, muni_mutations$Pre_BFS_num)
 
-# change municpality BFS number in population table according to the mutation for
-# each row in the pop df if there is an NA in the mutation index do not replace the
-# BFS number If there is not an NA then replace with the new BFS number of the
-# mutation table.
-
+# where a row has a mutation, adopt the post-mutation BFS number; else leave it
 for (i in seq_len(nrow(raw_mun_popdata))) {
   if (!is.na(mutation_index[i])) {
     raw_mun_popdata$BFS_NUM[[i]] <- muni_mutations[[
@@ -141,9 +173,7 @@ for (i in seq_len(nrow(raw_mun_popdata))) {
   }
 }
 
-# If after introducing the mutations we have multiple rows with the same BFS numbers
-# then we need to combine their populations values as these indicate municipalities merging
-
+# if remapping produced duplicate BFS numbers, those are mergers -> sum populations
 if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
   # get the indices of columns that represent the years
   time_points <- na.omit(as.numeric(gsub(
@@ -175,18 +205,23 @@ if (length(unique(raw_mun_popdata$BFS_NUM)) != nrow(raw_mun_popdata)) {
   }
   # replace old data with revised data
   raw_mun_popdata <- muni_pop_final
-} # close if statement
+}
+```
 
-### Create historic municipality population rasters
+## Aggregate to periods, rasterize and register
 
+Average each municipality's annual population within each decadal period, then join the
+per-period values onto the boundary polygons and extract at the model coordinates.
+
+> The per-period **mean** assumes a roughly regular time series; an uneven set of survey
+> years would skew it slightly. Judged not worth correcting for now.
+
+```{r}
+#| label: ingest-pop-register
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
 periods <- db$periods_t
 
-
-# taking mean number of inhabitants, assuming regular time series
-# would skew the representation slightly if a group of years were overrepresented
-# not worth checking for now
 agg_mun_popdata <-
   raw_mun_popdata |>
   tibble::as_tibble() |>
@@ -240,5 +275,4 @@ db$add_predictor(
   description = "The FSO statistic for each commune's inhabitants is averaged over each period",
   sources = sources_pop[, .(url, md5sum)]
 )
-
 ```

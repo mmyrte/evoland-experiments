@@ -2,11 +2,26 @@
 title: "02 — Predictors: STATENT employment"
 ---
 
-Ingest STATENT full-time-equivalent employment by sector. Currently the historical
-state only; projecting it to each SSP scenario's socioeconomic logic is open — see `TODO.md`.
+Ingest **full-time-equivalent (FTE) employment by economic sector** (primary / secondary /
+tertiary) as socioeconomic predictors on the hectare grid.
+
+To cover the full 1985–2020 window we stitch **two** BFS products with different
+nomenclatures and column conventions:
+
+- **STATENT** (NOGA2008), annual 2011–2022 — the modern enterprise statistic.
+- **Business Census (BC)** for the earlier years (1995–2008) — needed because STATENT does
+  not reach back far enough.
+
+Each source encodes FTE-by-sector under differently-named variables, so the read functions
+below normalise them to sectors S1/S2/S3.
+
+> **Historical only.** This ingests the observed employment state; projecting it to match
+> each SSP scenario's socioeconomic logic is open — see `TODO.md`.
+
+## Sources
 
 ```{r}
-#| label: ingest-statent
+#| label: ingest-statent-download
 library(evoland)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
@@ -35,7 +50,16 @@ sources_downloaded <-
   sources_detailed |>
   download_and_verify() |>
   tibble::as_tibble()
+```
 
+## Build the file inventory
+
+List the CSVs inside each ZIP and parse the survey year from the file name. STATENT files are
+`STATENT(_N08)?_YYYY.csv`; BC files end in `CSV` and carry a two-digit year in a `bzNN_…`
+token (windowed at <90 → 20xx else 19xx).
+
+```{r}
+#| label: ingest-statent-inventory
 to_read <-
   sources_downloaded$local_path |>
   rlang::set_names() |> # set names to self for map/bind_rows
@@ -57,8 +81,17 @@ to_read <-
         (function(x) ifelse(x < 90L, 2000L + x, 1900L + x))()
     )
   )
+```
 
+## How the FTE variable IDs were found (reference only)
 
+The FTE-by-sector variable names were identified once from the STATENT metadata workbook by
+filtering its variable descriptions for *Vollzeitäquivalente Sektor* (and the coordinate
+fields). This block is kept for provenance but disabled (`if (FALSE)`); the resulting column
+names are hard-coded in the readers below.
+
+```{r}
+#| label: ingest-statent-varlookup
 if (FALSE) {
   # Get the variable IDs for the number of Full Time Equivalents in each sector
   # Statent uses NOGA2008
@@ -81,9 +114,14 @@ if (FALSE) {
       )
     )
 }
+```
 
+## Read STATENT
 
-# read STATENT into rasters
+STATENT CSVs are LV95 (EPSG:2056); `B08VZATS1/2/3` are FTE in sectors 1/2/3.
+
+```{r}
+#| label: ingest-statent-read-statent
 read_extract_statent <- function(zip_name, filename, year, coords_t, ...) {
   csv_con <- unz(zip_name, filename, open = "r")
   on.exit(close(csv_con))
@@ -111,9 +149,17 @@ s <-
   dplyr::filter(is_statent) |>
   purrr::pmap(read_extract_statent, coords_t = coords_minimal) |>
   data.table::rbindlist()
+```
 
+## Read Business Census (BC)
 
-# now for the businecess census (BC) data
+The BC files predate STATENT's naming. Their FTE columns are *not* named consistently by
+NOGA, but the number at the end of each `VZA…` variable is the sector, so we select every
+`VZA` column and derive the sector later. BC coordinates are LV03 (EPSG:21781) — not
+declared in the files, but it fits — so we reproject to EPSG:2056.
+
+```{r}
+#| label: ingest-statent-read-bc
 read_extract_bc <- function(zip_name, filename, year, coords_t, ...) {
   csv_con <- unz(zip_name, filename, open = "r")
   names_present <-
@@ -151,7 +197,21 @@ b <-
   dplyr::filter(!is_statent) |>
   purrr::pmap(read_extract_bc, coords_t = coords_minimal) |>
   data.table::rbindlist()
+```
 
+## Harmonise, aggregate to periods, register
+
+Combine both sources, derive the sector from the last two characters of the variable name,
+join years into periods, and average within each period.
+
+> **Design trade-off.** The old codebase (`calibration_predictor_prep.r`) interpolated the
+> employment *change rate* per labour-market region, which extrapolates cleanly but loses
+> fine-grained signal like "there is a farm on this hectare". Here we take the per-period
+> **mean** of the observed values instead, keeping the local signal at the cost of easy
+> extrapolation.
+
+```{r}
+#| label: ingest-statent-register
 bc_statent <- rbind(s, b)
 bc_statent[, year := lubridate::make_date(year = year)]
 bc_statent[, sector := stringr::str_sub(layer, -2, -1)]
@@ -172,10 +232,6 @@ bc_statent_ingest <-
     ),
     nomatch = NULL
   ][,
-    # see calibration_predictor_prep.r in old codebase:
-    # there was interpolation logic on the change rate per labour market region
-    # this has the advantage that we can extrapolate easily, but has the disadvantage of
-    # losing out on features like "there's a farm here"
     .(value = mean(value)),
     by = .(id_coord, id_period, sector)
   ][
@@ -212,5 +268,4 @@ db$add_predictor(
   description = "The tertiary sector describes all other work",
   sources = sources_detailed |> dplyr::select(url, md5sum)
 )
-
 ```

@@ -2,25 +2,21 @@
 title: "02 — Predictors: swissTLM3D distances"
 ---
 
-Ingest distance-to-lakes / rivers / roads predictors, rasterised from swissTLM3D.
+Derive distance-to-nearest-feature predictors (lakes, rivers, roads) from swissTLM3D.
+
+**Source:** swisstopo **swissTLM3D** (`ch.swisstopo.swisstlm3d`), the successor to
+VECTOR25 and GWN07.
+<https://www.swisstopo.admin.ch/en/topographic-landscape-model-swisstlm3d> ·
+[STAC](https://data.geo.admin.ch/browser/index.html#/collections/ch.swisstopo.swisstlm3d)
+
+**Lineage note.** The original `valpar-local.r` derived lake and river distances from
+GWN07 ([geocat record](https://www.geocat.ch/geonetwork/srv/api/records/0351bc2e-3cdc-4e8a-b422-0142e494e7b4)),
+which is no longer directly downloadable (WMS/WMTS only); swissTLM3D is its current
+successor. The road distance was (probably) originally from swissTLM3D via
+valpar.ch / Speedmind.
 
 ```{r}
-#| label: ingest-swisstlm3d
-#' Purpose: ingest swissTLM3D and derive distance-to-feature rasters
-#' date: 2026-06-24
-#'
-#' Source: swisstopo swissTLM3D (ch.swisstopo.swisstlm3d)
-#' Successor to VECTOR25 and GWN07.
-#' https://www.swisstopo.admin.ch/en/topographic-landscape-model-swisstlm3d
-#' STAC: https://data.geo.admin.ch/browser/index.html#/collections/ch.swisstopo.swisstlm3d
-#'
-#' Note on lineage: the original valpar-local.r described lake and river distances as
-#' derived from GWN07
-#' (https://www.geocat.ch/geonetwork/srv/api/records/0351bc2e-3cdc-4e8a-b422-0142e494e7b4).
-#' GWN07 is no longer available as a direct download (WMS/WMTS only); swissTLM3D is its
-#' current successor. The road distance was (probably?) originally from swissTLM3D via
-#' valpar.ch/Speedmind.
-
+#| label: ingest-swisstlm3d-download
 library(data.table)
 library(evoland)
 
@@ -37,40 +33,54 @@ sources_tlm3d <-
   ) |>
   data.table::rbindlist() |>
   download_and_verify()
+```
 
+## Unpack the GeoPackage
 
+Reading vector layers directly from a zipped GPKG over `/vsizip/` is too slow, so the
+archive is unpacked once and the ZIP deleted (this raises the cache footprint from ~4 to
+~10 GiB). The step is skipped if the `.gpkg` is already unpacked in the cache.
+
+```{r}
+#| label: ingest-swisstlm3d-unpack
 if (grepl("zip$", sources_tlm3d[["local_path"]])) {
   # skipped if we have the gpkg cached already
   zip_path <- sources_tlm3d[["local_path"]]
   zip_dir <- dirname(zip_path)
-  # operating on /vsizip/ is too slow, unpacking and deleting zip. increases
-  # storage from 4 to 10GiB
   unzip(zip_path, exdir = zip_dir)
   unlink(zip_path)
 
   sources_tlm3d[["local_path"]] <- list.files(zip_dir, pattern = "\\.gpkg$", full.names = TRUE)
 }
 
-# To inspect available layers: terra::vector_layers(gpkg_path)
-gpkg_path <- sources_tlm3d[["local_path"]]
+gpkg_path <- sources_tlm3d[["local_path"]] # inspect layers with terra::vector_layers(gpkg_path)
+```
 
+## Read layers
+
+Lakes are standing-water polygons; rivers are flowing watercourse lines. `tlm_strassen_strasse`
+holds **all** road classes (Autobahn through Fahrweg/track); no `OBJEKTART` filter is
+applied, matching the "distance to nearest road of any class" intent of the original
+predictor. Filter by `OBJEKTART` if a class-specific distance is ever wanted.
+
+```{r}
+#| label: ingest-swisstlm3d-layers
 lakes <- terra::vect(gpkg_path, layer = "tlm_gewaesser_stehendes_gewaesser")
 rivers <- terra::vect(gpkg_path, layer = "tlm_gewaesser_fliessgewaesser")
-
-# tlm_strassen_strasse contains all road classes (Autobahn through Fahrweg/track).
-# No OBJEKTART filter is applied, matching the "distance to nearest road"
-# intent of the original predictor. Filter by OBJEKTART if a class-specific
-# distance is needed.
 roads <- terra::vect(gpkg_path, layer = "tlm_strassen_strasse")
+```
 
-# 100m raster template aligned to the analysis extent; used as the spatial
-# reference for rasterization and distance computation.
+## Rasterize and compute distances
+
+Each layer is rasterized to a binary presence raster on a 100 m template aligned to the
+analysis extent, then the 1-argument `terra::distance()` computes, for every empty cell,
+the distance to the nearest present cell. That is markedly faster than
+`terra::distance(template, vector)` for dense networks like the road and river layers.
+
+```{r}
+#| label: ingest-swisstlm3d-distance
 template_100m <- terra::rast(extent_wide, resolution = 100, crs = "EPSG:2056")
 
-# Rasterize each layer to a binary presence raster, then use the 1-argument
-# terra::distance() to compute the distance from each NA cell to the nearest
-# non-NA (present) cell. This is more efficient than terra::distance(template,
-# vector) for dense networks such as the road and river layers.
 lakes_rast <- terra::rasterize(lakes, template_100m, field = 1)
 rivers_rast <- terra::rasterize(rivers, template_100m, field = 1)
 roads_rast <- terra::rasterize(roads, template_100m, field = 1)
@@ -78,7 +88,12 @@ roads_rast <- terra::rasterize(roads, template_100m, field = 1)
 dist_lakes <- terra::distance(lakes_rast)
 dist_rivers <- terra::distance(rivers_rast)
 dist_roads <- terra::distance(roads_rast)
+```
 
+## Register predictors
+
+```{r}
+#| label: ingest-swisstlm3d-register
 pred_specs <- list(
   distance_to_lakes_mean_100m = list(
     rast = dist_lakes,
@@ -129,5 +144,4 @@ for (pred_name in names(pred_specs)) {
     sources = sources_tlm3d[, .(url, md5sum)]
   )
 }
-
 ```

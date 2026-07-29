@@ -2,32 +2,29 @@
 title: "02 — Predictors: EnviDat EIV (SPEEDMIND)"
 ---
 
-Ingest SPEEDMIND ecological-indicator-value predictors (continuous community-weighted
-means) from EnviDat. The soil layers here are slated for replacement by the rsofun/SSPM
-soil ingestion — see `TODO.md`.
+Ingest spatial **ecological indicator values (EIVs)** as biophysical predictors.
+
+**Source:** Descombes et al. (2020), *Spatial modelling of ecological indicator values
+improves predictions of plant distributions in complex landscapes*, Ecography 43(10),
+1448–1463, [doi:10.1111/ecog.05117](https://doi.org/10.1111/ecog.05117). Data:
+[doi:10.16904/ENVIDAT.153](https://doi.org/10.16904/ENVIDAT.153). The EIV operationalisation
+follows Landolt et al. (2010), *Flora indicativa* (ISBN 9783258074610).
+
+**What the layers actually are.** All `SPEEDMIND_Soil*` layers are **continuous
+community-weighted means (CWMs)** of the underlying Landolt EIV classes across plant
+communities — *not* discrete class indices. `SoilR` is the exception: it is stored as
+modelled **soil pH** (≈4.7–7.1 for Switzerland) rather than the Landolt R class (1–5).
+
+The EIV codes (Landolt et al. 2010): **R** = soil pH · **N** = nutrients · **F** = moisture
+· **W** = moisture variability · **D** = aeration · **H** = humus · **L** = light ·
+**K** = continentality.
+
+> **To be replaced.** The soil layers (`soil_*`) are slated for replacement by the Swiss
+> Soil Property Map ingested in `2026-07-ssp-rsofun/2-forcing-soil-1-download.r` — see
+> `TODO.md`.
 
 ```{r}
-#| label: ingest-envidat-eiv
-#' Purpose: ingest Descombes et al. 2020 ecological indicator values (EIVs)
-#' date: 2026-06-23
-#'
-#' Descombes, P., Walthert, L., Baltensweiler, A., Meuli, R. G., Karger, D. N.,
-#' Ginzler, C., Zurell, D., & Zimmermann, N. E. (2020). Spatial modelling of
-#' ecological indicator values improves predictions of plant distributions in
-#' complex landscapes. Ecography, 43(10), 1448-1463.
-#' https://doi.org/10.1111/ecog.05117
-#' Data: https://doi.org/10.16904/ENVIDAT.153
-#'
-#' EIV operationalisation:
-#' Landolt, E. et al. (2010). Flora indicativa. ISBN 9783258074610
-#'
-#' All SPEEDMIND_Soil* layers are continuous community-weighted means (CWMs) of the
-#' underlying Landolt EIV classes across plant communities, not discrete class indices.
-#' SoilR is an exception: it is stored as modelled soil pH (approx. 4.7-7.1) rather
-#' than the Landolt R class index (1-5).
-#'
-#' TODO replace soil data using 2026-07-ssp-rsofun/2-forcing-soil-1-download.r
-
+#| label: ingest-envidat-eiv-download
 library(data.table)
 library(evoland)
 
@@ -50,11 +47,16 @@ sources_eiv <-
   download_and_verify()
 
 zip_path <- sources_eiv[["local_path"]][[2L]]
+```
 
-# EIV codes follow Landolt et al. 2010:
-#   R=soil pH, N=nutrients, F=moisture, W=moisture variability,
-#   D=aeration, H=humus, L=light, K=continentality
-# Filenames confirmed from unzip(zip_path, list = TRUE).
+## Predictor specs
+
+One spec per EIV layer; `zip_file` names are confirmed from `unzip(zip_path, list = TRUE)`.
+**Continentality (`SoilK`) is intentionally omitted** here (kept commented) — see the open
+question in the wrap-up / `TODO.md`.
+
+```{r}
+#| label: ingest-envidat-eiv-specs
 eiv_specs <- list(
   soil_ph = list(
     zip_file = "Predictors/SPEEDMIND_SoilR.tif",
@@ -138,7 +140,15 @@ eiv_specs <- list(
   #   )
   # )
 )
+```
 
+## Reproject, extract, register
+
+The source GeoTIFFs are 93 m in World Mercator (EPSG:3395); each is bilinear-resampled to
+the EPSG:2056 100 m grid, sampled at the model coordinates, and written at `id_period = 0`.
+
+```{r}
+#| label: ingest-envidat-eiv-register
 for (pred_name in names(eiv_specs)) {
   spec <- eiv_specs[[pred_name]]
   tif_path <- paste0("/vsizip/", zip_path, "/", spec[["zip_file"]])
@@ -161,5 +171,4 @@ for (pred_name in names(eiv_specs)) {
     sources = sources_eiv[, .(url, md5sum)]
   )
 }
-
 ```

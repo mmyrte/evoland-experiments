@@ -2,25 +2,22 @@
 title: "02 — Predictors: DEM (DHM25)"
 ---
 
-Ingest 100 m terrain predictors (elevation, slope, aspect, hillshade) derived from DHM25.
+Ingest a digital elevation model and derive 100 m terrain predictors (elevation, slope,
+aspect) for the model grid.
+
+**Source:** swisstopo **DHM25** (`ch.swisstopo.digitales-hoehenmodell_25`), ~25 m, LV03
+(EPSG:21781), vertical datum LN02, survey vintage ~1980s.
+<https://www.swisstopo.admin.ch/en/height-model-dhm25>
+
+DHM25 is **not** exposed through the swisstopo STAC API, so we download the whole-Swiss
+ASCII-grid ZIP directly from the geo.admin.ch OGD topology server.
+
+> **Optional expansion.** For hectare-scale terrain roughness, maximum slope, or other
+> fine-scale metrics, swissALTI3D (STAC `ch.swisstopo.swissalti3d`, 2 m COGs, ~44k tiles,
+> ~44 GB) would be the appropriate source — deferred here due to data volume.
 
 ```{r}
-#| label: ingest-dem
-#' Purpose: ingest DHM25 digital elevation model and derive terrain layers
-#' date: 2026-06-23
-#'
-#' Source: swisstopo DHM25 (ch.swisstopo.digitales-hoehenmodell_25)
-#' Resolution: ~25m, LV03 (EPSG:21781), vertical datum LN02, survey vintage ~1980s.
-#' https://www.swisstopo.admin.ch/en/height-model-dhm25
-#'
-#' NOTE: DHM25 is not available through the swisstopo STAC API. Direct download
-#' from the geo.admin.ch OGD topology server is used here.
-#'
-#' OPTIONAL EXPANSION: For terrain roughness, maximum slope, or other fine-scale
-#' terrain metrics at the hectare level, swissALTI3D (STAC collection
-#' ch.swisstopo.swissalti3d, 2m Cloud Optimised GeoTIFFs, ~44k tiles, ~44 GB)
-#' would be the appropriate source. Deferred due to data volume.
-
+#| label: ingest-dem-download
 library(data.table)
 library(evoland)
 
@@ -39,10 +36,18 @@ sources_dhm25 <-
   download_and_verify()
 
 zip_path <- sources_dhm25[["local_path"]][[1L]]
+```
 
-# Discover all ASCII grid tiles inside the ZIP.
-# DHM25 tiles are in LV03 (EPSG:21781) and may lack embedded CRS metadata in
-# the .asc files; assign it explicitly after reading.
+## Mosaic, reproject and resample
+
+The ZIP holds several ASCII grid tiles. They are in LV03 and may lack embedded CRS
+metadata in the `.asc` files, so we assign EPSG:21781 explicitly after reading. DHM25
+covers only Switzerland (~70 M cells at 25 m, ~280 MB float32), so the full in-memory
+mosaic is feasible before reprojecting. Elevation is continuous, so **bilinear**
+interpolation is used to reproject to EPSG:2056 at 100 m (matching every other predictor).
+
+```{r}
+#| label: ingest-dem-reproject
 asc_file <-
   unzip(zip_path, list = TRUE)[["Name"]] |>
   purrr::keep(stringr::str_detect, "\\.asc$")
@@ -50,20 +55,36 @@ asc_file <-
 dem_25m <- terra::rast(paste0("/vsizip/", zip_path, "/", asc_file))
 terra::crs(dem_25m) <- "EPSG:21781"
 
-# Mosaic all tiles, then project and resample to EPSG:2056 at 100m.
-# DHM25 covers only Switzerland (~70M cells at 25m, ~280 MB float32), so
-# the full in-memory mosaic is feasible before the reprojection step.
-# Bilinear interpolation is appropriate for continuous elevation values.
 dem_100m <-
   dem_25m |>
   terra::project(y = "EPSG:2056", method = "bilinear", res = 100) |>
   terra::crop(extent_wide)
+```
 
-# Terrain derivatives are computed on the 100m DEM, which matches the spatial
-# resolution of all other predictors in the model.
+## Terrain derivatives
+
+Slope and aspect are computed on the 100 m DEM.
+
+> **Open — hillshade / insolation.** The original predictor set included a hillshade
+> layer, probably intended as an insolation proxy. That signal is arguably already
+> carried by slope + aspect; a proper treatment would be ray-traced insolation rather
+> than a single-azimuth hillshade. Hillshade is therefore **omitted** here. Tracked in
+> `TODO.md` ("DEM hillshade semantics").
+
+```{r}
+#| label: ingest-dem-terrain
 slope_100m <- terra::terrain(dem_100m, v = "slope", unit = "deg")
 aspect_100m <- terra::terrain(dem_100m, v = "aspect", unit = "deg")
+```
 
+## Register predictors
+
+Each raster is sampled at the model coordinates and written to `pred_data_t` at
+`id_period = 0` (static terrain). Full provenance is carried in each predictor's
+`description`.
+
+```{r}
+#| label: ingest-dem-register
 pred_specs <- list(
   elevation_mean_100m = list(
     rast = dem_100m,
@@ -93,10 +114,6 @@ pred_specs <- list(
       "the 100m DHM25-derived DEM. 0 = North, 90 = East."
     )
   )
-
-  #' TODO hillshade was included, but probably meant to be proxy for insolation - which
-  #' is arguably already available for modelling in slope and aspect. If anything,
-  #' should be ray tracing?
 )
 
 for (pred_name in names(pred_specs)) {
@@ -117,5 +134,4 @@ for (pred_name in names(pred_specs)) {
     sources = sources_dhm25[, .(url, md5sum)]
   )
 }
-
 ```

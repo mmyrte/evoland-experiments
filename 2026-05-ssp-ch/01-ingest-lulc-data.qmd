@@ -2,20 +2,27 @@
 title: "01 — Ingest LULC (Arealstatistik)"
 ---
 
-Ingest the Arealstatistik NOAS04 land-use/land-cover history (1985/1997/2009/2018)
-from BFS as the observed LULC states.
+Ingest the BFS **Arealstatistik** land-use/land-cover history as the observed LULC states
+that the transition model learns from. The raw data uses the NOAS04 nomenclature (72
+categories); we aggregate it to the SSP-CH modelling classes and assign each survey year to
+a period.
+
+**Source:** BFS Arealstatistik (NOAS04), downloaded and md5-verified into the evoland cache.
+Surveys used: **1985 / 1997 / 2009 / 2018**.
+
+> **Open items (tracked in `TODO.md`):**
+>
+> - **Bioregions** — ingest `ch.bafu.biogeographische_regionen` as a region-ID predictor.
+> - **Deglaciated-area class** — after the SSP implementation, add a class (from the
+>   glacier inventory) for newly ice-free ground; such areas may be too small to meet the
+>   inclusion threshold.
+> - **Arealstatistik 2025** — only 1985–2018 is selected below; `AS25_72` is kept commented
+>   until the 2025 survey is finalised.
 
 ```{r}
-#| label: ingest-lulc
+#| label: ingest-lulc-download
 library(evoland)
 library(data.table)
-
-# TODO set bioregions
-# https://data.geo.admin.ch/ch.bafu.biogeographische_regionen/biogeographische_regionen/biogeographische_regionen_2056.shp.zip
-
-# TODO after SSP implementation: introduce new land use class "deglaciated
-# area", probably based on glacier inventory. these areas might be very small
-# and thus not meet the inclusion threshold
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 lulc_files <-
@@ -38,8 +45,16 @@ zippath <- file.path(
   lulc_files$md5sum,
   lulc_files$local_filename
 )
+```
 
-# find singular csv
+## Read the survey CSV
+
+The archive holds a single CSV of per-hectare NOAS04 codes across survey years. We read the
+coordinates plus the four survey columns (`AS85`…`AS18`); `AS25_72` is left out until the
+2025 survey is finalised.
+
+```{r}
+#| label: ingest-lulc-read
 csv_file <-
   unzip(zippath, list = TRUE) |>
   purrr::pluck("Name") |>
@@ -62,9 +77,19 @@ arealstat_dt <-
     )
   )
 close(csv_con)
+```
 
-# the src_classes relate to the Arealstatistik NOAS04 nomenclature for 72 LULC
-# categories and are later used for aggregation purposes; they could also be left empty
+## Class aggregation (NOAS04 72 → modelling classes)
+
+The `src_classes` map the 72-category NOAS04 nomenclature onto the coarser modelling
+classes (agricultural, forest/vegetation, urban, glacier, and a `static` catch-all). They
+are used later for aggregation and could in principle be left empty. The `static` class
+bundles the immutable categories (infrastructure, water, rock/scree, …); it is the class
+that would need **disaggregating** to represent succession on deglaciating ground (see the
+deglaciated-area TODO above).
+
+```{r}
+#| label: ingest-lulc-classes
 db$lulc_meta_t <- create_lulc_meta_t(
   list(
     # agricultural classes
@@ -127,16 +152,21 @@ db$lulc_meta_t <- create_lulc_meta_t(
     )
   )
 )
+```
 
-# lulc_meta_long_v provides an "unrolled" aka "unnested longer" form
-# each src_class is related to one id_lulc
+## Long form → raster
+
+`lulc_meta_long_v` is the "unrolled" (unnested-longer) form where each `src_class` maps to
+one `id_lulc`. We melt the wide survey table to long (year × coord × class), translate the
+two-digit survey years to four digits, join in `id_lulc`, and build a multilayer raster
+(one layer per year) via terra's `"xylz"` form.
+
+```{r}
+#| label: ingest-lulc-rasterize
 lulc_meta_long_dt <- db$lulc_meta_long_v[, .(id_lulc, src_class)]
 
-# longer form: arealstatistik AS replaced by id_lulc
-# data.table has form that can be coerced to multilayer terra::rast using type = "xylz"
 lulc_dt <-
   data.table::melt(
-    # pivot longer with year from regex and coords as ID columns
     arealstat_dt,
     id.vars = c("E_COORD", "N_COORD"),
     value.name = "src_class",
@@ -158,7 +188,7 @@ lulc_dt <-
     nomatch = NULL
   ]
 
-# setting a key on a data.table pre-sorts it
+# setting a key on a data.table pre-sorts it (required by terra's xylz reader)
 data.table::setkey(lulc_dt, year, x, y)
 
 r <-
@@ -168,7 +198,16 @@ r <-
     crs = "EPSG:2056"
   ) |>
   terra::as.int() # necessary because terra::rast casts to numeric?
+```
 
+## Extract at model coords and assign to periods
+
+Sample the per-year class raster at the model coordinates, melt back to long, then join each
+observation year into its decadal period (left-closed interval `start_date <= year <
+end_date`). Finally restrict `coords_t` to the coordinates that actually carry LULC data.
+
+```{r}
+#| label: ingest-lulc-periods
 minimal_coords_t <- db$coords_minimal
 id_coord_yr_lulc_dt <-
   terra::extract(
@@ -219,5 +258,4 @@ db$commit(
   table_name = "coords_t",
   method = "overwrite"
 )
-
 ```

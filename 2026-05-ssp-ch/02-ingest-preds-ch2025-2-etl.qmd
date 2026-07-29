@@ -2,62 +2,59 @@
 title: "02 — CH2025 climate: ETL"
 ---
 
-Stage 2 of CH2025 climate ingestion: extract the cached netCDFs at the model
-coordinates and load them as predictors. Observed (`-obs`) ingested at `id_period 0`;
-projected `-gwl` deferred — see `TODO.md`.
+Read the `-obs` CH2025 netCDFs cached by `02-ingest-preds-ch2025-1-download.qmd` and ingest
+each as a predictor. All dimensions are recovered from the cached **file names** (see
+`nc_filename()` in the download step), so nothing is passed between the two steps in memory.
+Each file is read, transformed and written **one at a time** to keep memory flat — a single
+long table over ~4 M coords × 67 files would not fit comfortably.
+
+## Data model (`pred_data_t` dimensions)
+
+- **`name` = `{indicator}_{time_of_year}`** (e.g. `tas_yearly`, `pr_DJF`). A predictor is
+  one climate variable and must stay consistent across historic (observed) and future
+  (extrapolated) periods, so the **reference period is *not* part of the name**.
+- **`id_period`** encodes the temporal progression: the observed reference period here, and
+  (deferred) the progression through global warming levels for `-gwl`.
+- **`id_run`** encodes quantile × SSP scenario (relevant for the deferred `-gwl` runs).
+
+**Scope now:** `-obs` files only, at `id_period = 0` (baseline) under the active
+`id_run = 0`. Because the name drops the reference period, only *one* reference period can
+occupy `id_period 0`; we use the current WMO normal **1991-2020**, which covers all 21
+indicators (1961-1990 covers only 14). 1961-1990 stays cached for a later historic
+`id_period` if wanted.
+
+**Deferred — `-gwl` projections.** This step uses `db$add_predictor` (safe upsert of both
+`pred_meta_t` and `pred_data_t`), right for the initial commit. When appending the `-gwl`
+projections later, write directly to `pred_data_t` keyed by the `id_pred` that already
+exists in `pred_meta_t` (one per `{indicator}_{time_of_year}`), at the mapped `id_period`
+and the scenario/quantile `id_run`.
 
 ```{r}
-#| label: ch2025-etl
-#' Purpose: ETL cached CH2025 observation netCDFs into the predictor tables
-#' date: 2026-06-25
-#'
-#' Reads the -obs netCDFs cached by 2-ingest-preds-ch2025-1-download.r and ingests
-#' each as a predictor at id_period = 0 (baseline), under the active id_run (= 0).
-#'
-#' All dimensions are recovered from the cached file names (see nc_filename() in the
-#' download script), so nothing is passed between the two scripts in memory. Each
-#' file is read, transformed, and written one at a time to keep memory flat: a single
-#' long table over ~4M coords × 67 files would not fit comfortably.
-#'
-#' Data model (the dimensions of pred_data_t):
-#'   - name  = {indicator}_{time_of_year}, e.g. "tas_yearly", "pr_DJF". A predictor is
-#'             one climate variable and must stay consistent across historic (observed)
-#'             and future (extrapolated) periods, so the reference period is NOT part of
-#'             the name.
-#'   - id_period encodes the temporal progression: the observed reference period here,
-#'             and (deferred) the progression through global warming levels for -gwl.
-#'   - id_run  encodes quantile × SSP scenario (relevant for the deferred -gwl runs).
-#'
-#' Stage 4 uses db$add_predictor (safe upsert of both pred_meta_t and pred_data_t),
-#' which is the right tool for this initial commit. When appending the -gwl scenario
-#' projections later, write directly to pred_data_t keyed by the id_pred that already
-#' exists in pred_meta_t (one id_pred per {indicator}_{time_of_year} predictor), at the
-#' mapped id_period and the scenario/quantile id_run.
-#'
-#' Scope for now: -obs files only, at id_period = 0 (baseline) under the active id_run
-#' (= 0). Because the name drops the reference period, only ONE reference period can
-#' occupy id_period 0; we use the current WMO normal 1991-2020, which covers all 21
-#' indicators (1961-1990 covers only 14, a subset). 1961-1990 stays cached for a later
-#' historic id_period if wanted. The -gwl projections remain deferred.
-
+#| label: ch2025-etl-params
 library(data.table)
 library(evoland)
 
 base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
 cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
 
-# Reference period to populate the id_period = 0 baseline (see header).
+# Reference period to populate the id_period = 0 baseline (see above).
 obs_reference_period <- "1991-2020"
+```
 
-# ---- Per-indicator metadata -------------------------------------------------
-# Pattern mirrors 2-ingest-preds-swisstlm3d.r: one spec per indicator, tied to the
-# files via the indicator token parsed from each file name. unit / pretty_name track
-# the netCDF long_name & units; description adds the CH2025 definition +
-# provenance.
+## Per-indicator metadata
 
-# comment out lines to skip them at ingest, even if netcdf is already on disk
-# TODO this is missing bioclimatic indicators,
-# https://www.chelsa-climate.org/datasets/chelsa_bioclim has a good list
+One spec per indicator (pattern mirrors the swissTLM3D step), tied to files via the
+indicator token parsed from each file name. `unit`/`pretty_name` track the netCDF
+`long_name` & `units`; `description` adds the CH2025 definition + provenance. Commenting a
+spec out skips that indicator at ingest even if its netCDF is already on disk — the
+**heating/cooling degree-day** indicators (`HDD`, `HED`, `CoDD`, `COD`) are currently
+skipped this way.
+
+> **TODO:** this set is missing bioclimatic indicators — see
+> <https://www.chelsa-climate.org/datasets/chelsa_bioclim> and `2-ingest-preds-ch2025-todo.md`.
+
+```{r}
+#| label: ch2025-etl-specs
 prov <- "MeteoSwiss CH2025 observed climatology (1 km, EPSG:2056)."
 indicator_specs <- list(
   ID = list(
@@ -195,9 +192,15 @@ indicator_specs <- list(
     description = paste("Maximum run of consecutive dry days, <1mm/d", prov)
   )
 )
+```
 
-# Reconstruct the source API URL from the parsed dimensions, mirroring the query in
-# the download script. No published md5sum (the endpoint is generated on demand).
+## Source-URL reconstruction
+
+Rebuild the source API URL from the parsed dimensions, mirroring the query in the download
+step. There is no published md5sum (the endpoint is generated on demand).
+
+```{r}
+#| label: ch2025-etl-url
 obs_url <- function(product, indicator, reference_period, time_of_year) {
   req <- httr2::request(paste0(base_url, "/", product, "/realizations")) |>
     httr2::req_url_query(
@@ -211,11 +214,17 @@ obs_url <- function(product, indicator, reference_period, time_of_year) {
     )
   req$url
 }
+```
 
-# ---- Recover the file inventory from cache ----------------------------------
-# obs file names are {category}-obs_{indicator}_{reference_period}_{time_of_year}.nc;
-# indicator codes carry no underscore and reference_period uses a hyphen, so the stem
-# splits cleanly into exactly four underscore-separated tokens.
+## Recover the file inventory from cache
+
+Obs file names are `{category}-obs_{indicator}_{reference_period}_{time_of_year}.nc`.
+Indicator codes carry no underscore and the reference period uses a hyphen, so the stem
+splits cleanly into exactly four underscore-separated tokens. We keep only the baseline
+reference period.
+
+```{r}
+#| label: ch2025-etl-inventory
 obs_files <- list.files(cache_dir, pattern = "-obs_.*\\.nc$")
 
 inventory <- data.table(file = obs_files)
@@ -260,8 +269,17 @@ message(
   data.table::uniqueN(inventory, by = "indicator"),
   " indicators on disk."
 )
+```
 
-# ---- Stage 3+4: read -> transform -> write, one file at a time --------------
+## Read → transform → write (one file at a time)
+
+Each netCDF is cropped to the analysis extent and point-extracted at the 100 m model
+coordinates (nearest 1 km cell, no bilinear interpolation), then upserted via
+`db$add_predictor`. Indicators without a metadata spec (e.g. the skipped degree-day ones)
+are warned and skipped.
+
+```{r}
+#| label: ch2025-etl-load
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
 extent_wide <- db$extent |> terra::extend(1000)
@@ -307,5 +325,4 @@ for (i in seq_len(nrow(inventory))) {
 }
 
 message("Done. Ingested ", nrow(inventory), " obs predictors at id_period = 0.")
-
 ```

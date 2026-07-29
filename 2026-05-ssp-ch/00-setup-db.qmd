@@ -2,13 +2,13 @@
 title: "00 — Setup DB"
 ---
 
-Create the `ssp-ch.evolanddb` DuckDB, the full-Switzerland 100 m coordinate grid,
-and the decadal periods (1985–2020 observed, extrapolated to 2060).
+Sets up the SSP-CH experiment database: an `evoland_db` (DuckDB) backing store aimed at
+Arealstatistik land-use plus the Swiss predictor stack. This step defines the two axes
+that every later step keys against — the **coordinate grid** (`id_coord`) and the
+**periods** (`id_period`) — so it must run first.
 
 ```{r}
-#| label: setup-db
-#' Setup SSP-CH experiment.
-#' Aimed at Arealstatistik + Swiss Predictors
+#| label: setup-db-create
 library(evoland)
 
 db <- evoland_db$new(
@@ -16,7 +16,16 @@ db <- evoland_db$new(
   report_name = "ssp-ch",
   report_name_pretty = "Replication of SSP-CH in new evoland"
 )
+```
 
+## Coordinate grid
+
+A square 100 m grid in **CH1903+ / LV95 (EPSG:2056)** over the full Swiss bounding box.
+The commented-out inner extent is a small central-Switzerland window kept for quick local
+test runs; the active extent is the whole country.
+
+```{r}
+#| label: setup-db-coords
 db$coords_t <- create_coords_t_square(
   epsg = 2056,
   extent = terra::ext(c(
@@ -34,12 +43,19 @@ db$coords_t <- create_coords_t_square(
   )),
   resolution = 100
 )
+```
 
+## Periods
+
+Decadal steps (`P10Y`): observed 1985–2020 (the Arealstatistik survey years) followed by
+extrapolated steps out to 2060.
+
+```{r}
+#| label: setup-db-periods
 db$periods_t <- create_periods_t(
   period_length_str = "P10Y",
   start_observed = "1985-01-01",
   end_observed = "2020-01-01",
   end_extrapolated = "2060-01-01"
 )
-
 ```

@@ -2,10 +2,21 @@
 title: "03 — Neighbourhood predictors"
 ---
 
-Compute neighbourhood predictors (currently land-use categories only).
+Generate neighbourhood predictors: for each cell, summaries of the surrounding cells
+within distance bands. These capture local spatial context (e.g. how much of a class sits
+nearby) that point predictors miss.
+
+Currently only **land-use categories** are used as the neighbour signal; extending this to
+other predictors is open (see `TODO.md`).
+
+## Neighbour relations
+
+`set_neighbors` builds, for every coordinate, the set of neighbours out to `max_distance`,
+bucketed into the given distance bands. This is the expensive part (a few minutes over the
+full grid); it is stored in the DB so downstream steps reuse it.
 
 ```{r}
-#| label: neighbors
+#| label: neighbors-relations
 library(evoland)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
@@ -15,8 +26,13 @@ db$set_neighbors(
   max_distance = 1000,
   distance_breaks = c(0, 100, 500, 1000)
 )
+```
 
-# this however is pretty fast
+## Derive predictors
+
+Given the stored relations, deriving the neighbour predictors themselves is fast.
+
+```{r}
+#| label: neighbors-generate
 db$generate_neighbor_predictors()
-
 ```
