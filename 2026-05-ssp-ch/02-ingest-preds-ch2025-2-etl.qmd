@@ -60,8 +60,8 @@ transitions.
 > **expert-calibrated transition-potential model** rather than a fit to observed transitions
 > — it cannot simply be read off the data.
 
-> **TODO:** this set is missing bioclimatic indicators — see
-> <https://www.chelsa-climate.org/datasets/chelsa_bioclim> and `2-ingest-preds-ch2025-todo.md`.
+> **TODO:** this set is missing bioclimatic indicators — see the wishlist in the appendix
+> below and <https://www.chelsa-climate.org/datasets/chelsa_bioclim>.
 
 ```{r}
 #| label: ch2025-etl-specs
@@ -336,3 +336,49 @@ for (i in seq_len(nrow(inventory))) {
 
 message("Done. Ingested ", nrow(inventory), " obs predictors at id_period = 0.")
 ```
+
+## Appendix — missing bioclimatic indicators (wishlist)
+
+CH2025 provides threshold-count indices (frost days, heat days, …) but **not** the
+CHELSA-style **bioclimatic** variables that are strong ecological predictors. The intent is
+to add a CHELSA-comparable set; candidates below are drawn from CHELSA-BIOCLIM+ (Brun et al.
+2022). The Köppen–Geiger / climate-classification layers (`kg0`–`kg5`) are categorical and
+their full class legends live in the CHELSA docs rather than here.
+
+| Code | Variable | Unit |
+| --- | --- | --- |
+| bio01 | Mean annual air temperature | °C |
+| bio02 | Mean diurnal air temperature range | °C |
+| bio03 | Isothermality (100 × bio02/bio07) | — |
+| bio04 | Temperature seasonality (SD of monthly means) | °C/100 |
+| bio05 | Max temperature of warmest month | °C |
+| bio06 | Min temperature of coldest month | °C |
+| bio07 | Annual temperature range (bio05 − bio06) | °C |
+| bio08 | Mean temperature of wettest quarter | °C |
+| bio09 | Mean temperature of driest quarter | °C |
+| bio10 | Mean temperature of warmest quarter | °C |
+| bio11 | Mean temperature of coldest quarter | °C |
+| bio12 | Annual precipitation | kg m⁻² yr⁻¹ |
+| bio13 | Precipitation of wettest month | kg m⁻² month⁻¹ |
+| bio14 | Precipitation of driest month | kg m⁻² month⁻¹ |
+| bio15 | Precipitation seasonality (CV) | kg m⁻² |
+| bio16 | Precipitation of wettest quarter | kg m⁻² month⁻¹ |
+| bio17 | Precipitation of driest quarter | kg m⁻² month⁻¹ |
+| bio18 | Precipitation of warmest quarter | kg m⁻² month⁻¹ |
+| bio19 | Precipitation of coldest quarter | kg m⁻² month⁻¹ |
+| gdd0 / gdd5 / gdd10 | Growing degree-day sums above 0 / 5 / 10 °C | °C |
+| ngd0 / ngd5 / ngd10 | Number of growing degree days above 0 / 5 / 10 °C | days |
+| gsl | Growing season length | days |
+| gsp | Accumulated precipitation on growing-season days | kg m⁻² |
+| gst | Mean temperature of growing-season days | °C |
+| fgd / lgd | First / last day of the growing season (TREELIM) | Julian day |
+| fcf | Frost change frequency | count |
+| scd | Snow-cover days | days |
+| swe | Snow water equivalent | kg m⁻² yr⁻¹ |
+| npp | Net primary production | g C m⁻² yr⁻¹ |
+| kg0–kg5 | Köppen–Geiger / climate classifications (categorical) | category |
+
+Reference: Brun, P., Zimmermann, N. E., Hari, C., Pellissier, L., & Karger, D. N. (2022).
+Global climate-related predictors at kilometre resolution for the past and future. *ESSD*
+14(12), 5573–5603. [doi:10.5194/essd-14-5573-2022](https://doi.org/10.5194/essd-14-5573-2022);
+data: [doi:10.16904/envidat.332](https://doi.org/10.16904/envidat.332).

@@ -16,11 +16,10 @@ pipeline on the **new evoland-plus** with:
 
 - **New, reproducible data sources.** Every predictor is fetched from a public HTTP(S)
   source with an md5-verified download, replacing the original's local GeoTIFFs of
-  partly unclear provenance. The full data-source inventory and provenance is in
-  [`REFACTOR-valpar-local.md`](REFACTOR-valpar-local.md).
+  partly unclear provenance. Per-source provenance now lives in each `02-ingest-preds-*`
+  step's prose; the reused/replaced/discarded picture is the table below.
 - **CH2025 climate** instead of CHELSA for the projected runs, mapping SSP decades onto
-  global warming levels — see
-  [`2-ingest-preds-ch2025-todo.md`](2-ingest-preds-ch2025-todo.md).
+  global warming levels — see `02-ingest-preds-ch2025-1-download.qmd` ("Why CH2025").
 
 **Scenario scope.** SSP0/1/3/4/5
 
@@ -97,16 +96,15 @@ not a level.
 | — (no direct climate predictor in the original suitability set) | — | **Added** — `02-ingest-preds-ch2025-*` | CH2025 temperature/precip/heat/cold/snow/drought indices, SSP→GWL mapped. Heating/cooling degree-days excluded (energy-demand, not suitability). |
 | — | — | **Added (planned)** | Bioregions (region ID) and coordinates — see `TODO.md`. |
 
-## Data-source & design reference docs
+## Data-source & design provenance
 
-- [`REFACTOR-valpar-local.md`](REFACTOR-valpar-local.md) — full predictor
-  inventory and per-source provenance (EnviDat EIV, DHM25, swissTLM3D, CHELSA,
-  CH2025), with URLs and md5sums. Most of the refactor is **done**; treated as
-  reference. _(Follow-up: fold into the per-step `.qmd` prose — see `TODO.md`.)_
-- [`2-ingest-preds-ch2025-todo.md`](2-ingest-preds-ch2025-todo.md) — rationale for
-  CH2025 (GWL structure) and the missing **bioclimatic indicators** wishlist
-  (CHELSA-BIOCLIM+).
-- [`2-ingest-preds-ch2025-urls.md`](2-ingest-preds-ch2025-urls.md) — reverse-
-  engineered CH2025 atlas URL patterns.
+Provenance now lives **in the step documents themselves** (literate `.qmd`), not in separate
+notes:
+
+- Per-predictor sources, licences and specs — in each `02-ingest-preds-*.qmd` (e.g. the
+  EnviDat EIV licence and observed ranges; the DHM25 / swissTLM3D lineage).
+- CH2025 rationale, the SSP→GWL structure, the reverse-engineered API schema, and the
+  superseded CHELSA V2.1 predecessor — in `02-ingest-preds-ch2025-1-download.qmd`.
+- The missing-bioclimatic-indicators wishlist — appendix of `02-ingest-preds-ch2025-2-etl.qmd`.
 
 See [`TODO.md`](TODO.md) for the consolidated task list.

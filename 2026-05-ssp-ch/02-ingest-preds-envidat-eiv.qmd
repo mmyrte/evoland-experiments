@@ -23,6 +23,23 @@ The EIV codes (Landolt et al. 2010): **R** = soil pH · **N** = nutrients · **F
 > Soil Property Map ingested in `2026-07-ssp-rsofun/2-forcing-soil-1-download.r` — see
 > `TODO.md`.
 
+### Provenance
+
+All layers ship as a single ~975 MB ZIP (no per-file download and no published md5sum — the
+cache records the sums computed on first fetch). Rasters are continuous float CWMs at **93 m
+in World Mercator (EPSG:3395)**, reprojected here to EPSG:2056 100 m (bilinear). Licence:
+**ODbL** with the Database Contents Licence (DbCL).
+
+Observed value ranges over Switzerland — a useful sanity check, and a reminder that these are
+community-weighted means, not 1–5 class indices:
+
+| Layer | Range | Layer | Range |
+| --- | --- | --- | --- |
+| `soil_ph` | 4.7–7.1 (pH) | `soil_humus` | 1.7–4.9 |
+| `soil_nutrients` | 1.7–3.9 | `light_100m` | 1.8–4.9 |
+| `soil_moisture` | 1.3–4.7 | (`continentality`, excluded) | 2.4–4.3 |
+| `soil_moisture_variability` | 1.1–2.9 | `soil_aeration` | 1.0–4.5 |
+
 ```{r}
 #| label: ingest-envidat-eiv-download
 library(data.table)

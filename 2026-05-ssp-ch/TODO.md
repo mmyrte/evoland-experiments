@@ -20,9 +20,12 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 - [x] `01-ingest-lulc-data.qmd` — Arealstatistik NOAS04 LULC (1985/97/09/18). *(AS2025,
       bioregions, deglaciation still open — see below.)*
 - [x] Reproducible predictor ingestion (replaces the ValPar local GeoTIFFs of
-      partly unclear provenance; provenance in `REFACTOR-valpar-local.md`):
+      partly unclear provenance; provenance now in each step's `.qmd` prose):
       `02-ingest-preds-dem.qmd`, `02-ingest-preds-envidat-eiv.qmd`,
       `02-ingest-preds-swisstlm3d.qmd`.
+- [x] **Reference `.md` docs folded into the `.qmd` prose and removed**
+      (`REFACTOR-valpar-local.md`, `2-ingest-preds-ch2025-todo.md`,
+      `2-ingest-preds-ch2025-urls.md`); provenance/rationale now lives with the code.
 - [x] **Predictor provenance reconciled** against the original SSP-CH
       (`NCCS-SSP-scenarios/Tools/Predictor_table.xlsx`); see the README table.
       Discarded: municipal population (`Muni_pop` — unused in the original SSP
@@ -56,12 +59,12 @@ spanning a maximally diverse set of futures).
 ### Climate (CH2025)
 - [ ] 🟡 **Projected `-gwl` ingestion.** Crosswalk `gwl` → `id_period` per SSP,
       encode quantile × scenario as `id_run`, then decide which indicators feed the
-      transition model. (`02-ingest-preds-ch2025-2-etl.qmd`; `2-ingest-preds-ch2025-todo.md`)
+      transition model. (`02-ingest-preds-ch2025-2-etl.qmd`)
 - [ ] **SSP5-8.5 late century** (~2071–2100, ~5–6 °C) exceeds GWL3.0 — no CH2025
       aggregate. Decide: cap at GWL3 or drop the tail. (`02-ingest-preds-ch2025-1-download.qmd`)
 - [ ] **Bioclimatic indicators.** CH2025 currently lacks CHELSA-BIOCLIM+-style
-      bioclim variables; decide which to derive/source. (`02-ingest-preds-ch2025-2-etl.qmd`;
-      wishlist table in `2-ingest-preds-ch2025-todo.md`)
+      bioclim variables; decide which to derive/source. (wishlist in the appendix of
+      `02-ingest-preds-ch2025-2-etl.qmd`)
 
 ### Economic (STATENT)
 - [ ] 🟡 **STATENT under SSP logic.** `02-ingest-preds-statent.qmd` currently ingests
@@ -137,9 +140,6 @@ remaining MS9-phase-1 work.
 
 ## Housekeeping / follow-ups
 
-- [ ] **Fold the reference `.md` docs into `.qmd` prose** (literate programming), then
-      delete them: `REFACTOR-valpar-local.md`, `2-ingest-preds-ch2025-todo.md`,
-      `2-ingest-preds-ch2025-urls.md`. (The `fig-spm8a-ar6-wg1.png` asset stays.)
 - [ ] **sonBASE noise predictor** — decide whether to re-include `noise_mean_100m`
       (present in `2025-10-valparish/2-ingest-preds-sonbase.r`, not carried to ssp-ch).
 

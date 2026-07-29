@@ -16,9 +16,24 @@ the cached **file names**, so nothing is passed between the two steps in memory.
   + annual; no uncertainty quantile).
 
 Not every indicator × dimension combination is published, so candidate URLs are first
-**probed** with a HEAD request and only the live ones are downloaded. Background on the GWL
-structure is in `2-ingest-preds-ch2025-todo.md`; the reverse-engineered URL patterns are in
-`2-ingest-preds-ch2025-urls.md`.
+**probed** with a HEAD request and only the live ones are downloaded.
+
+### Why CH2025, and why a GWL structure
+
+CH2025 daily-gridded is the best current high-resolution (1 km), daily, bias-corrected
+climate dataset for Switzerland; daily resolution matters for the eventual coupling to
+WASIM. A transient set of runs would be preferable but is not available (that would mean
+falling back to CH2018 / CMIP5). CH2025 predates EURO-CORDEX CMIP6, so it mixes CMIP6 GCMs
+with CMIP5 RCMs and produces **30-year climatologies at three global warming levels (GWL):
+1.5, 2 and 3 °C** above pre-industrial.
+
+That GWL structure is adequate for deriving decadal land-use predictors: each SSP decade is
+mapped to the corresponding warming level (per IPCC AR6 WG1 SPM.8, below). There is **no
+GWL4** — likely a mix of politics and too few ensemble members/years reaching it — which is
+awkward for **SSP5-8.5 late-century**; we stick with GWL3 there for now.
+
+![IPCC AR6 WG1 SPM.8a — projected global warming under the SSP scenarios; the basis for the
+SSP → GWL mapping.](graphs/fig-spm8a-ar6-wg1.png)
 
 > **Out of scope (TODO).** SSP5-8.5 late-century (~2071–2100) implies ~5–6 °C of warming,
 > exceeding the highest GWL probed here (GWL3.0); those steps cannot be mapped to an
@@ -192,3 +207,35 @@ live_candidates$local_path <- purrr::pmap_chr(
 
 message("Done. ", nrow(live_candidates), " files written to ", cache_dir)
 ```
+
+## Appendix — the reverse-engineered API schema
+
+The atlas has no documented download API; the query schema was reverse-engineered from
+sample URLs. Every request hits `…/products/{product}/realizations` with `productType=data`,
+`mediaType=application/netcdf`, `language=de`, and varies along these axes:
+
+- **product** = `climate-ch2025-maps-{category}-{gwl|obs}` (category ∈ cold, heat, precip,
+  snow, temperature, drought)
+- **scenarioIndicator** = the indicator code (e.g. `tas`, `pr`, `CDD`)
+- **timeOfYear** = `yearly`, plus `DJF`/`MAM`/`JJA`/`SON` for `-obs`
+- `-gwl` adds **globalWarmingLevel** (`GWL1.5`/`GWL2.0`/`GWL3.0`) × **uncertainty**
+  (`q5`/`q50`/`q95`)
+- `-obs` adds **referencePeriod** (`1961-1990`/`1991-2020`)
+
+Parameter order is irrelevant (the probe stage assembles them programmatically). A
+representative projected-temperature URL:
+
+```
+https://service.meteoswiss.ch/pbbackend/api/v1/products/climate-ch2025-maps-temperature-gwl/realizations
+  ?scenarioIndicator=tasmax&globalWarmingLevel=GWL3.0&uncertainty=q50&timeOfYear=yearly
+  &productType=data&productName=climate-ch2025-maps-temperature-gwl
+  &mediaType=application%2Fnetcdf&language=de
+```
+
+## Appendix — superseded predecessor: CHELSA V2.1
+
+Climate was originally sourced from **CHELSA V2.1** (monthly, ERA5-Land-downscaled `tas`/`pr`
+from the ZHDK object store, read via GDAL `/vsicurl/` range requests), from which mean annual
+temperature, mean precipitation and growing-degree-day sums were derived for a **1985–1997
+baseline**. It is **superseded** by CH2025 for the SSP runs (GWL-indexed projections mapped
+onto land-use time steps) and retained only as a possible historical-baseline fallback.
