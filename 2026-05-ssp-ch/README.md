@@ -77,9 +77,9 @@ differs substantially from the shipped LP — and being quadratic, it cannot run
   target as an interpolation. This relies on the `create_periods_t` fix that makes the last
   period a full decade (see the pin note in `rproject.toml`); before it, period 8 was a
   half-decade and any rate applied to it was effectively doubled.
-- **Runs:** `runs_t` carries the scenario axis — base `0`, one run per SSP, and per-SSP
-  climate framings (`current` climatology vs. CH2025 `gwl` × uncertainty quantile). Set up in
-  `00-setup-db.qmd`.
+- **Runs:** `runs_t` carries the scenario axis, ordered **base → climate trajectory → SSP**.
+  Climate sits above SSP because it is the heavier per-run payload; the ordering is a storage
+  decision and deliberately does not mirror the narrative. Set up in `00-setup-db.qmd`.
 
 ## Pipeline
 
@@ -95,7 +95,8 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
 | `02-ingest-preds-bioregions.qmd` | BAFU biogeographic regions/subregions (categorical) | 🟡 written, unrun |
 | `02-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths | 🟡 written, unrun; ~6 GB download |
-| `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | 🟡 historical only; needs SSP scenario logic |
+| `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | ✅ historical levels |
+| `02-ingest-preds-statent-ssp.qmd` | SSP employment projection (cantonal trajectory × observed pattern) | 🟡 written, unrun; **source provenance unknown** |
 | `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
 | `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | ✅ |
 | `02-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | 🟡 written, unrun; GWL crosswalk provisional; **run after `05`** |

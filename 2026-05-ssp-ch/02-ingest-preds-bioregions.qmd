@@ -71,7 +71,7 @@ UTF-8 encoded (per its `.CPG`), which matters for the German region names.
 #| label: ingest-bioregions-read
 bioreg <- terra::vect(
   paste0("/vsizip/", sources_bioreg[["local_path"]], "/N2020_Revision_BiogeoRegion.shp"),
-  options = "ENCODING=UTF-8"
+  opts = "ENCODING=UTF-8"
 )
 
 stopifnot(

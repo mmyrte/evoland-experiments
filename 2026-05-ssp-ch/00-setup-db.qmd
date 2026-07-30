@@ -91,11 +91,23 @@ scenario axes is a storage decision, not just a narrative one:
     └── SSP                (demand curves, STATENT, interventions)   ← cheap: ~10²–10³ rows
 ```
 
-Climate goes **above** SSP. Projected climate is the only per-period, per-run predictor
-family, so a copy per branch dominates storage; the SSP-specific tables (`trans_rates_t`,
-projected employment, `intrv_meta_t`) are negligible by comparison. Putting SSP on top — the
-obvious reading of the narrative, where a scenario "has" a climate — would store the climate
-rasters once per SSP instead.
+Climate goes **above** SSP, because it is the heavier per-run payload. Putting SSP on top —
+the obvious reading of the narrative, where a scenario "has" a climate — would store the
+climate rasters once per SSP instead.
+
+Be precise about the size of that win, though: projected climate is not the *only* per-run,
+per-period predictor family. Projected employment (`02-ingest-preds-statent-ssp.qmd`) is one
+too, and since SSP is the leaf it gets replicated once per (SSP × climate) pairing:
+
+| | rows per arm | copies | total |
+| --- | --- | --- | --- |
+| climate (18 yearly indicators × 4 periods × 4.1 M) | 295 M | 4 trajectories | 1.18 B |
+| employment (3 sectors × 4 periods × 4.1 M) | 49 M | 5 SSP × 4 traj | 0.98 B |
+
+That is ~2.2 B rows against ~6.2 B for SSP-on-top — **a factor 2.8**. Climate alone would
+suggest a factor 5; employment replication eats the difference. The ordering is still clearly
+right (climate is ~6× heavier per arm), but "the SSP payload is tiny" is only true of
+`trans_rates_t` and `intrv_meta_t`, not of the projected predictors.
 
 This ordering also expresses the design intent better. The original SSP-CH work kept
 climatological and socioeconomic change **orthogonal**, and that only works if a climate

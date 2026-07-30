@@ -45,8 +45,11 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 - [x] **Registered the scenario axis in `runs_t`** (`00-setup-db.qmd`), ordered
       **base → climate trajectory → SSP**. Climate sits above SSP because it is the only
       expensive per-run payload (4.1 M cells × 4 periods × N predictors) while the SSP tables
-      are ~10²–10³ rows: 5 SSPs × 4 trajectories × 3 quantiles costs 12 stored climate copies
-      this way versus 60 with SSP on top. It also expresses the intended orthogonality —
+      are far lighter: ~2.2 B stored rows this way versus ~6.2 B with SSP on top, a factor 2.8.
+      (Climate alone would suggest a factor 5; projected *employment* is also a per-run,
+      per-period family and gets replicated per (SSP × climate) leaf, eating the difference.
+      Only `trans_rates_t` and `intrv_meta_t` are genuinely tiny.) It also expresses the
+      intended orthogonality —
       trajectories are shared objects several SSPs are realised against, not properties of one
       SSP. The technical ordering deliberately does not match the storytelling; run
       `description`s still read "SSP3 under …".
@@ -117,19 +120,29 @@ spanning a maximally diverse set of futures).
       periods into `chg_FTE_{period}_{Sector}_{SSP}.tif`. So "how is SSP3 different" has no
       answer in the code — it is whatever the elicited CSV says.
 
-      Three consequences:
-    - [ ] **The CSV is not in the repo.** `Data/` is not shipped (see the NCCS README); it is
-          presumably in the Zenodo data deposit (doi:10.5281/zenodo.8263509), which is
-          currently blocked by the sandbox proxy. Without it there is no SSP employment signal
-          to reproduce, only a method.
-    - [ ] **The original predictor is cantonal, not hectare-level** (`Original_resolution =
-          "Canton"`) and is a *change* in FTE, not a level. This pipeline ingests hectare-level
-          STATENT *levels* — a deliberate departure already noted in the README's provenance
-          table, but it means the original's projection method does not transfer directly:
-          there is no cantonal aggregate to interpolate unless we build one.
-    - [ ] Decide whether to (a) obtain the CSV and downscale cantonal trajectories onto the
-          hectare grid, (b) re-elicit per-SSP employment trajectories, or (c) hold employment
-          constant into the future and document it as a known limitation.
+      **Now implemented** — `02-ingest-preds-statent-ssp.qmd` (written, logic verified against
+      the real CSV; the full step is unrun). `NCCS_future_FTE.csv` was recovered from the
+      Zenodo deposit and supplied directly. Method: interpolate each cantonal sectoral
+      trajectory to the period mid-years, then scale the observed hectare-level pattern by the
+      canton's growth ratio — the input says how much employment a canton has, not where within
+      it moves, so the within-canton pattern is held fixed.
+
+      Remaining:
+    - [ ] 🔴 **Provenance of the elicited numbers is unknown** and is now a disclosed gap: the
+          original labels the file `Data_citation = "Project Internal"`, and we have found no
+          method, assumptions, panel or version behind it. Everything the pipeline projects
+          about employment inherits that opacity. Either find the documentation or disclose it
+          wherever these predictors influence a result.
+    - [ ] **`NCCS_future_population.csv`** (canton × SSP × year, millions) exists with the same
+          provenance status and is *not* ingested — municipal population was discarded as a
+          predictor. Revisit only if a population predictor is reinstated.
+    - [ ] **Pin a fetchable source.** The CSV is read from the evoland cache with a pinned md5
+          rather than downloaded, because no verifiable direct URL was reachable. Replace with
+          a `download_and_verify()` call once one is confirmed.
+    - [ ] **Employment does not relocate within a canton** under this method, only expand or
+          contract in place. That is what the source supports; the original is coarser still
+          (it rasterises the cantonal value directly, discarding the hectare pattern). Decide
+          whether that is acceptable for the transition models.
 
       *(Two incidental defects in the original, in case they matter for interpreting its
       outputs: the 2020 FTE layers are `file.copy`'d identically across all five SSPs, and the
