@@ -91,8 +91,10 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods, scenario `runs_t` | ✅ |
 | `01-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
 | `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | ✅ (hillshade discarded) |
-| `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers to be replaced by rsofun soil) |
+| `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers only *partly* superseded — see `02-ingest-preds-soil.qmd`) |
 | `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
+| `02-ingest-preds-bioregions.qmd` | BAFU biogeographic regions/subregions (categorical) | 🟡 written, unrun |
+| `02-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths | 🟡 written, unrun; ~6 GB download |
 | `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | 🟡 historical only; needs SSP scenario logic |
 | `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
 | `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | ✅ |

@@ -79,91 +79,161 @@ was a half-decade (2055–2060) and any rate applied to it was effectively doubl
 
 `runs_t` is the third axis, alongside coordinates and periods. Runs form a **hierarchy**:
 `db$get_read_expr()` resolves each data slice to the closest ancestor run that has it, so a
-scenario run only needs to store what it *overrides* — everything else (calibration,
-observed LULC, static predictors) is inherited from the base run `0`.
+run only needs to store what it *overrides* — everything else (calibration, observed LULC,
+static predictors) is inherited from the base run `0`.
 
-We use three levels:
+Because the tree replicates whatever sits **below** a branch point, the ordering of the two
+scenario axes is a storage decision, not just a narrative one:
 
-1. **Base (`0`)** — observed data and everything fitted from it.
-2. **Socioeconomic pathway** — one run per SSP. Carries what the SSP narrative changes:
-   demand curves (`07`), projected STATENT employment, and interventions.
-3. **Climate framing** — children of an SSP run, keeping socioeconomic and climatological
-   pathways orthogonal as in the original SSP-CH work:
-   - `current` — no climate override at all; every period inherits the observed
-     climatology at `id_period 0`. This is the "what if only society changes" arm.
-   - `gwl` — CH2025 projections at the mapped global warming level, one run per
-     uncertainty quantile (`q5`/`q50`/`q95`).
+```
+0  base (observed, calibration)
+└── climate trajectory  (GWL schedule × uncertainty quantile)   ← expensive: 4.1 M cells × 4 periods × N predictors
+    └── SSP                (demand curves, STATENT, interventions)   ← cheap: ~10²–10³ rows
+```
 
-`id_run` is `1000 + 100 × ssp_num`, `+1` for the current-climatology arm and `+11/12/13`
-for the GWL quantiles — so `1312` reads as "SSP3, GWL framing, q50". Downstream steps should
-nonetheless **look runs up by the `ssp`/`climate_framing`/`gwl_quantile` columns** rather than
+Climate goes **above** SSP. Projected climate is the only per-period, per-run predictor
+family, so a copy per branch dominates storage; the SSP-specific tables (`trans_rates_t`,
+projected employment, `intrv_meta_t`) are negligible by comparison. Putting SSP on top — the
+obvious reading of the narrative, where a scenario "has" a climate — would store the climate
+rasters once per SSP instead.
+
+This ordering also expresses the design intent better. The original SSP-CH work kept
+climatological and socioeconomic change **orthogonal**, and that only works if a climate
+trajectory is a first-class object several SSPs can be realised against, rather than a
+property of one SSP. So the GWL schedules below are defined **independently of the SSPs**;
+which trajectory is a given SSP's "own" realisation is reporting metadata
+(`default_for_ssp`), not structure.
+
+> **The technical ordering deliberately does not match the storytelling.** A run's
+> `description` reads "SSP3 under …", because that is how results get discussed; its
+> *position* in the tree is chosen to avoid replicating rasters. Read lineage as
+> "which climate, then which society", and prose as "which society, under which climate".
+
+The saving is only real because the trajectories are shared. Realising 5 SSPs against 4
+trajectories × 3 quantiles costs **12** stored climate copies with this ordering versus
+**60** with SSP on top. If instead every SSP had its own bespoke GWL schedule, the two
+orderings would cost the same — the replication comes from the schedule being SSP-specific,
+not from the tree direction.
+
+`id_run` layout — climate runs are `100` (current climatology) and
+`1000 + 100 × traj_idx + q_idx` for GWL; an SSP leaf is `climate_id_run × 10 + ssp_idx`. So
+`1302` is "third trajectory (`rise30`), q50" and `13023` is "SSP3 under it". Downstream steps should nonetheless **look runs up by the
+`ssp` / `climate_framing` / `gwl_trajectory` / `gwl_quantile` columns** rather than
 hard-coding integers. `runs_t` only mandates `id_run`/`parent_id_run`/`description`; extra
 columns are carried through, which is what makes that lookup possible.
 
-> **Scenario scope.** SSP0/1/3/4/5; SSP2 is deliberately excluded (see `README.md`). Note
-> that the per-SSP demand targets live in `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`,
-> keyed by these same SSP labels. The `EI_Nature`/`EI_Culture`/`EI_Society`/`Growth and Extinction`
+> **Scenario scope.** SSP0/1/3/4/5; SSP2 is deliberately excluded (see `README.md`). The
+> per-SSP demand targets live in `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`,
+> keyed by these same labels. The `EI_Nature`/`EI_Culture`/`EI_Society`/`Growth and Extinction`
 > names in `Transition_Tables.xlsx` are an **earlier vintage** and do *not* map cleanly onto
-> SSP0/1/3/4/5 — matching the two on their 2060 class areas leaves residuals of 3–7 × 10⁵ ha and
-> assigns two SSPs to the same name. Don't build a crosswalk between them.
+> SSP0/1/3/4/5 — matching the two on their 2060 class areas leaves residuals of 3–7 × 10⁵ ha
+> and assigns two SSPs to the same name. Don't build a crosswalk between them.
+
+### GWL trajectories
+
+> **PROVISIONAL — the open question in `TODO.md` ("SSP→GWL / CO₂ mapping").** CH2025 publishes
+> exactly three levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies. The four schedules
+> below are a defensible reading of IPCC AR6 WG1 SPM.8a, not a settled decision, and are
+> isolated in `02-ingest-preds-ch2025-3-gwl.qmd` (which consumes them) so they change in one
+place. `fast30` is **capped** — AR6 puts SSP5-8.5 above
+> 3 °C well before the 2060s, but CH2025 publishes nothing higher.
+
+```{r}
+#| label: setup-db-runs-spec
+library(data.table)
+
+# Trajectory order fixes the id_run digit; default_for_ssp is reporting metadata only.
+trajectory_specs <- data.table::rowwiseDT(
+  gwl_trajectory =, traj_idx =, default_for_ssp =, traj_description        =,
+  "stable15",       1L,         "SSP0",           "Held at 1.5 C throughout",
+  "stab20",         2L,         "SSP1",           "1.5 C, stabilising at 2.0 C",
+  "rise30",         3L,         "SSP3,SSP4",      "1.5 C rising to 3.0 C",
+  "fast30",         4L,         "SSP5",           "2.0 C reaching 3.0 C by mid-century (capped)"
+)
+
+ssp_specs <- data.table::rowwiseDT(
+  ssp   =, ssp_idx =, ssp_description                                                       =,
+  "SSP0", 1L,         "Positive normative visioning; newly added, no original counterpart",
+  "SSP1", 2L,         "Sustainability",
+  "SSP3", 3L,         "Regional rivalry",
+  "SSP4", 4L,         "Inequality",
+  "SSP5", 5L,         "Fossil-fuelled development"
+)
+
+# CH2025 uncertainty arms to register. q50 alone by default; add "q5"/"q95" for the
+# uncertainty sensitivity -- each one multiplies stored climate volume.
+gwl_quantiles <- data.table::data.table(gwl_quantile = "q50", q_idx = 2L)
+```
+
+The `current` framing stores **no climate at all**: its SSP children inherit the observed
+climatology at `id_period 0`, which is exactly what "only society changes" means. It is
+therefore free, and is always registered.
 
 ```{r}
 #| label: setup-db-runs
-library(data.table)
-
-ssp_specs <- data.table::data.table(
-  ssp = c("SSP0", "SSP1", "SSP3", "SSP4", "SSP5"),
-  ssp_num = c(0L, 1L, 3L, 4L, 5L),
-  ssp_description = c(
-    "Positive normative visioning; newly added, no counterpart in the original SSP-CH runs",
-    "Sustainability",
-    "Regional rivalry",
-    "Inequality",
-    "Fossil-fuelled development"
-  )
+climate_runs <- rbind(
+  data.table::data.table(
+    id_run = 100L,
+    parent_id_run = 0L,
+    description = "Current climatology (no projection; inherits the id_period 0 baseline)",
+    climate_framing = "current",
+    gwl_trajectory = NA_character_,
+    gwl_quantile = NA_character_
+  ),
+  trajectory_specs[
+    ,
+    .(gwl_quantile = gwl_quantiles$gwl_quantile, q_idx = gwl_quantiles$q_idx),
+    by = .(gwl_trajectory, traj_idx, traj_description)
+  ][, .(
+    id_run = 1000L + 100L * traj_idx + q_idx,
+    parent_id_run = 0L,
+    description = paste0(
+      "CH2025 GWL trajectory '", gwl_trajectory, "' (", traj_description, "), ", gwl_quantile
+    ),
+    climate_framing = "gwl",
+    gwl_trajectory,
+    gwl_quantile
+  )]
 )
 
-gwl_quantiles <- c("q5", "q50", "q95") # CH2025 uncertainty levels
-
-runs_scenario <-
-  rbind(
-    # level 2: socioeconomic pathway
-    ssp_specs[, .(
-      id_run = 1000L + 100L * ssp_num,
-      parent_id_run = 0L,
-      description = paste0(ssp, " — ", ssp_description),
-      ssp,
-      climate_framing = NA_character_,
-      gwl_quantile = NA_character_
-    )],
-    # level 3a: current climatology (inherits the id_period 0 baseline; stores no climate)
-    ssp_specs[, .(
-      id_run = 1000L + 100L * ssp_num + 1L,
-      parent_id_run = 1000L + 100L * ssp_num,
-      description = paste0(ssp, " × current climatology"),
-      ssp,
-      climate_framing = "current",
-      gwl_quantile = NA_character_
-    )],
-    # level 3b: CH2025 GWL projections, one run per uncertainty quantile
-    ssp_specs[,
-      .(gwl_quantile = gwl_quantiles, q_idx = seq_along(gwl_quantiles)),
-      by = .(ssp, ssp_num)
-    ][, .(
-      id_run = 1000L + 100L * ssp_num + 10L + q_idx,
-      parent_id_run = 1000L + 100L * ssp_num,
-      description = paste0(ssp, " × CH2025 GWL (", gwl_quantile, ")"),
-      ssp,
-      climate_framing = "gwl",
-      gwl_quantile
-    )]
-  )
+# SSP leaves: the full cross of SSP x climate run. Leaves are cheap -- only the pairings
+# actually allocated cost anything downstream.
+ssp_runs <-
+  climate_runs[
+    ,
+    .(ssp_idx = ssp_specs$ssp_idx),
+    by = .(climate_id_run = id_run)
+  ][
+    climate_runs,
+    on = c(climate_id_run = "id_run"),
+    nomatch = NULL
+  ][
+    ssp_specs,
+    on = "ssp_idx",
+    nomatch = NULL
+  ][, .(
+    id_run = climate_id_run * 10L + ssp_idx,
+    parent_id_run = climate_id_run,
+    description = paste0(ssp, " (", ssp_description, ") under ", description),
+    ssp,
+    climate_framing,
+    gwl_trajectory,
+    gwl_quantile
+  )]
 
 db$runs_t <- as_runs_t(rbind(
-  db$runs_t, # keep the base run 0 created on init
-  runs_scenario,
+  db$runs_t, # the base run 0 created on init
+  climate_runs,
+  ssp_runs,
   fill = TRUE
 ))
+
+stopifnot(
+  "duplicate id_run" = !anyDuplicated(db$runs_t$id_run),
+  "unresolvable parent_id_run" = all(
+    is.na(db$runs_t$parent_id_run) | db$runs_t$parent_id_run %in% db$runs_t$id_run
+  )
+)
 
 db$runs_t
 ```

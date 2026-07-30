@@ -36,11 +36,11 @@ dependencies = [
     # not on main yet:
     #   - `bugfix/regular-period-lengths` (753e489): makes the last period a full decade;
     #     without it period 8 is 2055-2060 and any rate applied to it is doubled.
-    #   - claude/ssp-ch-2026-05-tasks-4bfq0t (73bd148): makes period-specific predictor
-    #     values win over the id_period = 0 fallback, which the CH2025 -gwl projections
+    #   - claude/ssp-ch-2026-05-tasks-4bfq0t (a5b1814): makes period-specific predictor
+    #     slices win over the id_period = 0 fallback, which the CH2025 -gwl projections
     #     in 02-ingest-preds-ch2025-3-gwl.qmd depend on.
     # Move to a plain main commit once both are merged.
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "73bd148", install_suggestions = true },
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "a5b1814", install_suggestions = true },
     "mapview",
     "stars",
     "methods",

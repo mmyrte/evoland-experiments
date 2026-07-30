@@ -1,0 +1,260 @@
+---
+title: "02 — Predictors: Swiss Soil Property Map"
+---
+
+Ingest **sand**, **clay** and **organic carbon** from the Swiss Soil Property Map (SSPM) at
+four depths as soil predictors, aggregated from the native 30 m grid to the 100 m hectare
+grid.
+
+**Source:** Gupta, Hasler & Alewell (2024), "Mining soil data of Switzerland" — Swiss Soil
+Property Map, [Zenodo record 7821650](https://zenodo.org/records/7821650)
+([doi:10.1016/j.geodrs.2023.e00747](https://doi.org/10.1016/j.geodrs.2023.e00747)). 30 m
+GeoTIFFs, EPSG:4326, NoData `-3.4e38`, one file per `{property}_{depth}_{stat}`.
+
+We fetch the **mean** layers only — the `error` (uncertainty) layers are left for a later
+soil-uncertainty `id_run`. The same 12 files back
+`2026-07-ssp-rsofun/2-forcing-soil-1-download.r`, so the md5sums here are shared with that
+step; downloading in either place populates the cache for both.
+
+> **~6 GB of downloads** (12 files × ~510 MB). Budget for it.
+
+## This is only a partial replacement of the EIV soil layers
+
+`TODO.md` framed this as replacing the six EIV soil predictors from
+`02-ingest-preds-envidat-eiv.qmd`. It is not a like-for-like swap, and the EIV layers are
+**not** removed by this step:
+
+| EIV predictor | SSPM counterpart | Verdict |
+| --- | --- | --- |
+| `soil_humus` | `soil_oc_*` (organic carbon) | **Superseded** — OC is the direct measurement the EIV only indicates. |
+| `soil_moisture`, `soil_moisture_variability`, `soil_aeration` | `soil_sand_*` / `soil_clay_*` | **Partly superseded** — texture drives all three, but only through a pedotransfer function. `2026-07-ssp-rsofun/2-forcing-soil-2-whc.r` derives water-holding capacity this way; until that WHC is ingested here, texture is a *rawer* predictor than the EIVs, not a better one. |
+| `soil_ph` | — | **No counterpart.** SSPM as fetched here carries no pH layer. |
+| `soil_nutrients` | — | **No counterpart.** The record has N and P layers that the rsofun step explicitly does not fetch; whether they can stand in for the EIV nutrient indicator is untested. |
+
+So retiring the EIV soil layers wholesale would *lose* pH and nutrients. The defensible
+sequence is: ingest SSPM alongside the EIVs, let `05-covariate-selection.qmd` score them
+against each other per transition, and retire only what loses. That decision is left open in
+`TODO.md` rather than taken here.
+
+## Aggregation from 30 m to 100 m
+
+The pipeline's usual idiom, `extract_using_coords_t()`, samples the value at each hectare-cell
+*centre*. For a 30 m source that **subsamples** — it keeps roughly one ninth of the data and
+inherits the sampled cell's noise. Soil properties are spatially noisy at 30 m, so we
+aggregate instead.
+
+`terra::project(x, template, method = "average")` does the CRS change (EPSG:4326 → 2056) and
+the area-weighted averaging in one pass onto the exact model grid, which avoids both an
+intermediate resampling step and any misalignment between an aggregated grid and `coords_t`.
+
+**Mean is the right aggregation for all three properties.** Sand and clay are compositional
+mass fractions and OC is a concentration; all are intensive quantities whose cell average is
+the physically meaningful hectare value, and averaging is linear so
+`sand + clay + silt ≈ 100 %` survives it. (Contrast a categorical layer, where the mode is
+needed — see `02-ingest-preds-bioregions.qmd` — or an extensive quantity like employment
+counts, where the sum is.)
+
+Two further aggregations are worth considering, and one is implemented as an option:
+
+- **Within-cell standard deviation** (`derive_heterogeneity`, off by default). Computed as
+  `sqrt(E[x²] − E[x]²)` from two `average` projections. A hectare of uniform loam and a
+  hectare that is half sand, half clay have the same mean texture but very different
+  agricultural value, and that distinction is invisible to the mean. This is speculative as a
+  land-use predictor — hence off by default — but it is nearly free once the raster is read.
+- **Depth-weighted profile mean.** The four layers are *profile slices*, not spatial
+  neighbours, so they are ingested separately rather than averaged: topsoil (0 cm) governs
+  cultivation while the deeper layers govern water storage, and collapsing them would destroy
+  that. The cost is 12 strongly collinear predictors where the EIVs offered 6. If that proves
+  unwieldy in `05`, the alternative is a trapezoidal 0–100 cm mean per property (3 predictors)
+  plus the 0 cm topsoil value — noted here, not implemented.
+
+## Download
+
+```{r}
+#| label: ingest-soil-download
+library(data.table)
+library(evoland)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+
+# Set TRUE to additionally derive within-cell sd predictors (see above).
+derive_heterogeneity <- FALSE
+
+zenodo_record <- "7821650"
+
+# {property, depth_cm} -> md5sum for the mean layers, from the Zenodo record listing.
+# Shared with 2026-07-ssp-rsofun/2-forcing-soil-1-download.r.
+sspm_mean_md5 <- data.table::fread(
+  text = "
+property depth_cm md5sum
+sand 0   f1f714315b2180d062144bb0bed664fe
+sand 30  2c7e0c6208c6cdcab312c9dc99e434b2
+sand 60  9cb7031f5eae28dab9d31ca88932134b
+sand 100 59a3e79208af5420300434aafdd68e47
+clay 0   9d2739c0fd5347fa927098f9927cb952
+clay 30  34fa92871bb7708f4ff0899930ebb580
+clay 60  cfbc5cd5ec4787efe75d8cc4311807de
+clay 100 b395942a5fdd0196fb371b2058197f65
+OC   0   2984b33c24a695e95e133447a9014d41
+OC   30  f5bde0ba345558da5068d004922f2997
+OC   60  d80401aea525190d6d2e8cf095dbbc07
+OC   100 40792da49a13a221fcb5f70f53cc7a30
+",
+  colClasses = list(character = "property", integer = "depth_cm", character = "md5sum")
+)
+
+sspm_mean_md5[, filename := sprintf("%s_%dcm_mean_30m.tif", property, depth_cm)]
+sspm_mean_md5[,
+  url := sprintf("https://zenodo.org/records/%s/files/%s?download=1", zenodo_record, filename)
+]
+sspm_mean_md5[, pred_name := sprintf("soil_%s_%dcm", tolower(property), depth_cm)]
+
+sources_soil <-
+  sspm_mean_md5[, .(url, md5sum)] |>
+  download_and_verify(target_dir = getOption("evoland.cachedir"))
+
+sspm <- merge(
+  sspm_mean_md5,
+  data.table::as.data.table(sources_soil)[, .(url, md5sum, local_path)],
+  by = c("url", "md5sum")
+)
+```
+
+## Per-property metadata
+
+```{r}
+#| label: ingest-soil-specs
+prov <- paste(
+  "Swiss Soil Property Map (Gupta, Hasler & Alewell 2024), 30 m native resolution,",
+  "area-weighted mean aggregated to the 100 m model grid."
+)
+
+property_specs <- list(
+  sand = list(
+    unit = "%",
+    pretty_name = "Sand content",
+    description = paste("Sand mass fraction of the fine earth.", prov)
+  ),
+  clay = list(
+    unit = "%",
+    pretty_name = "Clay content",
+    description = paste("Clay mass fraction of the fine earth.", prov)
+  ),
+  oc = list(
+    unit = "g kg-1",
+    pretty_name = "Soil organic carbon",
+    description = paste(
+      "Soil organic carbon concentration. Direct measurement of what the EIV",
+      "`soil_humus` indicator only proxies.",
+      prov
+    )
+  )
+)
+```
+
+## Read → aggregate → write
+
+One file at a time: the sources are ~510 MB each and terra holds the projection result in
+memory, so a loop keeps the footprint flat.
+
+```{r}
+#| label: ingest-soil-load
+# exact model grid: 100 m, EPSG:2056, aligned with coords_t
+template <- terra::rast(
+  extent = db$extent,
+  resolution = 100,
+  crs = "EPSG:2056"
+)
+
+orig_format <- paste(
+  "SSPM 30 m GeoTIFF (EPSG:4326), reprojected to EPSG:2056 and area-weighted averaged",
+  "onto the 100 m model grid via terra::project(method = 'average')"
+)
+
+for (i in seq_len(nrow(sspm))) {
+  row <- sspm[i]
+  prop_key <- tolower(row[["property"]])
+  spec <- property_specs[[prop_key]]
+  stopifnot("no spec for property" = !is.null(spec))
+
+  message(sprintf("[%d/%d] %s", i, nrow(sspm), row[["pred_name"]]))
+
+  r <- terra::rast(row[["local_path"]])
+  terra::NAflag(r) <- -3.4e38
+
+  # CRS change + area-weighted aggregation in one pass
+  mean_2056 <- terra::project(r, template, method = "average")
+  terra::set.names(mean_2056, row[["pred_name"]])
+
+  db$add_predictor(
+    pred_data_raw = extract_using_coords_t(mean_2056, coords_minimal)[,
+      .(id_coord, id_period = 0L, value)
+    ],
+    name = row[["pred_name"]],
+    fill_value = NA,
+    unit = spec[["unit"]],
+    pretty_name = sprintf("%s (%d cm)", spec[["pretty_name"]], row[["depth_cm"]]),
+    orig_format = orig_format,
+    description = spec[["description"]],
+    sources = data.table(url = row[["url"]], md5sum = row[["md5sum"]])
+  )
+
+  if (derive_heterogeneity) {
+    # sd = sqrt(E[x^2] - E[x]^2), both terms area-weighted over the same cells
+    sq_2056 <- terra::project(r^2, template, method = "average")
+    sd_2056 <- terra::math(sq_2056 - mean_2056^2, "sqrt")
+    terra::set.names(sd_2056, paste0(row[["pred_name"]], "_sd"))
+
+    db$add_predictor(
+      pred_data_raw = extract_using_coords_t(sd_2056, coords_minimal)[,
+        .(id_coord, id_period = 0L, value)
+      ],
+      name = paste0(row[["pred_name"]], "_sd"),
+      fill_value = NA,
+      unit = spec[["unit"]],
+      pretty_name = sprintf("%s (%d cm), within-cell sd", spec[["pretty_name"]], row[["depth_cm"]]),
+      orig_format = orig_format,
+      description = paste(
+        "Within-hectare standard deviation of",
+        spec[["pretty_name"]],
+        "across the 30 m source cells; a soil-heterogeneity indicator.",
+        prov
+      ),
+      sources = data.table(url = row[["url"]], md5sum = row[["md5sum"]])
+    )
+    rm(sq_2056, sd_2056)
+  }
+
+  rm(r, mean_2056)
+  gc(verbose = FALSE)
+}
+
+message("Done. Ingested ", nrow(sspm), " SSPM soil predictors at id_period = 0.")
+```
+
+## Sanity check
+
+Sand and clay are fractions of the same fine earth, so their sum must stay below 100 %; a
+violation would mean the aggregation or the NoData handling went wrong.
+
+```{r}
+#| label: ingest-soil-check
+soil_wide <-
+  db$pred_meta_t[grepl("^soil_(sand|clay)_", name), .(id_pred, name)][
+    db$pred_data_t[id_period == 0L],
+    on = "id_pred",
+    nomatch = NULL
+  ] |>
+  data.table::dcast(id_coord ~ name, value.var = "value")
+
+for (depth in c(0L, 30L, 60L, 100L)) {
+  cols <- sprintf(c("soil_sand_%dcm", "soil_clay_%dcm"), depth)
+  if (!all(cols %in% names(soil_wide))) next
+  frac_sum <- rowSums(soil_wide[, ..cols], na.rm = TRUE)
+  message(sprintf(
+    "%3d cm: sand+clay range [%.1f, %.1f] %%, n over 100%%: %d",
+    depth, min(frac_sum, na.rm = TRUE), max(frac_sum, na.rm = TRUE), sum(frac_sum > 100.5)
+  ))
+}
+```

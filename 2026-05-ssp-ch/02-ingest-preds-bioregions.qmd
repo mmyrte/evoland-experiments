@@ -1,0 +1,198 @@
+---
+title: "02 — Predictors: biogeographic regions"
+---
+
+Ingest the BAFU **biogeographic regions of Switzerland** as a *categorical* predictor, giving
+the transition models a coarse regional identity to condition on. The original SSP-CH work
+fitted models per bioregion (`lulcc.listbybioregion.R`); here the region enters as a factor
+predictor instead, so one model per transition can still express regional differences without
+splitting the training data.
+
+**Source:** BAFU `ch.bafu.biogeographische_regionen`, "N2020 Revision", EPSG:2056 shapefile.
+<https://www.bafu.admin.ch/bafu/en/home/topics/landscape/publications-studies/publications/die-biogeographischen-regionen-der-schweiz.html> ·
+[STAC](https://data.geo.admin.ch/browser/index.html#/collections/ch.bafu.biogeographische_regionen)
+
+The layer holds **12 polygons**: 6 regions (`R1`–`R6`) subdivided into 12 subregions
+(`U11`–`U62`). Both are ingested — they are strictly nested, hence collinear by construction,
+so `05-covariate-selection.qmd` should retain at most one of them per transition. The
+covariance/correlation filter is the right place to make that call, not this step.
+
+| Region | Subregions |
+| --- | --- |
+| R1 Jura | U11 Jura und Randen |
+| R2 Mittelland | U21 Genferseegebiet · U22 Hochrheingebiet · U23 Westliches Mittelland · U24 Östliches Mittelland |
+| R3 Alpennordflanke | U31 Voralpen · U32 Nordalpen |
+| R4 Westliche Zentralalpen | U41 Westliche Zentralalpen |
+| R5 Östliche Zentralalpen | U51 Östliche Zentralalpen · U52 Engadin |
+| R6 Alpensüdflanke | U61 Südalpen · U62 Südliches Tessin |
+
+> **Categorical encoding.** `pred_meta_t` supports `data_type = "factor"` with
+> `factor_levels`; values are stored as **1-based indices into `factor_levels`** and
+> reconstructed as R factors by `set_pred_coltypes()`. So the raw `RegionNumm` / `Unterregio`
+> codes must be *recoded* to level indices — `Unterregio` in particular runs 11, 21, 22, …,
+> 62, which is not a 1-based sequence. Storing the raw codes as `int` instead would make a
+> learner treat "Engadin" as numerically greater than "Jura", which is meaningless.
+
+## Download
+
+The published checksum is a SHA-256 multihash (STAC `checksum:multihash`, `1220…` prefix),
+whereas `download_and_verify()` takes an md5sum — so the md5 below was computed from the
+archive after confirming its SHA-256 against the STAC entry.
+
+```{r}
+#| label: ingest-bioregions-download
+library(data.table)
+library(evoland)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+
+sources_bioreg <-
+  data.frame(
+    url = paste0(
+      "https://data.geo.admin.ch/ch.bafu.biogeographische_regionen/",
+      "biogeographische_regionen/biogeographische_regionen_2056.shp.zip"
+    ),
+    # sha256 f3c0567d3ed460295981ba73028b1e283b7d9ab3e4b6c070c9fde38aa2acaaf0
+    # matches the STAC multihash 1220f3c0567d...; md5 computed from that archive
+    md5sum = "f1cb4ae01c5c0af1ac263f4060b5081d"
+  ) |>
+  download_and_verify(target_dir = getOption("evoland.cachedir"))
+```
+
+## Read the layer
+
+The shapefile is read straight out of the ZIP via GDAL's `/vsizip/` — the archive is ~4 MB
+and holds a single 12-feature polygon layer, so the unpack-and-cache dance that
+`02-ingest-preds-swisstlm3d.qmd` needs for swissTLM3D is unnecessary here. The `.dbf` is
+UTF-8 encoded (per its `.CPG`), which matters for the German region names.
+
+```{r}
+#| label: ingest-bioregions-read
+bioreg <- terra::vect(
+  paste0("/vsizip/", sources_bioreg[["local_path"]], "/N2020_Revision_BiogeoRegion.shp"),
+  options = "ENCODING=UTF-8"
+)
+
+stopifnot(
+  "expected 12 bioregion polygons" = nrow(bioreg) == 12L,
+  "expected 6 distinct regions" = data.table::uniqueN(bioreg$RegionNumm) == 6L
+)
+
+# Level order is fixed by the numeric code so it is stable across re-runs.
+region_levels <- bioreg |>
+  as.data.frame() |>
+  data.table::as.data.table() |>
+  unique(by = "RegionName") |>
+  (\(dt) dt[order(RegionNumm)])() |>
+  (\(dt) dt[, .(code = RegionName, label = DERegionNa)])()
+
+subregion_levels <- bioreg |>
+  as.data.frame() |>
+  data.table::as.data.table() |>
+  unique(by = "Unterreg_1") |>
+  (\(dt) dt[order(Unterregio)])() |>
+  (\(dt) dt[, .(code = Unterreg_1, label = DEBioBedeu)])()
+
+region_levels
+subregion_levels
+```
+
+## Declare the predictors
+
+```{r}
+#| label: ingest-bioregions-meta
+db$pred_meta_t <- create_pred_meta_t(list(
+  bioregion = list(
+    pretty_name = "Biogeographic region",
+    description = paste(
+      "BAFU biogeographic region of Switzerland (N2020 Revision), 6 classes:",
+      paste0(region_levels$code, " ", region_levels$label, collapse = "; "),
+      "- Categorical regional identity; the original SSP-CH implementation instead fitted",
+      "separate models per bioregion."
+    ),
+    data_type = "factor",
+    factor_levels = region_levels$code,
+    orig_format = "EPSG:2056 polygon shapefile, point-in-polygon at 100m model coords",
+    unit = NA_character_
+  ),
+  biosubregion = list(
+    pretty_name = "Biogeographic subregion",
+    description = paste(
+      "BAFU biogeographic subregion (N2020 Revision), 12 classes:",
+      paste0(subregion_levels$code, " ", subregion_levels$label, collapse = "; "),
+      "- Strictly nested within `bioregion`, hence collinear with it; feature selection",
+      "should retain at most one of the two per transition."
+    ),
+    data_type = "factor",
+    factor_levels = subregion_levels$code,
+    orig_format = "EPSG:2056 polygon shapefile, point-in-polygon at 100m model coords",
+    unit = NA_character_
+  )
+))
+```
+
+## Extract at model coordinates
+
+Point-in-polygon at each hectare-cell centre. `extract_using_coords_t()` melts to long form
+(`attribute`, `value`) and drops non-matching coordinates by default, so cells outside every
+polygon — the `coords_t` grid is a rectangle over the country, so its corners fall outside
+Switzerland — simply do not appear. That is the right behaviour here: there is no defensible
+region to assign them. The codes are recoded to 1-based factor indices, as noted above.
+
+```{r}
+#| label: ingest-bioregions-extract
+extracted <-
+  extract_using_coords_t(
+    bioreg[, c("RegionName", "Unterreg_1")],
+    coords_minimal
+  ) |>
+  data.table::dcast(id_coord ~ attribute, value.var = "value")
+
+# recode to the 1-based level index that pred_data_t expects for factor predictors
+extracted[, `:=`(
+  bioregion = match(RegionName, region_levels$code),
+  biosubregion = match(Unterreg_1, subregion_levels$code)
+)]
+
+stopifnot(
+  "some region codes did not match the declared factor levels" =
+    extracted[is.na(bioregion) | is.na(biosubregion), .N] == 0L
+)
+
+message(
+  "Assigned a region to ", nrow(extracted), " of ", nrow(coords_minimal),
+  " coordinates (", nrow(coords_minimal) - nrow(extracted), " fall outside Switzerland)."
+)
+```
+
+## Commit
+
+Both predictors are static, so they go to `id_period = 0` under the base run — the
+static-fallback slot every period reads through.
+
+```{r}
+#| label: ingest-bioregions-commit
+pred_ids <- db$pred_meta_t[name %in% c("bioregion", "biosubregion"), .(id_pred, name)]
+
+bioreg_long <-
+  data.table::melt(
+    extracted[, .(id_coord, bioregion, biosubregion)],
+    id.vars = "id_coord",
+    variable.name = "name",
+    value.name = "value",
+    variable.factor = FALSE
+  )
+bioreg_long <- merge(bioreg_long, pred_ids, by = "name")
+
+db$pred_data_t <- as_pred_data_t(
+  bioreg_long[, .(id_run = 0L, id_period = 0L, id_pred, id_coord, value)]
+)
+
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key =               , value =,
+  "bioregion_url",      sources_bioreg[["url"]],
+  "bioregion_md5sum",   sources_bioreg[["md5sum"]],
+  "bioregion_provider", "BAFU ch.bafu.biogeographische_regionen (N2020 Revision)"
+))
+```

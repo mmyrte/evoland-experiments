@@ -9,8 +9,15 @@ period- and run-specific overrides of the observed climatology committed by
 The observed climatology sits at `id_period 0` on run `0`, which evoland treats as the
 **static fallback**: `pred_data_wide.sql` reads `id_period in (0, <target period>)` and, since
 the fix in evoland-plus, prefers the period-specific row. So writing a GWL value at
-`id_period 5..8` under a scenario run *overrides* the baseline for that run, and every
-predictor left unwritten keeps falling back to the baseline. Nothing needs deleting.
+`id_period 5..8` under a *climate* run overrides the baseline for that run and every SSP leaf
+below it, while any predictor left unwritten keeps falling back to the baseline. Nothing needs
+deleting.
+
+Note the precedence is decided **per slice**, not per coordinate: if a predictor has any data
+at the target period, that whole `(id_pred, id_period)` slice is used and its period-0 rows are
+ignored. So a projection must be written for *every* coordinate it should apply to — a
+partially-populated slice yields `NA` (then `pred_meta_t$fill_value`) at the missing cells
+rather than quietly falling back to the baseline there.
 
 > **Ordering — this step is not a plain stage-02 step.** It is numbered `02-…-3-` because it
 > belongs to the CH2025 family, but it should be run **after `05-covariate-selection.qmd`**,
@@ -21,32 +28,31 @@ predictor left unwritten keeps falling back to the baseline. Nothing needs delet
 
 ## Why this cannot ingest everything
 
-The projected climate is the one predictor family that is **per-run and per-period**, so its
-storage cost is the product of every axis:
+Projected climate is the only **per-run, per-period** predictor family, so its storage cost is
+the product of every axis it varies along:
 
 | Axis | Size |
 | --- | --- |
 | coordinates with LULC data | ~4.1 × 10⁶ |
 | extrapolated periods (5–8) | 4 |
-| scenario arms (5 SSP × 3 quantiles) | 15 |
+| GWL trajectories × quantiles | 4 × 1 (q50 default) |
 | yearly climate indicators ingested | 18 |
 
-That is ~4.4 × 10⁹ rows for the full cross product — orders of magnitude more than the
-observed baseline (~7 × 10⁷ rows: 18 indicators × 4.1 × 10⁶ coords at one period). Three
-levers reduce it, and this step exposes all three as parameters:
+Because `runs_t` puts **climate above SSP** (see `00-setup-db.qmd`), climate is stored once per
+*climate* run rather than once per SSP arm — 4 copies at the q50 default instead of 20, and
+12 instead of 60 if all three quantiles are registered. The SSP leaves inherit it.
+
+Even so, the full indicator set is ~1.2 × 10⁹ rows at the q50 default. Two further levers
+reduce it, and this step exposes both:
 
 1. **Project only selected predictors.** After `05`, most climate indicators are pruned for
    most transitions. `pred_names` defaults to the climate predictors still present in
    `trans_preds_t`.
-2. **Project only the quantiles you need.** `q50` is the default arm; `q5`/`q95` are an
-   uncertainty sensitivity worth running on a subset rather than by default.
-3. **The `current` climate framing costs nothing.** Those runs deliberately store no climate
-   at all and inherit the baseline, which is exactly what "socioeconomic change only" means.
+2. **Project only the quantiles you need.** `q50` is the default; `q5`/`q95` are an
+   uncertainty sensitivity, and each one multiplies the volume.
 
-Note also that the run hierarchy is a *tree*, not a lattice: an SSP × GWL run has one parent,
-so climate cannot be stored once per `(GWL, quantile)` and shared across SSPs even though the
-raster values are identical. That duplication is the cost of keeping socioeconomic and
-climate pathways orthogonal in `runs_t`.
+The `current` framing costs nothing at all: it stores no climate and its SSP children inherit
+the `id_period 0` baseline, which is exactly what "only society changes" means.
 
 ## Only `yearly` projections exist
 
@@ -62,53 +68,48 @@ terms move. Either restrict the climate predictors offered to `05` to `*_yearly`
 and document the freeze. This step warns about any seasonal climate predictor it finds in the
 selected set.
 
-## SSP → global warming level crosswalk
+## GWL trajectories
 
-> **PROVISIONAL — this is the open question in `TODO.md` ("SSP→GWL / CO₂ mapping").** The
-> values below are a defensible reading of IPCC AR6 WG1 SPM.8a against the three CH2025
-> levels, not a settled decision. They are isolated in this one table so they can be changed
-> in one place.
+The period → GWL schedule is a property of the **climate trajectory**, not of an SSP: the
+trajectories are shared, and several SSPs are realised against each. `00-setup-db.qmd`
+registers one climate run per (trajectory × quantile) and names the trajectories; the schedule
+itself lives here, where it is consumed.
 
-CH2025 provides exactly three levels — GWL1.5, GWL2.0, GWL3.0 — as 30-year climatologies.
-Each extrapolated decade is assigned the level its SSP is nearest to:
-
-- **SSP0** is fixed at GWL1.5 throughout, per `README.md` (we may already be at 1.5 °C).
-- **SSP5** late century implies ~4–5 °C, above the highest level CH2025 publishes. Following
-  `02-ingest-preds-ch2025-1-download.qmd`, we **cap at GWL3.0** rather than dropping the
-  tail. This understates late-century SSP5 warming and must be stated in any reporting.
+> **PROVISIONAL — the open question in `TODO.md` ("SSP→GWL / CO₂ mapping").** CH2025 publishes
+> exactly three levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies. These four
+> schedules are a defensible reading of IPCC AR6 WG1 SPM.8a, not a settled decision.
+> `fast30` is **capped**: AR6 puts SSP5-8.5 above 3 °C well before the 2060s, but CH2025
+> publishes nothing higher. That understates late-century SSP5 warming and must be stated in
+> reporting. Which trajectory is a given SSP's "own" realisation is recorded as
+> `default_for_ssp` in `00-setup-db.qmd` and is reporting metadata only.
 
 ```{r}
-#| label: ch2025-gwl-crosswalk
+#| label: ch2025-gwl-trajectories
 library(data.table)
 library(evoland)
 
 # id_period 5..8 == decades 2025-34, 2035-44, 2045-54, 2055-64
-ssp_gwl_crosswalk <- data.table::rowwiseDT(
-  ssp =    , id_period =, gwl        =,
-  "SSP0",    5L,          "GWL1.5",
-  "SSP0",    6L,          "GWL1.5",
-  "SSP0",    7L,          "GWL1.5",
-  "SSP0",    8L,          "GWL1.5",
+gwl_trajectories <- data.table::rowwiseDT(
+  gwl_trajectory =, id_period =, gwl      =,
+  "stable15",       5L,          "GWL1.5",
+  "stable15",       6L,          "GWL1.5",
+  "stable15",       7L,          "GWL1.5",
+  "stable15",       8L,          "GWL1.5",
 
-  "SSP1",    5L,          "GWL1.5",
-  "SSP1",    6L,          "GWL1.5",
-  "SSP1",    7L,          "GWL2.0",
-  "SSP1",    8L,          "GWL2.0",
+  "stab20",         5L,          "GWL1.5",
+  "stab20",         6L,          "GWL1.5",
+  "stab20",         7L,          "GWL2.0",
+  "stab20",         8L,          "GWL2.0",
 
-  "SSP3",    5L,          "GWL1.5",
-  "SSP3",    6L,          "GWL2.0",
-  "SSP3",    7L,          "GWL2.0",
-  "SSP3",    8L,          "GWL3.0",
+  "rise30",         5L,          "GWL1.5",
+  "rise30",         6L,          "GWL2.0",
+  "rise30",         7L,          "GWL2.0",
+  "rise30",         8L,          "GWL3.0",
 
-  "SSP4",    5L,          "GWL1.5",
-  "SSP4",    6L,          "GWL2.0",
-  "SSP4",    7L,          "GWL2.0",
-  "SSP4",    8L,          "GWL3.0",
-
-  "SSP5",    5L,          "GWL2.0",
-  "SSP5",    6L,          "GWL2.0",
-  "SSP5",    7L,          "GWL3.0", # capped: AR6 puts SSP5-8.5 above 3 C by ~2050
-  "SSP5",    8L,          "GWL3.0"  # capped: AR6 puts SSP5-8.5 at ~4 C by the 2060s
+  "fast30",         5L,          "GWL2.0",
+  "fast30",         6L,          "GWL2.0",
+  "fast30",         7L,          "GWL3.0",
+  "fast30",         8L,          "GWL3.0"
 )
 ```
 
@@ -202,15 +203,16 @@ if (anyNA(inventory[, .(indicator, gwl, uncertainty, time_of_year)])) {
 
 inventory <- inventory[pred_name %in% pred_names & uncertainty %in% quantiles_to_ingest]
 
-# scenario runs: the gwl-framing arms registered in 00-setup-db.qmd
+# climate runs: the gwl-framing arms registered in 00-setup-db.qmd. These sit ABOVE the
+# SSP leaves, so writing here serves every SSP realised against the trajectory.
 gwl_runs <- db$runs_t[climate_framing == "gwl" & gwl_quantile %in% quantiles_to_ingest]
 stopifnot("No gwl-framing runs in runs_t - run 00-setup-db.qmd" = nrow(gwl_runs) > 0L)
 
-# (id_run, id_period) -> the (gwl, quantile) file that supplies it
+# (climate id_run, id_period) -> the (gwl, quantile) file that supplies it
 targets <-
   gwl_runs[
-    ssp_gwl_crosswalk,
-    on = "ssp",
+    gwl_trajectories,
+    on = "gwl_trajectory",
     allow.cartesian = TRUE,
     nomatch = NULL
   ][, .(id_run, id_period, gwl, uncertainty = gwl_quantile)]
@@ -288,7 +290,10 @@ for (i in seq_len(nrow(sources))) {
   gc(verbose = FALSE)
 }
 
-message("Done. Projected climate written for ", nrow(gwl_runs), " scenario runs.")
+message(
+  "Done. Projected climate written for ", nrow(gwl_runs),
+  " climate runs; SSP leaves inherit it via run lineage."
+)
 ```
 
 ## Provenance
@@ -304,8 +309,8 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   key =                        , value =,
   "ch2025_gwl_quantiles",        paste(quantiles_to_ingest, collapse = ","),
   "ch2025_gwl_predictors",       paste(pred_names, collapse = ","),
-  "ch2025_gwl_crosswalk",        paste(
-    ssp_gwl_crosswalk[, paste0(ssp, ":p", id_period, "=", gwl)],
+  "ch2025_gwl_trajectories",     paste(
+    gwl_trajectories[, paste0(gwl_trajectory, ":p", id_period, "=", gwl)],
     collapse = " "
   ),
   "ch2025_gwl_example_url",      gwl_url(

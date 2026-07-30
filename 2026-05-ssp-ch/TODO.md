@@ -42,8 +42,14 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
       `08`/`09` would have required DinamicaConsole; it also predates the `fit_full_models`
       robustness fixes. `rv.lock` still records the old sha — **`rv sync` must regenerate it**
       (the new pin adds `rpart` and `gifski` to suggests).
-- [x] **Registered the scenario axis in `runs_t`** (`00-setup-db.qmd`): base `0` → one run per
-      SSP → per-SSP climate framings (`current` climatology, `gwl` × q5/q50/q95).
+- [x] **Registered the scenario axis in `runs_t`** (`00-setup-db.qmd`), ordered
+      **base → climate trajectory → SSP**. Climate sits above SSP because it is the only
+      expensive per-run payload (4.1 M cells × 4 periods × N predictors) while the SSP tables
+      are ~10²–10³ rows: 5 SSPs × 4 trajectories × 3 quantiles costs 12 stored climate copies
+      this way versus 60 with SSP on top. It also expresses the intended orthogonality —
+      trajectories are shared objects several SSPs are realised against, not properties of one
+      SSP. The technical ordering deliberately does not match the storytelling; run
+      `description`s still read "SSP3 under …".
 - [x] **Established where the SSP demand actually lives** — `NCCS_simulation_LULC_areas.xlsx`
       (class-area targets + curve shapes, keyed by SSP, SSP0 included), *not*
       `Transition_Tables.xlsx`, whose per-SSP rate blocks are empty. See README.
@@ -64,9 +70,11 @@ spanning a maximally diverse set of futures).
 - [ ] **Implement SSP0** ("positive normative visioning", newly added) — bring in
       its interventions (`NCCS-SSP-scenarios/Tools/SSP0_interventions.yml`) and
       demand curves. SSP0 → GWL1.5 (we may already be there).
-- [ ] **Realise each SSP against two climate framings** — (a) current climatology
-      and (b) the SSP→GWL mapping — keeping socioeconomic and climatological
-      pathways orthogonal as in the original work. Encode via `id_run` / `id_period`.
+- [x] **Realise each SSP against multiple climate framings** — `current` climatology plus four
+      shared CH2025 GWL trajectories, registered in `00-setup-db.qmd`. Orthogonality is now
+      structural: trajectories are first-class runs that any SSP can be realised against.
+    - [ ] Decide which (SSP × trajectory) pairings are actually allocated. `default_for_ssp`
+          records the "own" pairing per SSP, but the full cross is registered and cheap.
 
 ---
 
@@ -76,14 +84,14 @@ spanning a maximally diverse set of futures).
 - [x] 🟡 **Projected `-gwl` ingestion written** — `02-ingest-preds-ch2025-3-gwl.qmd`.
       Crosswalk + `id_run` encoding done; **never executed** (no R in the authoring
       environment). Three things still need a decision:
-    - [ ] **Ratify the SSP → GWL crosswalk.** Currently provisional, isolated in one
-          `rowwiseDT` in that step. See "Open questions" below.
-    - [ ] **Decide the ordering.** The full cross product is ~4.4 × 10⁹ rows
-          (4.1 M coords × 4 extrapolated periods × 15 scenario arms × 18 yearly indicators),
-          which is not storable. The step therefore projects only the climate predictors that
-          survived `05-covariate-selection.qmd`, which means it must run **after** `05`
-          despite its `02-` number. Either accept that (documented in the step) or renumber
-          the pipeline so predictor projection follows selection.
+    - [ ] **Ratify the GWL trajectories.** Four provisional schedules (`stable15`, `stab20`,
+          `rise30`, `fast30`), isolated in one `rowwiseDT` in that step. See "Open questions".
+    - [ ] **Decide the ordering.** Inverting the run hierarchy cut stored climate from 60
+          copies to 12, but the full indicator set is still ~1.2 × 10⁹ rows at the q50 default.
+          The step therefore projects only the climate predictors that survived
+          `05-covariate-selection.qmd`, which means it must run **after** `05` despite its
+          `02-` number. Either accept that (documented in the step) or renumber the pipeline so
+          predictor projection follows selection.
     - [ ] **Seasonal predictors have no projection.** CH2025 publishes `-gwl` aggregates
           `yearly` only, while `-obs` also has DJF/MAM/JJA/SON. Any seasonal predictor that
           survives `05` is silently frozen at its observed baseline under every GWL run.
@@ -97,22 +105,69 @@ spanning a maximally diverse set of futures).
       `02-ingest-preds-ch2025-2-etl.qmd`)
 
 ### Economic (STATENT)
-- [ ] 🟡 **STATENT under SSP logic.** `02-ingest-preds-statent.qmd` currently ingests
-      only the historical employment state; it needs to be projected to match each
-      SSP scenario's socioeconomic logic.
+- [ ] 🟡 **STATENT under SSP logic.** `02-ingest-preds-statent.qmd` currently ingests only the
+      historical employment state.
+
+      **What the original actually does** (`Scripts/Preparation/Simulation_predictor_prep.R`),
+      since this was an open question: *nothing scenario-specific in code*. The SSP signal is
+      entirely exogenous — a project-internal table `Data/Preds/NCCS_future_FTE.csv` giving
+      **canton × sector × 5 future years** of FTE totals (in thousands) per SSP. The script
+      only: joins the 2020 value from the historical data, linearly interpolates to the model
+      time steps with `stats::approx()`, rasterises per canton, and differences consecutive
+      periods into `chg_FTE_{period}_{Sector}_{SSP}.tif`. So "how is SSP3 different" has no
+      answer in the code — it is whatever the elicited CSV says.
+
+      Three consequences:
+    - [ ] **The CSV is not in the repo.** `Data/` is not shipped (see the NCCS README); it is
+          presumably in the Zenodo data deposit (doi:10.5281/zenodo.8263509), which is
+          currently blocked by the sandbox proxy. Without it there is no SSP employment signal
+          to reproduce, only a method.
+    - [ ] **The original predictor is cantonal, not hectare-level** (`Original_resolution =
+          "Canton"`) and is a *change* in FTE, not a level. This pipeline ingests hectare-level
+          STATENT *levels* — a deliberate departure already noted in the README's provenance
+          table, but it means the original's projection method does not transfer directly:
+          there is no cantonal aggregate to interpolate unless we build one.
+    - [ ] Decide whether to (a) obtain the CSV and downscale cantonal trajectories onto the
+          hectare grid, (b) re-elicit per-SSP employment trajectories, or (c) hold employment
+          constant into the future and document it as a known limitation.
+
+      *(Two incidental defects in the original, in case they matter for interpreting its
+      outputs: the 2020 FTE layers are `file.copy`'d identically across all five SSPs, and the
+      `terra::rasterize`/`writeRaster` calls in the projection loop are commented out, so the
+      shipped script builds only the path table. There is also a live typo — `kanton_data`
+      referenced where `canton_data` is defined.)*
 
 ### Soil
-- [ ] **Replace EIV soil layers** (`soil_ph`, `soil_nutrients`, `soil_moisture`,
-      `soil_moisture_variability`, `soil_aeration`, `soil_humus`) with the Swiss
-      Soil Property Map ingested by `2026-07-ssp-rsofun/2-forcing-soil-1-download.r`.
-      (`02-ingest-preds-envidat-eiv.qmd`)
+- [x] **Ingest the Swiss Soil Property Map** — `02-ingest-preds-soil.qmd` (written, unrun).
+      sand / clay / OC at 0/30/60/100 cm, area-weighted mean from the native 30 m grid onto the
+      100 m grid via `terra::project(method = "average")`. Point extraction would subsample and
+      discard ~8/9 of the source. ~6 GB of downloads.
+- [ ] 🔴 **This is not the full replacement the TODO assumed.** SSPM as fetched carries no pH
+      and no nutrient layer, so retiring all six EIV soil predictors would *lose* `soil_ph` and
+      `soil_nutrients` outright. The step therefore ingests SSPM **alongside** the EIVs and
+      removes nothing. Decide per predictor after `05` scores them against each other:
+    - `soil_humus` → superseded by `soil_oc_*` (OC is the measurement the EIV indicates).
+    - `soil_moisture`, `soil_moisture_variability`, `soil_aeration` → only *partly* superseded
+      by texture; the real replacement is the WHC that
+      `2026-07-ssp-rsofun/2-forcing-soil-2-whc.r` derives by pedotransfer. Until that is
+      ingested here, texture is a rawer predictor, not a better one.
+    - `soil_ph`, `soil_nutrients` → **no SSPM counterpart fetched**. The record reportedly has
+      N and P layers the rsofun step skips; whether they can stand in is untested.
+- [ ] **Depth handling.** The four depths are ingested as separate predictors (12 total, where
+      the EIVs offered 6) because topsoil governs cultivation and deeper layers govern water
+      storage. If that proves unwieldy in `05`, the alternative is a trapezoidal 0–100 cm
+      profile mean per property plus the 0 cm value — noted in the step, not implemented.
+- [ ] **Optional within-cell heterogeneity.** `derive_heterogeneity = FALSE` in the step would
+      add per-property within-hectare sd (a uniform loam and a half-sand/half-clay hectare have
+      the same mean but very different value). Speculative; nearly free. Decide whether to enable.
 
 ### New predictors
-- [ ] **Region ID as indicator.** Ingest biogeographic regions
-      (`ch.bafu.biogeographische_regionen`, 2056 shp) as a categorical predictor.
-      (`01-ingest-lulc-data.qmd`) — *blocked in the authoring environment:* every ingest step
-      records a verified `url` + `md5sum`, and `data.geo.admin.ch` is denied by the sandbox
-      network policy, so neither can be obtained. Needs a machine with access to that host.
+- [x] **Region ID as indicator** — `02-ingest-preds-bioregions.qmd` (written, unrun).
+      6 regions + 12 subregions as `data_type = "factor"` predictors. The published checksum is
+      a SHA-256 multihash, not md5, so the md5 was computed from the archive after verifying
+      its SHA-256 against the STAC entry.
+    - [ ] The two are strictly nested and therefore collinear; `05` should retain at most one
+          per transition. Confirm the correlation filter actually does that for factors.
 - [ ] **Coordinates as predictors?** Evaluate whether raw E/N (or a smooth basis of
       them) should be added as predictors, weighed against location-identity leakage.
 - [ ] **DEM hillshade semantics.** Hillshade was ingested but is probably meant as
@@ -211,17 +266,16 @@ remaining MS9-phase-1 work.
       `02-ingest-preds-ch2025-3-gwl.qmd`, read off AR6 WG1 SPM.8a against the three levels
       CH2025 publishes:
 
-      | | p5 (2025–34) | p6 (2035–44) | p7 (2045–54) | p8 (2055–64) |
+      | Trajectory | p5 (2025–34) | p6 (2035–44) | p7 (2045–54) | p8 (2055–64) |
       | --- | --- | --- | --- | --- |
-      | SSP0 | 1.5 | 1.5 | 1.5 | 1.5 |
-      | SSP1 | 1.5 | 1.5 | 2.0 | 2.0 |
-      | SSP3 | 1.5 | 2.0 | 2.0 | 3.0 |
-      | SSP4 | 1.5 | 2.0 | 2.0 | 3.0 |
-      | SSP5 | 2.0 | 2.0 | 3.0 | 3.0 |
+      | `stable15` (default SSP0) | 1.5 | 1.5 | 1.5 | 1.5 |
+      | `stab20` (default SSP1) | 1.5 | 1.5 | 2.0 | 2.0 |
+      | `rise30` (default SSP3, SSP4) | 1.5 | 2.0 | 2.0 | 3.0 |
+      | `fast30` (default SSP5) | 2.0 | 2.0 | 3.0 | 3.0 |
 
-      SSP0 → GWL1.5 is fixed per README. SSP5's last two decades are **capped** at GWL3.0.
-      SSP3 and SSP4 are currently identical, which may or may not be intended. CO₂ is not
-      yet assigned at all.
+      SSP0 → GWL1.5 is fixed per README. `fast30`'s last two decades are **capped** at GWL3.0.
+      SSP3 and SSP4 currently share `rise30`, which may or may not be intended — if they should
+      differ, a fifth trajectory is needed. CO₂ is not yet assigned at all.
 - [ ] **Does the pipeline numbering need to change?** Projected climate predictors can only
       be materialised for the *selected* predictor set, so predictor projection now depends
       on `05`. Either keep the `02-…-3-gwl` number with a documented out-of-order run, or
