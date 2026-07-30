@@ -207,18 +207,37 @@ parameters remain to be justified.
 
 - [ ] 🟡 **`04-viable-transition-identification.qmd`** — justify the viability threshold
       `min_cardinality_abs` (currently 1000) from the `04d` observed-transitions plot.
-- [ ] 🔴 **`05-covariate-selection.qmd` does not run.** Its second chunk calls
-      `db$get_pred_filter_score(filter_fun = grrf_filter, num.trees =, max.depth =, gamma =,
-      cores =)`. `grrf_filter`, `covariance_filter` and `get_pruned_trans_preds_t` do not
-      exist in evoland-plus — verified absent at both the old pin and current main. The live
-      API is `get_pred_filter_score(filter = <mlr3filters::Filter>, cluster =)`, which
-      **scores but does not prune**; the first chunk assigns the scored table straight back to
-      `db$trans_preds_t`, so the covariance filter the prose describes never happens either.
-      Rebuild on `FilterImportance$new(learner = LearnerClassifGrrf$new())` plus
-      `mlr3filters::FilterFindCorrelation` for the `corcut` role, with an explicit subset
-      before commit.
-- [ ] 🟡 **Then** decide and document defensible GRRF (`gamma`/`num.trees`/`max.depth`) and
-      correlation (`corcut`) parameters.
+- [x] **`05-covariate-selection.qmd` rebuilt on the live API.** It previously called
+      `get_pred_filter_score(filter_fun = grrf_filter, ...)`; `grrf_filter`,
+      `covariance_filter` and `get_pruned_trans_preds_t` do not exist in evoland-plus at either
+      the old pin or main. The live API **scores but does not prune**, and the old first chunk
+      assigned the scored table straight back, so it committed the *unpruned* cross product and
+      the correlation stage never ran at all. Now two explicit stages:
+      `flt("find_correlation")` → `FilterImportance$new(learner = LearnerClassifGrrf$new())`,
+      with subsetting and a coverage check before commit.
+- [x] **Two API facts that shaped the design**, both verified by running mlr3filters 0.9.1:
+    - `FilterFindCorrelation` accepts only `integer`/`numeric`. With a `factor` predictor in
+      the task it raises *"unsupported feature types: factor"*, which `pred_filter_worker()`
+      catches and converts into an **all-`NA` score for that whole transition** — a silent
+      hole, not a crash. Now that `bioregion`/`biosubregion` are factors this is live, so the
+      correlation stage runs over numeric predictors only and categoricals bypass it.
+    - `FilterFindCorrelation` scores ≈ `1 − max|r|` (higher = keep), which gives the old
+      `corcut` parameter a clean translation: keep `score > 1 - corcut`.
+- [ ] 🟡 **Read `importance_rel_cut` off `05d-covariate-selection.qmd`.** The tempting
+      parameter-free cut (`importance > 0`, on the assumption that GRRF zeroes uninformative
+      predictors) **does not work** — reproducing evoland's `LearnerClassifGrrf` training path
+      on a synthetic 3-signal / 13-noise task gives only 3 exact zeros out of 16 at every
+      `gamma` tried, so `importance > 0` would retain 10 pure-noise predictors. What GRRF does
+      give is a strongly *bimodal* distribution (signal 0.85–1.00, surviving noise 0.16–0.20),
+      so the cut is defensible but its position is data-dependent. `05d` plots the distribution
+      and tabulates survival at candidate cuts; `05` currently carries a provisional 0.5.
+- [ ] 🟡 **Sensitivity-check the remaining parameters.** `corcut = 0.7` has a literature default
+      (Dormann et al. 2013); `grrf_gamma` / `num.trees` / `max.depth` are reasoned but not yet
+      justified against this data. Re-run across a small grid and report how much the retained
+      set moves.
+- [ ] **Runtime.** `regularization.factor` disables ranger's internal threading
+      ("Parallelization deactivated"), so the per-transition `mirai` cluster is the only
+      parallelism in `05`. Size `n_workers` accordingly.
 
 ---
 
