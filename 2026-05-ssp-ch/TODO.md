@@ -231,11 +231,65 @@ remaining MS9-phase-1 work.
 - [ ] **`06-transition-modelling.qmd`** — mlr3 transition-potential models (valparish
       used GLM). Decide learner(s) and a **justified train/test split** (valparish
       left `sample_frac = 0.3` unmotivated).
+- [x] **Analysed the solver integration** — see [`notes-lp-solver.md`](notes-lp-solver.md).
+      The shipped LP was run on the real demand numbers (all five SSPs solve in <1 s with
+      `lpSolve`). Headline conclusions:
+    - The "replace rates with absolutes" premise is **already true of the shipped solver** —
+      every decision variable is an area, every constraint an area balance; rates appear only
+      as coefficients in the soft bound rows and in the final unit conversion. The rate-based
+      thing worth replacing is `extrapolate_trans_rates()`, and absolutes beat it because a
+      *coupled solver* beats *21 independent `lm()` fits*, not because of units.
+    - Absolutes vs shares is **provably the same LP** up to a scalar. Shares' one real win is
+      grid-portability (the demand is on a 4,129,078-cell grid this pipeline will not
+      reproduce); rates are effectively mandatory at the allocator interface. Suggested
+      layering: shares stored, absolute cells in the solver, rate + count on output.
+    - The mass-conservation argument in
+      [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32) **does not survive
+      measurement**: running the `lm()` path end-to-end gives −0.0000 % area drift and no
+      outflow row above 1. Conservation is structural in the simulator. The real deficiency is
+      that `extrapolate_trans_rates()` has *no input for a scenario target* and lands 10–19 %
+      off every SSP.
+- [ ] 🔴 **Three defects in the shipped solver**, found by running it. Two independently
+      verified here by reading the source:
+    - `build_diff_row()` is called as `build_diff_row(l_i, t_i, t_i + 1, ratio)`, so
+      `t2 - 1 == t1` and its fourth assignment **overwrites its first**. The shape row is not
+      what its comments say, the whole `chosen_shape` mechanism is dead code, and the term
+      dominates the objective ~3,700× — meaning the LP was effectively not minimising
+      rate-bound violations. Fixing one line drops the objective from ~305 to ~0.05 and cuts
+      out-of-bounds churn by up to 35 %.
+    - `Step_length` is `5`, a scalar, at the shipped call site
+      (`Simulation_trans_tables_prep.R:14,171`) but is indexed `Step_length[t_i + 1]` — `NA`
+      from the first iteration onward. `lpSolve::lp()` swallows the `NA` and returns a
+      different answer with `status = 0`.
+    - `r_max == 0` yields `x − devUpper ≤ 0` rather than `x = 0`, so "forbidden" edges are
+      merely cheap: 62k–289k cells/scenario flow along `static → arable`,
+      `closed_forest → static`, `glacier → grassland`.
+    - [ ] **Decide the replication stance.** If the published Zenodo outputs were produced by
+          this revision, faithful replication means reproducing the bugs. Recommendation in
+          the notes: implement both behind a `shipped_bugs` flag, diff once, then use the
+          fixed version downstream.
+    - [ ] `chosen_shape` is inert for a *second*, independent reason that survives the fix — a
+          straight line satisfies all five shapes with equality. Making shapes bite would
+          therefore **change** the replication target; that is a call for the original
+          elicitation's author.
+- [ ] **Build `trans_rate_reachability()` first.** A pure-LP implementation of the docx's
+      `compute_final_bounds` (~60 lines, needs no targets) found **24 of 50 SSP × class targets
+      unreachable** under observed transition bounds — several by 4–5×, glacier by 1.81× in all
+      five scenarios — with 42–63 % of solved flow outside the historic envelope. This is a
+      *result*, not a diagnostic, and it means #32's "fail loudly on infeasible targets" would
+      abort every scenario: the soft bounds are load-bearing and the precheck's job is to
+      quantify, not gate.
+    - [ ] ⚠️ **Re-run before quoting.** Those numbers use the original study's 21-edge
+          calibration table as a stand-in, because no `ssp-ch.evolanddb` exists yet. This
+          pipeline's `trans_meta_t` (`min_cardinality_abs = 1000`, `static` excluded as
+          anterior) is a different rule; a broader viable set would widen the bands and could
+          change the counts substantially.
 - [ ] **`07-transition-rates.qmd`** — wire in the SSP demand. Source is
       `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` (class-area targets +
       curve shapes per SSP0/1/3/4/5), **not** `Transition_Tables.xlsx` — see README.
-    - [ ] **Port the LP solver** (`lulcc.simulationtransitionratesolver.R`) into
-          `evoland-experiments` as a sourceable function. Keep it experiment-local for now;
+    - [ ] **Port the LP solver** to `2026-05-ssp-ch/R/trans-rate-solver.R` as three functions
+          (`trans_rate_bounds` / `trans_rate_reachability` / `solve_trans_rates`); add
+          `lpSolve` to `rproject.toml`. Keep it experiment-local for now;
           upstreaming is tracked in [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32),
           which proposes replacing rate-based `extrapolate_trans_rates()` with an
           absolutes-based solver.
@@ -243,6 +297,10 @@ remaining MS9-phase-1 work.
           the pipeline is decadal, and period 8 ends 2064, so the 2060 target is interior.
           The solver takes explicit `Time_steps`/`Step_length`, so this is a matter of
           choosing the decadal target years, not of changing the solver.
+    - [ ] **Four docx ideas are worth porting and are all LP-representable** — the precheck,
+          hard-forbidden edges, an L1 terminal-fit term (the ±1 % band is currently a *bias*:
+          every class parks on a band edge) and a minimax fairness bound. **No QP dependency
+          needed.**
     - [ ] **Reconcile the ported solver against the written formulation** (the docx behind
           [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32)). They are
           *not* the same model: the shipped LP works in absolute areas with a hard 99/101 %
