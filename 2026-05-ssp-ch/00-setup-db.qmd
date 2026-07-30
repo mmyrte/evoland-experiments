@@ -59,3 +59,111 @@ db$periods_t <- create_periods_t(
   end_extrapolated = "2060-01-01"
 )
 ```
+
+This yields eight decadal periods plus the static `id_period 0`:
+
+| `id_period` | Span | Role |
+| --- | --- | --- |
+| 0 | 2020-01-01 (instant) | static predictors (DEM, EIVs, distances, climate baseline) |
+| 1–4 | 1985–1994 … 2015–2024 | observed; carry the Arealstatistik surveys 1985/1997/2009/2018 |
+| 5–8 | 2025–2034 … 2055–2064 | extrapolated |
+
+**Note the last period ends 2064, not 2060.** Decadal steps from 1985 cannot land on 2060,
+so the SSP demand targets (stated for 2060) fall *inside* period 8. Step `07` resamples the
+5-yearly demand curves onto this decadal grid and must therefore treat period 8's target as
+an interpolation, not an endpoint. This also depends on the `create_periods_t` fix that makes
+the final period a full decade — see the pin note in `rproject.toml`; before that fix period 8
+was a half-decade (2055–2060) and any rate applied to it was effectively doubled.
+
+## Runs — the scenario axis
+
+`runs_t` is the third axis, alongside coordinates and periods. Runs form a **hierarchy**:
+`db$get_read_expr()` resolves each data slice to the closest ancestor run that has it, so a
+scenario run only needs to store what it *overrides* — everything else (calibration,
+observed LULC, static predictors) is inherited from the base run `0`.
+
+We use three levels:
+
+1. **Base (`0`)** — observed data and everything fitted from it.
+2. **Socioeconomic pathway** — one run per SSP. Carries what the SSP narrative changes:
+   demand curves (`07`), projected STATENT employment, and interventions.
+3. **Climate framing** — children of an SSP run, keeping socioeconomic and climatological
+   pathways orthogonal as in the original SSP-CH work:
+   - `current` — no climate override at all; every period inherits the observed
+     climatology at `id_period 0`. This is the "what if only society changes" arm.
+   - `gwl` — CH2025 projections at the mapped global warming level, one run per
+     uncertainty quantile (`q5`/`q50`/`q95`).
+
+`id_run` is `1000 + 100 × ssp_num`, `+1` for the current-climatology arm and `+11/12/13`
+for the GWL quantiles — so `1312` reads as "SSP3, GWL framing, q50". Downstream steps should
+nonetheless **look runs up by the `ssp`/`climate_framing`/`gwl_quantile` columns** rather than
+hard-coding integers. `runs_t` only mandates `id_run`/`parent_id_run`/`description`; extra
+columns are carried through, which is what makes that lookup possible.
+
+> **Scenario scope.** SSP0/1/3/4/5; SSP2 is deliberately excluded (see `README.md`). Note
+> that the per-SSP demand targets live in `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`,
+> keyed by these same SSP labels. The `EI_Nature`/`EI_Culture`/`EI_Society`/`Growth and Extinction`
+> names in `Transition_Tables.xlsx` are an **earlier vintage** and do *not* map cleanly onto
+> SSP0/1/3/4/5 — matching the two on their 2060 class areas leaves residuals of 3–7 × 10⁵ ha and
+> assigns two SSPs to the same name. Don't build a crosswalk between them.
+
+```{r}
+#| label: setup-db-runs
+library(data.table)
+
+ssp_specs <- data.table::data.table(
+  ssp = c("SSP0", "SSP1", "SSP3", "SSP4", "SSP5"),
+  ssp_num = c(0L, 1L, 3L, 4L, 5L),
+  ssp_description = c(
+    "Positive normative visioning; newly added, no counterpart in the original SSP-CH runs",
+    "Sustainability",
+    "Regional rivalry",
+    "Inequality",
+    "Fossil-fuelled development"
+  )
+)
+
+gwl_quantiles <- c("q5", "q50", "q95") # CH2025 uncertainty levels
+
+runs_scenario <-
+  rbind(
+    # level 2: socioeconomic pathway
+    ssp_specs[, .(
+      id_run = 1000L + 100L * ssp_num,
+      parent_id_run = 0L,
+      description = paste0(ssp, " — ", ssp_description),
+      ssp,
+      climate_framing = NA_character_,
+      gwl_quantile = NA_character_
+    )],
+    # level 3a: current climatology (inherits the id_period 0 baseline; stores no climate)
+    ssp_specs[, .(
+      id_run = 1000L + 100L * ssp_num + 1L,
+      parent_id_run = 1000L + 100L * ssp_num,
+      description = paste0(ssp, " × current climatology"),
+      ssp,
+      climate_framing = "current",
+      gwl_quantile = NA_character_
+    )],
+    # level 3b: CH2025 GWL projections, one run per uncertainty quantile
+    ssp_specs[,
+      .(gwl_quantile = gwl_quantiles, q_idx = seq_along(gwl_quantiles)),
+      by = .(ssp, ssp_num)
+    ][, .(
+      id_run = 1000L + 100L * ssp_num + 10L + q_idx,
+      parent_id_run = 1000L + 100L * ssp_num,
+      description = paste0(ssp, " × CH2025 GWL (", gwl_quantile, ")"),
+      ssp,
+      climate_framing = "gwl",
+      gwl_quantile
+    )]
+  )
+
+db$runs_t <- as_runs_t(rbind(
+  db$runs_t, # keep the base run 0 created on init
+  runs_scenario,
+  fill = TRUE
+))
+
+db$runs_t
+```

@@ -37,6 +37,22 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
       (41 predictors, 1991–2020 → `id_period 0`). *(projected `-gwl` still open.)*
 - [x] `03-neighbors.qmd` — neighbourhood predictors. *(currently land-use categories
       only; extending to other predictors is open.)*
+- [x] **Bumped the evoland-plus pin** from `b40175f` to the tip of
+      `bugfix/regular-period-lengths`. The old pin predates `alloc_clumpy` (PR #30), so
+      `08`/`09` would have required DinamicaConsole; it also predates the `fit_full_models`
+      robustness fixes. `rv.lock` still records the old sha — **`rv sync` must regenerate it**
+      (the new pin adds `rpart` and `gifski` to suggests).
+- [x] **Registered the scenario axis in `runs_t`** (`00-setup-db.qmd`): base `0` → one run per
+      SSP → per-SSP climate framings (`current` climatology, `gwl` × q5/q50/q95).
+- [x] **Established where the SSP demand actually lives** — `NCCS_simulation_LULC_areas.xlsx`
+      (class-area targets + curve shapes, keyed by SSP, SSP0 included), *not*
+      `Transition_Tables.xlsx`, whose per-SSP rate blocks are empty. See README.
+- [x] **Fixed the `id_period = 0` fallback precedence upstream**
+      (evoland-plus `inst/pred_data_wide.sql`, `inst/trans_pred_data.sql`). Both design-matrix
+      queries put the period-0 baseline and the period-specific value in one aggregation group
+      and resolved them with an unordered `first()`. Demonstrated against DuckDB 1.5.5: with
+      scenario rows stored first, `pred_data_wide.sql` silently returned the **baseline**
+      instead of the projection. This blocked any per-period scenario predictor.
 
 ---
 
@@ -57,11 +73,25 @@ spanning a maximally diverse set of futures).
 ## Data ingestion — remaining
 
 ### Climate (CH2025)
-- [ ] 🟡 **Projected `-gwl` ingestion.** Crosswalk `gwl` → `id_period` per SSP,
-      encode quantile × scenario as `id_run`, then decide which indicators feed the
-      transition model. (`02-ingest-preds-ch2025-2-etl.qmd`)
-- [ ] **SSP5-8.5 late century** (~2071–2100, ~5–6 °C) exceeds GWL3.0 — no CH2025
-      aggregate. Decide: cap at GWL3 or drop the tail. (`02-ingest-preds-ch2025-1-download.qmd`)
+- [x] 🟡 **Projected `-gwl` ingestion written** — `02-ingest-preds-ch2025-3-gwl.qmd`.
+      Crosswalk + `id_run` encoding done; **never executed** (no R in the authoring
+      environment). Three things still need a decision:
+    - [ ] **Ratify the SSP → GWL crosswalk.** Currently provisional, isolated in one
+          `rowwiseDT` in that step. See "Open questions" below.
+    - [ ] **Decide the ordering.** The full cross product is ~4.4 × 10⁹ rows
+          (4.1 M coords × 4 extrapolated periods × 15 scenario arms × 18 yearly indicators),
+          which is not storable. The step therefore projects only the climate predictors that
+          survived `05-covariate-selection.qmd`, which means it must run **after** `05`
+          despite its `02-` number. Either accept that (documented in the step) or renumber
+          the pipeline so predictor projection follows selection.
+    - [ ] **Seasonal predictors have no projection.** CH2025 publishes `-gwl` aggregates
+          `yearly` only, while `-obs` also has DJF/MAM/JJA/SON. Any seasonal predictor that
+          survives `05` is silently frozen at its observed baseline under every GWL run.
+          Either restrict the climate predictors offered to `05` to `*_yearly`, or accept and
+          document the freeze. The step warns when it finds one.
+- [x] **SSP5-8.5 late century** — capped at GWL3.0 (CH2025 publishes no higher level),
+      consistent with `02-ingest-preds-ch2025-1-download.qmd`. Understates late-century SSP5
+      warming; must be stated in reporting.
 - [ ] **Bioclimatic indicators.** CH2025 currently lacks CHELSA-BIOCLIM+-style
       bioclim variables; decide which to derive/source. (wishlist in the appendix of
       `02-ingest-preds-ch2025-2-etl.qmd`)
@@ -80,7 +110,9 @@ spanning a maximally diverse set of futures).
 ### New predictors
 - [ ] **Region ID as indicator.** Ingest biogeographic regions
       (`ch.bafu.biogeographische_regionen`, 2056 shp) as a categorical predictor.
-      (`01-ingest-lulc-data.qmd`)
+      (`01-ingest-lulc-data.qmd`) — *blocked in the authoring environment:* every ingest step
+      records a verified `url` + `md5sum`, and `data.geo.admin.ch` is denied by the sandbox
+      network policy, so neither can be obtained. Needs a machine with access to that host.
 - [ ] **Coordinates as predictors?** Evaluate whether raw E/N (or a smooth basis of
       them) should be added as predictors, weighed against location-identity leakage.
 - [ ] **DEM hillshade semantics.** Hillshade was ingested but is probably meant as
@@ -107,8 +139,18 @@ parameters remain to be justified.
 
 - [ ] 🟡 **`04-viable-transition-identification.qmd`** — justify the viability threshold
       `min_cardinality_abs` (currently 1000) from the `04d` observed-transitions plot.
-- [ ] 🟡 **`05-covariate-selection.qmd`** — decide and document defensible GRRF
-      (`gamma`/`num.trees`/`max.depth`) and covariance (`corcut`) parameters.
+- [ ] 🔴 **`05-covariate-selection.qmd` does not run.** Its second chunk calls
+      `db$get_pred_filter_score(filter_fun = grrf_filter, num.trees =, max.depth =, gamma =,
+      cores =)`. `grrf_filter`, `covariance_filter` and `get_pruned_trans_preds_t` do not
+      exist in evoland-plus — verified absent at both the old pin and current main. The live
+      API is `get_pred_filter_score(filter = <mlr3filters::Filter>, cluster =)`, which
+      **scores but does not prune**; the first chunk assigns the scored table straight back to
+      `db$trans_preds_t`, so the covariance filter the prose describes never happens either.
+      Rebuild on `FilterImportance$new(learner = LearnerClassifGrrf$new())` plus
+      `mlr3filters::FilterFindCorrelation` for the `corcut` role, with an explicit subset
+      before commit.
+- [ ] 🟡 **Then** decide and document defensible GRRF (`gamma`/`num.trees`/`max.depth`) and
+      correlation (`corcut`) parameters.
 
 ---
 
@@ -121,9 +163,26 @@ remaining MS9-phase-1 work.
 - [ ] **`06-transition-modelling.qmd`** — mlr3 transition-potential models (valparish
       used GLM). Decide learner(s) and a **justified train/test split** (valparish
       left `sample_frac = 0.3` unmotivated).
-- [ ] **`07-transition-rates.qmd`** — wire in the SSP land-use demand curves from
-      `NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` (per SSP0/1/3/4/5) as the
-      future transition-rate targets, replacing valparish's linear extrapolation.
+- [ ] **`07-transition-rates.qmd`** — wire in the SSP demand. Source is
+      `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` (class-area targets +
+      curve shapes per SSP0/1/3/4/5), **not** `Transition_Tables.xlsx` — see README.
+    - [ ] **Port the LP solver** (`lulcc.simulationtransitionratesolver.R`) into
+          `evoland-experiments` as a sourceable function. Keep it experiment-local for now;
+          upstreaming is tracked in [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32),
+          which proposes replacing rate-based `extrapolate_trans_rates()` with an
+          absolutes-based solver.
+    - [ ] **Resample the demand to decadal steps.** The targets are 5-yearly (2025…2060);
+          the pipeline is decadal, and period 8 ends 2064, so the 2060 target is interior.
+          The solver takes explicit `Time_steps`/`Step_length`, so this is a matter of
+          choosing the decadal target years, not of changing the solver.
+    - [ ] **Reconcile the ported solver against the written formulation** (the docx behind
+          [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32)). They are
+          *not* the same model: the shipped LP works in absolute areas with a hard 99/101 %
+          band on final areas and a temporal-smoothing term; the written version works in
+          shares and adds quadratic terminal-fit and historic-preference terms, a
+          zero-history penalty, hard-forbidden edges, minimax fairness, a ridge term and a
+          feasibility precheck LP — and being quadratic it cannot run on `lpSolve::lp()`.
+          Decide which is being reproduced before trusting the numbers.
 - [ ] **`08-validate-backcasting.qmd`** (MS9 phase 3) — three sub-steps:
     - [ ] (a) **estimate patch/allocation parameters** from historical data (this is
           where allocation-parameter creation lives — no separate `alloc-params` step);
@@ -147,5 +206,23 @@ remaining MS9-phase-1 work.
 
 ## Open questions
 
-- [ ] **SSP→GWL / CO₂ mapping.** Finalise the per-SSP, per-period GWL and CO₂
-      assignment (SSP0 → GWL1.5 fixed; the SSP5-8.5 tail is unresolved, above).
+- [ ] **SSP→GWL / CO₂ mapping.** Ratify the per-SSP, per-period GWL assignment. A
+      **provisional** crosswalk is now encoded in one `rowwiseDT` in
+      `02-ingest-preds-ch2025-3-gwl.qmd`, read off AR6 WG1 SPM.8a against the three levels
+      CH2025 publishes:
+
+      | | p5 (2025–34) | p6 (2035–44) | p7 (2045–54) | p8 (2055–64) |
+      | --- | --- | --- | --- | --- |
+      | SSP0 | 1.5 | 1.5 | 1.5 | 1.5 |
+      | SSP1 | 1.5 | 1.5 | 2.0 | 2.0 |
+      | SSP3 | 1.5 | 2.0 | 2.0 | 3.0 |
+      | SSP4 | 1.5 | 2.0 | 2.0 | 3.0 |
+      | SSP5 | 2.0 | 2.0 | 3.0 | 3.0 |
+
+      SSP0 → GWL1.5 is fixed per README. SSP5's last two decades are **capped** at GWL3.0.
+      SSP3 and SSP4 are currently identical, which may or may not be intended. CO₂ is not
+      yet assigned at all.
+- [ ] **Does the pipeline numbering need to change?** Projected climate predictors can only
+      be materialised for the *selected* predictor set, so predictor projection now depends
+      on `05`. Either keep the `02-…-3-gwl` number with a documented out-of-order run, or
+      renumber so projection follows selection.

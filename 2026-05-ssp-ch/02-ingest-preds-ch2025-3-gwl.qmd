@@ -1,0 +1,315 @@
+---
+title: "02 — CH2025 climate: projected (GWL) predictors"
+---
+
+Ingest the `-gwl` CH2025 projections cached by `02-ingest-preds-ch2025-1-download.qmd` as
+period- and run-specific overrides of the observed climatology committed by
+`02-ingest-preds-ch2025-2-etl.qmd`.
+
+The observed climatology sits at `id_period 0` on run `0`, which evoland treats as the
+**static fallback**: `pred_data_wide.sql` reads `id_period in (0, <target period>)` and, since
+the fix in evoland-plus, prefers the period-specific row. So writing a GWL value at
+`id_period 5..8` under a scenario run *overrides* the baseline for that run, and every
+predictor left unwritten keeps falling back to the baseline. Nothing needs deleting.
+
+> **Ordering — this step is not a plain stage-02 step.** It is numbered `02-…-3-` because it
+> belongs to the CH2025 family, but it should be run **after `05-covariate-selection.qmd`**,
+> and re-run whenever the selected predictor set changes. See "Why this cannot ingest
+> everything" below; ingesting the full indicator set for every scenario arm is not
+> tractable, so the step defaults to projecting only the climate predictors that the
+> selected models actually use.
+
+## Why this cannot ingest everything
+
+The projected climate is the one predictor family that is **per-run and per-period**, so its
+storage cost is the product of every axis:
+
+| Axis | Size |
+| --- | --- |
+| coordinates with LULC data | ~4.1 × 10⁶ |
+| extrapolated periods (5–8) | 4 |
+| scenario arms (5 SSP × 3 quantiles) | 15 |
+| yearly climate indicators ingested | 18 |
+
+That is ~4.4 × 10⁹ rows for the full cross product — orders of magnitude more than the
+observed baseline (~7 × 10⁷ rows: 18 indicators × 4.1 × 10⁶ coords at one period). Three
+levers reduce it, and this step exposes all three as parameters:
+
+1. **Project only selected predictors.** After `05`, most climate indicators are pruned for
+   most transitions. `pred_names` defaults to the climate predictors still present in
+   `trans_preds_t`.
+2. **Project only the quantiles you need.** `q50` is the default arm; `q5`/`q95` are an
+   uncertainty sensitivity worth running on a subset rather than by default.
+3. **The `current` climate framing costs nothing.** Those runs deliberately store no climate
+   at all and inherit the baseline, which is exactly what "socioeconomic change only" means.
+
+Note also that the run hierarchy is a *tree*, not a lattice: an SSP × GWL run has one parent,
+so climate cannot be stored once per `(GWL, quantile)` and shared across SSPs even though the
+raster values are identical. That duplication is the cost of keeping socioeconomic and
+climate pathways orthogonal in `runs_t`.
+
+## Only `yearly` projections exist
+
+The download step probes `-gwl` products for `time_of_year = "yearly"` only — MeteoSwiss
+publishes the GWL aggregates annually, while the `-obs` family additionally carries `DJF`,
+`MAM`, `JJA`, `SON`. Consequently the **seasonal predictors (`*_DJF`, `*_MAM`, `*_JJA`,
+`*_SON`) have no projected counterpart**. Under a GWL run they silently keep their observed
+baseline, i.e. they are held constant into the future.
+
+That is a modelling decision, not a detail: if a seasonal predictor survives `05` and enters
+a transition model, that model's projections carry a frozen seasonal climate while its annual
+terms move. Either restrict the climate predictors offered to `05` to `*_yearly`, or accept
+and document the freeze. This step warns about any seasonal climate predictor it finds in the
+selected set.
+
+## SSP → global warming level crosswalk
+
+> **PROVISIONAL — this is the open question in `TODO.md` ("SSP→GWL / CO₂ mapping").** The
+> values below are a defensible reading of IPCC AR6 WG1 SPM.8a against the three CH2025
+> levels, not a settled decision. They are isolated in this one table so they can be changed
+> in one place.
+
+CH2025 provides exactly three levels — GWL1.5, GWL2.0, GWL3.0 — as 30-year climatologies.
+Each extrapolated decade is assigned the level its SSP is nearest to:
+
+- **SSP0** is fixed at GWL1.5 throughout, per `README.md` (we may already be at 1.5 °C).
+- **SSP5** late century implies ~4–5 °C, above the highest level CH2025 publishes. Following
+  `02-ingest-preds-ch2025-1-download.qmd`, we **cap at GWL3.0** rather than dropping the
+  tail. This understates late-century SSP5 warming and must be stated in any reporting.
+
+```{r}
+#| label: ch2025-gwl-crosswalk
+library(data.table)
+library(evoland)
+
+# id_period 5..8 == decades 2025-34, 2035-44, 2045-54, 2055-64
+ssp_gwl_crosswalk <- data.table::rowwiseDT(
+  ssp =    , id_period =, gwl        =,
+  "SSP0",    5L,          "GWL1.5",
+  "SSP0",    6L,          "GWL1.5",
+  "SSP0",    7L,          "GWL1.5",
+  "SSP0",    8L,          "GWL1.5",
+
+  "SSP1",    5L,          "GWL1.5",
+  "SSP1",    6L,          "GWL1.5",
+  "SSP1",    7L,          "GWL2.0",
+  "SSP1",    8L,          "GWL2.0",
+
+  "SSP3",    5L,          "GWL1.5",
+  "SSP3",    6L,          "GWL2.0",
+  "SSP3",    7L,          "GWL2.0",
+  "SSP3",    8L,          "GWL3.0",
+
+  "SSP4",    5L,          "GWL1.5",
+  "SSP4",    6L,          "GWL2.0",
+  "SSP4",    7L,          "GWL2.0",
+  "SSP4",    8L,          "GWL3.0",
+
+  "SSP5",    5L,          "GWL2.0",
+  "SSP5",    6L,          "GWL2.0",
+  "SSP5",    7L,          "GWL3.0", # capped: AR6 puts SSP5-8.5 above 3 C by ~2050
+  "SSP5",    8L,          "GWL3.0"  # capped: AR6 puts SSP5-8.5 at ~4 C by the 2060s
+)
+```
+
+## Parameters
+
+```{r}
+#| label: ch2025-gwl-params
+cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
+base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
+
+# Which uncertainty arms to materialise. Add "q5"/"q95" for the uncertainty sensitivity.
+quantiles_to_ingest <- "q50"
+
+# NULL = derive the predictor set from trans_preds_t (i.e. what 05 retained).
+# Set explicitly to override, e.g. c("tas_yearly", "pr_yearly").
+pred_names_override <- NULL
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+coords_minimal <- db$coords_minimal
+extent_wide <- db$extent |> terra::extend(1000)
+```
+
+## Resolve which predictors to project
+
+```{r}
+#| label: ch2025-gwl-select-preds
+pred_meta <- db$pred_meta_t
+
+# climate predictors are exactly those named {indicator}_{time_of_year} by the -2- ETL step
+climate_pred_names <- pred_meta[
+  grepl("_(yearly|DJF|MAM|JJA|SON)$", name),
+  name
+]
+
+pred_names <-
+  if (!is.null(pred_names_override)) {
+    pred_names_override
+  } else {
+    selected <- db$trans_preds_t
+    if (nrow(selected) == 0L) {
+      stop(
+        "trans_preds_t is empty - run 05-covariate-selection.qmd first, or set ",
+        "pred_names_override explicitly. See 'Why this cannot ingest everything' above."
+      )
+    }
+    intersect(pred_meta[id_pred %in% unique(selected$id_pred), name], climate_pred_names)
+  }
+
+seasonal <- grep("_(DJF|MAM|JJA|SON)$", pred_names, value = TRUE)
+if (length(seasonal) > 0L) {
+  warning(
+    "No -gwl projections exist for seasonal predictors; these will stay at their observed ",
+    "baseline under every GWL run: ",
+    paste(seasonal, collapse = ", ")
+  )
+}
+
+pred_names <- grep("_yearly$", pred_names, value = TRUE)
+stopifnot("No yearly climate predictors to project" = length(pred_names) > 0L)
+
+message("Projecting ", length(pred_names), " yearly climate predictors: ",
+        paste(pred_names, collapse = ", "))
+```
+
+## Build the work plan
+
+Each cached `-gwl` file is `{category}-gwl_{indicator}_{GWL}_{quantile}_yearly.nc`. A file is
+read **once** per `(indicator, gwl, quantile)` and fanned out to every `(id_run, id_period)`
+that the crosswalk maps onto that level — reading 4.1 M points is far more expensive than
+replicating the resulting column.
+
+```{r}
+#| label: ch2025-gwl-inventory
+gwl_files <- list.files(cache_dir, pattern = "-gwl_.*\\.nc$")
+
+inventory <- data.table(file = gwl_files)
+inventory[, stem := sub("\\.nc$", "", file)]
+inventory[,
+  c("product_stem", "indicator", "gwl", "uncertainty", "time_of_year") :=
+    data.table::tstrsplit(stem, "_", fixed = TRUE)
+]
+inventory[, product := paste0("climate-ch2025-maps-", product_stem)]
+inventory[, pred_name := paste(indicator, time_of_year, sep = "_")]
+
+if (anyNA(inventory[, .(indicator, gwl, uncertainty, time_of_year)])) {
+  stop(
+    "Unparseable gwl file name(s):\n  ",
+    paste(inventory[is.na(indicator) | is.na(gwl) | is.na(uncertainty), file], collapse = "\n  ")
+  )
+}
+
+inventory <- inventory[pred_name %in% pred_names & uncertainty %in% quantiles_to_ingest]
+
+# scenario runs: the gwl-framing arms registered in 00-setup-db.qmd
+gwl_runs <- db$runs_t[climate_framing == "gwl" & gwl_quantile %in% quantiles_to_ingest]
+stopifnot("No gwl-framing runs in runs_t - run 00-setup-db.qmd" = nrow(gwl_runs) > 0L)
+
+# (id_run, id_period) -> the (gwl, quantile) file that supplies it
+targets <-
+  gwl_runs[
+    ssp_gwl_crosswalk,
+    on = "ssp",
+    allow.cartesian = TRUE,
+    nomatch = NULL
+  ][, .(id_run, id_period, gwl, uncertainty = gwl_quantile)]
+
+work <- inventory[targets, on = .(gwl, uncertainty), allow.cartesian = TRUE, nomatch = NULL]
+
+# every (run, period, predictor) slice must resolve to exactly one source raster
+slice_counts <- work[, .N, by = .(id_run, id_period, pred_name)]
+
+stopifnot(
+  "Some (run, period, predictor) slices resolve to more than one source raster" =
+    all(slice_counts$N == 1L),
+  "Some (run, period, predictor) slices have no source raster - check the crosswalk against the cached GWL levels" =
+    nrow(slice_counts) ==
+      data.table::uniqueN(targets, by = c("id_run", "id_period")) * length(pred_names)
+)
+
+message(
+  "Plan: ", data.table::uniqueN(work, by = c("indicator", "gwl", "uncertainty")),
+  " rasters to read, fanned out to ", nrow(unique(work[, .(id_run, id_period, pred_name)])),
+  " (run, period, predictor) slices."
+)
+```
+
+## Read → extract → write
+
+One raster read per `(indicator, gwl, quantile)`; the extracted column is then written once
+per target `(id_run, id_period)`. We write `pred_data_t` directly rather than via
+`db$add_predictor()` — the predictors already exist in `pred_meta_t` from the `-2-` ETL step,
+and we must not re-declare their metadata.
+
+```{r}
+#| label: ch2025-gwl-load
+gwl_url <- function(product, indicator, gwl, uncertainty) {
+  httr2::request(paste0(base_url, "/", product, "/realizations")) |>
+    httr2::req_url_query(
+      language = "de",
+      globalWarmingLevel = gwl,
+      uncertainty = uncertainty,
+      timeOfYear = "yearly",
+      productType = "data",
+      productName = product,
+      scenarioIndicator = indicator,
+      mediaType = "application/netcdf"
+    ) |>
+    (\(req) req$url)()
+}
+
+pred_id_of <- setNames(pred_meta$id_pred, pred_meta$name)
+
+sources <- unique(work[, .(file, product, indicator, gwl, uncertainty, pred_name)])
+
+for (i in seq_len(nrow(sources))) {
+  src <- sources[i]
+  message(sprintf(
+    "[%d/%d] %s @ %s %s", i, nrow(sources), src$pred_name, src$gwl, src$uncertainty
+  ))
+
+  r <- terra::rast(file.path(cache_dir, src$file)) |> terra::crop(extent_wide)
+  terra::set.names(r, src$pred_name)
+  extracted <- extract_using_coords_t(r, coords_minimal)[, .(id_coord, value)]
+
+  # every (run, period) this raster supplies; one commit per raster, not per slice
+  slices <- unique(work[file == src$file, .(id_run, id_period)])
+  id_pred_i <- unname(pred_id_of[[src$pred_name]])
+
+  db$pred_data_t <- as_pred_data_t(
+    slices[,
+      extracted[, .(id_coord, value)],
+      by = .(id_run, id_period)
+    ][, .(id_run, id_period, id_pred = id_pred_i, id_coord, value)]
+  )
+
+  rm(extracted)
+  gc(verbose = FALSE)
+}
+
+message("Done. Projected climate written for ", nrow(gwl_runs), " scenario runs.")
+```
+
+## Provenance
+
+The `-gwl` source URLs are reconstructed the same way as in the `-obs` ETL; the endpoint is
+generated on demand and publishes no md5sum. They are recorded against the run rather than
+re-declared on the predictor, since the predictor metadata already carries its observed
+provenance.
+
+```{r}
+#| label: ch2025-gwl-provenance
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key =                        , value =,
+  "ch2025_gwl_quantiles",        paste(quantiles_to_ingest, collapse = ","),
+  "ch2025_gwl_predictors",       paste(pred_names, collapse = ","),
+  "ch2025_gwl_crosswalk",        paste(
+    ssp_gwl_crosswalk[, paste0(ssp, ":p", id_period, "=", gwl)],
+    collapse = " "
+  ),
+  "ch2025_gwl_example_url",      gwl_url(
+    sources$product[1], sources$indicator[1], sources$gwl[1], sources$uncertainty[1]
+  )
+))
+```

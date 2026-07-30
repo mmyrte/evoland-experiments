@@ -10,7 +10,7 @@ self-contained experiment with its own numbered R pipeline, `README.md`
 | Status   | Sub-project                                  | Purpose                                                                                                                                                                                                                                                                                                    | Docs                                                                        |
 | -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | archived | [`2025-10-valparish/`](2025-10-valparish/)   | Stub that co-evolved with early evoland-plus development. Kept for reference; not expected to run against any specific evoland-plus commit.                                                                                                                                                                | [README](2025-10-valparish/README.md) · [TODO](2025-10-valparish/TODO.md)   |
-| active   | [`2026-05-ssp-ch/`](2026-05-ssp-ch/)         | Re-implementation of the [SSP-CH scenarios](https://ssp-ch-szenarien.wsl.ch/en/) on the new evoland-plus, reusing the land-use demand curves from `NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` but with new, reproducible data sources. **Baseline** (purely empirical/statistical transition model). | [README](2026-05-ssp-ch/README.md) · [TODO](2026-05-ssp-ch/TODO.md)         |
+| active   | [`2026-05-ssp-ch/`](2026-05-ssp-ch/)         | Re-implementation of the [SSP-CH scenarios](https://ssp-ch-szenarien.wsl.ch/en/) on the new evoland-plus, reusing the elicited land-use demand from `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` but with new, reproducible data sources. **Baseline** (purely empirical/statistical transition model). | [README](2026-05-ssp-ch/README.md) · [TODO](2026-05-ssp-ch/TODO.md)         |
 | planning | [`2026-07-ssp-rsofun/`](2026-07-ssp-rsofun/) | Extends the baseline with **process-based** land-use-suitability predictors from [rsofun](https://github.com/mmyrte/rsofun) (P-model + SPLASH), as an interim stand-in for the eventual WASIM coupling.                                                                                                    | [README](2026-07-ssp-rsofun/README.md) · [TODO](2026-07-ssp-rsofun/TODO.md) |
 
 ## Milestone MS9 — SSP scenarios in evoland-plus
@@ -62,6 +62,12 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
   `NN` — read-only, renders a verification/visualisation report, safe to skip. The `d`
   tag sorts the diagnostic right after its stage and before the next
   (`02-… < 02d-… < 03-…`).
+- **One known exception to run order.** `2026-05-ssp-ch/02-ingest-preds-ch2025-3-gwl.qmd`
+  carries a `02-` number (it belongs to the CH2025 family) but must run **after** `05`,
+  because projected climate can only be materialised for the *selected* predictor set — the
+  full cross product does not fit. Run at stage 02 it fails loudly rather than writing
+  anything. Whether the numbering should change instead is an open question in that
+  sub-project's `TODO.md`.
 - **Literate Quarto pipelines.** Steps are `.qmd` rendered to self-contained HTML, so
   rationale lives beside the code. A repo-root `_quarto.yml` sets `execute-dir: project`
   (so the root `.Rprofile` / rv activation and relative paths resolve) and

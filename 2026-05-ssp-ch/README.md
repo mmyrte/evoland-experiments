@@ -9,8 +9,7 @@ Previous results: <https://zenodo.org/records/17108008>.
 ## What "re-implementation" means here
 
 We keep the **scientific design** of the original SSP-CH work — the SSP
-narratives and the **land-use demand curves** in
-`NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` (the original workflow is
+narratives and the **land-use demand** it elicited (the original workflow is
 orchestrated by `NCCS-SSP-scenarios/Scripts/LULCC_CH_master.R`) — but rebuild the
 pipeline on the **new evoland-plus** with:
 
@@ -36,11 +35,51 @@ pipeline on the **new evoland-plus** with:
 (static + climatological + economic predictors, no biophysical feedback). The process-based
 extension is the separate `2026-07-ssp-rsofun/` experiment.
 
+## Where the SSP demand actually comes from
+
+This was mis-stated in earlier revisions and is worth being precise about, because step `07`
+depends on it.
+
+`NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` does **not** contain per-SSP transition
+rates. Only its **BAU** block is populated; the `EI for Nature` / `EI as Culture` /
+`EI for Society` / `Growth and Extinction` blocks of `09_Modified_Trans_Rates` and
+`10_Modified_Transition_matrix` are empty.
+
+The authoritative per-SSP demand input is **`NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`**:
+one row per (scenario × LULC class) with `init_area`, `final_area_2060`, `final_area_2100`
+and a qualitative `chosen_shape` (`Constant change`, `Instant growth`, `Instant decline`,
+`Delayed growth`, `Delayed decline`). It is keyed by **SSP0/1/3/4/5** directly — including
+SSP0 — and is what `Scripts/Preparation/Simulation_trans_tables_prep.R` reads.
+
+Those are **class-level area targets**, not transition rates. The original converts one to
+the other with a linear program, `Scripts/Functions/lulcc.simulationtransitionratesolver.R`
+(`lpSolve::lp()`), which solves for per-transition flows subject to observed min/max rate
+bounds, hard monotonic direction per class, soft curve-shape constraints and a temporal
+smoothing term. Step `07` ports that solver; see `TODO.md`.
+
+> Do **not** build a crosswalk between the `EI_*` scenario names and SSP0/1/3/4/5. They are
+> different vintages: matching their 2060 class areas leaves residuals of 3–7 × 10⁵ ha and
+> assigns two SSPs to the same name.
+
+A [written formulation](https://github.com/ethzplus/evoland-plus/issues/32) of a *revised*
+solver also exists (share space, quadratic terminal-fit and historic-preference terms,
+zero-history penalties, minimax fairness, ridge term, and a feasibility precheck LP). It
+differs substantially from the shipped LP — and being quadratic, it cannot run on
+`lpSolve::lp()`. We port the shipped LP for now.
+
 ## Domain & periods
 
 - **Extent:** full Switzerland, EPSG:2056, 100 m grid (~4.1 M hectare cells).
-- **Periods:** decadal (`P10Y`); observed 1985–2020 (Arealstatistik), extrapolated
-  to 2060.
+- **Periods:** decadal (`P10Y`); observed 1985–2020 (Arealstatistik), extrapolated forward.
+  Eight periods plus the static `id_period 0`; periods 1–4 observed, 5–8 extrapolated.
+  **Period 8 runs 2055–2064**, so the 2060 demand targets fall inside it rather than on a
+  boundary — decadal steps from 1985 cannot land on 2060. Step `07` must treat the 2060
+  target as an interpolation. This relies on the `create_periods_t` fix that makes the last
+  period a full decade (see the pin note in `rproject.toml`); before it, period 8 was a
+  half-decade and any rate applied to it was effectively doubled.
+- **Runs:** `runs_t` carries the scenario axis — base `0`, one run per SSP, and per-SSP
+  climate framings (`current` climatology vs. CH2025 `gwl` × uncertainty quantile). Set up in
+  `00-setup-db.qmd`.
 
 ## Pipeline
 
@@ -49,28 +88,35 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 
 | Step | Purpose | Status |
 | --- | --- | --- |
-| `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods | ✅ |
+| `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods, scenario `runs_t` | ✅ |
 | `01-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
 | `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | ✅ (hillshade discarded) |
 | `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers to be replaced by rsofun soil) |
 | `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
 | `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | 🟡 historical only; needs SSP scenario logic |
 | `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
-| `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 → predictors | 🟡 obs only; projected `-gwl` deferred |
+| `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | ✅ |
+| `02-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | 🟡 written, unrun; GWL crosswalk provisional; **run after `05`** |
 | `02d-ingest-preds-ch2025-check.qmd` | _diag:_ precip-raster sanity check (was `999-dump-preds-raster`) | ✅ |
 | `03-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
 | `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised |
 | `04d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
-| `05-covariate-selection.qmd` | GRRF importance / covariance feature selection | 🟡 GRRF/covariance params not finalised |
+| `05-covariate-selection.qmd` | GRRF importance / covariance feature selection | 🔴 **does not run** — calls removed evoland API; see `TODO.md` |
 | `06-transition-modelling.qmd` | mlr3 transition models | ⬜ not started |
-| `07-transition-rates.qmd` | Demand curves (`Transition_Tables.xlsx`) → rates | ⬜ not started |
+| `07-transition-rates.qmd` | Demand (`NCCS_simulation_LULC_areas.xlsx`) → LP solver → rates | ⬜ not started |
 | `08-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started |
 | `09-extrapolate.qmd` | Stochastic extrapolation (forward projection) | ⬜ not started |
 | `09d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |
 
-`06`/`07` have reference implementations in `2025-10-valparish/` (as GLM); `08`/`09`/`09d`
-are new. The SSP demand curves are **not** yet wired in — this is the bulk of the
-remaining MS9-phase-1 work. See [`TODO.md`](TODO.md).
+The SSP demand is **not** yet wired in — this is the bulk of the remaining MS9-phase-1 work.
+See [`TODO.md`](TODO.md).
+
+> **Reference implementations.** `2025-10-valparish/` is *not* a usable reference: its
+> `4-`/`5-`/`6-` scripts call `covariance_filter`, `grrf_filter`, `get_pruned_trans_preds_t`,
+> `fit_glm`, `gof_glm` and `create_obs_trans_rates_t`, none of which exist in evoland-plus
+> any more. The live references are the package's own vignettes — `evoland.qmd` for the
+> calibrate → rates → allocate chain, and `stochastic-allocation-sensitivity.qmd` for the
+> `runs_t` ensemble pattern that `08`/`09` need.
 
 ## Predictor provenance vs. the original SSP-CH
 

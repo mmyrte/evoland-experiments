@@ -32,7 +32,9 @@ dependencies = [
     "rmarkdown",
     "writexl",
     "svglite",
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "b40175fd048c1615ff66e4fa556f6a0cd863b3fe", install_suggestions = true },
+    # Tip of `bugfix/regular-period-lengths` (main + the last-period-length fix).
+    # Move to a plain main commit once that branch is merged.
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "753e489", install_suggestions = true },
     "mapview",
     "stars",
     "methods",
