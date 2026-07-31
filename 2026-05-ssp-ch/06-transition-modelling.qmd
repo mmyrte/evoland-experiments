@@ -1,0 +1,215 @@
+---
+title: "06 — Transition models"
+---
+
+Fit one transition-potential model per viable transition: a binary classifier answering "given a
+cell in the anterior class, did it transition?", trained on the predictors `05` retained. The
+fitted models go to `trans_models_t` and are what `predict_trans_pot()` calls at allocation time.
+
+Two passes, following the evoland-plus workflow:
+
+1. **Partial models** — trained on a stratified subsample, scored on the held-out remainder.
+   These produce the goodness-of-fit numbers and the held-out predictions that `06d` plots.
+2. **Full models** — the best partial model per transition is refitted on all available data.
+   `predict_trans_pot()` uses these.
+
+## Learner and selection criterion
+
+A plain **random forest** (`classif.ranger`), selected on **AUC**. Deliberately unambitious for
+a first pass:
+
+- The valparish prototype used a GLM; a forest relaxes the linearity and additivity assumptions
+  that a GLM imposes on transition potentials, which is the more obviously wrong constraint
+  here — suitability surfaces are not monotone in elevation or distance.
+- It needs no tuning to be usable, and `05` has already done the feature selection a forest
+  would otherwise have to absorb.
+- It handles the `factor` predictors (`bioregion`) natively, without contrast coding.
+
+AUC as the criterion is the natural fit for what allocation actually consumes. `predict_trans_pot()`
+stores per-cell probabilities, and `adjusted_trans_pot_v()` then column-scales them so the mean
+over the source class matches the target rate — a monotone transformation. What matters is
+therefore the *ranking* of cells by transition propensity, not the calibration of the absolute
+probabilities, and AUC scores exactly that ranking. It is also insensitive to class imbalance,
+which matters when a rare transition has a positive rate below 1 %.
+
+We also fit a **featureless baseline** first. It costs nothing and makes the forest's AUC
+interpretable: a transition where the forest barely beats 0.5 has no usable spatial signal, and
+is better caught here than after allocation produces noise.
+
+> **Open (see `TODO.md`):** `sample_frac = 0.7` is evoland's default and what both package
+> vignettes use, so it is a convention rather than a justified choice. A learning-curve check —
+> AUC against subsample size for a few representative transitions — would settle it, and would
+> also say whether the rarer transitions are sample-starved.
+
+```{r}
+#| label: transition-modelling-params
+library(data.table)
+library(evoland)
+
+sample_frac <- 0.7 # stratified train fraction; the remainder is the held-out scoring split
+seed <- 42L
+num_trees <- 500L # ranger's default; no regularisation here, so it parallelises internally
+n_workers <- 4L
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+stopifnot(
+  "trans_preds_t is empty - run 05-covariate-selection.qmd first" =
+    nrow(db$trans_preds_t) > 0L
+)
+```
+
+## Partial models
+
+`fit_partial_models()` coerces the learner's `predict_type` to `"prob"` — AUC needs
+probabilities, not hard class labels — and stores the held-out `PredictionClassif` per
+transition, which is what makes `06d` possible.
+
+```{r}
+#| label: transition-modelling-partial
+cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+
+# Baseline: predicts the majority class distribution, ignoring every predictor.
+db$trans_models_t <- db$fit_partial_models(
+  learner = mlr3::lrn("classif.featureless", predict_type = "prob"),
+  measures = c("classif.auc", "classif.acc"),
+  sample_frac = sample_frac,
+  seed = seed,
+  cluster = cluster
+)
+
+db$trans_models_t <- db$fit_partial_models(
+  learner = mlr3::lrn(
+    "classif.ranger",
+    predict_type = "prob",
+    num.trees = num_trees
+  ),
+  measures = c("classif.auc", "classif.acc"),
+  sample_frac = sample_frac,
+  seed = seed,
+  cluster = cluster
+)
+
+if (!is.null(cluster)) {
+  mirai::stop_cluster(cluster)
+}
+```
+
+## Does the forest beat the baseline?
+
+A forest that cannot separate transitioning from non-transitioning cells will still produce a
+potential surface — an uninformative one. Allocation would then place change essentially at
+random within the anterior class, constrained only by the demand and the patch parameters. That
+is worth catching here rather than inferring it from an odd-looking map in `09d`.
+
+```{r}
+#| label: transition-modelling-compare
+# crossval_score is a MAP column: one named list per row, e.g. list(classif.auc = 0.83, ...),
+# not a long-format (measure_id, score) pair.
+partial <- db$trans_models_t
+partial[, auc := vapply(
+  crossval_score,
+  function(s) if (is.null(s[["classif.auc"]])) NA_real_ else as.numeric(s[["classif.auc"]]),
+  numeric(1L)
+)]
+
+# max() over an empty group returns -Inf with a warning, which would then be silently
+# compared against the 0.6 threshold below; collapse missing combinations to NA instead.
+max_or_na <- function(z) if (length(z)) max(z) else NA_real_
+
+auc_by_learner <-
+  partial[!is.na(auc) & learner_id != "error"] |>
+  data.table::dcast(id_trans ~ learner_id, value.var = "auc", fun.aggregate = max_or_na)
+
+auc_cols <- setdiff(names(auc_by_learner), "id_trans")
+ranger_col <- grep("ranger", auc_cols, value = TRUE)
+featureless_col <- grep("featureless", auc_cols, value = TRUE)
+
+if (length(ranger_col) == 1L && length(featureless_col) == 1L) {
+  auc_by_learner[, lift := get(ranger_col) - get(featureless_col)]
+
+  # NA here means the forest produced no scoreable model at all, which is a harder failure
+  # than a weak one -- separate the two so the message is actionable.
+  failed <- auc_by_learner[is.na(get(ranger_col)), id_trans]
+  weak <- auc_by_learner[!is.na(get(ranger_col)) & get(ranger_col) < 0.6, id_trans]
+
+  if (length(failed) > 0L) {
+    warning(
+      "Transition(s) with no scoreable ranger model - they will be demoted below: ",
+      paste(failed, collapse = ", ")
+    )
+  }
+  if (length(weak) > 0L) {
+    warning(
+      "Transition(s) with ranger AUC < 0.6 - their potential surfaces carry little signal: ",
+      paste(weak, collapse = ", ")
+    )
+  }
+}
+
+auc_by_learner[order(get(ranger_col))]
+```
+
+## Full models
+
+`fit_full_models(select_score = "classif.auc", select_maximize = TRUE)` picks the best-scoring
+partial model per transition and refits it on all available data.
+
+```{r}
+#| label: transition-modelling-full
+trans_models_full <- db$fit_full_models(
+  select_score = "classif.auc",
+  select_maximize = TRUE
+)
+
+db$trans_models_t <- trans_models_full
+```
+
+## Reconcile viability with what actually trained
+
+Fitting does not necessarily produce a usable model for every viable transition — a rare
+transition can fail to train, leaving `learner_full` NULL. Such a transition would stay
+`is_viable == TRUE` with no model, and allocation aborts with *"No fitted model for viable
+transition(s)"*. We keep the two in lockstep by demoting any transition whose full model did not
+train, reading the result returned by `fit_full_models()` directly rather than re-querying the
+DB (per the evoland-plus stochastic-allocation vignette).
+
+```{r}
+#| label: transition-modelling-reconcile
+modeled_trans <- unique(
+  trans_models_full$id_trans[
+    !vapply(trans_models_full$learner_full, is.null, logical(1L))
+  ]
+)
+
+trans_meta_reconciled <- db$trans_meta_t
+demoted <- trans_meta_reconciled[is_viable == TRUE & !id_trans %in% modeled_trans, id_trans]
+
+if (length(demoted) > 0L) {
+  warning(
+    "Demoting viable transition(s) whose full model did not train: ",
+    paste(demoted, collapse = ", ")
+  )
+}
+
+trans_meta_reconciled[, is_viable := is_viable & id_trans %in% modeled_trans]
+db$trans_meta_t <- trans_meta_reconciled
+
+message(
+  "Modelled ", length(modeled_trans), " transitions; ",
+  nrow(db$trans_meta_t[is_viable == TRUE]), " remain viable."
+)
+```
+
+```{r}
+#| label: transition-modelling-report
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key =                     , value =,
+  "model_learner",            "classif.ranger",
+  "model_select_score",       "classif.auc (maximise)",
+  "model_sample_frac",        as.character(sample_frac),
+  "model_num_trees",          as.character(num_trees),
+  "model_seed",               as.character(seed),
+  "model_n_transitions",      as.character(length(modeled_trans))
+))
+```

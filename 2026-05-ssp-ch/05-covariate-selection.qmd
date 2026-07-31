@@ -2,31 +2,41 @@
 title: "05 — Covariate selection"
 ---
 
-Prune the predictor set per viable transition, in two stages: drop **redundant** predictors
-(pairwise correlation), then drop **uninformative** ones (guided regularised random forest
-importance). The survivors are committed to `trans_preds_t`, which is what `06` trains on and
+Prune the predictor set per viable transition using guided regularised random forest (GRRF)
+importance, and commit the survivors to `trans_preds_t`. That table is what `06` trains on, and
 what `02-ingest-preds-ch2025-3-gwl.qmd` reads to decide which climate predictors are worth
 projecting.
 
-## What changed, and why the previous version could not run
+> **This step refuses to run until `importance_rel_cut` is set.** It ships as `NA` on purpose.
+> Choose it by reading the distribution off `05d-covariate-selection.qmd` against the real
+> predictor set, then set it here with a one-line note on what you saw — exactly as `04`'s
+> `min_cardinality_abs` is chosen from `04d`. See "why there is no parameter-free cut" below.
 
-The earlier revision called `db$get_pred_filter_score(filter_fun = grrf_filter, num.trees =,
-max.depth =, gamma =, cores =)`. None of `grrf_filter`, `covariance_filter` or
-`get_pruned_trans_preds_t` exist in evoland-plus — they are absent from both the pinned commit
-and `main`. The live API is `get_pred_filter_score(filter = <mlr3filters::Filter>, cluster =)`,
-which **scores but does not prune**: it returns `trans_preds_t` with one extra column named
-after `filter$id`, and subsetting it is the caller's job. The old first chunk assigned the
-scored table straight back to `db$trans_preds_t`, so it committed the full cross product
-unpruned and the correlation stage never happened at all.
+## What changed
 
-> **Factor predictors force the two-stage split.** `mlr3filters::FilterFindCorrelation` accepts
-> only `integer`/`numeric` features, and `bioregion` / `biosubregion` (from
-> `02-ingest-preds-bioregions.qmd`) are `factor`. A task containing them makes the filter raise
-> *"unsupported feature types: factor"* — which `pred_filter_worker()` catches, warns about, and
-> converts into an **all-`NA` score for that whole transition**. The failure is silent in the
-> sense that it looks like a scoring gap rather than a crash. So the correlation stage runs over
-> numeric predictors only; categorical ones bypass it and go straight to the importance stage,
-> which does support factors.
+**Rebuilt on the live API.** The previous revision called
+`db$get_pred_filter_score(filter_fun = grrf_filter, num.trees =, max.depth =, gamma =, cores =)`.
+None of `grrf_filter`, `covariance_filter` or `get_pruned_trans_preds_t` exist in evoland-plus,
+at either the pinned commit or `main`. The live API is
+`get_pred_filter_score(filter = <mlr3filters::Filter>, cluster =)`, and it **scores but does not
+prune** — it returns `trans_preds_t` with one extra column named after `filter$id`, and
+subsetting is the caller's job. The old first chunk assigned the scored table straight back to
+`db$trans_preds_t`, so it committed the full cross product unpruned.
+
+**The correlation pre-filter is gone.** An earlier draft ran `FilterFindCorrelation` first to
+drop collinear predictors. That is hard to defend: the threshold is arbitrary, which member of a
+correlated pair survives is decided by feature order rather than by usefulness, and the filter is
+blind to the target — it would happily drop the predictor that actually carries the signal.
+GRRF already handles redundancy in a target-aware way: the first (unregularised) forest splits
+importance across correlated predictors, and the regularisation penalty then suppresses the
+weaker ones. One defensible mechanism beats two stacked heuristics.
+
+*(A practical corollary, kept as a note because it will bite again: `FilterFindCorrelation`
+accepts only `integer`/`numeric` features. `bioregion` / `biosubregion` are `factor`, and a task
+containing them makes that filter raise "unsupported feature types: factor" — which
+`pred_filter_worker()` catches, warns about, and turns into an all-`NA` score for the whole
+transition. It fails as a silent hole rather than a crash. GRRF's learner supports
+`factor`/`ordered` natively, so this step has no such gap.)*
 
 ## Parameters
 
@@ -35,118 +45,65 @@ unpruned and the correlation stage never happened at all.
 library(data.table)
 library(evoland)
 
-# Redundancy: drop a predictor correlated above |r| with one that is kept.
-# 0.7 is the conventional collinearity cutoff in species-distribution / land-use modelling
-# (Dormann et al. 2013, Ecography 36:27-46) and is the value the valparish prototype used.
-# FilterFindCorrelation scores each feature as ~ (1 - max |r| against retained features),
-# so the score threshold is 1 - corcut.
-corcut <- 0.7
+# Keep predictors scoring at least this fraction of the best predictor FOR THAT TRANSITION.
+#
+# Deliberately NA: there is no defensible default (see below). Run 05d, look at the
+# distribution, pick a value inside the empty band, and record here what you saw.
+importance_rel_cut <- NA_real_
 
 # GRRF guidance strength. 0 = plain regularised forest (equal penalty everywhere), 1 = penalty
 # scales fully with the unregularised importance ranking. 0.9 keeps a strong guiding effect
-# while leaving a little room for correlated-but-useful predictors to enter.
+# while leaving room for correlated-but-useful predictors to enter.
 grrf_gamma <- 0.9
 
-# Trees per forest. GRRF trains two forests per transition, over ~10^5-10^6 rows each, for
-# every viable transition -- so this is the main cost knob. 200 is well past the point where
-# the importance *ranking* stabilises for a few dozen predictors, without paying for ranger's
-# 500 default twice over.
+# Trees per forest. GRRF trains two forests per transition over ~10^5-10^6 rows each, for every
+# viable transition, so this is the main cost knob. 200 is past the point where the importance
+# *ranking* stabilises for a few dozen predictors, without paying ranger's 500 default twice.
 grrf_num_trees <- 200L
 
 # Depth cap, mostly a runtime guard. 0 would mean unlimited.
 grrf_max_depth <- 20L
 
-# Importance cut, as a fraction of the most important predictor for that transition.
-# PROVISIONAL -- read this off the 05d diagnostic, exactly as 04's min_cardinality_abs is read
-# off 04d. See "why there is no parameter-free cut" below for why 0.5 rather than something
-# small: GRRF leaves uninformative predictors with substantial non-zero importance.
-importance_rel_cut <- 0.5
-
 # Safety valve: never keep more than this many predictors for one transition, whatever the
 # threshold says. Guards 06 against a transition that scores everything highly.
 max_preds_per_trans <- 20L
 
-# Parallel workers. Each holds its own DB connection and a forest; memory, not CPU, is the
-# binding constraint. NULL runs serially.
+# Parallel workers. regularization.factor disables ranger's internal threading (it prints
+# "Parallelization deactivated"), so this cluster is the ONLY parallelism in this step.
+# Each worker holds its own DB connection and a forest; memory is the binding constraint.
 n_workers <- 4L
+
+if (is.na(importance_rel_cut)) {
+  stop(
+    "importance_rel_cut is not set.\n",
+    "  Render 05d-covariate-selection.qmd, read the per-transition importance distribution,\n",
+    "  and choose a cut that sits in the empty band between signal and noise while leaving\n",
+    "  every viable transition with predictors. Then set it in this chunk.\n",
+    "  There is deliberately no default -- see 'why there is no parameter-free cut'.",
+    call. = FALSE
+  )
+}
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 ```
 
-> **Open (see `TODO.md`):** `corcut` has a literature-backed default; `grrf_gamma`,
-> `grrf_num_trees` and `grrf_max_depth` are reasoned but **not yet justified by a sensitivity
-> check** on this data, and `importance_rel_cut` must be read off `05d` once this has run on
-> the real predictor set. Re-running `05` across a small grid and reporting how much the
-> retained set moves is the outstanding work.
+> **Still open (see `TODO.md`):** `grrf_gamma`, `grrf_num_trees` and `grrf_max_depth` are
+> reasoned but not yet justified by a sensitivity check on this data. Re-running across a small
+> grid and reporting how much the retained set moves is the outstanding work.
 
-## Stage 0 — the full transition × predictor cross product
-
-```{r}
-#| label: covariate-selection-full
-db$set_full_trans_preds(overwrite = TRUE)
-
-pred_meta <- db$pred_meta_t
-numeric_preds <- pred_meta[data_type %in% c("int", "float"), id_pred]
-categorical_preds <- pred_meta[data_type %in% c("factor", "ordered", "bool"), id_pred]
-
-message(
-  "Scoring ", nrow(db$trans_meta_t[is_viable == TRUE]), " viable transitions against ",
-  length(numeric_preds), " numeric and ", length(categorical_preds), " categorical predictors."
-)
-```
-
-## Stage 1 — redundancy prune (numeric predictors only)
-
-```{r}
-#| label: covariate-selection-correlation
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
-
-trans_preds_numeric <- as_trans_preds_t(db$trans_preds_t[id_pred %in% numeric_preds])
-
-cor_scored <- db$get_pred_filter_score(
-  filter = mlr3filters::flt("find_correlation"),
-  trans_preds = trans_preds_numeric,
-  cluster = cluster,
-  ordered_pred_data = TRUE # deterministic across re-runs
-)
-
-# Higher score = less redundant. A predictor scoring below (1 - corcut) is collinear with
-# something already kept. NA means the filter could not score it; keep those rather than
-# silently discarding a predictor because of a scoring failure.
-cor_keep <- cor_scored[is.na(find_correlation) | find_correlation > (1 - corcut)]
-
-message(sprintf(
-  "Correlation stage: kept %d of %d numeric (transition, predictor) pairs (%.1f%%).",
-  nrow(cor_keep), nrow(cor_scored), 100 * nrow(cor_keep) / nrow(cor_scored)
-))
-
-# which predictors are most often dropped as redundant? worth an eyeball
-cor_scored[
-  !is.na(find_correlation) & find_correlation <= (1 - corcut),
-  .N,
-  by = id_pred
-][
-  pred_meta[, .(id_pred, name)],
-  on = "id_pred",
-  nomatch = NULL
-][order(-N)][1:15]
-```
-
-## Stage 2 — importance (survivors plus all categoricals)
+## Why there is no parameter-free cut
 
 GRRF is a two-stage procedure: an unregularised forest ranks the predictors, those ranks become
 per-feature split penalties, and a second regularised forest is trained under them.
 
-### Why there is no parameter-free cut
-
 It is tempting to assume the regularisation drives uninformative predictors to exactly zero
 importance, giving a free `importance > 0` cut. **It does not.** Reproducing evoland's
 `LearnerClassifGrrf` training path on a synthetic task with 3 informative and 13 uninformative
-predictors, at `gamma` 0.5 / 0.9 / 1.0, gives only **3 exact zeros out of 16** in every case —
-so `importance > 0` would retain 13 predictors, 10 of them pure noise. The regularisation
-suppresses splits on weak predictors; it does not eliminate them.
+predictors, at `gamma` 0.5 / 0.9 / 1.0, gives only **3 exact zeros out of 16** in every case — so
+`importance > 0` would retain 13 predictors, 10 of them pure noise. The regularisation suppresses
+splits on weak predictors; it does not eliminate them.
 
-What it does produce is a **strongly bimodal** distribution. On that task:
+What it does produce is a strongly **bimodal** distribution. On that task:
 
 | | relative importance |
 | --- | --- |
@@ -155,17 +112,15 @@ What it does produce is a **strongly bimodal** distribution. On that task:
 | the 3 fully suppressed | 0.00 |
 
 The gap is wide and the cut belongs in it — but its position is a property of the data, not a
-constant. A conventional "keep above 1 % of the maximum" threshold keeps all 13. So the cut is
-chosen the same way `04`'s `min_cardinality_abs` is: **by reading the distribution off a
-diagnostic**, here `05d-covariate-selection.qmd`.
+constant, and a conventional "keep above 1 % of the maximum" rule keeps all 13. Hence `05d`, and
+hence the hard stop above.
 
-> **Runtime note.** `ranger` prints *"Parallelization deactivated (regularization used)"* —
-> setting `regularization.factor` disables its internal threading. The per-transition `mirai`
-> cluster is therefore the only parallelism available in this step, which makes `n_workers`
-> matter more than it would otherwise.
+## Score
 
 ```{r}
-#| label: covariate-selection-importance
+#| label: covariate-selection-score
+db$set_full_trans_preds(overwrite = TRUE)
+
 grrf_learner <- LearnerClassifGrrf$new()
 grrf_learner$param_set$values <- list(
   gamma = grrf_gamma,
@@ -173,25 +128,27 @@ grrf_learner$param_set$values <- list(
   max.depth = grrf_max_depth
 )
 
-# categorical predictors skipped stage 1 (see the note above), so add them back here
-trans_preds_stage2 <- as_trans_preds_t(rbind(
-  cor_keep[, .(id_run, id_pred, id_trans)],
-  db$trans_preds_t[id_pred %in% categorical_preds, .(id_run, id_pred, id_trans)]
-))
+cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
 
 imp_scored <- db$get_pred_filter_score(
   filter = mlr3filters::FilterImportance$new(learner = grrf_learner),
-  trans_preds = trans_preds_stage2,
   cluster = cluster,
-  ordered_pred_data = TRUE
+  ordered_pred_data = TRUE # deterministic across re-runs
 )
 
 if (!is.null(cluster)) {
   mirai::stop_cluster(cluster)
 }
+```
 
-# Relative to the best predictor *for that transition*, since impurity importance is not
-# comparable across transitions with different class balance or sample size.
+## Select
+
+Importance is normalised **within each transition**: raw impurity importance is not comparable
+across transitions with different class balance or sample size, so an absolute threshold would
+silently prune hard-to-model transitions more aggressively than easy ones.
+
+```{r}
+#| label: covariate-selection-select
 imp_scored[, importance_rel := importance / max(importance, na.rm = TRUE), by = id_trans]
 
 trans_preds_selected <-
@@ -202,18 +159,20 @@ trans_preds_selected <-
   ]
 
 message(sprintf(
-  "Importance stage: kept %d of %d (transition, predictor) pairs (%.1f%%).",
+  "Kept %d of %d (transition, predictor) pairs (%.1f%%); median %.0f predictors per transition.",
   nrow(trans_preds_selected), nrow(imp_scored),
-  100 * nrow(trans_preds_selected) / nrow(imp_scored)
+  100 * nrow(trans_preds_selected) / nrow(imp_scored),
+  median(trans_preds_selected[, .N, by = id_trans]$N)
 ))
 ```
 
 ## Check and commit
 
 Two things must hold before overwriting `trans_preds_t`: every viable transition still has at
-least one predictor, and no viable transition was lost along the way. A transition that survives
-`04` but ends up with an empty predictor set cannot be modelled in `06`, and `fit_full_models()`
-would leave its `learner_full` NULL — which then aborts allocation.
+least one predictor, and selection introduced nothing that is not viable. A transition that
+survives `04` but ends up with an empty predictor set cannot be modelled in `06` —
+`fit_full_models()` would leave its `learner_full` NULL, which aborts allocation later with
+*"No fitted model for viable transition(s)"*.
 
 ```{r}
 #| label: covariate-selection-commit
@@ -225,7 +184,8 @@ if (length(missing_trans) > 0L) {
   stop(
     "Viable transition(s) left with no predictors after selection: ",
     paste(missing_trans, collapse = ", "),
-    ". Loosen corcut or the importance cut, or demote them in 04."
+    ". Lower importance_rel_cut, or demote them in 04.",
+    call. = FALSE
   )
 }
 
@@ -240,20 +200,19 @@ db$commit(
   method = "overwrite"
 )
 
-# how many predictors survived per transition? a transition down to 1-2 is worth a look
+# transitions down to one or two predictors are worth a second look before 06
 trans_preds_selected[, .(n_preds = .N), by = id_trans][order(n_preds)][1:10]
 ```
 
 ```{r}
 #| label: covariate-selection-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key =                        , value =,
-  "covsel_corcut",               as.character(corcut),
-  "covsel_grrf_gamma",           as.character(grrf_gamma),
-  "covsel_grrf_num_trees",       as.character(grrf_num_trees),
-  "covsel_grrf_max_depth",       as.character(grrf_max_depth),
-  "covsel_importance_rel_cut",   as.character(importance_rel_cut),
-  "covsel_max_preds_per_trans",  as.character(max_preds_per_trans),
-  "covsel_pairs_retained",       as.character(nrow(trans_preds_selected))
+  key =                          , value =,
+  "covsel_importance_rel_cut",     as.character(importance_rel_cut),
+  "covsel_max_preds_per_trans",    as.character(max_preds_per_trans),
+  "covsel_grrf_gamma",             as.character(grrf_gamma),
+  "covsel_grrf_num_trees",         as.character(grrf_num_trees),
+  "covsel_grrf_max_depth",         as.character(grrf_max_depth),
+  "covsel_pairs_retained",         as.character(nrow(trans_preds_selected))
 ))
 ```

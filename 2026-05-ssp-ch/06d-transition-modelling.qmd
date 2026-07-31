@@ -1,0 +1,169 @@
+---
+title: "06d — Transition models: ROC diagnostic"
+---
+
+Diagnostic for step `06`. Plots a **ROC curve per transition** from the held-out predictions
+stored by `fit_partial_models()`, plus the AUC ranking that `fit_full_models()` selected on.
+Read-only: reads `trans_models_t`, writes nothing back.
+
+The curves come from the **held-out split**, not the training data, so they are an honest read of
+each transition model's discrimination. What to look for:
+
+- **A curve hugging the diagonal** — the model cannot separate transitioning from
+  non-transitioning cells. Its potential surface is close to uninformative, and allocation will
+  place that transition's change nearly at random within the anterior class, constrained only by
+  the demand and the patch parameters. Either the predictor set is missing the relevant driver,
+  or the transition is genuinely unpredictable at hectare resolution.
+- **A curve that rises steeply then flattens** — the model finds a small set of cells it is
+  confident about and is uninformative beyond them. Fine for allocation, which only needs the
+  ranking at the top of the distribution, since only as many cells as the demand requires are
+  ever converted.
+- **A near-perfect curve on a rare transition** — treat with suspicion. Check for a predictor
+  that encodes the outcome (a `static`-derived layer, or a neighbourhood predictor built from
+  the posterior period).
+
+> **Why not `db$get_crossval_plots()`?** It exists and deserialises the same predictions, but
+> calls `mlr3viz::autoplot(prediction)` without a `type`, which yields the default
+> class-distribution bar plot rather than a ROC. It takes no `type` argument to pass through, so
+> this step deserialises directly.
+
+```{r}
+#| label: roc-diagnostic-load
+library(data.table)
+library(evoland)
+library(ggplot2)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+models <- db$fetch(
+  "trans_models_t",
+  cols = c("id_run", "id_trans", "learner_id", "crossval_score", "crossval_predictions")
+)
+
+stopifnot("no models with held-out predictions - run 06 first" = nrow(models) > 0L)
+
+# label transitions by class names rather than ids, so the panels are readable
+trans_labels <-
+  db$trans_meta_t[
+    db$lulc_meta_t[, .(id_lulc, ant = name)],
+    on = .(id_lulc_anterior = id_lulc),
+    nomatch = NULL
+  ][
+    db$lulc_meta_t[, .(id_lulc, post = name)],
+    on = .(id_lulc_posterior = id_lulc),
+    nomatch = NULL
+  ][, .(id_trans, trans_label = paste0(ant, " → ", post))]
+
+models[, auc := vapply(
+  crossval_score,
+  function(s) if (is.null(s[["classif.auc"]])) NA_real_ else as.numeric(s[["classif.auc"]]),
+  numeric(1L)
+)]
+```
+
+## ROC curves
+
+One panel per transition, one line per learner, so the forest can be read against the
+featureless baseline directly — a forest whose curve sits on top of the baseline's has found
+nothing.
+
+```{r}
+#| label: roc-diagnostic-curves
+#| fig-width: 11
+#| fig-height: 9
+# Deserialise each held-out PredictionClassif and reduce it to (fpr, tpr) points. Doing the
+# arithmetic here rather than via mlr3viz::autoplot(type = "roc") keeps every transition in one
+# faceted figure instead of a list of separate plots.
+roc_points <- data.table::rbindlist(lapply(seq_len(nrow(models)), function(i) {
+  blob <- models$crossval_predictions[[i]]
+  if (is.null(blob)) {
+    return(NULL)
+  }
+  pred <- qs2::qs_deserialize(blob)
+
+  # evoland always builds the task with positive = "TRUE" and levels c("FALSE", "TRUE")
+  # (see fit_partial_models / fit_full_models in trans_models_t.R).
+  positive <- if ("TRUE" %in% colnames(pred$prob)) "TRUE" else colnames(pred$prob)[2L]
+  prob <- pred$prob[, positive]
+  truth <- pred$truth == positive
+
+  ord <- order(prob, decreasing = TRUE)
+  tp <- cumsum(truth[ord])
+  fp <- cumsum(!truth[ord])
+  n_pos <- sum(truth)
+  n_neg <- sum(!truth)
+  if (n_pos == 0L || n_neg == 0L) {
+    return(NULL) # a split with one class only has no ROC
+  }
+
+  # thin to at most 500 points per curve; these predictions run to ~10^5-10^6 rows
+  keep <- unique(round(seq(1, length(tp), length.out = min(500L, length(tp)))))
+
+  data.table(
+    id_trans = models$id_trans[i],
+    learner_id = models$learner_id[i],
+    fpr = c(0, fp[keep] / n_neg, 1),
+    tpr = c(0, tp[keep] / n_pos, 1)
+  )
+}))
+
+roc_points <- roc_points[trans_labels, on = "id_trans", nomatch = NULL]
+
+ggplot(roc_points, aes(x = fpr, y = tpr, colour = learner_id)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted", colour = "grey50") +
+  geom_line(linewidth = 0.6) +
+  facet_wrap(~trans_label) +
+  coord_equal() +
+  scale_x_continuous(breaks = c(0, 0.5, 1)) +
+  scale_y_continuous(breaks = c(0, 0.5, 1)) +
+  labs(
+    title = "Held-out ROC per transition",
+    subtitle = "Dotted diagonal = no discrimination. Compare each learner against the featureless baseline.",
+    x = "False positive rate",
+    y = "True positive rate",
+    colour = "Learner"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+## AUC ranking
+
+The number `fit_full_models(select_score = "classif.auc")` actually selects on. Transitions are
+ordered worst-first: the top of this plot is where the modelling is weakest and where a look at
+the retained predictor set from `05` is most likely to pay off.
+
+```{r}
+#| label: roc-diagnostic-auc
+#| fig-width: 9
+#| fig-height: 7
+auc_dt <- models[!is.na(auc) & learner_id != "error"][trans_labels, on = "id_trans", nomatch = NULL]
+
+ggplot(auc_dt, aes(x = reorder(trans_label, auc), y = auc, colour = learner_id)) +
+  geom_hline(yintercept = 0.5, linetype = "dotted", colour = "grey50") +
+  geom_hline(yintercept = 0.6, linetype = "dashed", colour = "firebrick") +
+  geom_point(size = 2.5) +
+  coord_flip() +
+  scale_y_continuous(limits = c(0.4, 1)) +
+  labs(
+    title = "Held-out AUC per transition",
+    subtitle = "Dotted: no discrimination. Dashed: the 0.6 line 06 warns below.",
+    x = NULL,
+    y = "AUC",
+    colour = "Learner"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#| label: roc-diagnostic-table
+# max() over an empty group returns -Inf with a warning; a missing (transition, learner)
+# combination should read as NA.
+max_or_na <- function(z) if (length(z)) max(z) else NA_real_
+
+data.table::dcast(
+  auc_dt,
+  trans_label ~ learner_id,
+  value.var = "auc",
+  fun.aggregate = max_or_na
+)[order(trans_label)]
+```

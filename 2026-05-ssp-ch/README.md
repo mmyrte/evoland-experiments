@@ -104,9 +104,10 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | `03-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
 | `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised |
 | `04d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
-| `05-covariate-selection.qmd` | Correlation prune → GRRF importance feature selection | 🟡 rebuilt on the live API; `importance_rel_cut` to be read off `05d` |
+| `05-covariate-selection.qmd` | GRRF importance feature selection | 🟡 rebuilt on the live API; **stops until `importance_rel_cut` is set from `05d`** |
 | `05d-covariate-selection.qmd` | _diag:_ importance-distribution plot (justifies the cut) | 🟡 written, unrun |
-| `06-transition-modelling.qmd` | mlr3 transition models | ⬜ not started |
+| `06-transition-modelling.qmd` | ranger transition models, selected on AUC | 🟡 written, unrun |
+| `06d-transition-modelling.qmd` | _diag:_ held-out ROC + AUC ranking per transition | 🟡 written, unrun |
 | `07-transition-rates.qmd` | Demand (`NCCS_simulation_LULC_areas.xlsx`) → LP solver → rates | ⬜ not started |
 | `08-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started |
 | `09-extrapolate.qmd` | Stochastic extrapolation (forward projection) | ⬜ not started |

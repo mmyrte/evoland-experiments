@@ -215,14 +215,19 @@ parameters remain to be justified.
       the correlation stage never ran at all. Now two explicit stages:
       `flt("find_correlation")` → `FilterImportance$new(learner = LearnerClassifGrrf$new())`,
       with subsetting and a coverage check before commit.
-- [x] **Two API facts that shaped the design**, both verified by running mlr3filters 0.9.1:
-    - `FilterFindCorrelation` accepts only `integer`/`numeric`. With a `factor` predictor in
-      the task it raises *"unsupported feature types: factor"*, which `pred_filter_worker()`
-      catches and converts into an **all-`NA` score for that whole transition** — a silent
-      hole, not a crash. Now that `bioregion`/`biosubregion` are factors this is live, so the
-      correlation stage runs over numeric predictors only and categoricals bypass it.
-    - `FilterFindCorrelation` scores ≈ `1 − max|r|` (higher = keep), which gives the old
-      `corcut` parameter a clean translation: keep `score > 1 - corcut`.
+- [x] **Dropped the correlation pre-filter.** An interim revision ran `FilterFindCorrelation`
+      before GRRF. It is hard to defend: the threshold is arbitrary, *which* member of a
+      correlated pair survives is decided by feature order rather than usefulness, and being
+      target-blind it can drop the predictor carrying the signal. GRRF already handles
+      redundancy target-awarely. One defensible mechanism beats two stacked heuristics.
+      *(Noted for whenever it is reconsidered: `FilterFindCorrelation` is `integer`/`numeric`
+      only, so a `factor` predictor makes it raise "unsupported feature types", which
+      `pred_filter_worker()` converts into an all-`NA` score for the whole transition — a
+      silent hole rather than a crash. It also scores ≈ `1 − max|r|`, so `corcut` translates to
+      keeping `score > 1 - corcut`.)*
+- [x] **`05` now refuses to run until the cut is chosen.** `importance_rel_cut` ships as
+      `NA_real_` and the parameter chunk `stop()`s with instructions pointing at `05d`. There is
+      no default to fall back on silently.
 - [ ] 🟡 **Read `importance_rel_cut` off `05d-covariate-selection.qmd`.** The tempting
       parameter-free cut (`importance > 0`, on the assumption that GRRF zeroes uninformative
       predictors) **does not work** — reproducing evoland's `LearnerClassifGrrf` training path
@@ -247,9 +252,24 @@ parameters remain to be justified.
 are new to this experiment. The SSP demand curves are not yet wired in — the bulk of the
 remaining MS9-phase-1 work.
 
-- [ ] **`06-transition-modelling.qmd`** — mlr3 transition-potential models (valparish
-      used GLM). Decide learner(s) and a **justified train/test split** (valparish
-      left `sample_frac = 0.3` unmotivated).
+- [x] **`06-transition-modelling.qmd`** — written, unrun. `classif.ranger` selected on
+      `classif.auc`, with a `classif.featureless` baseline fitted alongside so the forest's AUC
+      is interpretable. AUC is the right criterion because `adjusted_trans_pot_v()`
+      column-scales the stored probabilities — a monotone transform — so only the *ranking* of
+      cells matters, and AUC is insensitive to the class imbalance of rare transitions. Includes
+      the viability/model reconciliation the stochastic vignette requires.
+- [x] **`06d-transition-modelling.qmd`** — held-out ROC per transition plus the AUC ranking.
+      Computes the curves directly from the stored `PredictionClassif` rather than via
+      `db$get_crossval_plots()`, which calls `autoplot()` with no `type` and so yields the
+      default bar plot, with no way to pass `type = "roc"` through. Verified: the curve
+      reproduces mlr3's `classif.auc` to 1e-5.
+- [ ] **Justify the train/test split.** `sample_frac = 0.7` is evoland's default and what both
+      vignettes use — a convention, not a justified choice (valparish left `0.3` unmotivated).
+      A learning curve of AUC against subsample size for a few representative transitions would
+      settle it, and would also reveal whether rare transitions are sample-starved.
+- [ ] **Revisit the learner** once the baseline comparison has run. ranger is a deliberate
+      first pass; if many transitions sit near AUC 0.5 the question is the predictor set, not
+      the learner.
 - [x] **Analysed the solver integration** — see [`notes-lp-solver.md`](notes-lp-solver.md).
       The shipped LP was run on the real demand numbers (all five SSPs solve in <1 s with
       `lpSolve`). Headline conclusions:
