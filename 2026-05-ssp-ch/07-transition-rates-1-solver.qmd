@@ -1,0 +1,315 @@
+---
+title: "07 — Transition rates from SSP demand"
+---
+
+Turn the per-SSP **class-area targets** elicited for the original SSP-CH project into the
+**per-transition rates** that allocation consumes, using the demand-driven LP solver added to
+evoland-plus for [#32](https://github.com/ethzplus/evoland-plus/issues/32).
+
+This replaces `extrapolate_trans_rates()`, which fits one independent regression per transition
+and has nowhere to state a scenario target at all. The gain is not the change of units — it is
+that a *coupled* solver enforces mass balance and class-trajectory consistency across
+transitions, which 21 independent univariate fits cannot.
+
+Companion step: `07-transition-rates-2-legacy.qmd` produces a second set of rates reproducing
+the original implementation's *effective* behaviour, so the two can be diffed.
+
+## Requirements this step depends on
+
+Verified against `evoland-plus@claude/linear-program-implementation-2wf1m7` by running it on
+these exact demand numbers:
+
+| Need | Provided by |
+| --- | --- |
+| bounds from observed history, irregular intervals | `trans_rate_bounds()` — annualises before min/max, re-inflates to the step length |
+| "is this target even attainable?" | `trans_rate_reachability()` — pure LP, needs no targets |
+| coupled solve to class-area targets | `solve_trans_rates()` |
+| write `trans_rates_t` for several runs | `trans_rates_from_solution()` |
+| recover the solved trajectory afterwards | `trans_rate_areas()` — replays a rate table forward |
+
+The last one matters more than it looks. #32 asked whether the solver's predicted `area[l,t]`
+should be persisted so realised-vs-predicted validation is possible after allocation. It does
+not need to be: the trajectory is recoverable from `trans_rates_t` alone. Verified here — the
+replay reproduces the solver's own `areas` matrix to **1.3 × 10⁻⁹ cells**.
+
+> **Two things must be passed explicitly.** Both are defaults that do not survive contact with
+> this data; see the two notes below.
+
+## Grid portability: normalise to shares, rehydrate against our own total
+
+The demand is stated on the original study's grid of **4,129,078 cells**. Ours is a
+re-derivation from NOAS04 onto a 100 m grid restricted to coordinates carrying Arealstatistik
+data, so the totals will not match, and an absolute target of "1,160,184 cells of closed forest"
+is meaningless off the grid it was elicited on.
+
+So we normalise on the source grid and rehydrate on ours. This is exact rather than approximate:
+every scenario and both horizons sum to precisely 4,129,078, so the shares sum to 1 and the
+rehydrated targets sum to our own observed total.
+
+```{r}
+#| label: trans-rates-setup
+library(data.table)
+library(evoland)
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+
+# The anchor is the last observed period: the solver starts from what we actually observed,
+# not from the spreadsheet's init_area.
+anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+step_periods <- db$periods_t[is_extrapolated == TRUE, id_period]
+
+stopifnot(
+  "no extrapolated periods" = length(step_periods) > 0L,
+  "trans_meta_t is empty - run 04 (and 06, which reconciles viability)" =
+    nrow(db$trans_meta_t[is_viable == TRUE]) > 0L
+)
+```
+
+## Demand
+
+The demand table and the share rehydration live in `R/ssp-demand.R`, sourced by this step and by
+`07-transition-rates-2-legacy.qmd` so both solve against exactly the same targets. See that file
+for the source, the `Int_AG` -> `arable` crosswalk, and the lowercase-shape trap.
+
+```{r}
+#| label: trans-rates-demand
+source("2026-05-ssp-ch/R/ssp-demand.R")
+
+lulc_meta <- db$lulc_meta_t
+init_area <- ssp_demand_init_area(db, anchor_period)
+our_total <- sum(init_area$area)
+
+targets_by_ssp <- ssp_demand_targets(lulc_meta, our_total)
+ssp_list <- sort(unique(targets_by_ssp$ssp))
+```
+
+Worth reporting before going further: where our re-derivation from NOAS04 disagrees with the
+original aggregation. A large discrepancy here means the demand is being rehydrated onto a class
+that does not mean quite the same thing.
+
+```{r}
+#| label: trans-rates-init-compare
+comparison <- merge(
+  init_area[, .(id_lulc, our_share = area / our_total)],
+  ssp_demand_init_shares(lulc_meta),
+  by = "id_lulc"
+)[lulc_meta[, .(id_lulc, name)], on = "id_lulc", nomatch = NULL]
+
+comparison[, pct_diff := round(100 * (our_share - their_share) / their_share, 2)]
+comparison[order(-abs(pct_diff))][, .(name, our_share = round(our_share, 5),
+                                      their_share = round(their_share, 5), pct_diff)]
+```
+
+## Historic rate bounds
+
+> **`step_years` must be passed explicitly.** `trans_rate_bounds()` infers it from the
+> extrapolated periods and `stopifnot`s that they are equal — but calendar decades are not
+> exactly equal. On this pipeline's own `create_periods_t("P10Y", …)` output the four
+> extrapolated intervals come out as 10.001369, 9.998631, 10.001369, 9.998631 years, differing
+> only by leap-day placement, and the check fires with *"cannot infer step_years: extrapolated
+> periods differ in length"*. Passing it explicitly is correct anyway — the nominal step is a
+> modelling choice, not a calendar measurement — but the inference wants a tolerance upstream.
+
+```{r}
+#| label: trans-rates-bounds
+step_years <- 10
+
+bounds <- trans_rate_bounds(
+  obs_rates = db$get_obs_trans_rates(),
+  periods = db$periods_t,
+  trans_meta = db$trans_meta_t,
+  step_years = step_years
+)
+
+bounds[order(-max_rate)][1:12]
+```
+
+## Reachability — report, do not gate
+
+Run *before* any solve, and treated as a result in its own right rather than a precondition.
+
+> **`max_reachability_ratio` must be raised from its default of 10.** Exercised on these
+> numbers, glacier alone asks for **11.2–12.4×** the change achievable under historic bounds, so
+> the default aborts every single scenario. That is not a data error: the SSPs are normative
+> visions, and "Switzerland deglaciates faster than 1985–2018 implies" is a claim about climate,
+> not a violation of physics. The gate is kept only to catch the absurd.
+
+```{r}
+#| label: trans-rates-reachability
+# High enough to let the glacier trajectory through, low enough to still catch a target that is
+# outright impossible (e.g. asking a class with no outbound edges to shrink -> ratio Inf).
+max_reachability_ratio <- 50
+
+reachability <- trans_rate_reachability(
+  init_area = init_area,
+  bounds = bounds,
+  n_steps = length(step_periods)
+)
+
+reachability[lulc_meta[, .(id_lulc, name)], on = "id_lulc", nomatch = NULL][
+  order(-ratio)
+]
+```
+
+```{r}
+#| label: trans-rates-reachability-per-ssp
+# How far outside the historic envelope does each scenario ask each class to go?
+reach_by_ssp <- targets_by_ssp[
+  reachability[, .(id_lulc, area_init, area_min, area_max)],
+  on = "id_lulc",
+  nomatch = NULL
+][, `:=`(
+  asked = area - area_init,
+  achievable = data.table::fifelse(area > area_init, area_max - area_init, area_min - area_init)
+)][, ratio := data.table::fifelse(
+  abs(achievable) < 1e-9,
+  data.table::fifelse(abs(asked) < 1e-9, 0, Inf),
+  abs(asked / achievable)
+)]
+
+reach_by_ssp[lulc_meta[, .(id_lulc, name)], on = "id_lulc", nomatch = NULL][
+  ratio > 1
+][order(-ratio)][, .(ssp, name, asked = round(asked), achievable = round(achievable),
+                     ratio = round(ratio, 2))][1:20]
+```
+
+## Solve, one LP per SSP
+
+```{r}
+#| label: trans-rates-solve
+solutions <- vector("list", length(ssp_list))
+names(solutions) <- ssp_list
+
+for (s in ssp_list) {
+  d <- targets_by_ssp[ssp == s]
+  message("Solving ", s, " ...")
+  solutions[[s]] <- solve_trans_rates(
+    init_area = init_area,
+    targets = d[, .(id_lulc, area)],
+    shapes = d[, .(id_lulc, shape)],
+    bounds = bounds,
+    periods = db$periods_t,
+    max_reachability_ratio = max_reachability_ratio
+  )
+}
+
+solve_summary <- data.table::rbindlist(lapply(ssp_list, function(s) {
+  sol <- solutions[[s]]
+  fs <- sol$diagnostics$flow_summary
+  data.table(
+    ssp = s,
+    status = sol$status,
+    objective = round(sol$objective, 4),
+    max_target_err = max(abs(sol$diagnostics$target_error$error), na.rm = TRUE),
+    total_flow = round(fs$total_flow),
+    pct_flow_above_max = round(100 * fs$flow_above_max_rate / fs$total_flow, 1),
+    flow_non_viable = round(fs$flow_non_viable)
+  )
+}))
+
+stopifnot("an LP did not solve to optimality" = all(solve_summary$status == 0))
+solve_summary
+```
+
+### `static` is absorbing, and the demand does not know that
+
+Expect non-zero `max_target_err` for SSP0, SSP3 and SSP4. Exercised on the real demand, those
+three miss by 34,000–67,000 cells while SSP1 and SSP5 hit exactly, and the misses attribute
+cleanly:
+
+| SSP | class | asked | miss |
+| --- | --- | --- | --- |
+| SSP0 | static | +10,498 | **+41,319** |
+| SSP0 | closed_forest | −41,938 | −41,319 |
+| SSP3 | static | −23,148 | +23,148 |
+| SSP3 | glacier | −41,247 | +41,247 |
+| SSP3 | closed_forest | +128,946 | −66,677 |
+| SSP4 | static | +7,060 | **+34,187** |
+
+`04-viable-transition-identification.qmd` excludes `static` as an *anterior* class, so the edge
+set has transitions into static but none out of it. Static can therefore only grow, and its
+inflow cannot be shed — it overshoots, and under mass balance another class (here
+`closed_forest`) has to undershoot by the same amount. Glacier is the same story in miniature:
+its only outbound edge is bounded by a historic rate that predates the current melt.
+
+This is a **modelling conflict, not a solver defect**, and it is worth deciding rather than
+absorbing: either leave `static` as an anterior class for the transitions that genuinely occur
+(sealing is not irreversible), or pre-adjust the demand so static never shrinks and redistribute
+the difference. Tracked in `TODO.md`.
+
+`pct_flow_above_max` is the number to watch. It is how much of the solved change sits outside
+the historic envelope, and it propagates: `adjusted_trans_pot_v()` scales potentials by an
+**unbounded** `rate / mean_value` multiplier, so when the LP demands several times the observed
+rate the scaled probabilities exceed 1, the row-closure branch clips them, uPAM's quota cannot
+be met and the pool empties early. The scenario then silently under-delivers its own demand.
+`09d` should compare realised areas against `trans_rate_areas()` for exactly this reason.
+
+## Commit to the SSP runs
+
+Each solution is written to every leaf run of its SSP — the leaves differ by climate framing,
+which does not change the demand.
+
+```{r}
+#| label: trans-rates-commit
+runs <- db$runs_t
+
+# 07-2 adds a `rate_solver` column and legacy sibling runs; exclude those here if present.
+ssp_runs <- if ("rate_solver" %in% names(runs)) {
+  runs[!is.na(ssp) & (is.na(rate_solver) | rate_solver == "solver")]
+} else {
+  runs[!is.na(ssp)]
+}
+
+stopifnot("no SSP leaf runs - run 00-setup-db.qmd" = nrow(ssp_runs) > 0L)
+
+for (s in ssp_list) {
+  run_ids <- ssp_runs[ssp == s, id_run]
+  if (length(run_ids) == 0L) {
+    warning("No runs registered for ", s, "; skipping")
+    next
+  }
+  db$trans_rates_t <- trans_rates_from_solution(solutions[[s]], id_run = run_ids)
+}
+
+db$trans_rates_t[, .(n_rows = .N), by = id_run][order(id_run)][1:10]
+```
+
+## Verify the trajectory round-trips
+
+The solved trajectory has to be recoverable from what we stored, or the realised-vs-predicted
+comparison in `09d` is impossible.
+
+```{r}
+#| label: trans-rates-roundtrip
+check_ssp <- ssp_list[1]
+check_run <- ssp_runs[ssp == check_ssp, id_run][1]
+
+replayed <- trans_rate_areas(
+  init_area = init_area,
+  rates = db$trans_rates_t[id_run == check_run],
+  trans_meta = db$trans_meta_t
+)
+
+roundtrip <- merge(
+  data.table::as.data.table(replayed),
+  data.table::as.data.table(solutions[[check_ssp]]$areas),
+  by = c("id_lulc", "id_period"),
+  suffixes = c("_replay", "_solved")
+)
+
+max_drift <- max(abs(roundtrip$area_replay - roundtrip$area_solved))
+message(sprintf("Round-trip drift for %s: %.3g cells", check_ssp, max_drift))
+stopifnot("rate table does not reproduce the solved trajectory" = max_drift < 1)
+```
+
+```{r}
+#| label: trans-rates-report
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key =                           , value =,
+  "trans_rates_source",             "NCCS_simulation_LULC_areas.xlsx (class-area targets, 2060)",
+  "trans_rates_method",             "solve_trans_rates() LP, shares normalised on the source grid",
+  "trans_rates_step_years",         as.character(step_years),
+  "trans_rates_max_reach_ratio",    as.character(max_reachability_ratio),
+  "trans_rates_scenarios",          paste(ssp_list, collapse = ",")
+))
+```

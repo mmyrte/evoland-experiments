@@ -65,7 +65,8 @@ A [written formulation](https://github.com/ethzplus/evoland-plus/issues/32) of a
 solver also exists (share space, quadratic terminal-fit and historic-preference terms,
 zero-history penalties, minimax fairness, ridge term, and a feasibility precheck LP). It
 differs substantially from the shipped LP — and being quadratic, it cannot run on
-`lpSolve::lp()`. We port the shipped LP for now.
+`lpSolve::lp()`. Neither is ported here: evoland-plus now carries a corrected LP of its own
+(branch `claude/linear-program-implementation-2wf1m7`), which step `07` uses.
 
 ## Domain & periods
 
@@ -108,7 +109,8 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | `05d-covariate-selection.qmd` | _diag:_ importance-distribution plot (justifies the cut) | 🟡 written, unrun |
 | `06-transition-modelling.qmd` | ranger transition models, selected on AUC | 🟡 written, unrun |
 | `06d-transition-modelling.qmd` | _diag:_ held-out ROC + AUC ranking per transition | 🟡 written, unrun |
-| `07-transition-rates.qmd` | Demand (`NCCS_simulation_LULC_areas.xlsx`) → LP solver → rates | ⬜ not started |
+| `07-transition-rates-1-solver.qmd` | SSP demand → LP solver → `trans_rates_t` | 🟡 written, unrun; needs the evoland LP branch |
+| `07-transition-rates-2-legacy.qmd` | Original-behaviour rates on dedicated runs, for the replication diff | 🟡 written, unrun |
 | `08-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started |
 | `09-extrapolate.qmd` | Stochastic extrapolation (forward projection) | ⬜ not started |
 | `09d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |

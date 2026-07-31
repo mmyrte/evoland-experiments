@@ -323,31 +323,46 @@ remaining MS9-phase-1 work.
           pipeline's `trans_meta_t` (`min_cardinality_abs = 1000`, `static` excluded as
           anterior) is a different rule; a broader viable set would widen the bands and could
           change the counts substantially.
-- [ ] **`07-transition-rates.qmd`** — wire in the SSP demand. Source is
-      `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` (class-area targets +
-      curve shapes per SSP0/1/3/4/5), **not** `Transition_Tables.xlsx` — see README.
-    - [ ] **Port the LP solver** to `2026-05-ssp-ch/R/trans-rate-solver.R` as three functions
-          (`trans_rate_bounds` / `trans_rate_reachability` / `solve_trans_rates`); add
-          `lpSolve` to `rproject.toml`. Keep it experiment-local for now;
-          upstreaming is tracked in [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32),
-          which proposes replacing rate-based `extrapolate_trans_rates()` with an
-          absolutes-based solver.
-    - [ ] **Resample the demand to decadal steps.** The targets are 5-yearly (2025…2060);
-          the pipeline is decadal, and period 8 ends 2064, so the 2060 target is interior.
-          The solver takes explicit `Time_steps`/`Step_length`, so this is a matter of
-          choosing the decadal target years, not of changing the solver.
-    - [ ] **Four docx ideas are worth porting and are all LP-representable** — the precheck,
-          hard-forbidden edges, an L1 terminal-fit term (the ±1 % band is currently a *bias*:
-          every class parks on a band edge) and a minimax fairness bound. **No QP dependency
-          needed.**
-    - [ ] **Reconcile the ported solver against the written formulation** (the docx behind
-          [evoland-plus#32](https://github.com/ethzplus/evoland-plus/issues/32)). They are
-          *not* the same model: the shipped LP works in absolute areas with a hard 99/101 %
-          band on final areas and a temporal-smoothing term; the written version works in
-          shares and adds quadratic terminal-fit and historic-preference terms, a
-          zero-history penalty, hard-forbidden edges, minimax fairness, a ridge term and a
-          feasibility precheck LP — and being quadratic it cannot run on `lpSolve::lp()`.
-          Decide which is being reproduced before trusting the numbers.
+- [x] **`07-transition-rates-1-solver.qmd`** and **`07-transition-rates-2-legacy.qmd`** — written,
+      unrun. Demand and share rehydration factored into `R/ssp-demand.R`, sourced by both so they
+      solve against identical targets. Uses `evoland-plus@claude/linear-program-implementation-2wf1m7`.
+- [x] **Evaluated that branch against these requirements.** All 38 of its tests pass, and it was
+      exercised on the real demand: bounds from observed history, reachability precheck, coupled
+      solve, `trans_rates_t` write for several runs, and — answering the open question in #32 —
+      `trans_rate_areas()` recovers the solved trajectory from the rate table alone, verified to
+      1.3 × 10⁻⁹ cells. No separate trajectory table is needed.
+- [ ] 🔴 **Two of its defaults do not survive this data**; both are passed explicitly in `07-1`,
+      and both would be better fixed upstream:
+    - `trans_rate_bounds()` infers `step_years` and `stopifnot`s that the extrapolated periods
+      are equal, but calendar decades are not: `create_periods_t("P10Y", …)` yields intervals of
+      10.001369 / 9.998631 / 10.001369 / 9.998631 years, differing only by leap-day placement, so
+      the check fires. Wants a tolerance.
+    - `max_reachability_ratio = 10` aborts **every** scenario — glacier alone asks 11.2–12.4×.
+      Confirms the point already made in #32: the precheck must quantify, not gate.
+- [ ] 🔴 **`static` is absorbing, and the demand asks it to shrink.** `04` excludes `static` as an
+      anterior class, so the edge set has transitions into it and none out. SSP0/SSP3/SSP4 then
+      miss their targets by 34,000–67,000 cells: static overshoots because its inflow cannot be
+      shed, and `closed_forest` undershoots by the same amount under mass balance. Glacier is the
+      same in miniature. **Decide:** leave `static` as an anterior class for the transitions that
+      genuinely occur (sealing is not irreversible), or pre-adjust the demand so static never
+      shrinks and redistribute the difference.
+- [ ] **Re-run the numbers against the real `trans_meta_t`.** Everything above used the original
+      study's 21-edge calibration set as a stand-in, because no `ssp-ch.evolanddb` exists yet.
+      This pipeline's viable set differs and will move the reachability bands, the target misses
+      and the leakage figures.
+- [ ] **Decide what the legacy runs are worth.** The committable legacy trajectories differ from
+      the corrected ones by **≤ 7 cells, and 0 at the horizon**, in every scenario — because once
+      non-viable edges are forbidden in both (required to commit at all), the shape mechanism is
+      inert either way and the smoothing weight does not bite over four steps. The original's
+      defects did not distort its trajectories; their whole practical effect was to route
+      40–65 % of flow onto edges that do not exist, which its own allocator then dropped. The
+      legacy runs are therefore cheap evidence for that claim rather than a different answer.
+- [ ] **Neither the hard terminal band nor soft forbidden edges can be reproduced**, and the step
+      says so. The original reached its 99–101 % band by leaking through forbidden edges; forbid
+      the leakage and the band is infeasible (`lpSolve` status 2), so `07-2` substitutes the soft
+      terminal fit. Defect 3's leakage is measured by a second, uncommitted solve —
+      `trans_rates_from_solution()` refuses to persist a solution containing non-viable flow, and
+      is right to, since those transitions have no `trans_pot_t` rows.
 - [ ] **`08-validate-backcasting.qmd`** (MS9 phase 3) — three sub-steps:
     - [ ] (a) **estimate patch/allocation parameters** from historical data (this is
           where allocation-parameter creation lives — no separate `alloc-params` step);
