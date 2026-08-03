@@ -104,7 +104,7 @@ db <- evoland_db$new(path = "ssp-ch.evolanddb")
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 step_periods <- db$periods_t[is_extrapolated == TRUE, id_period]
 step_years <- 10 # see 07-1: inference fails on real calendar decades
-max_reachability_ratio <- 50 # see 07-1: the default of 10 aborts every scenario
+max_reachability_ratio <- Inf # see 07-1: `static` is absorbing, so no finite value works
 
 stopifnot(
   "run 07-transition-rates-1-solver.qmd first" = nrow(db$trans_rates_t) > 0L
@@ -120,7 +120,7 @@ source("2026-05-ssp-ch/R/ssp-demand.R")
 
 lulc_meta <- db$lulc_meta_t
 init_area <- ssp_demand_init_area(db, anchor_period)
-targets_by_ssp <- ssp_demand_targets(lulc_meta, sum(init_area$area))
+targets_by_ssp <- ssp_demand_targets(lulc_meta, observed_total = sum(init_area$area))
 ssp_list <- sort(unique(targets_by_ssp$ssp))
 
 bounds <- trans_rate_bounds(

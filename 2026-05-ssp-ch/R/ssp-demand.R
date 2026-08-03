@@ -65,36 +65,57 @@ ssp_demand <- data.table::rowwiseDT(
   "SSP5", "glacier",            102992,      60816.776000, "constant change"
 )
 
-#' Rehydrate the demand onto our own grid.
+# The grid the demand was elicited on, for the guard in ssp_demand_targets().
+SSP_DEMAND_SOURCE_TOTAL <- 4129078L
+
+#' Per-scenario class-area targets, in cells.
 #'
-#' The demand is stated on the original study's 4,129,078-cell grid; ours is a re-derivation
-#' from NOAS04 and will differ. Normalising on the source grid and multiplying by our own
-#' observed total is exact rather than approximate: every scenario and both horizons sum to
-#' precisely 4,129,078, so the shares sum to 1.
+#' Returned as the absolute values from the source workbook, deliberately unscaled. The original
+#' was elicited on a 4,129,078-cell grid and this pipeline's is 4,129,079 -- a difference of one
+#' cell -- so normalising to shares and multiplying back out would be arithmetic that changes
+#' nothing while obscuring where the numbers came from.
+#'
+#' `observed_total` is not used to rescale; it is only checked, so that a grid which *is*
+#' materially different fails loudly instead of silently inheriting targets that do not fit it.
+#' See the note in 07-transition-rates-1-solver.qmd if you hit that error.
 #'
 #' Also normalises `shape`, which needs it -- one row (SSP0 / Open_Forest) reads
 #' "delayed decline" in lowercase where every other row is title case.
 #'
 #' @param lulc_meta A [lulc_meta_t]; supplies the id_lulc crosswalk.
-#' @param total Numeric, our own observed cell count at the anchor period.
+#' @param observed_total Optional integer, our own cell count at the anchor period. When given,
+#' it is checked against the grid the demand was elicited on.
+#' @param tolerance Fractional deviation tolerated before erroring. The default of 0.001 allows
+#' ~4,100 cells, far above the 1-cell difference and far below a genuine change of resolution.
 #' @return data.table(ssp, id_lulc, area, shape)
-ssp_demand_targets <- function(lulc_meta, total) {
+ssp_demand_targets <- function(lulc_meta, observed_total = NULL, tolerance = 0.001) {
   stopifnot(
     "demand class names do not match lulc_meta_t" =
-      setequal(unique(ssp_demand$lulc_name), lulc_meta$name),
-    "total must be a positive scalar" = length(total) == 1L && total > 0
+      setequal(unique(ssp_demand$lulc_name), lulc_meta$name)
   )
+
+  if (!is.null(observed_total)) {
+    deviation <- abs(observed_total - SSP_DEMAND_SOURCE_TOTAL) / SSP_DEMAND_SOURCE_TOTAL
+    if (deviation > tolerance) {
+      stop(
+        "This grid has ", observed_total, " cells; the demand was elicited on ",
+        SSP_DEMAND_SOURCE_TOTAL, " (", round(100 * deviation, 2), "% apart).\n",
+        "The targets are absolute cell counts and are used unscaled, which is only valid ",
+        "while the two grids match.\n",
+        "For a coarser or otherwise different grid, normalise on the source grid and ",
+        "rehydrate on yours:\n",
+        "  share <- final_2060 / sum(final_2060)   # per scenario; sums to 1 exactly\n",
+        "  target <- share * observed_total\n",
+        "See the note in 07-transition-rates-1-solver.qmd.",
+        call. = FALSE
+      )
+    }
+  }
 
   d <- data.table::copy(ssp_demand)
   d[lulc_meta[, .(lulc_name = name, id_lulc)], on = "lulc_name", id_lulc := i.id_lulc]
-  d[, share_final := final_2060 / sum(final_2060), by = ssp]
 
-  stopifnot(
-    "demand shares do not sum to 1" =
-      all(abs(d[, .(s = sum(share_final)), by = ssp]$s - 1) < 1e-9)
-  )
-
-  d[, .(ssp, id_lulc, area = share_final * total, shape = tolower(trimws(shape)))]
+  d[, .(ssp, id_lulc, area = final_2060, shape = tolower(trimws(shape)))]
 }
 
 #' Our observed initial state at the anchor period, in cells.

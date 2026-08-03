@@ -35,16 +35,24 @@ replay reproduces the solver's own `areas` matrix to **1.3 × 10⁻⁹ cells**.
 > **Two things must be passed explicitly.** Both are defaults that do not survive contact with
 > this data; see the two notes below.
 
-## Grid portability: normalise to shares, rehydrate against our own total
+## A note on the grid, for anyone who changes it
 
-The demand is stated on the original study's grid of **4,129,078 cells**. Ours is a
-re-derivation from NOAS04 onto a 100 m grid restricted to coordinates carrying Arealstatistik
-data, so the totals will not match, and an absolute target of "1,160,184 cells of closed forest"
-is meaningless off the grid it was elicited on.
+The demand is stated in absolute cell counts on the original study's grid of **4,129,078**
+cells. Ours is **4,129,079** — one cell apart — so the targets are used **as they are**, with no
+rescaling. Normalising to shares and multiplying back out by our own total would be arithmetic
+that changes nothing while making it harder to see where the numbers came from.
 
-So we normalise on the source grid and rehydrate on ours. This is exact rather than approximate:
-every scenario and both horizons sum to precisely 4,129,078, so the shares sum to 1 and the
-rehydrated targets sum to our own observed total.
+That only holds while the two grids match. **If you re-implement this at a coarser resolution,
+or on a different extent, the absolute targets become meaningless and must be rescaled**:
+
+```r
+share  <- final_2060 / sum(final_2060)   # per scenario; sums to exactly 1
+target <- share * observed_total
+```
+
+The round-trip is exact rather than approximate, because every scenario and both horizons sum to
+precisely 4,129,078. `ssp_demand_targets()` does not do this for you, but it does check the grid
+size and fail with these instructions rather than quietly handing you targets that do not fit.
 
 ```{r}
 #| label: trans-rates-setup
@@ -67,9 +75,9 @@ stopifnot(
 
 ## Demand
 
-The demand table and the share rehydration live in `R/ssp-demand.R`, sourced by this step and by
+The demand table lives in `R/ssp-demand.R`, sourced by this step and by
 `07-transition-rates-2-legacy.qmd` so both solve against exactly the same targets. See that file
-for the source, the `Int_AG` -> `arable` crosswalk, and the lowercase-shape trap.
+for the source, the `Int_AG` → `arable` crosswalk, and the lowercase-shape trap.
 
 ```{r}
 #| label: trans-rates-demand
@@ -79,13 +87,17 @@ lulc_meta <- db$lulc_meta_t
 init_area <- ssp_demand_init_area(db, anchor_period)
 our_total <- sum(init_area$area)
 
-targets_by_ssp <- ssp_demand_targets(lulc_meta, our_total)
+# observed_total is checked, not used to rescale; see the grid note above.
+targets_by_ssp <- ssp_demand_targets(lulc_meta, observed_total = our_total)
 ssp_list <- sort(unique(targets_by_ssp$ssp))
+
+message("Grid: ", our_total, " cells; demand elicited on 4129078.")
 ```
 
 Worth reporting before going further: where our re-derivation from NOAS04 disagrees with the
-original aggregation. A large discrepancy here means the demand is being rehydrated onto a class
-that does not mean quite the same thing.
+original aggregation. The grids are the same size, but that does not guarantee the *classes*
+mean the same thing — a large discrepancy for one class means its absolute target was elicited
+against a different definition than the one it is being applied to.
 
 ```{r}
 #| label: trans-rates-init-compare
@@ -128,17 +140,25 @@ bounds[order(-max_rate)][1:12]
 
 Run *before* any solve, and treated as a result in its own right rather than a precondition.
 
-> **`max_reachability_ratio` must be raised from its default of 10.** Exercised on these
-> numbers, glacier alone asks for **11.2–12.4×** the change achievable under historic bounds, so
-> the default aborts every single scenario. That is not a data error: the SSPs are normative
-> visions, and "Switzerland deglaciates faster than 1985–2018 implies" is a claim about climate,
-> not a violation of physics. The gate is kept only to catch the absurd.
+> **`max_reachability_ratio` has to be lifted entirely, not merely raised.** Two separate things
+> force this, and only the first is about degree:
+>
+> 1. Glacier asks for **11.2–12.4×** the change achievable under historic bounds, so the default
+>    of 10 aborts every scenario. That is not a data error — the SSPs are normative visions, and
+>    "Switzerland deglaciates faster than 1985–2018 implies" is a claim about climate, not a
+>    violation of physics.
+> 2. `static` is **absorbing** (see below), so a scenario asking it to shrink has ratio `Inf`.
+>    No finite threshold admits that, and SSP0/SSP3/SSP4 all do. A value of 50 was tried and
+>    still aborts.
+>
+> So the gate is off, and the reachability table below is read as a *result* instead. Restore a
+> finite threshold once the `static` question is settled.
 
 ```{r}
 #| label: trans-rates-reachability
-# High enough to let the glacier trajectory through, low enough to still catch a target that is
-# outright impossible (e.g. asking a class with no outbound edges to shrink -> ratio Inf).
-max_reachability_ratio <- 50
+# Off, not merely loosened: `static` is absorbing, so its ratio is Inf and no finite value
+# admits SSP0/SSP3/SSP4. The L1 terminal fit absorbs the miss and reports it in target_error.
+max_reachability_ratio <- Inf
 
 reachability <- trans_rate_reachability(
   init_area = init_area,

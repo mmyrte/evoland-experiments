@@ -324,8 +324,13 @@ remaining MS9-phase-1 work.
           anterior) is a different rule; a broader viable set would widen the bands and could
           change the counts substantially.
 - [x] **`07-transition-rates-1-solver.qmd`** and **`07-transition-rates-2-legacy.qmd`** — written,
-      unrun. Demand and share rehydration factored into `R/ssp-demand.R`, sourced by both so they
-      solve against identical targets. Uses `evoland-plus@claude/linear-program-implementation-2wf1m7`.
+      unrun. Demand factored into `R/ssp-demand.R`, sourced by both so they solve against
+      identical targets. Uses `evoland-plus@claude/linear-program-implementation-2wf1m7`.
+- [x] **Targets are used unscaled.** The demand was elicited on 4,129,078 cells and this grid has
+      4,129,079 — one cell — so normalising to shares and multiplying back out would change
+      nothing while obscuring the provenance of the numbers. `ssp_demand_targets()` *checks* the
+      grid size (0.1 % tolerance) and errors with rescaling instructions rather than doing it;
+      `07-1` carries the note for anyone re-implementing at a coarser resolution.
 - [x] **Evaluated that branch against these requirements.** All 38 of its tests pass, and it was
       exercised on the real demand: bounds from observed history, reachability precheck, coupled
       solve, `trans_rates_t` write for several runs, and — answering the open question in #32 —
@@ -338,7 +343,10 @@ remaining MS9-phase-1 work.
       10.001369 / 9.998631 / 10.001369 / 9.998631 years, differing only by leap-day placement, so
       the check fires. Wants a tolerance.
     - `max_reachability_ratio = 10` aborts **every** scenario — glacier alone asks 11.2–12.4×.
-      Confirms the point already made in #32: the precheck must quantify, not gate.
+      Confirms the point already made in #32: the precheck must quantify, not gate. Note it has
+      to be lifted to `Inf`, not merely raised: `static` is absorbing so its ratio is `Inf`, and
+      a trial value of 50 still aborted SSP0/SSP3/SSP4. Restore a finite gate once the `static`
+      question below is settled.
 - [ ] 🔴 **`static` is absorbing, and the demand asks it to shrink.** `04` excludes `static` as an
       anterior class, so the edge set has transitions into it and none out. SSP0/SSP3/SSP4 then
       miss their targets by 34,000–67,000 cells: static overshoots because its inflow cannot be
