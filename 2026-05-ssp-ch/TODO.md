@@ -347,13 +347,34 @@ remaining MS9-phase-1 work.
       to be lifted to `Inf`, not merely raised: `static` is absorbing so its ratio is `Inf`, and
       a trial value of 50 still aborted SSP0/SSP3/SSP4. Restore a finite gate once the `static`
       question below is settled.
-- [ ] 🔴 **`static` is absorbing, and the demand asks it to shrink.** `04` excludes `static` as an
-      anterior class, so the edge set has transitions into it and none out. SSP0/SSP3/SSP4 then
-      miss their targets by 34,000–67,000 cells: static overshoots because its inflow cannot be
-      shed, and `closed_forest` undershoots by the same amount under mass balance. Glacier is the
-      same in miniature. **Decide:** leave `static` as an anterior class for the transitions that
-      genuinely occur (sealing is not irreversible), or pre-adjust the demand so static never
-      shrinks and redistribute the difference.
+- [x] **`static` no longer excluded as an anterior class** (`04`). It had been a pure sink, which
+      made SSP0/SSP3/SSP4 miss target by 34,000–67,000 cells — static overshoots because its
+      inflow cannot be shed, and another class undershoots to compensate under mass balance.
+      The original does not treat it as a sink either:
+      `Scripts/Preparation/Transition_identification.R` retains `Static → Shrubland` and
+      `Static → Static`, re-adding them *after* the inclusion-threshold subset so they bypass the
+      frequency filter, alongside hand-picked `Urban → Int_AG/Shrubland` and
+      `Closed_Forest → Shrubland/Static/Grassland`. `lulcc.listbylulc.R:18` carries a
+      commented-out exclusion of `Static` as an initial class. We apply `min_cardinality_abs`
+      uniformly instead of curating by name.
+    - [ ] **Re-measure after `04` runs.** Whether this actually relieves the target misses depends
+          on which static-initial transitions clear the threshold. If `max_target_err` does not
+          fall substantially, the remedy has to move to the demand side.
+    - [ ] **Restore a finite `max_reachability_ratio`** in both `07` steps once the static ratios
+          come back finite. It is at `Inf` only because `static` made them `Inf`.
+- [ ] 🔴 **The `static` area targets are an elicitation defect, and we are knowingly keeping
+      them.** `static` aggregates infrastructure, water, rock and scree. Some members genuinely
+      convert (rock/scree revegetating to shrubland — the edge the original kept); most cannot.
+      Assigning the class a per-scenario 2060 area target treats it as a land use whose extent is
+      a policy outcome, when it is an aggregation artefact standing in for unstated assumptions
+      about deglaciation, reservoirs and sealing. That the original's own model could not deliver
+      SSP3's static target is the symptom. Retained for now to stay close to the replication;
+      **not** endorsed. Proper fixes, both out of scope for MS9 phase 1:
+    - [ ] Disaggregate `static` into convertible and non-convertible members — the deglaciation
+          TODO already requires this.
+    - [ ] Re-elicit demand against classes that can carry a target.
+    - [ ] Until then, treat any reported `static` trajectory as an artefact and do not interpret
+          it. Say so wherever it appears in `09d`.
 - [ ] **Re-run the numbers against the real `trans_meta_t`.** Everything above used the original
       study's 21-edge calibration set as a stand-in, because no `ssp-ch.evolanddb` exists yet.
       This pipeline's viable set differs and will move the reachability bands, the target misses

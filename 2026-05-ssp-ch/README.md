@@ -103,7 +103,7 @@ step, `NNd-` = optional diagnostic that renders a verification report.
 | `02-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | 🟡 written, unrun; GWL crosswalk provisional; **run after `05`** |
 | `02d-ingest-preds-ch2025-check.qmd` | _diag:_ precip-raster sanity check (was `999-dump-preds-raster`) | ✅ |
 | `03-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
-| `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised |
+| `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised; `static` no longer excluded as anterior |
 | `04d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
 | `05-covariate-selection.qmd` | GRRF importance feature selection | 🟡 rebuilt on the live API; **stops until `importance_rel_cut` is set from `05d`** |
 | `05d-covariate-selection.qmd` | _diag:_ importance-distribution plot (justifies the cut) | 🟡 written, unrun |

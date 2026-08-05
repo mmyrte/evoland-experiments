@@ -147,17 +147,21 @@ Run *before* any solve, and treated as a result in its own right rather than a p
 >    of 10 aborts every scenario. That is not a data error — the SSPs are normative visions, and
 >    "Switzerland deglaciates faster than 1985–2018 implies" is a claim about climate, not a
 >    violation of physics.
-> 2. `static` is **absorbing** (see below), so a scenario asking it to shrink has ratio `Inf`.
->    No finite threshold admits that, and SSP0/SSP3/SSP4 all do. A value of 50 was tried and
->    still aborts.
+> 2. `static` **was** absorbing, giving a ratio of `Inf` for any scenario asking it to shrink —
+>    SSP0/SSP3/SSP4 all do, and a trial value of 50 still aborted. `04` no longer excludes
+>    `static` as an anterior class, so this should now resolve; but whether it does depends on
+>    which static-initial transitions clear `min_cardinality_abs`, which cannot be checked until
+>    the pipeline has run.
 >
-> So the gate is off, and the reachability table below is read as a *result* instead. Restore a
-> finite threshold once the `static` question is settled.
+> So the gate is off and the reachability table below is read as a *result* instead. **Restore a
+> finite threshold once `04` has run** and the static ratios come back finite.
 
 ```{r}
 #| label: trans-rates-reachability
-# Off, not merely loosened: `static` is absorbing, so its ratio is Inf and no finite value
-# admits SSP0/SSP3/SSP4. The L1 terminal fit absorbs the miss and reports it in target_error.
+# Off rather than merely loosened, because `static` used to give a ratio of Inf. `04` no longer
+# excludes it as an anterior class, so restore a finite value once that has run and the static
+# ratios come back finite. Meanwhile the L1 terminal fit absorbs any miss and reports it in
+# target_error.
 max_reachability_ratio <- Inf
 
 reachability <- trans_rate_reachability(
@@ -231,11 +235,11 @@ stopifnot("an LP did not solve to optimality" = all(solve_summary$status == 0))
 solve_summary
 ```
 
-### `static` is absorbing, and the demand does not know that
+### `static` and the demand: expect this to have improved, and check
 
-Expect non-zero `max_target_err` for SSP0, SSP3 and SSP4. Exercised on the real demand, those
-three miss by 34,000–67,000 cells while SSP1 and SSP5 hit exactly, and the misses attribute
-cleanly:
+The figures below were measured **before** `04` stopped excluding `static` as an anterior class.
+At that point static could only grow, its inflow could not be shed, and SSP0/SSP3/SSP4 missed
+target by 34,000–67,000 cells while SSP1 and SSP5 hit exactly:
 
 | SSP | class | asked | miss |
 | --- | --- | --- | --- |
@@ -246,16 +250,22 @@ cleanly:
 | SSP3 | closed_forest | +128,946 | −66,677 |
 | SSP4 | static | +7,060 | **+34,187** |
 
-`04-viable-transition-identification.qmd` excludes `static` as an *anterior* class, so the edge
-set has transitions into static but none out of it. Static can therefore only grow, and its
-inflow cannot be shed — it overshoots, and under mass balance another class (here
-`closed_forest`) has to undershoot by the same amount. Glacier is the same story in miniature:
-its only outbound edge is bounded by a historic rate that predates the current melt.
+Static overshot because its inflow could not be shed, and under mass balance another class (here
+`closed_forest`) had to undershoot by the same amount.
 
-This is a **modelling conflict, not a solver defect**, and it is worth deciding rather than
-absorbing: either leave `static` as an anterior class for the transitions that genuinely occur
-(sealing is not irreversible), or pre-adjust the demand so static never shrinks and redistribute
-the difference. Tracked in `TODO.md`.
+`04` now admits static-initial transitions on the same `min_cardinality_abs` rule as every other
+class, which should relieve this — the original also kept `Static → Shrubland`, so there is
+precedent and probably enough observed cardinality. **Re-measure after `04` runs**: if
+`max_target_err` for SSP0/SSP3/SSP4 does not fall substantially, the surviving static outflow is
+too small to carry the demand and the remedy has to move to the demand side instead.
+
+Glacier is a separate and unresolved case: its only outbound edge is bounded by a historic rate
+that predates the current melt, so its ratio stays high regardless.
+
+Either way, **do not interpret the `static` trajectory itself.** The class is an aggregation of
+infrastructure, water, rock and scree, and a per-scenario area target for it is an artefact of
+the elicitation rather than a policy outcome — see the note in
+`04-viable-transition-identification.qmd`.
 
 `pct_flow_above_max` is the number to watch. It is how much of the solved change sits outside
 the historic envelope, and it propagates: `adjusted_trans_pot_v()` scales potentials by an
