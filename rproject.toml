@@ -32,15 +32,19 @@ dependencies = [
     "rmarkdown",
     "writexl",
     "svglite",
-    # NOTE: tracks an unmerged branch, deliberately. Two fixes this pipeline needs are
-    # not on main yet:
-    #   - `bugfix/regular-period-lengths` (753e489): makes the last period a full decade;
-    #     without it period 8 is 2055-2060 and any rate applied to it is doubled.
-    #   - claude/ssp-ch-2026-05-tasks-4bfq0t (a5b1814): makes period-specific predictor
-    #     slices win over the id_period = 0 fallback, which the CH2025 -gwl projections
-    #     in 02-ingest-preds-ch2025-3-gwl.qmd depend on.
-    # Move to a plain main commit once both are merged.
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "a5b1814", install_suggestions = true },
+    # NOTE: tracks an unmerged branch, deliberately. `bugfix/regular-period-lengths`
+    # (753e489, PR #33 — the last period is now a full decade, without which period 8 is
+    # 2055-2060 and any rate applied to it is doubled) has landed on main, but two things
+    # this pipeline needs have not:
+    #   - the demand-driven LP solver (evoland-plus#32, on develop as c02bb9b): supplies
+    #     trans_rate_bounds() / trans_rate_reachability() / solve_trans_rates(), used by
+    #     both 07 steps.
+    #   - claude/ssp-ch-2026-05-tasks-4bfq0t (206f786, PR evoland-plus#41): makes
+    #     period-specific predictor slices win over the id_period = 0 fallback, which the
+    #     CH2025 -gwl projections in 02-ingest-preds-ch2025-3-gwl.qmd depend on.
+    # The pinned commit is #41's head, which sits on top of develop and so carries both.
+    # Move to a plain main commit once they are merged.
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "206f786", install_suggestions = true },
     "mapview",
     "stars",
     "methods",

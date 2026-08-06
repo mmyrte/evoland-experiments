@@ -104,7 +104,7 @@ db <- evoland_db$new(path = "ssp-ch.evolanddb")
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 step_periods <- db$periods_t[is_extrapolated == TRUE, id_period]
 step_years <- 10 # see 07-1: inference fails on real calendar decades
-max_reachability_ratio <- Inf # see 07-1: `static` is absorbing, so no finite value works
+max_reachability_ratio <- Inf # see 07-1: off, not merely raised; restore once `04` has run
 
 stopifnot(
   "run 07-transition-rates-1-solver.qmd first" = nrow(db$trans_rates_t) > 0L
@@ -250,13 +250,13 @@ legacy_summary
 never observed in the historic record. evoland cannot allocate it — those transitions have no
 `trans_pot_t` rows — so it is reported here and goes no further.
 
-Note also that `static` is **absorbing** in this pipeline: `04` excludes it as an anterior class,
-so there are edges into it but none out. Any scenario asking static to *shrink* is therefore not
-merely outside history but structurally infeasible, and the reachability ratio comes back `Inf`.
-That is why `max_reachability_ratio` has to be lifted rather than merely raised; the L1 terminal
-fit then absorbs the miss and reports it in `target_error`. Whether to let static be left as an
-anterior class, or to pre-adjust the demand so it never shrinks, is an open question in
-`TODO.md`.
+`max_reachability_ratio` is `Inf` here for the same reasons as in `07-1`: glacier alone asks
+11.2–12.4× the change historic bounds allow, and an earlier revision of `04` made `static`
+absorbing, giving a ratio of `Inf` outright for the scenarios asking it to shrink. `04` no longer
+excludes `static` as an anterior class, so the second reason should have gone away — but that
+depends on which static-initial transitions clear `min_cardinality_abs`, which cannot be checked
+until the pipeline has run. Until then the gate stays off, the L1 terminal fit absorbs any miss,
+and `target_error` reports it. Restoring a finite threshold is tracked in `TODO.md`.
 
 ## Commit
 

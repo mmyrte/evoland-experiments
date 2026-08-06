@@ -8,6 +8,43 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 
 ---
 
+## Handover — read this first
+
+**Nothing in this pipeline has been executed end to end.** No `ssp-ch.evolanddb` exists.
+Every step from `00` to `07` is *written and reviewed*, several were exercised against real
+inputs in isolation (the CH2025 crosswalk, the STATENT CSV, the LP solver on the real demand
+table), but the pipeline as a whole has never run. Almost every open item below is blocked on
+that, and several numbers quoted below are explicitly stand-ins that must be re-measured
+afterwards. Treat "written, unrun" as the default state of any `.qmd` here.
+
+**Upstream dependency.** `rproject.toml` pins evoland-plus at `206f786`, the head of
+[PR #41](https://github.com/ethzplus/evoland-plus/pull/41) on branch
+`claude/ssp-ch-2026-05-tasks-4bfq0t`. That branch sits on `develop` and therefore carries both
+the demand-driven LP solver (#32) and the period-0 precedence fix (#41). `bugfix/regular-period-lengths`
+(#33) is already on main. `rv.lock` still records the old sha — **`rv sync` must regenerate it.**
+
+**Suggested order for a first full run:**
+
+1. `rv sync`, then `00` → `04`. Set `min_cardinality_abs` from `04d`, and read the
+   static-initial transition table `04` prints at the end — several downstream decisions
+   (reachability gate, static targets) hang on which of those edges clear the threshold.
+2. `05` **will `stop()`** by design: `importance_rel_cut` is `NA_real_`. Run `05d`, read the cut
+   off the importance distribution, set it, re-run.
+3. `02-ingest-preds-ch2025-3-gwl.qmd` — out of numeric order on purpose; it only projects the
+   climate predictors that survived `05`.
+4. `06`, then `06d` for the per-transition ROC curves.
+5. `07-1` (new solver), then `07-2` (legacy reproduction; it asserts `07-1` has run).
+6. `08`/`09`/`09d` are not written yet.
+
+**Environment.** R 4.6.1 on Ubuntu 24.04 with r2u; the working toolchain used for the
+component checks was data.table 1.18.4 (`rowwiseDT` needs ≥ 1.15), terra 1.9.34, mlr3 1.7.1,
+lpSolve 5.6.23, GDAL 3.8.4 / GEOS 3.12.1 / PROJ 9.4.0. One environment trap worth knowing:
+duckdb resolves its extension cache per driver object, and it fetches extensions over **http**,
+which some proxies refuse — if `evoland_db$new()` fails with a 403 on `spatial.duckdb_extension`,
+pre-place the extension under `$DUCKDB_R_HOME/extensions/<version>/<platform>/`.
+
+---
+
 ## Concluded
 
 - [x] **Adopted the Quarto pipeline + `NNd` diagnostic convention** (see top-level
@@ -56,12 +93,18 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 - [x] **Established where the SSP demand actually lives** — `NCCS_simulation_LULC_areas.xlsx`
       (class-area targets + curve shapes, keyed by SSP, SSP0 included), *not*
       `Transition_Tables.xlsx`, whose per-SSP rate blocks are empty. See README.
-- [x] **Fixed the `id_period = 0` fallback precedence upstream**
-      (evoland-plus `inst/pred_data_wide.sql`, `inst/trans_pred_data.sql`). Both design-matrix
+- [x] **Fixed the `id_period = 0` fallback precedence upstream** —
+      [evoland-plus#41](https://github.com/ethzplus/evoland-plus/pull/41), touching
+      `inst/pred_data_wide.sql` and `inst/trans_pred_data.sql`. Both design-matrix
       queries put the period-0 baseline and the period-specific value in one aggregation group
       and resolved them with an unordered `first()`. Demonstrated against DuckDB 1.5.5: with
       scenario rows stored first, `pred_data_wide.sql` silently returned the **baseline**
       instead of the projection. This blocked any per-period scenario predictor.
+      Precedence is decided **per slice**, not per coordinate: if any coordinate carries a
+      period-specific value for a predictor, that whole slice is used and coordinates it does
+      not cover come back `NA` rather than silently reverting to the baseline. Covered by a
+      test in `inst/tinytest/test_db_evoland.R` (verified to fail against the pre-fix SQL).
+    - [ ] **Unpin once #41 merges** — see `rproject.toml`.
 
 ---
 
@@ -180,7 +223,9 @@ spanning a maximally diverse set of futures).
       a SHA-256 multihash, not md5, so the md5 was computed from the archive after verifying
       its SHA-256 against the STAC entry.
     - [ ] The two are strictly nested and therefore collinear; `05` should retain at most one
-          per transition. Confirm the correlation filter actually does that for factors.
+          per transition. The correlation pre-filter that would have handled this was dropped
+          (see "Feature selection"), and would not have worked on factors anyway, so this now
+          rests entirely on GRRF's regularisation. Check the retained sets after `05` runs.
 - [ ] **Coordinates as predictors?** Evaluate whether raw E/N (or a smooth basis of
       them) should be added as predictors, weighed against location-identity leakage.
 - [ ] **DEM hillshade semantics.** Hillshade was ingested but is probably meant as
@@ -212,9 +257,9 @@ parameters remain to be justified.
       `covariance_filter` and `get_pruned_trans_preds_t` do not exist in evoland-plus at either
       the old pin or main. The live API **scores but does not prune**, and the old first chunk
       assigned the scored table straight back, so it committed the *unpruned* cross product and
-      the correlation stage never ran at all. Now two explicit stages:
-      `flt("find_correlation")` → `FilterImportance$new(learner = LearnerClassifGrrf$new())`,
-      with subsetting and a coverage check before commit.
+      the correlation stage never ran at all. Now a single explicit stage —
+      `FilterImportance$new(learner = LearnerClassifGrrf$new())` — with subsetting and a
+      coverage check before commit.
 - [x] **Dropped the correlation pre-filter.** An interim revision ran `FilterFindCorrelation`
       before GRRF. It is hard to defend: the threshold is arbitrary, *which* member of a
       correlated pair survives is decided by feature order rather than usefulness, and being
@@ -235,11 +280,12 @@ parameters remain to be justified.
       `gamma` tried, so `importance > 0` would retain 10 pure-noise predictors. What GRRF does
       give is a strongly *bimodal* distribution (signal 0.85–1.00, surviving noise 0.16–0.20),
       so the cut is defensible but its position is data-dependent. `05d` plots the distribution
-      and tabulates survival at candidate cuts; `05` currently carries a provisional 0.5.
-- [ ] 🟡 **Sensitivity-check the remaining parameters.** `corcut = 0.7` has a literature default
-      (Dormann et al. 2013); `grrf_gamma` / `num.trees` / `max.depth` are reasoned but not yet
-      justified against this data. Re-run across a small grid and report how much the retained
-      set moves.
+      and tabulates survival at candidate cuts; `05` ships `NA_real_` and refuses to run until
+      the cut is chosen from real data. **This is the one hard stop in the pipeline.**
+- [ ] 🟡 **Sensitivity-check the remaining parameters.** With the correlation filter gone, the
+      free parameters in `05` are `grrf_gamma`, `num.trees` and `max.depth` — reasoned, but not
+      yet justified against this data — plus `importance_rel_cut` above. Re-run across a small
+      grid and report how much the retained set moves.
 - [ ] **Runtime.** `regularization.factor` disables ranger's internal threading
       ("Parallelization deactivated"), so the per-transition `mirai` cluster is the only
       parallelism in `05`. Size `n_workers` accordingly.
@@ -303,16 +349,19 @@ remaining MS9-phase-1 work.
     - `r_max == 0` yields `x − devUpper ≤ 0` rather than `x = 0`, so "forbidden" edges are
       merely cheap: 62k–289k cells/scenario flow along `static → arable`,
       `closed_forest → static`, `glacier → grassland`.
-    - [ ] **Decide the replication stance.** If the published Zenodo outputs were produced by
-          this revision, faithful replication means reproducing the bugs. Recommendation in
-          the notes: implement both behind a `shipped_bugs` flag, diff once, then use the
-          fixed version downstream.
+    - [x] **Replication stance decided.** None of the buggy logic goes upstream. Instead
+          `07-2` re-solves the same demand under legacy settings and commits it as separate
+          runs, so the diff is evidence rather than a code path anyone can accidentally use.
+          Two of the three defects cannot be reproduced faithfully anyway — see the "neither
+          the hard terminal band nor soft forbidden edges" item below.
     - [ ] `chosen_shape` is inert for a *second*, independent reason that survives the fix — a
           straight line satisfies all five shapes with equality. Making shapes bite would
           therefore **change** the replication target; that is a call for the original
           elicitation's author.
-- [ ] **Build `trans_rate_reachability()` first.** A pure-LP implementation of the docx's
-      `compute_final_bounds` (~60 lines, needs no targets) found **24 of 50 SSP × class targets
+- [x] **`trans_rate_reachability()` exists upstream** (added on the LP branch, now pinned) and
+      `07-1` runs it before any solve, treating the table as a result rather than a gate. The
+      prototype behind that decision — a pure-LP implementation of the docx's
+      `compute_final_bounds` (~60 lines, needs no targets) — found **24 of 50 SSP × class targets
       unreachable** under observed transition bounds — several by 4–5×, glacier by 1.81× in all
       five scenarios — with 42–63 % of solved flow outside the historic envelope. This is a
       *result*, not a diagnostic, and it means #32's "fail loudly on infeasible targets" would
@@ -320,12 +369,13 @@ remaining MS9-phase-1 work.
       quantify, not gate.
     - [ ] ⚠️ **Re-run before quoting.** Those numbers use the original study's 21-edge
           calibration table as a stand-in, because no `ssp-ch.evolanddb` exists yet. This
-          pipeline's `trans_meta_t` (`min_cardinality_abs = 1000`, `static` excluded as
-          anterior) is a different rule; a broader viable set would widen the bands and could
+          pipeline's `trans_meta_t` applies `min_cardinality_abs = 1000` uniformly, with no
+          hand-curated exclusions; a broader viable set would widen the bands and could
           change the counts substantially.
 - [x] **`07-transition-rates-1-solver.qmd`** and **`07-transition-rates-2-legacy.qmd`** — written,
       unrun. Demand factored into `R/ssp-demand.R`, sourced by both so they solve against
-      identical targets. Uses `evoland-plus@claude/linear-program-implementation-2wf1m7`.
+      identical targets. Both use the upstream LP solver (evoland-plus#32, on `develop` and so
+      carried by the pinned commit); `07-2` asserts `07-1` has run before it starts.
 - [x] **Targets are used unscaled.** The demand was elicited on 4,129,078 cells and this grid has
       4,129,079 — one cell — so normalising to shares and multiplying back out would change
       nothing while obscuring the provenance of the numbers. `ssp_demand_targets()` *checks* the
