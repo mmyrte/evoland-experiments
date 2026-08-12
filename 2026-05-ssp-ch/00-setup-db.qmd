@@ -52,6 +52,7 @@ extrapolated steps out to 2060.
 
 ```{r}
 #| label: setup-db-periods
+# FIXME we can now construct this using rowwiseDT to reflect irregular period lengths
 db$periods_t <- create_periods_t(
   period_length_str = "P10Y",
   start_observed = "1985-01-01",
