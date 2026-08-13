@@ -90,26 +90,23 @@ library(evoland)
 
 # id_period 5..8 == decades 2025-34, 2035-44, 2045-54, 2055-64
 gwl_trajectories <- data.table::rowwiseDT(
-  gwl_trajectory =, id_period =, gwl      =,
-  "stab15",         5L,          "GWL1.5",
-  "stab15",         6L,          "GWL1.5",
-  "stab15",         7L,          "GWL1.5",
-  "stab15",         8L,          "GWL1.5",
-
-  "stab20",         5L,          "GWL1.5",
-  "stab20",         6L,          "GWL1.5",
-  "stab20",         7L,          "GWL2.0",
-  "stab20",         8L,          "GWL2.0",
-
-  "rise30",         5L,          "GWL1.5",
-  "rise30",         6L,          "GWL2.0",
-  "rise30",         7L,          "GWL2.0",
-  "rise30",         8L,          "GWL3.0",
-
-  "fast30",         5L,          "GWL2.0",
-  "fast30",         6L,          "GWL2.0",
-  "fast30",         7L,          "GWL3.0",
-  "fast30",         8L,          "GWL3.0"
+  gwl_trajectory = , id_period = , gwl = ,
+  "stab15", 5L, "GWL1.5",
+  "stab15", 6L, "GWL1.5",
+  "stab15", 7L, "GWL1.5",
+  "stab15", 8L, "GWL1.5",
+  "stab20", 5L, "GWL1.5",
+  "stab20", 6L, "GWL1.5",
+  "stab20", 7L, "GWL2.0",
+  "stab20", 8L, "GWL2.0",
+  "rise30", 5L, "GWL1.5",
+  "rise30", 6L, "GWL2.0",
+  "rise30", 7L, "GWL2.0",
+  "rise30", 8L, "GWL3.0",
+  "fast30", 5L, "GWL2.0",
+  "fast30", 6L, "GWL2.0",
+  "fast30", 7L, "GWL3.0",
+  "fast30", 8L, "GWL3.0"
 )
 ```
 
@@ -170,8 +167,10 @@ if (length(seasonal) > 0L) {
 pred_names <- grep("_yearly$", pred_names, value = TRUE)
 stopifnot("No yearly climate predictors to project" = length(pred_names) > 0L)
 
-message("Projecting ", length(pred_names), " yearly climate predictors: ",
-        paste(pred_names, collapse = ", "))
+message(
+  "Projecting ", length(pred_names), " yearly climate predictors: ",
+  paste(pred_names, collapse = ", ")
+)
 ```
 
 ## Build the work plan
@@ -187,7 +186,8 @@ gwl_files <- list.files(cache_dir, pattern = "-gwl_.*\\.nc$")
 
 inventory <- data.table(file = gwl_files)
 inventory[, stem := sub("\\.nc$", "", file)]
-inventory[,
+inventory[
+  ,
   c("product_stem", "indicator", "gwl", "uncertainty", "time_of_year") :=
     data.table::tstrsplit(stem, "_", fixed = TRUE)
 ]
@@ -306,14 +306,14 @@ provenance.
 ```{r}
 #| label: ch2025-gwl-provenance
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key =                        , value =,
-  "ch2025_gwl_quantiles",        paste(quantiles_to_ingest, collapse = ","),
-  "ch2025_gwl_predictors",       paste(pred_names, collapse = ","),
-  "ch2025_gwl_trajectories",     paste(
+  key = , value = ,
+  "ch2025_gwl_quantiles", paste(quantiles_to_ingest, collapse = ","),
+  "ch2025_gwl_predictors", paste(pred_names, collapse = ","),
+  "ch2025_gwl_trajectories", paste(
     gwl_trajectories[, paste0(gwl_trajectory, ":p", id_period, "=", gwl)],
     collapse = " "
   ),
-  "ch2025_gwl_example_url",      gwl_url(
+  "ch2025_gwl_example_url", gwl_url(
     sources$product[1], sources$indicator[1], sources$gwl[1], sources$uncertainty[1]
   )
 ))

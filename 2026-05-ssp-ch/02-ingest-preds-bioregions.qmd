@@ -9,7 +9,7 @@ predictor instead, so one model per transition can still express regional differ
 splitting the training data.
 
 **Source:** BAFU `ch.bafu.biogeographische_regionen`, "N2020 Revision", EPSG:2056 shapefile.
-<https://www.bafu.admin.ch/bafu/en/home/topics/landscape/publications-studies/publications/die-biogeographischen-regionen-der-schweiz.html> ·
+<https://www.bafu.admin.ch/de/publication?id=fn-ZXl-NXhXbl> ·
 [STAC](https://data.geo.admin.ch/browser/index.html#/collections/ch.bafu.biogeographische_regionen)
 
 The layer holds **12 polygons**: 6 regions (`R1`–`R6`) subdivided into 12 subregions
@@ -80,15 +80,15 @@ stopifnot(
 )
 
 # Level order is fixed by the numeric code so it is stable across re-runs.
-region_levels <- bioreg |>
-  as.data.frame() |>
+region_levels <-
+  bioreg |>
   data.table::as.data.table() |>
   unique(by = "RegionName") |>
   (\(dt) dt[order(RegionNumm)])() |>
   (\(dt) dt[, .(code = RegionName, label = DERegionNa)])()
 
-subregion_levels <- bioreg |>
-  as.data.frame() |>
+subregion_levels <-
+  bioreg |>
   data.table::as.data.table() |>
   unique(by = "Unterreg_1") |>
   (\(dt) dt[order(Unterregio)])() |>
@@ -173,10 +173,10 @@ bioreg_map <- data.table::as.data.table(bioreg)[
 ]
 fixed_NAs <-
   reg_sample[
-    ,. (
-    rn = as.numeric(rn),
-    id_coord = as.integer(as.character(id_coord)),
-    value
+    , .(
+      rn = as.numeric(rn),
+      id_coord = as.integer(as.character(id_coord)),
+      value
     )
   ][,
     .SD[order(value)][1],

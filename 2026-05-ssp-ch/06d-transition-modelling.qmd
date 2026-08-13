@@ -52,7 +52,7 @@ trans_labels <-
     db$lulc_meta_t[, .(id_lulc, post = name)],
     on = .(id_lulc_posterior = id_lulc),
     nomatch = NULL
-  ][, .(id_trans, trans_label = paste0(ant, " → ", post))]
+  ][, .(id_trans, trans_label = paste0(ant, " => ", post))]
 
 models[, auc := vapply(
   crossval_score,
@@ -109,21 +109,26 @@ roc_points <- data.table::rbindlist(lapply(seq_len(nrow(models)), function(i) {
 
 roc_points <- roc_points[trans_labels, on = "id_trans", nomatch = NULL]
 
-ggplot(roc_points, aes(x = fpr, y = tpr, colour = learner_id)) +
+p <-
+  ggplot(
+    roc_points[learner_id != "classif.featureless"],
+    aes(x = fpr, y = tpr, colour = learner_id)
+  ) +
   geom_abline(slope = 1, intercept = 0, linetype = "dotted", colour = "grey50") +
   geom_line(linewidth = 0.6) +
   facet_wrap(~trans_label) +
-  coord_equal() +
+  # coord_equal() +
   scale_x_continuous(breaks = c(0, 0.5, 1)) +
   scale_y_continuous(breaks = c(0, 0.5, 1)) +
   labs(
     title = "Held-out ROC per transition",
-    subtitle = "Dotted diagonal = no discrimination. Compare each learner against the featureless baseline.",
+    subtitle = "Dotted diagonal = no discrimination capacity",
     x = "False positive rate",
     y = "True positive rate",
     colour = "Learner"
   ) +
   theme(legend.position = "bottom")
+ggsave("2026-05-ssp-ch/06d-roc-plots.png", p, width = 11, height = 9)
 ```
 
 ## AUC ranking
@@ -138,20 +143,22 @@ the retained predictor set from `05` is most likely to pay off.
 #| fig-height: 7
 auc_dt <- models[!is.na(auc) & learner_id != "error"][trans_labels, on = "id_trans", nomatch = NULL]
 
-ggplot(auc_dt, aes(x = reorder(trans_label, auc), y = auc, colour = learner_id)) +
-  geom_hline(yintercept = 0.5, linetype = "dotted", colour = "grey50") +
-  geom_hline(yintercept = 0.6, linetype = "dashed", colour = "firebrick") +
+p2 <-
+  ggplot(auc_dt, aes(x = reorder(trans_label, auc), y = auc, colour = learner_id)) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", colour = "firebrick") +
   geom_point(size = 2.5) +
   coord_flip() +
-  scale_y_continuous(limits = c(0.4, 1)) +
+  # scale_y_continuous(limits = c(0.4, 1)) +
   labs(
     title = "Held-out AUC per transition",
-    subtitle = "Dotted: no discrimination. Dashed: the 0.6 line 06 warns below.",
+    subtitle = "Dashed line at 0.5: no discrimination capacity",
     x = NULL,
     y = "AUC",
     colour = "Learner"
   ) +
   theme(legend.position = "bottom")
+
+ggsave("2026-05-ssp-ch/06d-auc-plot.png", p2, width = 9, height = 7)
 ```
 
 ```{r}

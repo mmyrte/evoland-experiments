@@ -21,12 +21,13 @@ carries a stronger signal.
 #| label: covariate-selection-params
 library(data.table)
 library(evoland)
+library(ggplot2)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 db$set_full_trans_preds()
 
-grrf_gamma <- 0.9
+grrf_gamma <- 0.5
 grrf_num_trees <- 100L
 grrf_max_depth <- 20L
 
@@ -36,10 +37,11 @@ grrf_learner$param_set$values <- list(
   num.trees = grrf_num_trees,
   max.depth = grrf_max_depth
 )
+#
 # ranger_lrn <- mlr3::lrn(
 #   "classif.ranger",
 #   num.trees = 100,
-#   max.depth = 20L, 
+#   max.depth = 20L,
 #   importance = "impurity"
 # )
 
@@ -74,37 +76,43 @@ trans_labels <-
     on = .(id_lulc_posterior = id_lulc),
     nomatch = NULL
   ][, .(id_trans, trans_label = paste0(ant, "→", post))]
+pred_labels <- db$pred_meta_t[, .(id_pred, pred_name = name)]
 
 plot_dt <- imp_scored[!is.na(importance_rel)][trans_labels, on = "id_trans", nomatch = NULL]
 
-p <- 
+data.table::fwrite(
+  plot_dt[pred_labels, on = "id_pred"],
+  "2026-05-ssp-ch/05-covariate-importances-grrf.csv"
+)
+
+p <-
   ggplot(plot_dt, aes(x = reorder(trans_label, importance_rel, FUN = median), y = importance_rel)) +
   geom_jitter(width = 0.15, height = 0, alpha = 0.4, size = 1) +
   geom_hline(yintercept = 0.5, linetype = "dashed", colour = "firebrick") +
   scale_y_continuous(limits = c(0, 1)) +
   labs(
-    title = "Random forest gini importance per predictor, relative to the best predictor of each transition",
+    title = "GRRF importance per predictor, relative to the best predictor of each transition",
     subtitle = paste(
-      "Dashed line: cutting here is not sensible, but would be easy."
+      "Dashed line: the provisional importance_rel_cut = 0.5 in 05.",
+      "Look for an empty band; put the cut in it."
     ),
     x = NULL,
     y = "Relative importance"
   ) +
   coord_flip()
-ggsave("2026-05-ssp-ch/importance_scores.png", p)
+ggsave("2026-05-ssp-ch/importance_scores_grrf.png", p)
 
 # TODO this shows that we might want to approach the lower transitions differently
-p2 <- 
+p2 <-
   ggplot(plot_dt, aes(x = reorder(trans_label, importance, FUN = median), y = importance)) +
   geom_jitter(width = 0.15, height = 0, alpha = 0.4, size = 1) +
   labs(
-    title = "Random forest gini importance per predictor, absolute",
-    
+    title = "GRRF importance per predictor, absolute",
     x = NULL,
     y = "absolute importance"
   ) +
   coord_flip()
-ggsave("2026-05-ssp-ch/importance_scores_abs.png", p2)
+ggsave("2026-05-ssp-ch/importance_scores_abs_grrf.png", p2)
 ```
 
 ## Select
@@ -117,7 +125,7 @@ silently prune hard-to-model transitions more aggressively than easy ones.
 #| label: covariate-selection-select
 max_preds_per_trans <- 7
 trans_preds_selected <-
-  imp_scored[is.na(importance) | importance_rel >= 0.3][
+  imp_scored[is.na(importance) | importance_rel >= 0.2][
     order(-importance_rel),
     head(.SD, max_preds_per_trans),
     by = id_trans
@@ -173,11 +181,11 @@ trans_preds_selected[, .(n_preds = .N), by = id_trans][order(n_preds)][1:10]
 #| label: covariate-selection-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   key = , value = ,
-  "covsel_importance_rel_cut", as.character(0.3),
+  "covsel_importance_rel_cut", as.character(0.2),
   "covsel_max_preds_per_trans", as.character(max_preds_per_trans),
-  "covsel_grrf_gamma",           as.character(grrf_gamma),
-  "covsel_grrf_num_trees",         as.character(grrf_num_trees),
-  "covsel_grrf_max_depth",         as.character(grrf_max_depth)
+  "covsel_grrf_gamma", as.character(grrf_gamma),
+  "covsel_grrf_num_trees", as.character(grrf_num_trees),
+  "covsel_grrf_max_depth", as.character(grrf_max_depth)
 ))
 ```
 

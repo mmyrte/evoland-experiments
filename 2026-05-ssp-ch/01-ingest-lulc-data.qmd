@@ -3,19 +3,18 @@ title: "01 — Ingest LULC (Arealstatistik)"
 ---
 
 Ingest the BFS **Arealstatistik** land-use/land-cover history as the observed LULC states
-that the transition model learns from. The raw data uses the NOAS04 nomenclature (72
+that the transition models learn from. The raw data uses the NOAS04 nomenclature (72
 categories); we aggregate it to the SSP-CH modelling classes and assign each survey year to
 a period.
 
 **Source:** BFS Arealstatistik (NOAS04), downloaded and md5-verified into the evoland cache.
 Surveys used: **1985 / 1997 / 2009 / 2018**.
 
-> **Open items (tracked in `TODO.md`):**
+> **Open items**
 >
-> - **Bioregions** — ingest `ch.bafu.biogeographische_regionen` as a region-ID predictor.
 > - **Deglaciated-area class** — after the SSP implementation, add a class (from the
->   glacier inventory) for newly ice-free ground; such areas may be too small to meet the
->   inclusion threshold.
+>   glacier inventory) for newly ice-free ground. Such areas may be too small to meet the
+>   inclusion threshold for transition potential modelling though.
 > - **Arealstatistik 2025** — only 1985–2018 is selected below; `AS25_72` is kept commented
 >   until the 2025 survey is finalised.
 
@@ -34,9 +33,9 @@ lulc_files <-
 
 db$reporting_t <-
   as_reporting_t(data.table::rowwiseDT(
-    key=, value=,
-    "lulc_data_url",      lulc_files$url,
-    "lulc_data_md5sum",   lulc_files$md5sum,
+    key = , value = ,
+    "lulc_data_url", lulc_files$url,
+    "lulc_data_md5sum", lulc_files$md5sum,
     "lulc_data_provider", "BFS Arealstatistik"
   ))
 
@@ -83,7 +82,7 @@ close(csv_con)
 
 The `src_classes` map the 72-category NOAS04 nomenclature onto the coarser modelling
 classes (agricultural, forest/vegetation, urban, glacier, and a `static` catch-all). They
-are used later for aggregation and could in principle be left empty. The `static` class
+are used later for aggregation. The `static` class
 bundles the immutable categories (infrastructure, water, rock/scree, …); it is the class
 that would need **disaggregating** to represent succession on deglaciating ground (see the
 deglaciated-area TODO above).
@@ -136,7 +135,6 @@ db$lulc_meta_t <- create_lulc_meta_t(
       description = "Industrial and commercial buildings; Surroundings of industrial and commercial buildings; One- and two-family houses; Surroundings of one- and two-family houses; Terraced houses; Surroundings of terraced houses; Blocks of flats; Surroundings of blocks of flats; Public buildings; Surroundings of public buildings; Agricultural buildings; Surroundings of agricultural buildings; Unspecified buildings; Surroundings of unspecified buildings; Parking areas; Construction sites; Unexploited urban areas; Public parks; Sports facilities; Golf courses; Camping areas; Garden allotments; Cemeteries",
       src_classes = c(1:14, 19L, 29:36)
     ),
-
     glacier = list(
       pretty_name = "Glaciers and Firn",
       description = "Glaciers and firn fields",
@@ -174,7 +172,8 @@ lulc_dt <-
       year = as.integer, # match group
       pattern = "AS([0-9]{2})_72"
     )
-  )[,
+  )[
+    ,
     year := ifelse(year > 84L, year + 1900L, year + 2000L) # two-digit year to four digit
   ][
     lulc_meta_long_dt,
@@ -227,7 +226,8 @@ id_coord_yr_lulc_dt <-
   ) |>
   na.omit(cols = "id_lulc")
 
-id_coord_yr_lulc_dt[,
+id_coord_yr_lulc_dt[
+  ,
   year := lubridate::make_date(year)
 ]
 

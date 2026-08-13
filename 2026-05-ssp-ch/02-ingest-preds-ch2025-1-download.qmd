@@ -5,10 +5,12 @@ title: "02 — CH2025 climate: probe & download"
 Discover and download the CH2025 climate-indicator netCDFs from the MeteoSwiss
 [CH2025 web atlas](https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/ext/climate-ch2025-maps.html).
 This is stage 1 (**probe**) + stage 2 (**download**); the ETL that reads the cached files
-into the DB is `02-ingest-preds-ch2025-2-etl.qmd`. That ETL recovers all dimensions from
-the cached **file names**, so nothing is passed between the two steps in memory.
+into the DB is `02-ingest-preds-ch2025-2-etl.qmd` (and `02-ingest-preds-ch2025-2-gwl.qmd` for the 
+projections, but only once we have done feature selection to know which ones are actually useful
+for predictions). The ETL recovers all dimensions from
+the cached file names.
 
-**Two product families** share the same indicator set:
+Historical and projected climatologies share the same indicator set. They are structured as follows:
 
 - `-gwl` — projections, indexed by global warming level × uncertainty quantile (annual
   aggregate only).
@@ -16,7 +18,7 @@ the cached **file names**, so nothing is passed between the two steps in memory.
   + annual; no uncertainty quantile).
 
 Not every indicator × dimension combination is published, so candidate URLs are first
-**probed** with a HEAD request and only the live ones are downloaded.
+probed with a HEAD request and only the live ones are downloaded.
 
 ### Why CH2025, and why a GWL structure
 
@@ -29,7 +31,7 @@ with CMIP5 RCMs and produces **30-year climatologies at three global warming lev
 
 That GWL structure is adequate for deriving decadal land-use predictors: each SSP decade is
 mapped to the corresponding warming level (per IPCC AR6 WG1 SPM.8, below). There is **no
-GWL4** — likely a mix of politics and too few ensemble members/years reaching it — which is
+GWL4** — likely because too few ensemble members reached that warming on a 30y average — which is
 awkward for **SSP5-8.5 late-century**; we stick with GWL3 there for now.
 
 ![IPCC AR6 WG1 SPM.8a — projected global warming under the SSP scenarios; the basis for the
@@ -37,7 +39,7 @@ SSP → GWL mapping.](graphs/fig-spm8a-ar6-wg1.png)
 
 > **Out of scope (TODO).** SSP5-8.5 late-century (~2071–2100) implies ~5–6 °C of warming,
 > exceeding the highest GWL probed here (GWL3.0); those steps cannot be mapped to an
-> existing CH2025 aggregate.
+> existing CH2025 product.
 
 ## Parameters
 
@@ -71,9 +73,6 @@ category_indicators <-
 
 ## Build the candidate URL matrix
 
-Projections are indicators × (GWL × uncertainty), annual only; observations are indicators
-× (reference period × time of year), no uncertainty. `bind_rows` leaves each family's
-inapplicable dimensions as `NA` (reference period for `-gwl`; GWL/uncertainty for `-obs`).
 
 ```{r}
 #| label: ch2025-download-candidates
@@ -192,7 +191,9 @@ download_nc <- function(url, product, indicator, gwl, uncertainty, reference_per
     return(dest)
   }
   message("Downloading: ", fname)
-  httr2::request(url) |> throttle() |> httr2::req_perform(path = dest)
+  httr2::request(url) |>
+    throttle() |>
+    httr2::req_perform(path = dest)
   dest
 }
 
@@ -214,7 +215,7 @@ The atlas has no documented download API; the query schema was reverse-engineere
 sample URLs. Every request hits `…/products/{product}/realizations` with `productType=data`,
 `mediaType=application/netcdf`, `language=de`, and varies along these axes:
 
-- **product** = `climate-ch2025-maps-{category}-{gwl|obs}` (category ∈ cold, heat, precip,
+- **product** = `climate-ch2025-maps-{category}-{gwl|obs}` (category ∈ cold , heat, precip,
   snow, temperature, drought)
 - **scenarioIndicator** = the indicator code (e.g. `tas`, `pr`, `CDD`)
 - **timeOfYear** = `yearly`, plus `DJF`/`MAM`/`JJA`/`SON` for `-obs`
@@ -237,5 +238,4 @@ https://service.meteoswiss.ch/pbbackend/api/v1/products/climate-ch2025-maps-temp
 Climate was originally sourced from **CHELSA V2.1** (monthly, ERA5-Land-downscaled `tas`/`pr`
 from the ZHDK object store, read via GDAL `/vsicurl/` range requests), from which mean annual
 temperature, mean precipitation and growing-degree-day sums were derived for a **1985–1997
-baseline**. It is **superseded** by CH2025 for the SSP runs (GWL-indexed projections mapped
-onto land-use time steps) and retained only as a possible historical-baseline fallback.
+baseline**. It is superseded by CH2025 for the SSP runs.

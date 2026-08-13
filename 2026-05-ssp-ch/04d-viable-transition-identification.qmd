@@ -53,6 +53,5 @@ n_obs_ransitions <-
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 
-# render inline (Quarto captures the figure; no ggsave to graphs/)
-n_obs_ransitions
+ggsave("2026-05-ssp-ch/04-no-obs-trans.png", n_obs_ransitions, width = 9, height = 6)
 ```

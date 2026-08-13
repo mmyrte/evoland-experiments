@@ -45,11 +45,13 @@ is better caught here than after allocation produces noise.
 #| label: transition-modelling-params
 library(data.table)
 library(evoland)
+library(mlr3learners)
 
 sample_frac <- 0.7 # stratified train fraction; the remainder is the held-out scoring split
 seed <- 42L
-num_trees <- 500L # ranger's default; no regularisation here, so it parallelises internally
-n_workers <- 4L
+num_trees <- 200L # ranger's default; no regularisation here, so it parallelises internally
+max_depth <- 20L
+n_workers <- 38L
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
@@ -69,9 +71,25 @@ transition, which is what makes `06d` possible.
 #| label: transition-modelling-partial
 cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
 
-# Baseline: predicts the majority class distribution, ignoring every predictor.
+# too naive
+# db$trans_models_t <- db$fit_partial_models(
+#   learner = mlr3::lrn("classif.rpart", predict_type = "prob"),
+#   measures = c("classif.auc", "classif.acc"),
+#   sample_frac = sample_frac,
+#   seed = seed,
+#   cluster = cluster
+# )
+
 db$trans_models_t <- db$fit_partial_models(
-  learner = mlr3::lrn("classif.featureless", predict_type = "prob"),
+  learner = mlr3::lrn("classif.naive_bayes", predict_type = "prob"),
+  measures = c("classif.auc", "classif.acc"),
+  sample_frac = sample_frac,
+  seed = seed,
+  cluster = cluster
+)
+
+db$trans_models_t <- db$fit_partial_models(
+  learner = mlr3::lrn("classif.log_reg", predict_type = "prob"),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,
   seed = seed,
@@ -82,7 +100,8 @@ db$trans_models_t <- db$fit_partial_models(
   learner = mlr3::lrn(
     "classif.ranger",
     predict_type = "prob",
-    num.trees = num_trees
+    num.trees = max_depth,
+    max.depth = 20
   ),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,
@@ -157,10 +176,15 @@ partial model per transition and refits it on all available data.
 
 ```{r}
 #| label: transition-modelling-full
+cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
 trans_models_full <- db$fit_full_models(
   select_score = "classif.auc",
   select_maximize = TRUE
 )
+
+if (!is.null(cluster)) {
+  mirai::stop_cluster(cluster)
+}
 
 db$trans_models_t <- trans_models_full
 ```
@@ -204,12 +228,12 @@ message(
 ```{r}
 #| label: transition-modelling-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key =                     , value =,
-  "model_learner",            "classif.ranger",
-  "model_select_score",       "classif.auc (maximise)",
-  "model_sample_frac",        as.character(sample_frac),
-  "model_num_trees",          as.character(num_trees),
-  "model_seed",               as.character(seed),
-  "model_n_transitions",      as.character(length(modeled_trans))
+  key = , value = ,
+  "model_learner", "classif.ranger",
+  "model_select_score", "classif.auc (maximise)",
+  "model_sample_frac", as.character(sample_frac),
+  "model_num_trees", as.character(num_trees),
+  "model_max_depth", as.character(max_depth),
+  "model_seed", as.character(seed)
 ))
 ```

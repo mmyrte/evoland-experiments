@@ -49,7 +49,7 @@ db$periods_t <- as_periods_t(data.table::rowwiseDT(
   id_period = , start_date = , end_date = , is_extrapolated = ,
   0, "2020-01-01", "2020-01-01", FALSE,
   1, "1979-01-01", "1985-12-31", FALSE,
-  2, "1992-01-01", "1992-12-31", FALSE,
+  2, "1992-01-01", "1997-12-31", FALSE,
   3, "2004-01-01", "2009-12-31", FALSE,
   4, "2013-01-01", "2018-12-31", FALSE,
   5, "2020-01-01", "2029-12-31", TRUE,
@@ -63,24 +63,22 @@ db$periods_t <- as_periods_t(data.table::rowwiseDT(
 ))
 ```
 
-This yields 11 decadal periods plus the static `id_period 0` for static predictors (DEM, EIVs, distances, climate baseline).
+This yields 11 decadal periods plus the static `id_period 0` for static predictors.
 
 ## Runs. Setting up scenarios.
 
 `runs_t` is the third axis, alongside coordinates and periods. Runs form a **hierarchy**:
-`db$get_read_expr()` resolves each data slice to the closest ancestor run that has it, so a
-run only needs to store what it overrides. Everything else (calibration, observed LULC,
-static predictors) is inherited from the base run `0`.
+reading data resolves to the closest ancestor run that has it, so a
+run only needs to store what it overrides.
 
-Because the tree replicates whatever sits **below** a branch point, the ordering of the two
-scenario axes is a storage decision.
-The technical ordering may not match the storytelling. A run's `description` reads
-"SSP3 under …", because that is how results get discussed.
+Because the tree replicates whatever sits below a branch point, the ordering of the two
+scenario axes is a storage decision; the technical ordering does not have to match the storytelling.
+We have a base run from which climate trajectories deviate, on top of which the cheaper SSP scenarios are stored.
 
 ```
 0  base (observed, calibration)
-└── climate trajectory  (GWL schedule × uncertainty quantile)   ← expensive: 4.1 M cells × 4 periods × N predictors
-    └── SSP                (demand curves, STATENT, interventions)   ← cheap: ~10²–10³ rows
+└── climate trajectory  (GWL schedule × uncertainty quantile)   ← expensive
+    └── SSP                (demand curves, STATENT, interventions)   ← cheaper
 ```
 
 > **Scenario scope.** SSP0/1/3/4/5; SSP2 is deliberately excluded (see `README.md`). The
@@ -89,9 +87,9 @@ The technical ordering may not match the storytelling. A run's `description` rea
 
 ### GWL trajectories
 
-CH2025 publishes exactly three levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies. The four
-schedules below are a defensible reading of IPCC AR6 WG1 SPM.8a. See
-`02-ingest-preds-ch2025-3-gwl.qmd` which consumes them.
+CH2025 publishes three global warming levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies.
+The four schedules below are a defensible reading of IPCC AR6 WG1 SPM.8a.
+See `02-ingest-preds-ch2025-3-gwl.qmd` which consumes them.
 `fast30` is **capped** — AR6 puts SSP5-8.5 above > 3 °C well before the 2060s, but CH2025 publishes
 nothing higher.
 
@@ -181,7 +179,7 @@ db$commit(
     climate_runs,
     ssp_runs,
     fill = TRUE
-  )), 
+  )),
   "runs_t",
   "overwrite" # need this because we're adding columns
 )

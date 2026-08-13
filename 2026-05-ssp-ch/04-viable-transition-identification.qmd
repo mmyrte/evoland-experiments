@@ -77,9 +77,8 @@ db$trans_meta_t <-
     db$trans_v,
     # min_frequency_rel = 0.005, # this is what ben used: the change rate relative
     # to the other change rates
-    min_cardinality_abs = 1000 # chosen per the 04d observed-transitions diagnostic
-    # NOTE: no exclude_anterior. `static` used to be excluded, making it a pure sink;
-    # see above for why that was wrong and why it is a problem with the elicitation.
+    min_cardinality_abs = 3000, # chosen per the 04d observed-transitions diagnostic
+    exclude_anterior = lulc_meta[name == "glacier", id_lulc]
   )
 ```
 
