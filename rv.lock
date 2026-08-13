@@ -569,7 +569,7 @@ dependencies = []
 [[packages]]
 name = "evoland"
 version = "0.0.1.9000"
-source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "33c32fc5a0d165c4359cd205a17fea5813ca158d" }
+source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "d22cdee75513bc457cf49e31762084c78bb46a3b" }
 force_source = true
 dependencies = [
     "DBI",
@@ -1341,6 +1341,20 @@ dependencies = [
     { name = "mlr3", requirement = "(>= 0.12.0)" },
     { name = "mlr3misc", requirement = "(>= 0.18.0)" },
     "paradox",
+    "R6",
+]
+
+[[packages]]
+name = "mlr3learners"
+version = "0.15.1"
+source = { repository = "https://p3m.dev/cran/__linux__/opensuse156/latest" }
+force_source = false
+dependencies = [
+    { name = "mlr3", requirement = "(>= 1.2.0)" },
+    "checkmate",
+    "data.table",
+    { name = "mlr3misc", requirement = "(>= 0.9.4)" },
+    { name = "paradox", requirement = "(>= 1.0.0)" },
     "R6",
 ]
 

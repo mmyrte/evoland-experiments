@@ -2,124 +2,33 @@
 title: "05 — Covariate selection"
 ---
 
-Prune the predictor set per viable transition using guided regularised random forest (GRRF)
+Prune the predictor set per viable transition using random forest
 importance, and commit the survivors to `trans_preds_t`. That table is what `06` trains on, and
 what `02-ingest-preds-ch2025-3-gwl.qmd` reads to decide which climate predictors are worth
 projecting.
 
-> **This step refuses to run until `importance_rel_cut` is set.** It ships as `NA` on purpose.
-> Choose it by reading the distribution off `05d-covariate-selection.qmd` against the real
-> predictor set, then set it here with a one-line note on what you saw — exactly as `04`'s
-> `min_cardinality_abs` is chosen from `04d`. See "why there is no parameter-free cut" below.
+## Rationale
 
-## What changed
+Using Gini based importance ordering for now; we should really have a look at each transition in detail for a better heuristic on what variables to choose. Might be good to first do an ordering using GRRF or random forest, then FilterFindCorrelation for the continuous variables (cannot handle categorical ones like that).
 
-**Rebuilt on the live API.** The previous revision called
-`db$get_pred_filter_score(filter_fun = grrf_filter, num.trees =, max.depth =, gamma =, cores =)`.
-None of `grrf_filter`, `covariance_filter` or `get_pruned_trans_preds_t` exist in evoland-plus,
-at either the pinned commit or `main`. The live API is
-`get_pred_filter_score(filter = <mlr3filters::Filter>, cluster =)`, and it **scores but does not
-prune** — it returns `trans_preds_t` with one extra column named after `filter$id`, and
-subsetting is the caller's job. The old first chunk assigned the scored table straight back to
-`db$trans_preds_t`, so it committed the full cross product unpruned.
+GRRF should handle redundancy: the first (unregularised) forest splits importance across correlated
+predictors, and the regularisation penalty then suppresses the weaker ones, see if that actually
+carries a stronger signal.
 
-**The correlation pre-filter is gone.** An earlier draft ran `FilterFindCorrelation` first to
-drop collinear predictors. That is hard to defend: the threshold is arbitrary, which member of a
-correlated pair survives is decided by feature order rather than by usefulness, and the filter is
-blind to the target — it would happily drop the predictor that actually carries the signal.
-GRRF already handles redundancy in a target-aware way: the first (unregularised) forest splits
-importance across correlated predictors, and the regularisation penalty then suppresses the
-weaker ones. One defensible mechanism beats two stacked heuristics.
-
-*(A practical corollary, kept as a note because it will bite again: `FilterFindCorrelation`
-accepts only `integer`/`numeric` features. `bioregion` / `biosubregion` are `factor`, and a task
-containing them makes that filter raise "unsupported feature types: factor" — which
-`pred_filter_worker()` catches, warns about, and turns into an all-`NA` score for the whole
-transition. It fails as a silent hole rather than a crash. GRRF's learner supports
-`factor`/`ordered` natively, so this step has no such gap.)*
-
-## Parameters
+## Score
 
 ```{r}
 #| label: covariate-selection-params
 library(data.table)
 library(evoland)
 
-# Keep predictors scoring at least this fraction of the best predictor FOR THAT TRANSITION.
-#
-# Deliberately NA: there is no defensible default (see below). Run 05d, look at the
-# distribution, pick a value inside the empty band, and record here what you saw.
-importance_rel_cut <- NA_real_
-
-# GRRF guidance strength. 0 = plain regularised forest (equal penalty everywhere), 1 = penalty
-# scales fully with the unregularised importance ranking. 0.9 keeps a strong guiding effect
-# while leaving room for correlated-but-useful predictors to enter.
-grrf_gamma <- 0.9
-
-# Trees per forest. GRRF trains two forests per transition over ~10^5-10^6 rows each, for every
-# viable transition, so this is the main cost knob. 200 is past the point where the importance
-# *ranking* stabilises for a few dozen predictors, without paying ranger's 500 default twice.
-grrf_num_trees <- 200L
-
-# Depth cap, mostly a runtime guard. 0 would mean unlimited.
-grrf_max_depth <- 20L
-
-# Safety valve: never keep more than this many predictors for one transition, whatever the
-# threshold says. Guards 06 against a transition that scores everything highly.
-max_preds_per_trans <- 20L
-
-# Parallel workers. regularization.factor disables ranger's internal threading (it prints
-# "Parallelization deactivated"), so this cluster is the ONLY parallelism in this step.
-# Each worker holds its own DB connection and a forest; memory is the binding constraint.
-n_workers <- 4L
-
-if (is.na(importance_rel_cut)) {
-  stop(
-    "importance_rel_cut is not set.\n",
-    "  Render 05d-covariate-selection.qmd, read the per-transition importance distribution,\n",
-    "  and choose a cut that sits in the empty band between signal and noise while leaving\n",
-    "  every viable transition with predictors. Then set it in this chunk.\n",
-    "  There is deliberately no default -- see 'why there is no parameter-free cut'.",
-    call. = FALSE
-  )
-}
-
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-```
 
-> **Still open (see `TODO.md`):** `grrf_gamma`, `grrf_num_trees` and `grrf_max_depth` are
-> reasoned but not yet justified by a sensitivity check on this data. Re-running across a small
-> grid and reporting how much the retained set moves is the outstanding work.
+db$set_full_trans_preds()
 
-## Why there is no parameter-free cut
-
-GRRF is a two-stage procedure: an unregularised forest ranks the predictors, those ranks become
-per-feature split penalties, and a second regularised forest is trained under them.
-
-It is tempting to assume the regularisation drives uninformative predictors to exactly zero
-importance, giving a free `importance > 0` cut. **It does not.** Reproducing evoland's
-`LearnerClassifGrrf` training path on a synthetic task with 3 informative and 13 uninformative
-predictors, at `gamma` 0.5 / 0.9 / 1.0, gives only **3 exact zeros out of 16** in every case — so
-`importance > 0` would retain 13 predictors, 10 of them pure noise. The regularisation suppresses
-splits on weak predictors; it does not eliminate them.
-
-What it does produce is a strongly **bimodal** distribution. On that task:
-
-| | relative importance |
-| --- | --- |
-| the 3 informative predictors | 0.85 – 1.00 |
-| the 10 surviving noise predictors | 0.16 – 0.20 |
-| the 3 fully suppressed | 0.00 |
-
-The gap is wide and the cut belongs in it — but its position is a property of the data, not a
-constant, and a conventional "keep above 1 % of the maximum" rule keeps all 13. Hence `05d`, and
-hence the hard stop above.
-
-## Score
-
-```{r}
-#| label: covariate-selection-score
-db$set_full_trans_preds(overwrite = TRUE)
+grrf_gamma <- 0.9
+grrf_num_trees <- 100L
+grrf_max_depth <- 20L
 
 grrf_learner <- LearnerClassifGrrf$new()
 grrf_learner$param_set$values <- list(
@@ -127,18 +36,75 @@ grrf_learner$param_set$values <- list(
   num.trees = grrf_num_trees,
   max.depth = grrf_max_depth
 )
+# ranger_lrn <- mlr3::lrn(
+#   "classif.ranger",
+#   num.trees = 100,
+#   max.depth = 20L, 
+#   importance = "impurity"
+# )
 
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+cluster <- mirai::make_cluster(n = 38L) # number of viable transitions
 
 imp_scored <- db$get_pred_filter_score(
   filter = mlr3filters::FilterImportance$new(learner = grrf_learner),
   cluster = cluster,
-  ordered_pred_data = TRUE # deterministic across re-runs
+  ordered_pred_data = TRUE # deterministic across re-runs,
 )
 
-if (!is.null(cluster)) {
-  mirai::stop_cluster(cluster)
-}
+mirai::stop_cluster(cluster)
+
+imp_scored[, importance_rel := importance / max(importance, na.rm = TRUE), by = id_trans]
+```
+
+## Visualize
+
+Check out the distribution of importance scores. Does not look like 
+
+```{r}
+#| label: covsel-diagnostic-plot
+#| fig-width: 10
+#| fig-height: 7
+trans_labels <-
+  db$trans_meta_t[is_viable == TRUE][
+    db$lulc_meta_t[, .(id_lulc, ant = name)],
+    on = .(id_lulc_anterior = id_lulc),
+    nomatch = NULL
+  ][
+    db$lulc_meta_t[, .(id_lulc, post = name)],
+    on = .(id_lulc_posterior = id_lulc),
+    nomatch = NULL
+  ][, .(id_trans, trans_label = paste0(ant, "→", post))]
+
+plot_dt <- imp_scored[!is.na(importance_rel)][trans_labels, on = "id_trans", nomatch = NULL]
+
+p <- 
+  ggplot(plot_dt, aes(x = reorder(trans_label, importance_rel, FUN = median), y = importance_rel)) +
+  geom_jitter(width = 0.15, height = 0, alpha = 0.4, size = 1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", colour = "firebrick") +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(
+    title = "Random forest gini importance per predictor, relative to the best predictor of each transition",
+    subtitle = paste(
+      "Dashed line: cutting here is not sensible, but would be easy."
+    ),
+    x = NULL,
+    y = "Relative importance"
+  ) +
+  coord_flip()
+ggsave("2026-05-ssp-ch/importance_scores.png", p)
+
+# TODO this shows that we might want to approach the lower transitions differently
+p2 <- 
+  ggplot(plot_dt, aes(x = reorder(trans_label, importance, FUN = median), y = importance)) +
+  geom_jitter(width = 0.15, height = 0, alpha = 0.4, size = 1) +
+  labs(
+    title = "Random forest gini importance per predictor, absolute",
+    
+    x = NULL,
+    y = "absolute importance"
+  ) +
+  coord_flip()
+ggsave("2026-05-ssp-ch/importance_scores_abs.png", p2)
 ```
 
 ## Select
@@ -149,10 +115,9 @@ silently prune hard-to-model transitions more aggressively than easy ones.
 
 ```{r}
 #| label: covariate-selection-select
-imp_scored[, importance_rel := importance / max(importance, na.rm = TRUE), by = id_trans]
-
+max_preds_per_trans <- 7
 trans_preds_selected <-
-  imp_scored[is.na(importance) | importance_rel >= importance_rel_cut][
+  imp_scored[is.na(importance) | importance_rel >= 0.3][
     order(-importance_rel),
     head(.SD, max_preds_per_trans),
     by = id_trans
@@ -207,12 +172,62 @@ trans_preds_selected[, .(n_preds = .N), by = id_trans][order(n_preds)][1:10]
 ```{r}
 #| label: covariate-selection-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key =                          , value =,
-  "covsel_importance_rel_cut",     as.character(importance_rel_cut),
-  "covsel_max_preds_per_trans",    as.character(max_preds_per_trans),
-  "covsel_grrf_gamma",             as.character(grrf_gamma),
+  key = , value = ,
+  "covsel_importance_rel_cut", as.character(0.3),
+  "covsel_max_preds_per_trans", as.character(max_preds_per_trans),
+  "covsel_grrf_gamma",           as.character(grrf_gamma),
   "covsel_grrf_num_trees",         as.character(grrf_num_trees),
-  "covsel_grrf_max_depth",         as.character(grrf_max_depth),
-  "covsel_pairs_retained",         as.character(nrow(trans_preds_selected))
+  "covsel_grrf_max_depth",         as.character(grrf_max_depth)
 ))
+```
+
+
+## How many predictors survive at each candidate cut?
+
+The threshold is only useful if it leaves every viable transition modellable. A transition
+reduced to zero predictors cannot be fitted in `06`, and `fit_full_models()` would leave its
+`learner_full` NULL — which aborts allocation later.
+
+```{r}
+#| label: covsel-diagnostic-table
+candidate_cuts <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
+
+survival <- data.table::rbindlist(lapply(candidate_cuts, function(cut) {
+  kept <- plot_dt[importance_rel >= cut, .N, by = id_trans]
+  data.table(
+    cut = cut,
+    pairs_kept = sum(kept$N),
+    median_preds = as.numeric(median(kept$N)),
+    min_preds = if (nrow(kept)) min(kept$N) else 0L,
+    trans_with_none = data.table::uniqueN(plot_dt$id_trans) - nrow(kept)
+  )
+}))
+
+survival
+```
+
+Pick the largest cut for which `trans_with_none` is 0 and `min_preds` is still comfortably above
+1, then set `importance_rel_cut` in `05-covariate-selection.qmd` to it and record the reasoning
+there.
+
+```{r}
+#| label: covsel-diagnostic-bimodality
+# A crude bimodality read per transition: the width of the largest empty band in the
+# relative-importance values. A wide gap means a threshold is well-founded for that transition.
+gaps <- plot_dt[
+  order(id_trans, importance_rel),
+  {
+    v <- sort(unique(importance_rel))
+    if (length(v) < 3L) {
+      .(largest_gap = NA_real_, gap_lower = NA_real_)
+    } else {
+      d <- diff(v)
+      i <- which.max(d)
+      .(largest_gap = round(d[i], 3), gap_lower = round(v[i], 3))
+    }
+  },
+  by = id_trans
+][trans_labels, on = "id_trans", nomatch = NULL]
+
+gaps[order(-largest_gap)]
 ```
