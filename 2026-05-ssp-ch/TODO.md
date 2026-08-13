@@ -127,6 +127,9 @@ spanning a maximally diverse set of futures).
 ## Data ingestion — remaining
 
 ### Climate (CH2025)
+
+
+- [ ] NAs introduced at country borders, unclear how. for now averaged for fill_value
 - [x] 🟡 **Projected `-gwl` ingestion written** — `02-ingest-preds-ch2025-3-gwl.qmd`.
       Crosswalk + `id_run` encoding done; **never executed** (no R in the authoring
       environment). Three things still need a decision:
@@ -218,6 +221,8 @@ spanning a maximally diverse set of futures).
       the same mean but very different value). Speculative; nearly free. Decide whether to enable.
 
 ### New predictors
+
+- [ ] not useful right now as some AS points sample outside these polygons, unclear 
 - [x] **Region ID as indicator** — `02-ingest-preds-bioregions.qmd` (written, unrun).
       6 regions + 12 subregions as `data_type = "factor"` predictors. The published checksum is
       a SHA-256 multihash, not md5, so the md5 was computed from the archive after verifying

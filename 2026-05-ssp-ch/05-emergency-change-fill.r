@@ -1,0 +1,45 @@
+#' purpose emergency change NA fill values
+
+mean_vals <- db$get_query(glue::glue(
+  "select
+    --m.id_pred,
+    m.name,
+    round(mean(d.value), 2) as fill_value
+  from 
+    {db$get_read_expr('pred_data_t')} as d,
+    {db$get_read_expr('pred_meta_t')} as m
+  where 
+    id_run = 0
+    and d.id_pred = m.id_pred
+    and (
+      m.description like '%CH2025%'
+      or
+      m.name like '%mean_100m'
+    )
+  group by 
+    m.id_pred,
+    m.name
+  order by m.id_pred
+  "
+))
+
+db$pred_meta_t <- validate(
+  db$pred_meta_t[
+    mean_vals,
+    .(
+      id_pred,
+      name,
+      pretty_name,
+      description,
+      orig_format,
+      sources,
+      unit,
+      factor_levels,
+      data_type,
+      fill_value = i.fill_value
+    ),
+    on = "name"
+  ]
+)
+
+db$pred_meta_t <- db$pred_meta_t[grepl("^soil_", name)][, fill_value := 0]

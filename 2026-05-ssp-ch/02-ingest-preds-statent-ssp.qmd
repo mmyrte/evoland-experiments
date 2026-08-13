@@ -96,7 +96,11 @@ coords_minimal <- db$coords_minimal
 # The CSV is not fetchable over HTTP from a reproducible URL we have been able to verify
 # (see the provenance note above), so it is expected in the evoland cache rather than
 # downloaded. Its md5 is pinned so a swapped file is caught.
-fte_csv <- file.path(getOption("evoland.cachedir"), "nccs", "NCCS_future_FTE.csv")
+fte_csv <- file.path(
+  getOption("evoland.cachedir"), 
+  "9c1950fface91f98f7b82b96ca2854a4", 
+  "NCCS_future_FTE.csv"
+)
 fte_md5 <- "9c1950fface91f98f7b82b96ca2854a4"
 
 if (!file.exists(fte_csv)) {
@@ -164,13 +168,17 @@ sources_boundaries <-
   ) |>
   download_and_verify(target_dir = getOption("evoland.cachedir"))
 
-cantons <- terra::vect(
-  paste0(
-    "/vsizip/", sources_boundaries[["local_path"]],
-    "/swissBOUNDARIES3D_1_5_LV95_LN02.gpkg"
-  ),
-  layer = "tlm_kantonsgebiet"
-)
+template_rast <- db$lulc_data_as_rast(1)
+
+cantons <- 
+  terra::vect(
+    paste0(
+      "/vsizip/", sources_boundaries[["local_path"]],
+      "/swissBOUNDARIES3D_1_5_LV95_LN02.gpkg"
+    ),
+    layer = "tlm_kantonsgebiet"
+  ) |> 
+  terra::rasterize(template_rast, "kantonsnummer")
 
 # BFS canton numbering 1..26; the FTE table's abbreviations in that same order
 canton_abbr_by_number <- data.table::data.table(
@@ -182,13 +190,14 @@ canton_abbr_by_number <- data.table::data.table(
 )
 
 stopifnot(
-  "unexpected canton count in swissBOUNDARIES3D" = nrow(cantons) == 26L,
+  "unexpected canton count in swissBOUNDARIES3D" = 
+    length(unique(as.vector(cantons))) == 27L, # +1 for NA
   "canton abbreviations do not cover the FTE table" =
     setequal(canton_abbr_by_number$canton_abbr, unique(fte_long$canton_abbr))
 )
 
 coord_canton <-
-  extract_using_coords_t(cantons[, "kantonsnummer"], coords_minimal)[,
+  extract_using_coords_t(cantons, coords_minimal)[,
     .(id_coord, kantonsnummer = as.integer(value))
   ][
     canton_abbr_by_number,

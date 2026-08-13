@@ -142,12 +142,54 @@ region to assign them. The codes are recoded to 1-based factor indices, as noted
 
 ```{r}
 #| label: ingest-bioregions-extract
+template_rast <- db$lulc_data_as_rast(1)
+
+bioreg_rasterized <- c(
+  terra::rasterize(bioreg, template_rast, "RegionName", touches = TRUE),
+  terra::rasterize(bioreg, template_rast, "Unterreg_1", touches = TRUE)
+)
+
 extracted <-
-  extract_using_coords_t(
-    bioreg[, c("RegionName", "Unterreg_1")],
-    coords_minimal
-  ) |>
-  data.table::dcast(id_coord ~ attribute, value.var = "value")
+  extract_using_coords_t(bioreg_rasterized, coords_minimal) |>
+  data.table::dcast(id_coord ~ layer, value.var = "value")
+
+# we get some NAs; calculate distance to all polygons and take nearest one (cheaper than
+# terra::distance)
+reg_sample <-
+  extracted[
+    coords_minimal,
+    on = "id_coord"
+  ][
+    is.na(RegionName) | is.na(Unterreg_1)
+  ] |>
+  terra::vect(crs = paste0("epsg:", attr(coords_minimal, "epsg"))) |>
+  terra::distance(x = bioreg, y = _, names = c("Unterregio", "id_coord")) |>
+  data.table::as.data.table(keep.rownames = TRUE) |>
+  data.table::melt(id.vars = "rn", variable.name = "id_coord")
+
+bioreg_map <- data.table::as.data.table(bioreg)[
+  ,
+  .(rn = Unterregio, Unterreg_1, RegionName)
+]
+fixed_NAs <-
+  reg_sample[
+    ,. (
+    rn = as.numeric(rn),
+    id_coord = as.integer(as.character(id_coord)),
+    value
+    )
+  ][,
+    .SD[order(value)][1],
+    by = id_coord
+  ][
+    bioreg_map,
+    on = "rn", nomatch = NULL
+  ][
+    ,
+    .(id_coord, RegionName, Unterreg_1)
+  ]
+
+extracted <- rbind(extracted, fixed_NAs)
 
 # recode to the 1-based level index that pred_data_t expects for factor predictors
 extracted[, `:=`(
@@ -190,9 +232,9 @@ db$pred_data_t <- as_pred_data_t(
 )
 
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key =               , value =,
-  "bioregion_url",      sources_bioreg[["url"]],
-  "bioregion_md5sum",   sources_bioreg[["md5sum"]],
+  key = , value = ,
+  "bioregion_url", sources_bioreg[["url"]],
+  "bioregion_md5sum", sources_bioreg[["md5sum"]],
   "bioregion_provider", "BAFU ch.bafu.biogeographische_regionen (N2020 Revision)"
 ))
 ```

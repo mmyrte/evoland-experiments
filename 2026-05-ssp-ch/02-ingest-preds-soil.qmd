@@ -112,7 +112,7 @@ sspm_mean_md5[, pred_name := sprintf("soil_%s_%dcm", tolower(property), depth_cm
 
 sources_soil <-
   sspm_mean_md5[, .(url, md5sum)] |>
-  download_and_verify(target_dir = getOption("evoland.cachedir"))
+  download_and_verify()
 
 sspm <- merge(
   sspm_mean_md5,
@@ -161,12 +161,8 @@ memory, so a loop keeps the footprint flat.
 ```{r}
 #| label: ingest-soil-load
 # exact model grid: 100 m, EPSG:2056, aligned with coords_t
-template <- terra::rast(
-  extent = db$extent,
-  resolution = 100,
-  crs = "EPSG:2056"
-)
-
+template <- db$lulc_data_as_rast(id_period = 1)
+  
 orig_format <- paste(
   "SSPM 30 m GeoTIFF (EPSG:4326), reprojected to EPSG:2056 and area-weighted averaged",
   "onto the 100 m model grid via terra::project(method = 'average')"

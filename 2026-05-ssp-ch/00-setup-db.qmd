@@ -2,10 +2,13 @@
 title: "00 — Setup DB"
 ---
 
-Sets up the SSP-CH experiment database: an `evoland_db` (DuckDB) backing store aimed at
-Arealstatistik land-use plus the Swiss predictor stack. This step defines the two axes
-that every later step keys against — the **coordinate grid** (`id_coord`) and the
-**periods** (`id_period`) — so it must run first.
+Sets up the SSP-CH experiment database: an `evoland_db` store aimed at Arealstatistik land-use plus
+the Swiss predictor stack. This step defines the three axes that later steps key against:
+
+- **coordinate grid** (`id_coord`)
+- **periods** (`id_period`)
+- **runs** (`id_run`)
+
 
 ```{r}
 #| label: setup-db-create
@@ -21,21 +24,12 @@ db <- evoland_db$new(
 ## Coordinate grid
 
 A square 100 m grid in **CH1903+ / LV95 (EPSG:2056)** over the full Swiss bounding box.
-The commented-out inner extent is a small central-Switzerland window kept for quick local
-test runs; the active extent is the whole country.
 
 ```{r}
 #| label: setup-db-coords
 db$coords_t <- create_coords_t_square(
   epsg = 2056,
   extent = terra::ext(c(
-    # somewhere in the middle of the country
-    # xmin = 2697000,
-    # xmax = 2698000,
-    # ymin = 1252000,
-    # ymax = 1253000
-
-    # full extent
     xmin = 2480000,
     xmax = 2840000,
     ymin = 1070000,
@@ -47,44 +41,41 @@ db$coords_t <- create_coords_t_square(
 
 ## Periods
 
-Decadal steps (`P10Y`): observed 1985–2020 (the Arealstatistik survey years) followed by
-extrapolated steps out to 2060.
+Observed Arealstatistik survey years followed by extrapolated steps out to 2100.
 
 ```{r}
 #| label: setup-db-periods
-# FIXME we can now construct this using rowwiseDT to reflect irregular period lengths
-db$periods_t <- create_periods_t(
-  period_length_str = "P10Y",
-  start_observed = "1985-01-01",
-  end_observed = "2020-01-01",
-  end_extrapolated = "2060-01-01"
-)
+db$periods_t <- as_periods_t(data.table::rowwiseDT(
+  id_period = , start_date = , end_date = , is_extrapolated = ,
+  0, "2020-01-01", "2020-01-01", FALSE,
+  1, "1979-01-01", "1985-12-31", FALSE,
+  2, "1992-01-01", "1992-12-31", FALSE,
+  3, "2004-01-01", "2009-12-31", FALSE,
+  4, "2013-01-01", "2018-12-31", FALSE,
+  5, "2020-01-01", "2029-12-31", TRUE,
+  6, "2030-01-01", "2039-12-31", TRUE,
+  7, "2040-01-01", "2049-12-31", TRUE,
+  8, "2050-01-01", "2059-12-31", TRUE,
+  9, "2060-01-01", "2069-12-31", TRUE,
+  10, "2070-01-01", "2079-12-31", TRUE,
+  11, "2080-01-01", "2089-12-31", TRUE,
+  12, "2090-01-01", "2099-12-31", TRUE
+))
 ```
 
-This yields eight decadal periods plus the static `id_period 0`:
+This yields 11 decadal periods plus the static `id_period 0` for static predictors (DEM, EIVs, distances, climate baseline).
 
-| `id_period` | Span | Role |
-| --- | --- | --- |
-| 0 | 2020-01-01 (instant) | static predictors (DEM, EIVs, distances, climate baseline) |
-| 1–4 | 1985–1994 … 2015–2024 | observed; carry the Arealstatistik surveys 1985/1997/2009/2018 |
-| 5–8 | 2025–2034 … 2055–2064 | extrapolated |
-
-**Note the last period ends 2064, not 2060.** Decadal steps from 1985 cannot land on 2060,
-so the SSP demand targets (stated for 2060) fall *inside* period 8. Step `07` resamples the
-5-yearly demand curves onto this decadal grid and must therefore treat period 8's target as
-an interpolation, not an endpoint. This also depends on the `create_periods_t` fix that makes
-the final period a full decade — see the pin note in `rproject.toml`; before that fix period 8
-was a half-decade (2055–2060) and any rate applied to it was effectively doubled.
-
-## Runs — the scenario axis
+## Runs. Setting up scenarios.
 
 `runs_t` is the third axis, alongside coordinates and periods. Runs form a **hierarchy**:
 `db$get_read_expr()` resolves each data slice to the closest ancestor run that has it, so a
-run only needs to store what it *overrides* — everything else (calibration, observed LULC,
+run only needs to store what it overrides. Everything else (calibration, observed LULC,
 static predictors) is inherited from the base run `0`.
 
 Because the tree replicates whatever sits **below** a branch point, the ordering of the two
-scenario axes is a storage decision, not just a narrative one:
+scenario axes is a storage decision.
+The technical ordering may not match the storytelling. A run's `description` reads
+"SSP3 under …", because that is how results get discussed.
 
 ```
 0  base (observed, calibration)
@@ -92,85 +83,37 @@ scenario axes is a storage decision, not just a narrative one:
     └── SSP                (demand curves, STATENT, interventions)   ← cheap: ~10²–10³ rows
 ```
 
-Climate goes **above** SSP, because it is the heavier per-run payload. Putting SSP on top —
-the obvious reading of the narrative, where a scenario "has" a climate — would store the
-climate rasters once per SSP instead.
-
-Be precise about the size of that win, though: projected climate is not the *only* per-run,
-per-period predictor family. Projected employment (`02-ingest-preds-statent-ssp.qmd`) is one
-too, and since SSP is the leaf it gets replicated once per (SSP × climate) pairing:
-
-| | rows per arm | copies | total |
-| --- | --- | --- | --- |
-| climate (18 yearly indicators × 4 periods × 4.1 M) | 295 M | 4 trajectories | 1.18 B |
-| employment (3 sectors × 4 periods × 4.1 M) | 49 M | 5 SSP × 4 traj | 0.98 B |
-
-That is ~2.2 B rows against ~6.2 B for SSP-on-top — **a factor 2.8**. Climate alone would
-suggest a factor 5; employment replication eats the difference. The ordering is still clearly
-right (climate is ~6× heavier per arm), but "the SSP payload is tiny" is only true of
-`trans_rates_t` and `intrv_meta_t`, not of the projected predictors.
-
-This ordering also expresses the design intent better. The original SSP-CH work kept
-climatological and socioeconomic change **orthogonal**, and that only works if a climate
-trajectory is a first-class object several SSPs can be realised against, rather than a
-property of one SSP. So the GWL schedules below are defined **independently of the SSPs**;
-which trajectory is a given SSP's "own" realisation is reporting metadata
-(`default_for_ssp`), not structure.
-
-> **The technical ordering deliberately does not match the storytelling.** A run's
-> `description` reads "SSP3 under …", because that is how results get discussed; its
-> *position* in the tree is chosen to avoid replicating rasters. Read lineage as
-> "which climate, then which society", and prose as "which society, under which climate".
-
-The saving is only real because the trajectories are shared. Realising 5 SSPs against 4
-trajectories × 3 quantiles costs **12** stored climate copies with this ordering versus
-**60** with SSP on top. If instead every SSP had its own bespoke GWL schedule, the two
-orderings would cost the same — the replication comes from the schedule being SSP-specific,
-not from the tree direction.
-
-`id_run` layout — climate runs are `100` (current climatology) and
-`1000 + 100 × traj_idx + q_idx` for GWL; an SSP leaf is `climate_id_run × 10 + ssp_idx`. So
-`1302` is "third trajectory (`rise30`), q50" and `13023` is "SSP3 under it". Downstream steps should nonetheless **look runs up by the
-`ssp` / `climate_framing` / `gwl_trajectory` / `gwl_quantile` columns** rather than
-hard-coding integers. `runs_t` only mandates `id_run`/`parent_id_run`/`description`; extra
-columns are carried through, which is what makes that lookup possible.
-
 > **Scenario scope.** SSP0/1/3/4/5; SSP2 is deliberately excluded (see `README.md`). The
 > per-SSP demand targets live in `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`,
-> keyed by these same labels. The `EI_Nature`/`EI_Culture`/`EI_Society`/`Growth and Extinction`
-> names in `Transition_Tables.xlsx` are an **earlier vintage** and do *not* map cleanly onto
-> SSP0/1/3/4/5 — matching the two on their 2060 class areas leaves residuals of 3–7 × 10⁵ ha
-> and assigns two SSPs to the same name. Don't build a crosswalk between them.
+> keyed by these same labels.
 
 ### GWL trajectories
 
-> **PROVISIONAL — the open question in `TODO.md` ("SSP→GWL / CO₂ mapping").** CH2025 publishes
-> exactly three levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies. The four schedules
-> below are a defensible reading of IPCC AR6 WG1 SPM.8a, not a settled decision, and are
-> isolated in `02-ingest-preds-ch2025-3-gwl.qmd` (which consumes them) so they change in one
-place. `fast30` is **capped** — AR6 puts SSP5-8.5 above
-> 3 °C well before the 2060s, but CH2025 publishes nothing higher.
+CH2025 publishes exactly three levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies. The four
+schedules below are a defensible reading of IPCC AR6 WG1 SPM.8a. See
+`02-ingest-preds-ch2025-3-gwl.qmd` which consumes them.
+`fast30` is **capped** — AR6 puts SSP5-8.5 above > 3 °C well before the 2060s, but CH2025 publishes
+nothing higher.
 
 ```{r}
 #| label: setup-db-runs-spec
-library(data.table)
 
 # Trajectory order fixes the id_run digit; default_for_ssp is reporting metadata only.
 trajectory_specs <- data.table::rowwiseDT(
-  gwl_trajectory =, traj_idx =, default_for_ssp =, traj_description        =,
-  "stable15",       1L,         "SSP0",           "Held at 1.5 C throughout",
-  "stab20",         2L,         "SSP1",           "1.5 C, stabilising at 2.0 C",
-  "rise30",         3L,         "SSP3,SSP4",      "1.5 C rising to 3.0 C",
-  "fast30",         4L,         "SSP5",           "2.0 C reaching 3.0 C by mid-century (capped)"
+  gwl_trajectory = , traj_idx = , default_for_ssp = , traj_description = ,
+  "stab15", 1L, "SSP0", "Held at 1.5 C throughout",
+  "stab20", 2L, "SSP1", "1.5 C, stabilising at 2.0 C",
+  "rise30", 3L, "SSP3,SSP4", "1.5 C rising to 3.0 C",
+  "fast30", 4L, "SSP5", "2.0 C reaching 3.0 C by mid-century (capped)"
 )
 
 ssp_specs <- data.table::rowwiseDT(
-  ssp   =, ssp_idx =, ssp_description                                                       =,
-  "SSP0", 1L,         "Positive normative visioning; newly added, no original counterpart",
-  "SSP1", 2L,         "Sustainability",
-  "SSP3", 3L,         "Regional rivalry",
-  "SSP4", 4L,         "Inequality",
-  "SSP5", 5L,         "Fossil-fuelled development"
+  ssp = , ssp_idx = , ssp_description = ,
+  "SSP0", 1L, "Positive normative visioning",
+  "SSP1", 2L, "Sustainability",
+  "SSP3", 3L, "Regional rivalry",
+  "SSP4", 4L, "Inequality",
+  "SSP5", 5L, "Fossil-fuelled development"
 )
 
 # CH2025 uncertainty arms to register. q50 alone by default; add "q5"/"q95" for the
@@ -178,9 +121,7 @@ ssp_specs <- data.table::rowwiseDT(
 gwl_quantiles <- data.table::data.table(gwl_quantile = "q50", q_idx = 2L)
 ```
 
-The `current` framing stores **no climate at all**: its SSP children inherit the observed
-climatology at `id_period 0`, which is exactly what "only society changes" means. It is
-therefore free, and is always registered.
+The NCCS-SSP framing consciously kept SSP and RCP/GWL orthogonal, so steady climate runs are also included. 
 
 ```{r}
 #| label: setup-db-runs
@@ -234,19 +175,14 @@ ssp_runs <-
     gwl_quantile
   )]
 
-db$runs_t <- as_runs_t(rbind(
-  db$runs_t, # the base run 0 created on init
-  climate_runs,
-  ssp_runs,
-  fill = TRUE
-))
-
-stopifnot(
-  "duplicate id_run" = !anyDuplicated(db$runs_t$id_run),
-  "unresolvable parent_id_run" = all(
-    is.na(db$runs_t$parent_id_run) | db$runs_t$parent_id_run %in% db$runs_t$id_run
-  )
+db$commit(
+  as_runs_t(rbind(
+    db$runs_t, # the base run 0 created on init
+    climate_runs,
+    ssp_runs,
+    fill = TRUE
+  )), 
+  "runs_t",
+  "overwrite" # need this because we're adding columns
 )
-
-db$runs_t
 ```

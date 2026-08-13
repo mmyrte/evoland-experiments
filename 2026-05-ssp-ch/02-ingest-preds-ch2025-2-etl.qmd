@@ -267,8 +267,13 @@ if (anyNA(inventory[, .(indicator, reference_period, time_of_year)])) {
   )
 }
 
+# TODO filter to be sure this only ingests stuff that is also available into the future
+
 # id_period 0 baseline takes a single reference period
-inventory <- inventory[reference_period == obs_reference_period]
+inventory <- inventory[
+  reference_period == obs_reference_period &
+  time_of_year == "yearly" # the seasonal indicators aren't available for GWLs
+]
 
 message(
   "Found ",

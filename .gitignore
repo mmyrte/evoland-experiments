@@ -57,3 +57,6 @@ dinamica_rundir/*
 **/_freeze/
 .quarto/
 /**/*_files/
+
+/.quarto/
+**/*.quarto_ipynb

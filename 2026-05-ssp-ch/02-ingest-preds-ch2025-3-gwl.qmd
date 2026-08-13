@@ -91,10 +91,10 @@ library(evoland)
 # id_period 5..8 == decades 2025-34, 2035-44, 2045-54, 2055-64
 gwl_trajectories <- data.table::rowwiseDT(
   gwl_trajectory =, id_period =, gwl      =,
-  "stable15",       5L,          "GWL1.5",
-  "stable15",       6L,          "GWL1.5",
-  "stable15",       7L,          "GWL1.5",
-  "stable15",       8L,          "GWL1.5",
+  "stab15",         5L,          "GWL1.5",
+  "stab15",         6L,          "GWL1.5",
+  "stab15",         7L,          "GWL1.5",
+  "stab15",         8L,          "GWL1.5",
 
   "stab20",         5L,          "GWL1.5",
   "stab20",         6L,          "GWL1.5",

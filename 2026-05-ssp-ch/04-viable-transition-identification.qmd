@@ -10,9 +10,9 @@ justify the value.
 ## `static` is no longer excluded as an anterior class
 
 Earlier revisions passed `exclude_anterior = lulc_meta[name == "static", id_lulc]`, making
-`static` a pure sink: transitions could enter it, none could leave. That was wrong on two counts.
+`static` a pure sink: transitions could enter it, none could leave.
 
-**The original did not treat it as a sink either.**
+**NCCS-SSP did not treat it as a sink either, because the elicitation had gone wrong; "static" was not taken to mean "static".**
 `NCCS-SSP-scenarios/Scripts/Preparation/Transition_identification.R` deliberately retains
 `Static → Shrubland` and `Static → Static`, and — notably — re-adds them *after* the
 inclusion-threshold subset, so they bypass the frequency filter entirely:
@@ -32,11 +32,10 @@ The same block hand-picks `Urban → Int_AG`, `Urban → Shrubland` and
 visible in `lulcc.listbylulc.R:18`, where an exclusion of `Static` as an initial class is present
 but **commented out**.
 
-**And it made the SSP demand unsatisfiable.** With static absorbing, its inflow cannot be shed,
-so it can only grow — while SSP3's elicited 2060 target asks it to *shrink* (757,680 → 734,012
-cells), and SSP0/SSP4 ask it to grow by less than its inflow delivers. The reachability precheck
-in `07` returns a ratio of `Inf` for those, and the LP misses target by 23,000–41,000 cells with
-another class forced to absorb the discrepancy under mass balance.
+SSP3's elicited 2060 target asks it to *shrink* (757,680 → 734,012 cells), and SSP0/SSP4 ask it to
+grow by less than its inflow delivers. The reachability precheck in `07` returns a ratio of `Inf`
+for those, and the LP misses target by 23,000–41,000 cells with another class forced to absorb the
+discrepancy under mass balance.
 
 So the exclusion is dropped and `min_cardinality_abs` decides, exactly as it does for every other
 class. That differs from the original in one respect worth stating: the original **hand-curated**
@@ -59,7 +58,7 @@ fail the threshold on its merits rather than be admitted by name.
 > structure cannot express.**
 >
 > Retaining it here is a deliberate choice to stay close to the original for the replication,
-> **not** an endorsement. Two things would fix it properly, both out of scope for MS9 phase 1 and
+> **not** an endorsement. Two things would fix it properly, both out of scope,
 > tracked in `TODO.md`: disaggregating `static` into its convertible and non-convertible members
 > (which the deglaciation TODO already requires), and re-eliciting demand against classes that can
 > actually carry a target. Until then, treat any reported `static` trajectory as an artefact and do
@@ -84,10 +83,8 @@ db$trans_meta_t <-
   )
 ```
 
-Which static-initial transitions actually cleared the threshold? Worth looking at directly: if
-`static → shrubland` is the only survivor, this matches the original's curated set by a uniform
-rule rather than by name. If others survive, check they are not aggregation artefacts before
-trusting them.
+Which static-initial transitions actually cleared the threshold? Worth looking at directly:
+`static → shrubland` is not the only survivor; doesn't match the original's curated set by the 1k minimum threshold.
 
 ```{r}
 #| label: viable-trans-static-check
