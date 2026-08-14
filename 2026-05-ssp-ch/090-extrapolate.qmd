@@ -1,0 +1,401 @@
+---
+title: "09 — Stochastic extrapolation"
+---
+
+Run the forward projection: allocate the SSP transition rates `07` solved from the demand
+targets, using the transition-potential models from `06` and the allocation parameters `08`
+selected, over the extrapolated periods out to 2060.
+
+Everything this step needs is already in the database. It registers one realisation run per
+(scenario × replicate), calls the allocator, and checks that what came out matches what `07`
+asked for. Reporting figures, maps and tables are `090d`'s job; this step mutates state and
+verifies it.
+
+**First iteration.** The `ssp_subset` / `climate_subset` parameters below restrict the run to a
+couple of SSPs under one climate framing. The full cross registered in `001` is
+5 SSPs × 5 climate framings = 25 leaves, and each leaf allocation is as expensive as one
+backcast replicate, so the subset is a deliberate first pass rather than a limitation of the
+code — widening it is a parameter change.
+
+**No interventions.** The SSP narratives in `NCCS-SSP-scenarios` are realised not only by the
+demand curves (which `07` carries) but also by spatial interventions per SSP. None of them are
+applied here; the comments in the allocation section say what each kind would take.
+
+## Parameters
+
+```{r}
+#| label: extrapolate-params
+library(data.table)
+library(evoland)
+
+ssp_subset <- c("SSP1", "SSP3") # widen once the runtime per leaf is known
+climate_subset <- "current" # "current" | "gwl"; see 001-setup-db.qmd
+n_replicates <- 3L # stochastic realisations per scenario run
+seed <- 42L
+select_score <- "classif.auc" # must match 06 and 08
+select_maximize <- TRUE
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db$id_run <- 0L
+
+# Summaries derived from an evoland table inherit its class and print with the wrong header
+# ("Run metadata table" over an area table); strip it. Same helper as in 080.
+plain <- function(x) {
+  data.table::setattr(data.table::copy(x), "class", c("data.table", "data.frame"))[]
+}
+
+anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+lulc_anchor <- db$lulc_data_t[id_period == anchor_period]
+
+stopifnot(
+  "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
+    nrow(db$alloc_params_t) > 0L,
+  "no viable transitions - run 04 and 06" =
+    nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
+  "no fitted models - run 06-transition-modelling.qmd first" =
+    nrow(db$trans_models_t) > 0L
+)
+```
+
+## Which runs are being allocated
+
+`07` writes its solved rates to every leaf run of an SSP — the leaves differ by climate framing,
+which changes the predictors but not the demand. Selecting a subset here therefore selects
+(demand × climate) pairings, not demand alone.
+
+```{r}
+#| label: extrapolate-runs
+runs <- db$runs_t
+scenario_runs <- runs[
+  !is.na(ssp) & ssp %in% ssp_subset & climate_framing %in% climate_subset
+]
+
+# Two families have to be filtered out again, and both are tested outside the `[` because
+# data.table evaluates the whole `i` expression whether or not the column exists:
+#   * realisation runs written by an earlier execution of this step inherit `ssp` and
+#     `climate_framing` from their parent, but they are outputs, not scenarios;
+#   * 071 registers legacy-rate siblings of every SSP run.
+if ("kind" %in% names(scenario_runs)) {
+  scenario_runs <- scenario_runs[is.na(kind) | kind != "extrapolation realisation"]
+}
+if ("rate_solver" %in% names(scenario_runs)) {
+  scenario_runs <- scenario_runs[is.na(rate_solver) | rate_solver == "solver"]
+}
+scenario_runs <- scenario_runs[order(id_run)]
+
+stopifnot(
+  "no scenario runs match the subset - check ssp_subset / climate_subset" =
+    nrow(scenario_runs) > 0L
+)
+scenario_runs[, .(id_run, parent_id_run, ssp, climate_framing, gwl_trajectory)]
+```
+
+## Which periods carry rates
+
+The allocator walks contiguous periods, and every period it walks must have a rate for every
+viable transition, or `adjusted_trans_pot_v()` silently drops that transition's potentials for
+that period (it inner-joins potentials to rates) and the transition simply does not happen.
+`07` solves up to the period containing 2060, so the sequence normally ends there.
+
+```{r}
+#| label: extrapolate-periods
+db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
+rates_available <- db$fetch(
+  "trans_rates_t",
+  where = glue::glue("id_run in ({toString(scenario_runs$id_run)})")
+)
+db$id_run <- 0L
+
+extrap_periods <- sort(db$periods_t[is_extrapolated == TRUE, id_period])
+viable_trans <- db$trans_meta_t[is_viable == TRUE]
+
+coverage <- rates_available[
+  id_period %in% extrap_periods & id_trans %in% viable_trans$id_trans,
+  .(n_trans = uniqueN(id_trans)),
+  by = .(id_run, id_period)
+]
+alloc_periods <- sort(unique(coverage$id_period))
+
+stopifnot(
+  "no extrapolated rates - run 070-transition-rates-solver.qmd first" =
+    length(alloc_periods) > 0L,
+  "rate periods are not contiguous" = all(diff(alloc_periods) == 1L),
+  "rates do not start at the first extrapolated period" =
+    min(alloc_periods) == min(extrap_periods),
+  "not every selected run carries rates for every period" =
+    nrow(coverage) == nrow(scenario_runs) * length(alloc_periods)
+)
+
+incomplete <- coverage[n_trans < nrow(viable_trans)]
+if (nrow(incomplete) > 0L) {
+  warning(
+    "Rate table covers fewer than the ", nrow(viable_trans),
+    " viable transitions for ", nrow(incomplete),
+    " (run, period) pairs; those transitions cannot be allocated there."
+  )
+}
+
+message("Allocating periods ", paste(alloc_periods, collapse = " -> "))
+dcast(coverage, id_run ~ id_period, value.var = "n_trans")
+```
+
+## Register the realisation runs
+
+Each realisation is a child of its scenario run, so it inherits the rates, the projected
+predictors and the allocation parameters, and differs only in RNG state — the same pattern `08`
+uses for its replicates and the evoland stochastic-allocation vignette uses for its ensemble.
+Keeping the realisations off the scenario run also means re-running this step with a different
+`n_replicates` never overwrites an earlier ensemble member.
+
+```{r}
+#| label: extrapolate-register
+realisation_runs <- scenario_runs[, .(replicate = seq_len(n_replicates)), by = .(
+  parent = id_run, ssp, climate_framing
+)][, .(
+  id_run = parent * 100L + replicate,
+  parent_id_run = parent,
+  description = paste0(ssp, " / ", climate_framing, " realisation ", replicate),
+  kind = "extrapolation realisation",
+  ssp,
+  climate_framing,
+  replicate,
+  seed = seed + replicate
+)]
+
+# As in 080: re-running replaces this step's own realisations, but never anything else.
+mine <- if ("kind" %in% names(runs)) {
+  runs[kind == "extrapolation realisation", id_run]
+} else {
+  integer(0)
+}
+clash <- setdiff(intersect(realisation_runs$id_run, runs$id_run), mine)
+stopifnot(
+  "realisation run ids collide with runs registered elsewhere" = length(clash) == 0L,
+  "n_replicates must be below 100 for the id_run scheme" = n_replicates < 100L
+)
+
+db$commit(
+  as_runs_t(rbind(
+    runs[!id_run %in% realisation_runs$id_run],
+    realisation_runs,
+    fill = TRUE
+  )),
+  "runs_t",
+  "overwrite" # adding columns
+)
+realisations <- plain(realisation_runs)[, .(id_run, parent_id_run, ssp, replicate)]
+realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
+```
+
+## Allocate
+
+```{r}
+#| label: extrapolate-allocate
+#| output: false
+for (i in seq_len(nrow(realisation_runs))) {
+  db$id_run <- realisation_runs$id_run[i]
+
+  # db$alloc_clumpy() advertises a `seed` argument that alloc_clumpy() does not accept at the
+  # pinned commit; see the note in 080. CLUMPY draws through R's RNG, so this is equivalent.
+  set.seed(realisation_runs$seed[i])
+
+  db$alloc_clumpy(
+    id_periods = alloc_periods,
+    select_score = select_score,
+    select_maximize = select_maximize
+  )
+}
+db$id_run <- 0L
+```
+
+<!--
+--- interventions (not implemented) -------------------------------------------------------
+The SSP interventions come in three stages (see the header of any
+NCCS-SSP-scenarios/Tools/SSP*_interventions.yml). Where each would attach:
+
+* Pre-allocation -- patch-geometry adjustments. Already reachable: write a modified
+  alloc_params_t row set onto the scenario run instead of inheriting run 0's. Recipe and the
+  two conversion traps (Relative vs Absolute; isometry -> elongation) are in 080, next to where
+  the parameters are estimated.
+
+* Allocation -- per-cell transition-probability adjustment inside a mask. The evoland analogue
+  is trans_pot_t: predict potentials, rewrite the masked cells, then allocate without
+  re-predicting. The per-SSP rules are all of the form
+
+      Prob_adjust_type: Absolute   -> set the potential inside/outside the mask to a value
+      Prob_adjust_type: Relative   -> raise cells above the Prob_adjust_intervention_percentile
+                                      of the in-mask potential distribution and/or lower those
+                                      below the non-intervention percentile outside it,
+                                      subject to Prob_adjust_threshold and Prob_adjust_valency
+
+  and would run per period, ordered by Intervention_ranking, restricted to
+  Transition_target_classes (Urban in every file we have) and optionally From_lulc_filter.
+
+  **This is currently not possible without an upstream change.** alloc_clumpy_one_period()
+  calls predict_trans_pot() unconditionally as its first act and that write upserts
+  trans_pot_t, so any hand-edited potentials are overwritten before they are read -- including
+  under use_parent_trans_pot, which only redirects *which* run is predicted for. What is needed
+  is either a `skip_prediction` flag or a hook applied between prediction and
+  adjusted_trans_pot_v(). Note also that the adjustment interacts with the column scaling in
+  adjusted_trans_pot_v(): that view rescales every transition's potentials so their mean matches
+  the target rate, so an intervention that raises potentials inside a mask does not raise the
+  amount of change, it only moves it -- which is the intended semantics, but means "Absolute
+  100" cannot be read as "these cells convert".
+
+* Post-allocation -- direct edit of the simulated map. Trivial here: rewrite lulc_data_t for the
+  run and period after allocation, before the next period is allocated (so the edit propagates
+  through the chain). No upstream change needed.
+
+Masks. intrv_meta_t / intrv_masks_t exist upstream to hold exactly this (metadata + the
+id_coord set per intervention), and nothing in the allocator reads them yet. Before they can be
+filled, the mask sources need reproducible replacements: the YAML points at ValPar-local paths
+(Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd, .../Municipality_typology/...),
+which is the same provenance problem the 02x ingestion steps solved for the predictors.
+
+Conservation interventions are a further step again: SSP1's Conservation_expansion_and_
+preservation is not a static mask but a spatial optimisation (Ca_expansion_target,
+Ca_prioritization, Ca_patch_preference, Ca_expansion_rate), implemented in the original as
+Scripts/Functions/identify_CAs_by_target_and_configuration.R and friends. That is a port, not a
+translation, and should be scoped separately.
+-->
+
+## Did the allocation deliver the scenario?
+
+`trans_rate_areas()` replays the rate table forward from the observed anchor state analytically —
+the trajectory `07` intended. Comparing it against the realised areas isolates the allocator's
+contribution: any gap is the allocator failing to place the demanded change, not the LP or the
+demand.
+
+This is the check `07` explicitly defers to this step. Its concern is concrete: the LP is allowed
+to exceed the historic rate envelope, `adjusted_trans_pot_v()` scales potentials by an unbounded
+`rate / mean_value` factor, the row-closure branch then clips the result, and uPAM's pool empties
+before the quota is met. The scenario under-delivers its own demand, silently.
+
+```{r}
+#| label: extrapolate-verify
+db$id_run <- NULL
+realised_areas <- db$fetch(
+  "lulc_data_t",
+  where = glue::glue(
+    "id_run in ({toString(realisation_runs$id_run)}) ",
+    "and id_period in ({toString(alloc_periods)})"
+  )
+)[, .(area_realised = as.numeric(.N)), by = .(id_run, id_period, id_lulc)]
+db$id_run <- 0L
+
+predicted_areas <- rbindlist(lapply(scenario_runs$id_run, function(r) {
+  replay <- trans_rate_areas(
+    lulc_data = lulc_anchor,
+    rates = as_trans_rates_t(rates_available[id_run == r & id_period %in% alloc_periods]),
+    trans_meta = db$trans_meta_t
+  )
+  as.data.table(replay)[, parent_id_run := r][]
+}))
+
+area_check <- merge(
+  realisations[realised_areas, on = "id_run"],
+  predicted_areas[, .(parent_id_run, id_period, id_lulc, area_predicted = area)],
+  by = c("parent_id_run", "id_period", "id_lulc"),
+  all.x = TRUE
+)
+area_check[, `:=`(
+  drift = area_realised - area_predicted,
+  drift_pct = 100 * (area_realised - area_predicted) / area_predicted
+)]
+
+# Terminal period is where the drift has compounded the most; that is the number to report.
+area_check[id_period == max(alloc_periods)][
+  db$lulc_meta_t,
+  on = "id_lulc",
+  nomatch = NULL
+][order(-abs(drift_pct))][1:15][, .(
+  ssp, replicate, name,
+  area_realised, area_predicted = round(area_predicted),
+  drift = round(drift), drift_pct = round(drift_pct, 2)
+)]
+```
+
+```{r}
+#| label: extrapolate-verify-summary
+drift_summary <- area_check[, .(
+  max_abs_drift_pct = max(abs(drift_pct), na.rm = TRUE),
+  mean_abs_drift_pct = mean(abs(drift_pct), na.rm = TRUE)
+), by = .(ssp, id_period)]
+
+if (max(drift_summary$max_abs_drift_pct) > 5) {
+  warning(
+    "Realised areas depart from the solved trajectory by more than 5 % ",
+    "for some (scenario, period, class). The demand is not being delivered; ",
+    "check pct_flow_above_max in 070 before interpreting any map."
+  )
+}
+dcast(drift_summary, ssp ~ id_period, value.var = "max_abs_drift_pct")
+```
+
+## Trajectories
+
+A compact numeric trace of where each scenario ends up, so a mis-specified rate table is visible
+here rather than in `090d`'s maps. Observed periods come from run `0`, the projected ones from
+the realisations.
+
+```{r}
+#| label: extrapolate-trajectory
+observed_areas <- db$fetch(
+  "lulc_data_t",
+  where = glue::glue("id_run = 0 and id_period <= {anchor_period} and id_period > 0")
+)[, .(area = as.numeric(.N)), by = .(id_period, id_lulc)][, scenario := "observed"]
+
+projected_areas <- realisations[realised_areas, on = "id_run"][
+  ,
+  .(area = mean(area_realised)),
+  by = .(id_period, id_lulc, scenario = ssp)
+]
+
+trajectory <- rbind(observed_areas, projected_areas)[
+  db$lulc_meta_t,
+  on = "id_lulc",
+  nomatch = NULL
+]
+
+dcast(trajectory, name + scenario ~ id_period, value.var = "area")
+```
+
+## Ensemble spread
+
+Where the realisations of one scenario disagree, the allocator — not the scenario — is deciding.
+`090d` turns this into the change-frequency map; the number here is the per-class coefficient of
+variation across replicates at the terminal period, which is enough to see whether
+`n_replicates` is large enough to be worth averaging.
+
+```{r}
+#| label: extrapolate-spread
+spread <- realisations[realised_areas, on = "id_run"][
+  id_period == max(alloc_periods),
+  .(
+    mean_area = mean(area_realised),
+    sd_area = sd(area_realised),
+    cv_pct = 100 * sd(area_realised) / mean(area_realised)
+  ),
+  by = .(ssp, id_lulc)
+][db$lulc_meta_t, on = "id_lulc", nomatch = NULL]
+
+spread[order(-cv_pct)][, .(ssp, name, mean_area = round(mean_area), cv_pct = round(cv_pct, 3))]
+```
+
+```{r}
+#| label: extrapolate-report
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key = , value = ,
+  "extrapolate_ssps", paste(sort(unique(scenario_runs$ssp)), collapse = ","),
+  "extrapolate_climate_framings",
+  paste(sort(unique(scenario_runs$climate_framing)), collapse = ","),
+  "extrapolate_periods", paste(alloc_periods, collapse = ","),
+  "extrapolate_n_scenario_runs", as.character(nrow(scenario_runs)),
+  "extrapolate_n_replicates", as.character(n_replicates),
+  "extrapolate_seed", as.character(seed),
+  "extrapolate_alloc_params_from", "run 0 (selected in 080-validate-backcasting.qmd)",
+  "extrapolate_interventions", "none applied",
+  "extrapolate_max_area_drift_pct",
+  as.character(signif(max(drift_summary$max_abs_drift_pct), 4))
+))
+```

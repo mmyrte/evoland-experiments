@@ -87,33 +87,38 @@ differs substantially from the shipped LP — and being quadratic, it cannot run
 Steps are Quarto documents (see the top-level README "Conventions"): `NN-` = core
 step, `NNd-` = optional diagnostic that renders a verification report.
 
+Step numbers went from two to three digits in `a220d6d`; the names below are the current ones.
+
 | Step | Purpose | Status |
 | --- | --- | --- |
-| `00-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods, scenario `runs_t` | ✅ |
-| `01-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
-| `02-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | ✅ (hillshade discarded) |
-| `02-ingest-preds-envidat-eiv.qmd` | SPEEDMIND EIV biophysical indicators (CWMs) | ✅ (soil layers only *partly* superseded — see `02-ingest-preds-soil.qmd`) |
-| `02-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
-| `02-ingest-preds-bioregions.qmd` | BAFU biogeographic regions/subregions (categorical) | 🟡 written, unrun |
-| `02-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths | 🟡 written, unrun; ~6 GB download |
-| `02-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | ✅ historical levels |
-| `02-ingest-preds-statent-ssp.qmd` | SSP employment projection (cantonal trajectory × observed pattern) | 🟡 written, unrun; **source provenance unknown** |
-| `02-ingest-preds-ch2025-1-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
-| `02-ingest-preds-ch2025-2-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | ✅ |
-| `02-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | 🟡 written, unrun; GWL crosswalk provisional; **run after `05`** |
-| `02d-ingest-preds-ch2025-check.qmd` | _diag:_ precip-raster sanity check (was `999-dump-preds-raster`) | ✅ |
-| `03-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
-| `04-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `04d`, not finalised; `static` no longer excluded as anterior |
-| `04d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
-| `05-covariate-selection.qmd` | GRRF importance feature selection | 🟡 rebuilt on the live API; **stops until `importance_rel_cut` is set from `05d`** |
-| `05d-covariate-selection.qmd` | _diag:_ importance-distribution plot (justifies the cut) | 🟡 written, unrun |
-| `06-transition-modelling.qmd` | ranger transition models, selected on AUC | 🟡 written, unrun |
-| `06d-transition-modelling.qmd` | _diag:_ held-out ROC + AUC ranking per transition | 🟡 written, unrun |
-| `07-transition-rates-1-solver.qmd` | SSP demand → LP solver → `trans_rates_t` | 🟡 written, unrun; needs the evoland LP branch |
-| `07-transition-rates-2-legacy.qmd` | Original-behaviour rates on dedicated runs, for the replication diff | 🟡 written, unrun |
-| `08-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy sim.) | ⬜ not started |
-| `09-extrapolate.qmd` | Stochastic extrapolation (forward projection) | ⬜ not started |
-| `09d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |
+| `001-setup-db.qmd` | Create `ssp-ch.evolanddb`, coords grid, periods, scenario `runs_t` | ✅ |
+| `010-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | ✅ (AS2025, bioregions, deglaciation open) |
+| `020-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | ✅ (hillshade discarded) |
+| `020-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | ✅ |
+| `020-ingest-preds-bioregions.qmd` | BAFU biogeographic regions/subregions (categorical) | 🟡 written, unrun |
+| `020-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths | 🟡 written, unrun; ~6 GB download |
+| `020-ingest-preds-statent.qmd` | STATENT employment (FTE by sector) | ✅ historical levels |
+| `020-ingest-preds-statent-ssp.qmd` | SSP employment projection (cantonal trajectory × observed pattern) | 🟡 written, unrun; **source provenance unknown** |
+| `021-ingest-preds-ch2025-download.qmd` | Probe + download CH2025 climate netCDFs | ✅ |
+| `022-ingest-preds-ch2025-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | ✅ |
+| `020d-ingest-preds-ch20205-check.qmd` | _diag:_ precip-raster sanity check | ✅ |
+| `030-neighbors.qmd` | Neighbourhood predictors | ✅ (land-use categories only) |
+| `040-viable-transition-identification.qmd` | Commit viable transitions (`is_viable` threshold) | 🟡 threshold set per `040d`, not finalised; `static` no longer excluded as anterior |
+| `040d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot (justifies the threshold) | ✅ |
+| `05-covariate-selection.qmd` | GRRF importance feature selection, with the cut diagnostic folded in | 🟡 still two-digit; cut hard-coded at `importance_rel >= 0.2`, not yet justified |
+| `051-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | 🟡 written, unrun; GWL crosswalk provisional; runs after `05`, hence the number |
+| `060-transition-modelling.qmd` | transition models, selected on AUC | 🟡 written, unrun |
+| `060d-transition-modelling.qmd` | _diag:_ held-out ROC + AUC ranking per transition | 🟡 written, unrun |
+| `070-transition-rates-solver.qmd` | SSP demand → LP solver → `trans_rates_t` | 🟡 written, unrun |
+| `071-transition-rates-legacy.qmd` | Original-behaviour rates on dedicated runs, for the replication diff | 🟡 written, unrun |
+| `080-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy similarity + figure of merit) | 🟡 written, unrun; no interventions |
+| `090-extrapolate.qmd` | Stochastic extrapolation (forward projection per SSP × climate) | 🟡 written, unrun; SSP subset, no interventions |
+| `090d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |
+
+Two steps this table used to list were removed in `d78838d`: `02-ingest-preds-envidat-eiv.qmd`
+(SPEEDMIND EIV indicators — still referenced in the provenance table below) and
+`05d-covariate-selection.qmd`, whose importance-distribution diagnostic now lives inside `05`
+itself.
 
 The SSP demand is **not** yet wired in — this is the bulk of the remaining MS9-phase-1 work.
 See [`TODO.md`](TODO.md).

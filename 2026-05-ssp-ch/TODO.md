@@ -10,12 +10,33 @@ Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
 
 ## Handover — read this first
 
-The full pipeline up to 070 has been run.  `080`/`090`/`090d` are not written yet. These should be your next priorities:
+The full pipeline up to 070 has been run. `080` and `090` are now **written but never run
+against the real database** — only against a 40×40-cell synthetic replica of this pipeline's
+structure, which is enough to prove the API calls and the metrics work but says nothing about
+runtime or results. `090d` is still not written.
 
-- 080 backcasting evaluation uses historically observed transition rates with the estimated transition potential models and allocation parameters to compare observed changed to modelled change.
-  - one approach: fuzzy similarity
-  - second approach: cross-tabulation, ideally weighted by probabilistic allocation. might need additional runs_t entries for, say, 10 members branching out per allocation time step (monte-carlo style)
-- 090 should simply carry out the allocations as indicated, probably subsetting for now to only the first couple of SSP runs.
+What they contain, and the parameters to look at first:
+
+- **`080-validate-backcasting.qmd`** — observed rates → fitted models → estimated allocation
+  parameters → backcast periods 2→3→4, then both requested validations: fuzzy similarity of
+  differences per transition, and cross-tabulation (hard per replicate, soft over the replicate
+  ensemble) reduced to a figure of merit against a closed-form random-allocation null.
+  `n_perturbations` × `n_replicates` is the cost driver — it ships at 3 × 3 = 12 member runs,
+  each re-predicting transition potentials over the full grid for every allocated period.
+  **Nobody has measured what one of those costs on 4.1 M cells.** Start at 1 × 2 and grow.
+- **`090-extrapolate.qmd`** — allocates the 070 rates forward per (SSP × climate framing ×
+  replicate), subset via `ssp_subset` / `climate_subset` to SSP1+SSP3 under `current` as asked.
+  Verifies realised areas against `trans_rate_areas()`, which is the under-delivery check 070
+  defers to it.
+
+Both steps are **interventions-free** by design (first iteration). Every place an intervention
+would attach carries a comment saying what it would take; see "Interventions" below for the two
+that need an upstream change before they are possible at all.
+
+Neither step branches Monte-Carlo members *per allocation time step*, as the earlier handover
+suggested: the replicates branch at the root and chain, because a 40-year backcast is testing
+the compounding trajectory. The one-step-ahead variant needs no new machinery and the recipe is
+in `080`'s prose — worth adding when per-step skill becomes the question.
 
 **Environment.** R 4.6.1 on Ubuntu 24.04 with r2u; the working toolchain used for the
 component checks was data.table 1.18.4 (`rowwiseDT` needs ≥ 1.15), terra 1.9.34, mlr3 1.7.1,
@@ -348,20 +369,95 @@ remaining MS9-phase-1 work.
 
 ## validation via backcasting
 
-- [ ] **`08-validate-backcasting.qmd`** (MS9 phase 3) — three sub-steps:
-  - [ ] (a) **estimate patch/allocation parameters** from historical data (this is
-        where allocation-parameter creation lives — no separate `alloc-params` step);
-  - [ ] (b) **run the backcasting exercise** over different parameter choices;
-  - [ ] (c) **validate** the backcast against observed Arealstatistik periods,
-        for now using the **fuzzy similarity** metric available in evoland-plus.
-        Define acceptance criteria.
+- [x] 🟡 **`080-validate-backcasting.qmd`** — written, unrun on the real DB. All three sub-steps:
+  - [x] (a) **estimate patch/allocation parameters** — `create_alloc_params_t()`, one parent run
+        per parameter set, replicates inheriting through the run lineage.
+  - [x] (b) **run the backcast** over the parameter sets × stochastic replicates.
+  - [x] (c) **validate** — fuzzy similarity of differences, cross-tabulation, figure of merit,
+        acceptance criteria.
+- [ ] **Size the run.** The parameters ship at values chosen for legibility, not measurement:
+      `n_perturbations = 3`, `n_replicates = 3`, `fuzzy_window = 11`. Measure one member run
+      first.
+- [ ] 🔴 **Only `frac_expander` is perturbed.** `create_alloc_params_t()` jitters that one
+      column, so the sweep says nothing about sensitivity to `mean_patch_size` or
+      `patch_elongation`. If patch geometry turns out to matter, the perturbation has to be
+      widened upstream.
+- [ ] **Fuzzy similarity is nearly uninformative as evoland reports it.** `calc_transition_
+      similarity()` binarises the change maps with `NA -> 0` and averages the similarity surface
+      over the *whole* raster, so the agreeing background dominates and every transition and
+      parameter set scores near 1 (0.94–0.96 on the synthetic replica). `080` therefore also
+      reports `similarity_change`, the same surface masked to cells that changed in either map,
+      and selects on the figure of merit instead. Consider pushing the masked variant upstream —
+      it is the quantity Dinamica's own validation reads.
+- [ ] **Decide whether the acceptance criteria are the right ones.** `080` proposes three:
+      quantity fidelity (< 5 % shortfall on transitions above 1000 cells), allocation skill
+      (ensemble FoM ≥ 2× the random-within-class null), and per-transition honesty (transitions
+      at chance may not be shown as maps in `090d`). The first two are gates in code; the third
+      is a reporting rule that nothing enforces.
+- [ ] **Fold this back into `eval_alloc_params_t()`.** The upstream helper does exactly this
+      loop but calls `alloc_dinamica()` (so it needs DinamicaConsole), ignores the `runs_t`
+      hierarchy, runs one realisation per parameter set and reports only the unmasked
+      similarity. A CLUMPY backend plus an `n_replicates` argument would collapse most of `080`
+      back into one call.
 
 ## extrapolation
 
-- [ ] **`09-extrapolate.qmd`** — stochastic extrapolation (forward scenario projection
-      to 2060 per SSP × climate framing).
-- [ ] **`09d-report.qmd`** — diagnostic: reporting figures, tables, maps (human-facing
-      outputs; mutates no state).
+- [x] 🟡 **`090-extrapolate.qmd`** — written, unrun on the real DB. Forward projection per
+      (SSP × climate framing × replicate), with the realised-vs-solved area check.
+- [ ] **Widen the subset.** Ships at SSP1 + SSP3 under `current`. The full cross registered in
+      `001` is 25 leaves; which (SSP × trajectory) pairings are actually worth allocating is
+      still open (see "Scenario scope").
+- [ ] **`090d-report.qmd`** — diagnostic: reporting figures, tables, maps (human-facing
+      outputs; mutates no state). Should carry at least the change-frequency map over the
+      replicate ensemble (per the evoland stochastic-allocation vignette) and the realised-vs-
+      demanded trajectory per class.
+
+## Interventions
+
+Not implemented anywhere; `080`/`090` carry comments at each attachment point. The three stages
+in `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` differ sharply in what they cost us:
+
+- [ ] **Pre-allocation** (patch geometry). Already reachable: write a modified `alloc_params_t`
+      row set onto the SSP run instead of inheriting run 0's. Two conversions needed —
+      `Param_adjust_type: Relative` vs `Absolute`, and `Patch_Isometry` (a Dinamica parameter)
+      back through `isometry_from_elongation()`, which is not injective over its flat segments.
+      Note also that the YAML's numbers were tuned against the *original's* parameter estimates
+      (see `Spatial_intervention_updates.txt`, where SSP1's 0.20 patcher target was cut to 0.15
+      because the estimates were already close), so they do not transfer unexamined to ours.
+- [ ] 🔴 **Allocation** (masked probability adjustment). **Not possible without an upstream
+      change.** The evoland analogue is editing `trans_pot_t` between prediction and allocation,
+      but `alloc_clumpy_one_period()` calls `predict_trans_pot()` unconditionally as its first
+      act and that write overwrites any edit — `use_parent_trans_pot` only redirects which run
+      is predicted for. Needs a `skip_prediction` flag or a hook. Note too that
+      `adjusted_trans_pot_v()` rescales each transition's potentials to match the target rate,
+      so raising potentials inside a mask **moves** change rather than adding it.
+- [ ] **Post-allocation** (direct map edit). Trivial: rewrite `lulc_data_t` for the run and
+      period after allocation and before the next period is allocated.
+- [ ] **Masks have no reproducible source.** `intrv_meta_t` / `intrv_masks_t` exist upstream and
+      nothing reads them yet; before they can be filled, the YAML's ValPar-local paths
+      (`Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd`, municipality typology, …)
+      need the same treatment the `02x` steps gave the predictors.
+- [ ] **Conservation interventions are a port, not a translation.** SSP1's
+      `Conservation_expansion_and_preservation` is a spatial optimisation over
+      `Ca_expansion_target` / `Ca_prioritization` / `Ca_patch_preference` / `Ca_expansion_rate`,
+      implemented in `Scripts/Functions/identify_CAs_by_target_and_configuration.R` and friends.
+      Scope separately.
+
+## Upstream (evoland-plus) asks arising from 080/090
+
+- [ ] 🔴 **`db$alloc_clumpy(seed = ...)` does not work.** The R6 method documents and declares a
+      `seed` argument; `alloc_clumpy()` itself has no such formal and no `...`, and
+      `create_method_binding()` forwards the call verbatim, so passing it dies with
+      *"unused argument (seed = ...)"*. Verified against the pinned commit `64754ee`.
+      `vignettes/stochastic-allocation-sensitivity.qmd` passes it and would fail the same way.
+      `080`/`090` call `set.seed()` instead, which is exact — all CLUMPY randomness goes through
+      R's RNG (`src/alloc_clumpy.cpp`).
+- [ ] **Expose `use_parent_trans_pot` on the multi-period `alloc_clumpy()`.** The potentials for
+      the first backcast period are identical across every replicate and parameter set — same
+      observed anterior state, same models, same predictors — and are recomputed per run.
+      `alloc_clumpy_one_period()` already takes the argument; the wrapper does not pass it.
+- [ ] **`trans_pot_t` is written per run and period** and is the largest thing `080` stores. If
+      disk is tight, member runs need pruning between evaluations.
 
 ---
 
