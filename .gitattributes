@@ -3,3 +3,4 @@
 # on the machine that commits them.
 2026-05-ssp-ch/*.html filter=lfs diff=lfs merge=lfs -text
 2026-05-ssp-ch/**/*.html filter=lfs diff=lfs merge=lfs -text
+2026-05-ssp-ch/**/*.png filter=lfs diff=lfs merge=lfs -text

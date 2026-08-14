@@ -45,7 +45,7 @@ grrf_learner$param_set$values <- list(
 #   importance = "impurity"
 # )
 
-cluster <- mirai::make_cluster(n = 38L) # number of viable transitions
+cluster <- mirai::make_cluster(n = 21) # roughly ceiling(n_viable/2)
 
 imp_scored <- db$get_pred_filter_score(
   filter = mlr3filters::FilterImportance$new(learner = grrf_learner),

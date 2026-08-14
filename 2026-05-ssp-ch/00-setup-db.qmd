@@ -14,6 +14,10 @@ the Swiss predictor stack. This step defines the three axes that later steps key
 #| label: setup-db-create
 library(evoland)
 
+stopifnot(
+  "ssp-ch.evoland directory already exists" = !dir.exists("ssp-ch.evoland")
+)
+
 db <- evoland_db$new(
   path = "ssp-ch.evolanddb",
   report_name = "ssp-ch",
@@ -175,7 +179,7 @@ ssp_runs <-
 
 db$commit(
   as_runs_t(rbind(
-    db$runs_t, # the base run 0 created on init
+    as_runs_t(), # the base run 0 created on init
     climate_runs,
     ssp_runs,
     fill = TRUE
