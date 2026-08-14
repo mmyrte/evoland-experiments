@@ -310,18 +310,7 @@ roundtrip[
   order(-drift)
 ]
 max_drift <- max(abs(roundtrip$area_replay - roundtrip$area_solved))
-message(sprintf("Round-trip drift for %s: %.3g cells", check_ssp, max_drift))
+message(sprintf("Round-trip drift for %s: %.3g cells", "ssp1", max_drift))
 # stopifnot("rate table does not reproduce the solved trajectory" = max_drift < 1)
 ```
 
-```{r}
-#| label: trans-rates-report
-db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
-  key = , value = ,
-  "trans_rates_source", "NCCS_simulation_LULC_areas.xlsx (class-area targets, 2060)",
-  "trans_rates_method", "solve_trans_rates() LP, shares normalised on the source grid",
-  "trans_rates_step_years", as.character(step_years),
-  "trans_rates_max_reach_ratio", as.character(max_reachability_ratio),
-  "trans_rates_scenarios", paste(ssp_list, collapse = ",")
-))
-```
