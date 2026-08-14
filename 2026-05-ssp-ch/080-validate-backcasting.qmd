@@ -4,12 +4,9 @@ title: "08 — Backcasting validation"
 
 Validate the calibrated model against the past: replay the **observed** transition rates
 through the fitted transition-potential models and the estimated allocation parameters, then
-compare the resulting maps against the Arealstatistik surveys we actually observed.
+compare the resulting maps against the Arealstatistik surveys we actually observed, substeps:
 
-Three sub-steps, per `TODO.md`:
-
-(a) **estimate patch / allocation parameters** from the observed periods — this is where
-    allocation-parameter creation lives, there is no separate `alloc-params` step;
+(a) **estimate patch / allocation parameters** from the observed periods
 (b) **run the backcast** over a set of parameter choices, several stochastic replicates each;
 (c) **validate** the backcast against the observed periods, and define acceptance criteria.
 
@@ -17,10 +14,8 @@ Three sub-steps, per `TODO.md`:
 
 The rates fed to the backcast are the **observed** ones (`get_obs_trans_rates()`), so the
 *quantity* of change per transition and period is prescribed, not predicted. What is on trial
-is therefore only the **allocation** — whether the model puts the right amount of change in the
-right places — plus the allocator's ability to deliver the prescribed quantity at all. This is
-the correct separation: `07` is where quantity is decided, and its errors are already measured
-there against the demand targets.
+is therefore only the **allocation** — whether the model puts the right changes in the
+right places — plus the allocator's ability to deliver the prescribed quantity at all.
 
 Two consequences worth stating before any number is read:
 
@@ -76,7 +71,7 @@ stopifnot(
   "no viable transitions - run 04 (and 06, which reconciles viability)" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
   "no fitted models - run 06-transition-modelling.qmd first" =
-    nrow(db$trans_models_t) > 0L
+    db$row_count("trans_models_t") > 0L
 )
 
 message(
@@ -92,6 +87,8 @@ backcast run inherits them through the run lineage. The scenario rates `07` wrot
 leaf runs at the *extrapolated* periods, so the two never resolve to the same
 `(id_period, id_trans)` slice.
 
+The unmodellable cells are from deglaciation and relatively rare transitions, respectively. We will be deterministically overwriting the glacier transitions, because that's also how the extrapolation is done.
+
 ```{r}
 #| label: backcast-obs-rates
 obs_rates <- db$get_obs_trans_rates()[id_period %in% backcast_periods]
@@ -100,16 +97,29 @@ db$trans_rates_t <- obs_rates
 # How much observed change is out of reach because its transition is not viable?
 viable_trans <- db$trans_meta_t[is_viable == TRUE]
 unmodellable <- plain(obs_rates)[
-  db$trans_meta_t,
+  db$trans_meta_t[
+    db$lulc_meta_t[, .(id_lulc, name_anterior = name)],
+    on = c(id_lulc_anterior = "id_lulc")
+  ][
+    db$lulc_meta_t[, .(id_lulc, name_posterior = name)],
+    on = c(id_lulc_posterior = "id_lulc")
+  ],
   on = "id_trans",
   nomatch = NULL
-][, .(
-  cells = sum(count),
-  cells_viable = sum(count[is_viable == TRUE])
-), by = id_period][, `:=`(
+][
+  ,
+  .(
+    name_anterior,
+    name_posterior,
+    cells = sum(count),
+    cells_viable = sum(count[is_viable == TRUE]),
+    is_viable,
+  ),
+  by = .(id_period, id_trans)
+][, `:=`(
   unmodellable_pct = round(100 * (1 - cells_viable / cells), 2)
 )][]
-unmodellable
+unmodellable[is_viable == FALSE & cells > 1000]
 ```
 
 ## (a) Allocation parameters
@@ -225,7 +235,6 @@ for (p in param_sets) {
     copy(alloc_params[id_run == p])[, id_run := param_run_id(p)]
   )
 }
-db$id_run <- 0L
 
 # --- interventions (not implemented here) ----------------------------------------------
 # The SSP `Pre-allocation` interventions are perturbations of exactly this table. Each
@@ -372,7 +381,8 @@ quantity[order(-shortfall_pct)][1:15][
   nomatch = NULL
 ][, .(
   id_run, id_period, id_lulc_anterior, id_lulc_posterior,
-  count_prescribed, count_realised, shortfall_pct = round(shortfall_pct, 1)
+  count_prescribed, count_realised,
+  shortfall_pct = round(shortfall_pct, 1)
 )]
 ```
 
@@ -537,16 +547,19 @@ flow <- merge(
 flow[is.na(obs), obs := 0][is.na(sim), sim := 0]
 flow <- n_by_ant[flow, on = "id_lulc_ant"]
 
-null_by_param <- flow[, {
-  by_ant <- .SD[, .(
-    obs_u = sum(obs),
-    sim_u = sum(sim),
-    hits = sum(obs * sim / n_ant),
-    n_ant = n_ant[1]
-  ), by = id_lulc_ant]
-  by_ant[, union_u := obs_u + sim_u - obs_u * sim_u / n_ant]
-  .(fom_null = sum(by_ant$hits) / sum(by_ant$union_u))
-}, by = param_set]
+null_by_param <- flow[,
+  {
+    by_ant <- .SD[, .(
+      obs_u = sum(obs),
+      sim_u = sum(sim),
+      hits = sum(obs * sim / n_ant),
+      n_ant = n_ant[1]
+    ), by = id_lulc_ant]
+    by_ant[, union_u := obs_u + sim_u - obs_u * sim_u / n_ant]
+    .(fom_null = sum(by_ant$hits) / sum(by_ant$union_u))
+  },
+  by = param_set
+]
 
 # Per-transition, so a transition allocated at chance can be named rather than averaged away.
 null_by_trans <- flow[, .(
