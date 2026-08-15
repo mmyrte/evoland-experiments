@@ -179,7 +179,8 @@ partial model per transition and refits it on all available data.
 cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
 trans_models_full <- db$fit_full_models(
   select_score = "classif.auc",
-  select_maximize = TRUE
+  select_maximize = TRUE,
+  cluster = cluster
 )
 
 if (!is.null(cluster)) {

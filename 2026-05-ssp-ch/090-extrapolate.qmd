@@ -192,11 +192,12 @@ realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
 ```{r}
 #| label: extrapolate-allocate
 #| output: false
+realisation_runs <- db$runs_t[kind == "extrapolation realisation"]
+options("evoland.use_prefetch_predict" = TRUE)
+future::plan(future.mirai::mirai_multisession, workers = 10)
 for (i in seq_len(nrow(realisation_runs))) {
   db$id_run <- realisation_runs$id_run[i]
 
-  # db$alloc_clumpy() advertises a `seed` argument that alloc_clumpy() does not accept at the
-  # pinned commit; see the note in 080. CLUMPY draws through R's RNG, so this is equivalent.
   set.seed(realisation_runs$seed[i])
 
   db$alloc_clumpy(
@@ -205,6 +206,7 @@ for (i in seq_len(nrow(realisation_runs))) {
     select_maximize = select_maximize
   )
 }
+future::plan("sequential")
 db$id_run <- 0L
 ```
 
@@ -310,7 +312,8 @@ area_check[id_period == max(alloc_periods)][
   nomatch = NULL
 ][order(-abs(drift_pct))][1:15][, .(
   ssp, replicate, name,
-  area_realised, area_predicted = round(area_predicted),
+  area_realised,
+  area_predicted = round(area_predicted),
   drift = round(drift), drift_pct = round(drift_pct, 2)
 )]
 ```

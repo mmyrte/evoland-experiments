@@ -1,14 +1,21 @@
 #' purpose emergency change NA fill values
 
+
+```{r}
+#| label: backcast-params
+library(data.table)
+library(evoland)
+
+
 mean_vals <- db$get_query(glue::glue(
   "select
     --m.id_pred,
     m.name,
     round(mean(d.value), 2) as fill_value
-  from 
+  from
     {db$get_read_expr('pred_data_t')} as d,
     {db$get_read_expr('pred_meta_t')} as m
-  where 
+  where
     id_run = 0
     and d.id_pred = m.id_pred
     and (
@@ -16,7 +23,7 @@ mean_vals <- db$get_query(glue::glue(
       or
       m.name like '%mean_100m'
     )
-  group by 
+  group by
     m.id_pred,
     m.name
   order by m.id_pred
@@ -43,3 +50,4 @@ db$pred_meta_t <- validate(
 )
 
 db$pred_meta_t <- db$pred_meta_t[grepl("^soil_", name)][, fill_value := 0]
+```
