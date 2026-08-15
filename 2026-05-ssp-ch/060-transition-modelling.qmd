@@ -100,8 +100,8 @@ db$trans_models_t <- db$fit_partial_models(
   learner = mlr3::lrn(
     "classif.ranger",
     predict_type = "prob",
-    num.trees = max_depth,
-    max.depth = 20
+    num.trees = num_trees,
+    max.depth = max_depth
   ),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,

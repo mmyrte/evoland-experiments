@@ -113,7 +113,7 @@ unmodellable <- plain(obs_rates)[
     name_posterior,
     cells = sum(count),
     cells_viable = sum(count[is_viable == TRUE]),
-    is_viable,
+    is_viable
   ),
   by = .(id_period, id_trans)
 ][, `:=`(
@@ -281,8 +281,10 @@ step.
 ```{r}
 #| label: backcast-allocate
 #| output: false
-for (i in seq_len(nrow(member_runs))) {
-  db$id_run <- member_runs$id_run[i]
+backcast_replicate_runs <- db$runs_t[kind == "backcast replicate", .(id_run, seed)]
+future::plan(future.mirai::mirai_multisession, workers = 10)
+for (id in backcast_replicate_runs[2:12, id_run]) {
+  db$id_run <- id
 
   # NB: db$alloc_clumpy() documents a `seed` argument, but alloc_clumpy() itself does not
   # accept one at the pinned commit -- create_method_binding() forwards it verbatim and the
@@ -290,7 +292,7 @@ for (i in seq_len(nrow(member_runs))) {
   # (stochastic-allocation-sensitivity.qmd) passes it and would fail for the same reason.
   # All CLUMPY randomness goes through R's RNG (src/alloc_clumpy.cpp), so set.seed() is an
   # exact substitute. Fix upstream, then move the seed back into the call.
-  set.seed(member_runs$seed[i])
+  set.seed(backcast_replicate_runs[id_run == id, seed])
 
   db$alloc_clumpy(
     id_periods = backcast_periods,
@@ -298,6 +300,7 @@ for (i in seq_len(nrow(member_runs))) {
     select_maximize = select_maximize
   )
 }
+future::plan("sequential")
 db$id_run <- 0L
 ```
 
