@@ -39,4 +39,6 @@ dependencies = [
     "mlr3learners",
     "e1071",
     "future.mirai",
+    # 091 figures
+    "ggspatial",
 ]

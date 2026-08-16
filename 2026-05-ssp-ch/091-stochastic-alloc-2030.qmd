@@ -370,14 +370,11 @@ a small gap is expected even from a perfect allocator. A large one is the pool-e
 
 ## The maps
 
-`tabular_to_raster()` gathers the long table into one layer per SSP. All five panels share a
-`0–1` scale so they are readable against each other, which is the whole point of putting them
-side by side.
+`tabular_to_raster()` gathers the long table into one layer per SSP, which is also written out as
+a GeoTIFF so the figures can be reworked without re-running the ensemble.
 
 ```{r}
-#| label: alloc2030-maps
-#| fig-width: 14
-#| fig-height: 8
+#| label: alloc2030-raster
 intensity_rast <- tabular_to_raster(
   intensity[, .(id_coord, ssp, p_changed)],
   coords = db$coords_minimal,
@@ -395,62 +392,118 @@ terra::writeRaster(
   overwrite = TRUE
 )
 intensity_rast <- terra::rast("2026-05-ssp-ch/091-change-intensity-2030.tif")
-
-# TODO the terra built-in plots are not nice to look at, use ggplot2 with ggspatial added.
-# use a white background, also for NAs and 0 intensity. use a white-to-black color scale that shows
-# intensity on a scale of (0, 0.65] with every intensity above clipping to the darkest colour.
-# because the patterns need to be visible on an a4 print in a 18cm wide 9cm high plot with 5 panels comparing the scenarios, only show a box of roughly
-# 2'658'159.81, 1'301'204.30
-# 2'755'025.95, 1'077'643.13
-# so we can see enough detail. the ensuing plot should be returned in 300dpi png
-intensity_palette <- grDevices::hcl.colors(64, "Inferno", rev = TRUE)
-
-# terra::panel() rather than terra::plot(): it draws one shared legend for the whole stack
-# instead of repeating an identical one per panel, which is the difference between five maps
-# that can be compared and five maps that merely sit next to each other.
-plot_intensity <- function() {
-  terra::panel(
-    intensity_rast,
-    col = intensity_palette,
-    # `type` must be forced: p_changed takes only n_members + 1 distinct values, and terra
-    # otherwise falls back to a categorical legend, which mislabels the scale and (with few
-    # members) fails to shade the panels at all.
-    type = "continuous",
-    range = c(0, 1),
-    nc = 3,
-    axes = FALSE,
-    loc.main = "topleft",
-    plg = list(title = "p(change)")
-  )
-}
-
-plot_intensity()
-
-# Paths are project-root relative: _quarto.yml sets execute-dir: project.
-grDevices::png(
-  "2026-05-ssp-ch/091-change-intensity-2030.png",
-  width = 2400,
-  height = 1400,
-  res = 150
-)
-plot_intensity()
-invisible(grDevices::dev.off())
 ```
 
-A cell reads `0` where no member changed it and `1` where all 20 did. Because the anterior map is
-the same everywhere, the differences between panels are attributable to the SSP demand alone —
-`070`'s rate vectors are the only scenario-varying input at this horizon.
+Five panels of the whole country at print size give each scenario about 3 cm of width for 350 km,
+which is roughly 40 hectare cells per millimetre — the ensemble's texture disappears into grey.
+The figure therefore shows a **north–south strip** instead, chosen in QGIS: tall and narrow, so
+five of them fit side by side at a scale where individual patches are still resolved, and running
+from the plateau down across the Alps so the panels cover the full range of landscapes rather
+than one of them.
+
+The colour scale is white-to-black over `(0, 0.65]`, everything above clipping to black. White
+does double duty as the background, as `NA` outside Switzerland, and as "no member changed this
+cell", which is what makes the changed cells read as ink on paper.
+
+```{r}
+#| label: alloc2030-maps
+#| fig-width: 7.1
+#| fig-height: 3.55
+library(ggplot2)
+
+# Chosen in QGIS against the written GeoTIFF; see the note above on why it is this shape.
+zoom_ext <- terra::ext(2658160, 2755026, 1077643, 1301204)
+intensity_clip <- 0.65 # everything at or above this shares the darkest colour
+
+intensity_df <- data.table::as.data.table(
+  terra::as.data.frame(terra::crop(intensity_rast, zoom_ext), xy = TRUE, na.rm = TRUE)
+) |>
+  data.table::melt(
+    id.vars = c("x", "y"),
+    variable.name = "ssp",
+    value.name = "p_changed",
+    variable.factor = TRUE
+  )
+
+map_theme <- theme_void(base_size = 7) +
+  theme(
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.spacing = unit(2, "pt"),
+    strip.text = element_text(size = 7, margin = margin(b = 2)),
+    legend.key.width = unit(3, "mm"),
+    legend.key.height = unit(10, "mm"),
+    legend.title = element_text(size = 6),
+    legend.text = element_text(size = 6),
+    plot.margin = margin(2, 2, 2, 2)
+  )
+
+p_intensity <-
+  ggplot(intensity_df, aes(x = x, y = y, fill = p_changed)) +
+  # geom_raster, not geom_tile: ~10 M cells per figure, and tile draws one rect each.
+  geom_raster() +
+  facet_wrap(vars(ssp), nrow = 1) +
+  scale_fill_gradient(
+    low = "white",
+    high = "black",
+    limits = c(0, intensity_clip),
+    oob = scales::squish, # clip rather than drop: >= intensity_clip is black, not blank
+    na.value = "white",
+    breaks = c(0, intensity_clip / 2, intensity_clip),
+    # ASCII only: the default PNG device font has no glyph for the >= sign and silently
+    # substitutes an ellipsis.
+    labels = c("0", sprintf("%.2f", intensity_clip / 2), sprintf("%.2f+", intensity_clip)),
+    name = "share of\nmembers"
+  ) +
+  # One scale bar, on the first panel only -- five would be clutter at this size.
+  ggspatial::annotation_scale(
+    data = data.frame(ssp = factor(levels(intensity_df$ssp)[1], levels(intensity_df$ssp))),
+    location = "bl",
+    width_hint = 0.45,
+    height = unit(1, "mm"),
+    text_cex = 0.45,
+    line_width = 0.3,
+    pad_x = unit(1, "mm"),
+    pad_y = unit(1, "mm")
+  ) +
+  coord_sf(crs = 2056, expand = FALSE, datum = NA) +
+  map_theme
+
+p_intensity
+
+ggsave(
+  "2026-05-ssp-ch/091-change-intensity-2030.png",
+  p_intensity,
+  width = 18,
+  height = 9,
+  units = "cm",
+  dpi = 300,
+  bg = "white"
+)
+```
+
+A cell reads white where no member changed it and black where at least 13 of the 20 did. Because
+the anterior map is the same everywhere, the differences between panels are attributable to the
+SSP demand alone — `070`'s rate vectors are the only scenario-varying input at this horizon.
+
+> **Next step: hexbin.** At 300 dpi in an 18 cm figure one printed pixel covers roughly two
+> hectare cells, so what the eye reads is a dither pattern that aliases against the pixel grid
+> rather than the density it stands for. Binning the changed cells into hexagons and mapping
+> **summed intensity per bin** would make the density explicit, be robust to the print scale, and
+> — unlike the raster — let the full country back into the figure. The raster version stays
+> useful for looking at individual patches, which is why the GeoTIFF is written.
 
 ## Where the scenarios disagree
 
 The five panels answer "where does each scenario change things". The complementary question is
 where they *differ*, which is a cheap derived layer worth having next to them: the spread across
-the five scenario means at each cell.
+the five scenario means at each cell. This one keeps the whole country — it is a single panel, so
+there is room, and the interesting structure is regional rather than per-patch.
 
 ```{r}
 #| label: alloc2030-disagreement
-#| fig-width: 6
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 3.5
 # Cell-wise across layers via terra's Summary methods, not app(): app() with an R closure
 # evaluates per cell and is far too slow at 4.1 M.
 disagreement <- max(intensity_rast) - min(intensity_rast)
@@ -461,13 +514,46 @@ terra::writeRaster(
   overwrite = TRUE
 )
 disagreement <- terra::rast("2026-05-ssp-ch/091-change-intensity-2030-disagreement.tif")
-terra::plot(
-  disagreement,
-  col = intensity_palette,
-  type = "continuous",
-  range = c(0, 1),
-  axes = FALSE,
-  main = paste0("Between-scenario range in change intensity, ", target_label)
+
+disagreement_df <- data.table::as.data.table(
+  terra::as.data.frame(disagreement, xy = TRUE, na.rm = TRUE)
+)
+data.table::setnames(disagreement_df, 3L, "range_p_changed")
+
+p_disagreement <-
+  ggplot(disagreement_df, aes(x = x, y = y, fill = range_p_changed)) +
+  geom_raster() +
+  # Inferno reversed, so the ramp runs light-to-dark with increasing disagreement and reads
+  # the same way round as the black-on-white panels above.
+  scale_fill_viridis_c(
+    option = "inferno",
+    direction = -1,
+    limits = c(0, 1),
+    na.value = "white",
+    name = "range across\nscenarios"
+  ) +
+  ggspatial::annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    height = unit(1, "mm"),
+    text_cex = 0.5,
+    line_width = 0.3,
+    pad_x = unit(1, "mm"),
+    pad_y = unit(1, "mm")
+  ) +
+  coord_sf(crs = 2056, expand = FALSE, datum = NA) +
+  map_theme
+
+p_disagreement
+
+ggsave(
+  "2026-05-ssp-ch/091-change-intensity-2030-disagreement.png",
+  p_disagreement,
+  width = 12,
+  height = 9,
+  units = "cm",
+  dpi = 300,
+  bg = "white"
 )
 
 terra::global(disagreement, c("mean", "max"), na.rm = TRUE)

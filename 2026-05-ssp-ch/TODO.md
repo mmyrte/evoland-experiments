@@ -419,6 +419,22 @@ remaining MS9-phase-1 work.
         not a bug — but check `070`'s solved rates before concluding anything.
   - [ ] **Single-period allocation is not the same test as `090`.** No compounding, so the
         intensity maps say where change goes *first*, not where a scenario ends up.
+  - [x] **Figures on ggplot2 + ggspatial.** The intensity panels are a white-to-black raster
+        over a north–south strip (`zoom_ext`, picked in QGIS), clipped at `p_changed >= 0.65`,
+        sized for an 18 × 9 cm A4 print at 300 dpi; the disagreement layer keeps the whole
+        country on a light-to-dark inferno. Both rasters are written as GeoTIFFs so the figures
+        can be reworked without re-running the ensemble. **`ggspatial` was added to
+        `rproject.toml` — `rv sync` before rendering.**
+  - [ ] **Hexbin the change intensity.** At 300 dpi one printed pixel covers ~2 hectare cells,
+        so the raster panels read as a dither that aliases against the pixel grid rather than
+        as density — which is also why the figure has to crop to a strip. Binning changed cells
+        into hexagons and mapping summed intensity per bin would make the density explicit, be
+        robust to print scale, and let the whole country back into the figure. Keep the raster
+        version for looking at individual patches.
+  - [ ] **The scale bars are the one untested line.** `ggspatial` is not installable in the
+        authoring sandbox (no CRAN reachable), so both `annotation_scale()` calls were exercised
+        against a stub that returns `NULL`. Everything else in the two figures is verified at
+        full size; check the bars render where expected on the first real run.
 - [ ] **`090d-report.qmd`** — diagnostic: reporting figures, tables, maps (human-facing
       outputs; mutates no state). Should carry at least the change-frequency map over the
       replicate ensemble (per the evoland stochastic-allocation vignette) and the realised-vs-
