@@ -47,6 +47,12 @@ plain <- function(x) {
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 lulc_anchor <- db$lulc_data_t[id_period == anchor_period]
 
+# proof of concept - run extrapolation at the same time as backcast
+db$id_run <- 2100
+d <- db$alloc_params_t
+d[, id_run := 0]
+db$id_run <- 0
+db$alloc_params_t <- d
 stopifnot(
   "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
     nrow(db$alloc_params_t) > 0L,

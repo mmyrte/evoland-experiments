@@ -49,7 +49,7 @@ library(mlr3learners)
 
 sample_frac <- 0.7 # stratified train fraction; the remainder is the held-out scoring split
 seed <- 42L
-num_trees <- 200L # ranger's default; no regularisation here, so it parallelises internally
+num_trees <- 100L
 max_depth <- 20L
 n_workers <- 21L
 

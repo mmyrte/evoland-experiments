@@ -77,7 +77,7 @@ db$trans_meta_t <-
     db$trans_v,
     # min_frequency_rel = 0.005, # this is what ben used: the change rate relative
     # to the other change rates
-    min_cardinality_abs = 3000, # chosen per the 04d observed-transitions diagnostic
+    min_cardinality_abs = 10000, # TODO decrease until clean trans rate solution is possible
     exclude_anterior = lulc_meta[name == "glacier", id_lulc]
   )
 ```

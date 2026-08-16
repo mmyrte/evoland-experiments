@@ -5,6 +5,7 @@
 #| label: backcast-params
 library(data.table)
 library(evoland)
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 
 mean_vals <- db$get_query(glue::glue(

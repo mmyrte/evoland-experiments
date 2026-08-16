@@ -284,9 +284,10 @@ step.
 backcast_replicate_runs <- db$runs_t[kind == "backcast parameters", .(id_run, seed)]
 options("evoland.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 20)
-for (id in backcast[, id_run]) {
+for (id in backcast_replicate_runs[, id_run]) {
   db$id_run <- id
-  set.seed(backcast_replicate_runs[id_run == id, seed])
+  # set.seed(backcast_replicate_runs[id_run == id, seed])
+  set.seed(4555)
 
   db$alloc_clumpy(
     id_periods = backcast_periods,

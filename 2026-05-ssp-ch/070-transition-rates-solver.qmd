@@ -216,7 +216,7 @@ for (s in ssp_list) {
     shapes = d[, .(id_lulc, shape)],
     bounds = bounds,
     periods = db$periods_t[end_date < "2060-01-01"],
-    max_reachability_ratio = 2.5
+    max_reachability_ratio = Inf
   )
 }
 

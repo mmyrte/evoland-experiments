@@ -123,9 +123,9 @@ silently prune hard-to-model transitions more aggressively than easy ones.
 
 ```{r}
 #| label: covariate-selection-select
-max_preds_per_trans <- 7
+max_preds_per_trans <- 4
 trans_preds_selected <-
-  imp_scored[is.na(importance) | importance_rel >= 0.2][
+  imp_scored[is.na(importance) | importance_rel >= 0.3][
     order(-importance_rel),
     head(.SD, max_preds_per_trans),
     by = id_trans
