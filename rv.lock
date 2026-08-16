@@ -569,7 +569,7 @@ dependencies = []
 [[packages]]
 name = "evoland"
 version = "0.0.1.9000"
-source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "64754ee05adaeedf489d82ad0b0480806830e46f" }
+source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "ef04ba81fa86a16ed5836ca425e61602e5c89b24" }
 force_source = true
 dependencies = [
     "DBI",
@@ -670,6 +670,17 @@ force_source = false
 dependencies = [
     { name = "future", requirement = "(>= 1.49.0)" },
     "globals",
+]
+
+[[packages]]
+name = "future.mirai"
+version = "1.0.0"
+source = { repository = "https://p3m.dev/cran/__linux__/opensuse156/latest" }
+force_source = false
+dependencies = [
+    { name = "future", requirement = "(>= 1.49.0)" },
+    { name = "mirai", requirement = "(>= 2.2.0)" },
+    "parallelly",
 ]
 
 [[packages]]

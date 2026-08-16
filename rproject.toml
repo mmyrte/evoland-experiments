@@ -30,7 +30,7 @@ dependencies = [
     "rmarkdown",
     "writexl",
     "svglite",
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "64754ee05adaeedf489d82ad0b0480806830e46f", install_suggestions = true },
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "ef04ba81fa86a16ed5836ca425e61602e5c89b24", install_suggestions = true },
     "mapview",
     "stars",
     "methods",
@@ -38,4 +38,5 @@ dependencies = [
     "yaml",
     "mlr3learners",
     "e1071",
+    "future.mirai",
 ]
