@@ -238,53 +238,20 @@ db$commit(
 members[, .N, by = .(ssp, parent_id_run)]
 ```
 
-## Predict the potentials once per scenario
-
-Doing this explicitly up front, rather than letting the first member of each scenario trigger it,
-buys two things. The prediction phase becomes separately timeable and separately parallel, and —
-less obviously — every member then starts from the same RNG position, because none of them run a
-prediction. Otherwise member 1 would carry whatever RNG state prediction left behind and member 2
-would not, and `set.seed()` per member would no longer make the run reproducible.
-
-```{r}
-#| label: alloc2030-predict
-#| output: false
-options("evoland.use_prefetch_predict" = TRUE)
-future::plan(future.mirai::mirai_multisession, workers = n_workers)
-
-for (r in scenario_runs$id_run) {
-  db$id_run <- r
-  db$predict_trans_pot(
-    id_period_post = target_period,
-    select_score = select_score,
-    select_maximize = select_maximize
-  )
-}
-
-future::plan("sequential")
-db$id_run <- 0L
-```
 
 ## Allocate
 
 `use_parent_trans_pot = TRUE` makes each member read its scenario's potentials; the call to
-`predict_trans_pot()` inside the allocator then finds them present and returns without work.
+`predict_trans_pot()` inside the allocator then finds them present and returns without work after the first iteration.
 
-The call goes to the **single-period** entry point rather than to `db$alloc_clumpy()`, and that
-is not stylistic. The multi-period wrapper follows every period with
-`upsert_new_neighbors()`, which recomputes the neighbourhood predictors for the period just
-allocated and upserts them into `pred_data_t`. `pred_data_t` is **not** partitioned by `id_run`
-(only `lulc_data_t` is), so each upsert rewrites the entire predictor table — tens of GB, 100
-times over — to store neighbourhood predictors for a period 6 that this step never allocates.
-`lulc_data_t` is partitioned, so committing the result ourselves is cheap.
-
-`alloc_clumpy_one_period()` is internal, hence the `:::`. The clean fix is upstream: an
+`alloc_clumpy_one_period()` is currently internal, hence the `:::`. May want to change upstream: either an
 `update_neighbors` argument on `alloc_clumpy()`, or skipping the upsert after the last period of
 the requested sequence, since nothing consumes it. Recorded in `TODO.md`.
 
 ```{r}
 #| label: alloc2030-allocate
 #| output: false
+options("evoland.use_prefetch_predict" = TRUE)
 for (i in seq_len(nrow(members))) {
   db$id_run <- members$id_run[i]
 
@@ -420,6 +387,22 @@ intensity_rast <- tabular_to_raster(
 # should just be the scenario.
 names(intensity_rast) <- sub("^ssp_", "", names(intensity_rast))
 
+# workaround: write out so i can fetch it from HPC node to do plotting locally for now
+terra::writeRaster(
+  intensity_rast,
+  "2026-05-ssp-ch/091-change-intensity-2030.tif",
+  gdal = c("COMPRESS=DEFLATE"),
+  overwrite = TRUE
+)
+intensity_rast <- terra::rast("2026-05-ssp-ch/091-change-intensity-2030.tif")
+
+# TODO the terra built-in plots are not nice to look at, use ggplot2 with ggspatial added.
+# use a white background, also for NAs and 0 intensity. use a white-to-black color scale that shows
+# intensity on a scale of (0, 0.65] with every intensity above clipping to the darkest colour.
+# because the patterns need to be visible on an a4 print in a 18cm wide 9cm high plot with 5 panels comparing the scenarios, only show a box of roughly
+# 2'658'159.81, 1'301'204.30
+# 2'755'025.95, 1'077'643.13
+# so we can see enough detail. the ensuing plot should be returned in 300dpi png
 intensity_palette <- grDevices::hcl.colors(64, "Inferno", rev = TRUE)
 
 # terra::panel() rather than terra::plot(): it draws one shared legend for the whole stack
@@ -471,7 +454,13 @@ the five scenario means at each cell.
 # Cell-wise across layers via terra's Summary methods, not app(): app() with an R closure
 # evaluates per cell and is far too slow at 4.1 M.
 disagreement <- max(intensity_rast) - min(intensity_rast)
-
+terra::writeRaster(
+  disagreement,
+  "2026-05-ssp-ch/091-change-intensity-2030-disagreement.tif",
+  gdal = c("COMPRESS=DEFLATE"),
+  overwrite = TRUE
+)
+disagreement <- terra::rast("2026-05-ssp-ch/091-change-intensity-2030-disagreement.tif")
 terra::plot(
   disagreement,
   col = intensity_palette,
