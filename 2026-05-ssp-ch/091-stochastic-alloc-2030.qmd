@@ -401,9 +401,18 @@ five of them fit side by side at a scale where individual patches are still reso
 from the plateau down across the Alps so the panels cover the full range of landscapes rather
 than one of them.
 
-The colour scale is white-to-black over `(0, 0.65]`, everything above clipping to black. White
+The colour scale is white-to-black, everything above `intensity_clip` clipping to black. White
 does double duty as the background, as `NA` outside Switzerland, and as "no member changed this
 cell", which is what makes the changed cells read as ink on paper.
+
+**Where the clip comes from.** The ensemble is diffuse: the median non-zero cell sits at `0.05`,
+i.e. one member out of twenty, and the 95th percentile of non-zero cells is `0.25`–`0.40`
+depending on the scenario. A clip at `0.65` — the first value tried — leaves *no* SSP1 cell at
+the dark end at all (0.00 % of cells reach it, against 1.13 % for SSP5) and renders the bulk of
+the map below 10 % grey, which is invisible in print. `0.20` puts 4–6 % of cells at full black
+and reproduces what the raster looks like under QGIS's own stretch. It is a display choice, not
+an analytical one, so it is a constant here rather than a per-render quantile: a scale that moves
+between renders cannot be compared across them.
 
 ```{r}
 #| label: alloc2030-maps
@@ -413,7 +422,7 @@ library(ggplot2)
 
 # Chosen in QGIS against the written GeoTIFF; see the note above on why it is this shape.
 zoom_ext <- terra::ext(2658160, 2755026, 1077643, 1301204)
-intensity_clip <- 0.65 # everything at or above this shares the darkest colour
+intensity_clip <- 0.20 # everything at or above this shares the darkest colour; see above
 
 intensity_df <- data.table::as.data.table(
   terra::as.data.frame(terra::crop(intensity_rast, zoom_ext), xy = TRUE, na.rm = TRUE)
@@ -482,9 +491,18 @@ ggsave(
 )
 ```
 
-A cell reads white where no member changed it and black where at least 13 of the 20 did. Because
+A cell reads white where no member changed it and black where at least 4 of the 20 did. Because
 the anterior map is the same everywhere, the differences between panels are attributable to the
 SSP demand alone — `070`'s rate vectors are the only scenario-varying input at this horizon.
+
+On the first real ensemble, the five scenarios separate exactly as the demand does: the expected
+number of cells changing in this one decade runs from 119 k under SSP1 to 197 k under SSP5, 66 %
+more. But the **envelope** — cells that change in at least one member — is 1.19–1.64 M, i.e.
+29–40 % of the country and 8–10× the change that actually lands. Twenty independent uniform
+draws would give roughly 20×, so the ensemble concentrates about twice as hard as chance: there is
+spatial signal in the potentials, but it is soft, and a scenario's demand could be satisfied in
+many more places than it needs. That is the same thing `080`'s figure of merit measures, seen
+from the forward side.
 
 > **Next step: hexbin.** At 300 dpi in an 18 cm figure one printed pixel covers roughly two
 > hectare cells, so what the eye reads is a dither pattern that aliases against the pixel grid
