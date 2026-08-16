@@ -1,0 +1,502 @@
+---
+title: "091 — Stochastic allocation to 2030"
+---
+
+One extrapolated period, allocated **20 times per SSP**, gathered into a per-cell **change
+intensity**: the share of the ensemble in which a cell leaves its last observed class. Five
+scenarios, five maps.
+
+This is deliberately the smallest useful forward experiment. `090` walks the whole trajectory to
+2060 and is dominated by compounding; here the anterior state is the same observed map for every
+member of every scenario, so the only things that differ are the SSP's demand (from `070`) and
+the allocator's RNG. What the maps show is therefore *where each scenario's demand insists on
+change*, with the allocator's arbitrariness averaged out rather than hidden inside one draw.
+
+Two properties of the design are worth stating up front, because they are what make 100
+allocations affordable:
+
+- **The transition potentials are computed once per scenario, not once per member.** The
+  anterior state is identical across an SSP's members, so the potential surface is too.
+  `use_parent_trans_pot = TRUE` (exposed upstream in `ca4d681`) points every member at its
+  parent scenario run's `trans_pot_t`, so the 20 members share one prediction — the pattern the
+  `stochastic-allocation-sensitivity` vignette now uses.
+- **The single-period allocator is called directly**, bypassing the multi-period
+  `alloc_clumpy()` wrapper. See the allocation section for why; it is the difference between
+  this step being cheap and it being unrunnable.
+
+```{r}
+#| label: alloc2030-params
+library(data.table)
+library(evoland)
+
+climate_framing_sel <- "current" # the leaves under id_run 100; see 001-setup-db.qmd
+n_members <- 20L # stochastic allocations per SSP
+seed_base <- 2030L
+select_score <- "classif.auc" # must match what 060 stored in crossval_score
+select_maximize <- TRUE
+n_workers <- 20L # future workers for the prediction phase
+member_id_factor <- 1000L # id_run = scenario * factor + member
+member_kind <- "stochastic single-period member"
+
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db$id_run <- 0L
+
+anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+target_period <- min(db$periods_t[is_extrapolated == TRUE, id_period])
+target_label <- format(as.Date(db$periods_t[id_period == target_period, end_date]), "%Y")
+
+stopifnot(
+  "the target period must follow the anchor directly" = target_period == anchor_period + 1L,
+  "no viable transitions - run 040 and 060" =
+    nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
+  "no fitted models - run 060-transition-modelling.qmd first" =
+    db$row_count("trans_models_t") > 0L
+)
+
+message(
+  "Allocating period ", target_period, " (to ", target_label, ") ",
+  n_members, " times per scenario, from observed period ", anchor_period
+)
+```
+
+Why this period is "2030": `001` puts the first extrapolated period at 2020–2029, immediately
+after the last Arealstatistik survey. `target_label` is read off `periods_t` rather than
+hard-coded, so the title is wrong rather than the code if the period table changes.
+
+## The five scenario runs
+
+One leaf per SSP under the chosen climate framing. `current` inherits the `id_period 0` climate
+baseline, so this step does not depend on `051-ingest-preds-ch2025-3-gwl.qmd` having run. Over a
+single 2020s step that costs little: every GWL trajectory in `001` sits at 1.5–2.0 °C in `p5`,
+so the climate signal between the leaves is near-nil at this horizon. Switching to the per-SSP
+`default_for_ssp` trajectories is a change to `climate_framing_sel` — but check that the
+projected predictors actually exist for those runs first, because a missing projection falls
+back to the baseline silently.
+
+```{r}
+#| label: alloc2030-runs
+runs <- db$runs_t
+
+scenario_runs <- runs[!is.na(ssp) & climate_framing == climate_framing_sel]
+
+# Members and realisations written by this step or by 090 inherit `ssp` / `climate_framing`
+# from their parent; they are outputs, not scenarios. Tested outside the `[` because
+# data.table evaluates the whole `i` expression whether or not the column exists.
+if ("kind" %in% names(scenario_runs)) {
+  scenario_runs <- scenario_runs[
+    is.na(kind) | !kind %in% c("extrapolation realisation", member_kind)
+  ]
+}
+scenario_runs <- scenario_runs[order(ssp)]
+
+stopifnot(
+  "no scenario runs for this climate framing" = nrow(scenario_runs) > 0L,
+  "expected exactly one run per SSP" = uniqueN(scenario_runs$ssp) == nrow(scenario_runs)
+)
+
+scenario_runs[, .(id_run, parent_id_run, ssp, climate_framing, description)]
+```
+
+## Allocation parameters: the unperturbed estimate from `080`
+
+`080` registers one run per parameter set, the lowest-numbered of which is the unperturbed
+estimate straight out of `create_alloc_params_t()` — the perturbed siblings exist only to be
+compared against it. We take that set and write it onto each scenario run, so the members
+inherit it through the lineage.
+
+Writing to the scenario runs rather than to run `0` is deliberate: it leaves whatever `080`
+selected on run `0` alone, and it keeps this step's parameter choice visible in the run tree
+instead of implicit in a shared ancestor.
+
+```{r}
+#| label: alloc2030-alloc-params
+stopifnot(
+  "no backcast parameter runs - run 080-validate-backcasting.qmd first" =
+    "kind" %in% names(runs) && nrow(runs[kind == "backcast parameters"]) > 0L
+)
+
+alloc_param_run <- min(runs[kind == "backcast parameters", id_run])
+db$id_run <- alloc_param_run
+unperturbed_params <- db$alloc_params_t
+db$id_run <- 0L
+
+stopifnot(
+  "the unperturbed parameter run carries no rows" = nrow(unperturbed_params) > 0L,
+  "allocation parameters are missing for some viable transition" =
+    all(db$trans_meta_t[is_viable == TRUE, id_trans] %in% unperturbed_params$id_trans)
+)
+
+for (r in scenario_runs$id_run) {
+  db$alloc_params_t <- as_alloc_params_t(copy(unperturbed_params)[, id_run := r])
+}
+db$id_run <- 0L
+
+message("Using allocation parameters from run ", alloc_param_run)
+unperturbed_params[, .(id_trans, mean_patch_size, patch_elongation, frac_expander)]
+```
+
+## Rates for the single step
+
+Each scenario needs a rate for every viable transition at the target period, or
+`adjusted_trans_pot_v()` drops that transition (it inner-joins potentials to rates) and it
+simply does not happen. `070` writes these.
+
+```{r}
+#| label: alloc2030-rates
+db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
+rates <- db$fetch(
+  "trans_rates_t",
+  where = glue::glue(
+    "id_run in ({toString(scenario_runs$id_run)}) and id_period = {target_period}"
+  )
+)
+db$id_run <- 0L
+
+viable_trans <- db$trans_meta_t[is_viable == TRUE]
+
+# The demanded quantity is derived from `rate` x anterior-class size, not from the stored
+# `count`. `count` means different things depending on which producer wrote the row --
+# extrapolate_trans_rates() multiplies the rate by the *total* cell count, the LP solver writes
+# actual flows -- whereas `rate` is what the allocator consumes: adjusted_trans_pot_v() scales
+# the potentials so their mean over the anterior class equals it.
+anchor_class_sizes <- db$get_query(glue::glue(
+  "select id_lulc as id_lulc_anterior, count(*) as n_ant
+     from {db$get_read_expr('lulc_data_t')}
+     where id_period = {anchor_period}
+     group by id_lulc"
+))
+
+rate_coverage <- Reduce(
+  function(x, y) merge(x, y, by = "id_run"),
+  list(
+    scenario_runs[, .(id_run, ssp)],
+    merge(
+      merge(
+        rates[id_trans %in% viable_trans$id_trans],
+        viable_trans[, .(id_trans, id_lulc_anterior)],
+        by = "id_trans"
+      ),
+      anchor_class_sizes,
+      by = "id_lulc_anterior"
+    )[, .(n_trans = uniqueN(id_trans), demand_cells = sum(rate * n_ant)), by = id_run]
+  )
+)
+
+stopifnot(
+  "no rates at the target period - run 070-transition-rates-solver.qmd first" =
+    nrow(rate_coverage) > 0L,
+  "some scenario run has no rates at the target period" =
+    nrow(rate_coverage) == nrow(scenario_runs)
+)
+
+if (any(rate_coverage$n_trans < nrow(viable_trans))) {
+  warning(
+    "Some scenario carries rates for fewer than the ", nrow(viable_trans),
+    " viable transitions; the missing ones cannot be allocated."
+  )
+}
+rate_coverage[order(ssp)]
+```
+
+`demand_cells` is the number of cells each scenario asks to convert in this one step. It is the
+quantity the change-intensity maps below should integrate to, and the comparison at the end is
+the check that the allocator delivered it.
+
+## Register the members
+
+20 children per scenario, differing only in RNG state. They hold nothing but their simulated
+`lulc_data_t` for the target period; rates, predictors, potentials and allocation parameters all
+resolve to the parent.
+
+```{r}
+#| label: alloc2030-register
+members <- scenario_runs[, .(member = seq_len(n_members)), by = .(parent = id_run, ssp)][, .(
+  id_run = parent * member_id_factor + member,
+  parent_id_run = parent,
+  description = paste0(
+    ssp, " single-period stochastic member ", member, " (to ", target_label, ")"
+  ),
+  kind = member_kind,
+  ssp,
+  member
+)][, seed := seed_base + .I][]
+
+# Re-running replaces this step's own members; anything else with these ids is a hard error.
+mine <- if ("kind" %in% names(runs)) runs[kind == member_kind, id_run] else integer(0)
+clash <- setdiff(intersect(members$id_run, runs$id_run), mine)
+stopifnot(
+  "member run ids collide with runs registered elsewhere" = length(clash) == 0L,
+  "n_members must be below the id_run factor" = n_members < member_id_factor,
+  "member ids must stay within integer range" = max(members$id_run) < .Machine$integer.max
+)
+
+db$commit(
+  as_runs_t(rbind(runs[!id_run %in% members$id_run], members, fill = TRUE)),
+  "runs_t",
+  "overwrite" # adding columns
+)
+members[, .N, by = .(ssp, parent_id_run)]
+```
+
+## Predict the potentials once per scenario
+
+Doing this explicitly up front, rather than letting the first member of each scenario trigger it,
+buys two things. The prediction phase becomes separately timeable and separately parallel, and —
+less obviously — every member then starts from the same RNG position, because none of them run a
+prediction. Otherwise member 1 would carry whatever RNG state prediction left behind and member 2
+would not, and `set.seed()` per member would no longer make the run reproducible.
+
+```{r}
+#| label: alloc2030-predict
+#| output: false
+options("evoland.use_prefetch_predict" = TRUE)
+future::plan(future.mirai::mirai_multisession, workers = n_workers)
+
+for (r in scenario_runs$id_run) {
+  db$id_run <- r
+  db$predict_trans_pot(
+    id_period_post = target_period,
+    select_score = select_score,
+    select_maximize = select_maximize
+  )
+}
+
+future::plan("sequential")
+db$id_run <- 0L
+```
+
+## Allocate
+
+`use_parent_trans_pot = TRUE` makes each member read its scenario's potentials; the call to
+`predict_trans_pot()` inside the allocator then finds them present and returns without work.
+
+The call goes to the **single-period** entry point rather than to `db$alloc_clumpy()`, and that
+is not stylistic. The multi-period wrapper follows every period with
+`upsert_new_neighbors()`, which recomputes the neighbourhood predictors for the period just
+allocated and upserts them into `pred_data_t`. `pred_data_t` is **not** partitioned by `id_run`
+(only `lulc_data_t` is), so each upsert rewrites the entire predictor table — tens of GB, 100
+times over — to store neighbourhood predictors for a period 6 that this step never allocates.
+`lulc_data_t` is partitioned, so committing the result ourselves is cheap.
+
+`alloc_clumpy_one_period()` is internal, hence the `:::`. The clean fix is upstream: an
+`update_neighbors` argument on `alloc_clumpy()`, or skipping the upsert after the last period of
+the requested sequence, since nothing consumes it. Recorded in `TODO.md`.
+
+```{r}
+#| label: alloc2030-allocate
+#| output: false
+for (i in seq_len(nrow(members))) {
+  db$id_run <- members$id_run[i]
+
+  # The `seed` argument was removed upstream in abc8bca; CLUMPY draws through R's RNG
+  # (src/alloc_clumpy.cpp), so seeding here is exact and per-member reproducible.
+  set.seed(members$seed[i])
+
+  lulc_member <- evoland:::alloc_clumpy_one_period(
+    self = db,
+    id_period_post = target_period,
+    select_score = select_score,
+    select_maximize = select_maximize,
+    use_parent_trans_pot = TRUE
+  )
+
+  db$commit(lulc_member, "lulc_data_t", method = "upsert")
+}
+db$id_run <- 0L
+```
+
+## Gather the ensemble into change intensity
+
+The gathering happens in DuckDB rather than in R: the member maps are 20 × 5 × 4.1 M rows, which
+is not something to pull into memory to compute a mean over. The query joins every member cell
+against the observed anchor and returns one row per (SSP, cell).
+
+```{r}
+#| label: alloc2030-gather
+db$id_run <- NULL # read across runs
+
+intensity <- db$get_query(glue::glue(
+  r"{
+  with sim as (
+    select id_run, id_coord, id_lulc
+    from {db$get_read_expr('lulc_data_t')}
+    where id_period = {target_period}
+      and id_run in ({toString(members$id_run)})
+  ),
+  anchor as (
+    select id_coord, id_lulc
+    from {db$get_read_expr('lulc_data_t')}
+    where id_period = {anchor_period} and id_run = 0
+  ),
+  member_ssp as (
+    select id_run, ssp
+    from {db$get_read_expr('runs_t')}
+    where id_run in ({toString(members$id_run)})
+  )
+  select
+    m.ssp,
+    s.id_coord,
+    count(*) as n_members,
+    sum(case when s.id_lulc <> a.id_lulc then 1 else 0 end) as n_changed
+  from sim s
+  join anchor a on a.id_coord = s.id_coord
+  join member_ssp m on m.id_run = s.id_run
+  group by m.ssp, s.id_coord
+  }"
+))
+db$id_run <- 0L
+
+intensity[, p_changed := n_changed / n_members]
+
+stopifnot(
+  "a cell is missing members - did every allocation write?" =
+    all(intensity$n_members == n_members),
+  "expected one row per (SSP, cell)" =
+    nrow(intensity) == uniqueN(intensity$ssp) * uniqueN(intensity$id_coord)
+)
+
+intensity[, .(
+  cells = .N,
+  mean_intensity = round(mean(p_changed), 5),
+  cells_ever = sum(p_changed > 0),
+  cells_always = sum(p_changed == 1),
+  cells_majority = sum(p_changed >= 0.5)
+), by = ssp][order(ssp)]
+```
+
+`cells_ever` against `cells_always` is the useful contrast. Their ratio is how much larger the
+*envelope* of possible change is than its robust core: a scenario where the two are close is one
+whose demand can only be satisfied in essentially one place, while a wide gap means the
+potential surface is flat enough over the candidate pool that the allocator's draw decides.
+
+## Did the ensemble deliver the demanded quantity?
+
+Summing `p_changed` over all cells gives the expected number of cells that change, which should
+match the demand `070` solved for this step. This is the same under-delivery check `090` runs
+against `trans_rate_areas()`, in its cheapest form.
+
+```{r}
+#| label: alloc2030-quantity
+delivered <- merge(
+  intensity[, .(expected_changed = sum(p_changed)), by = ssp],
+  rate_coverage[, .(ssp, demand_cells)],
+  by = "ssp"
+)
+delivered[, `:=`(
+  shortfall = demand_cells - expected_changed,
+  shortfall_pct = round(100 * (demand_cells - expected_changed) / demand_cells, 2)
+)][]
+
+if (any(abs(delivered$shortfall_pct) > 5)) {
+  warning(
+    "Expected change departs from the solved demand by more than 5 % for some scenario. ",
+    "Check pct_flow_above_max in 070 before reading the maps."
+  )
+}
+delivered[order(-abs(shortfall_pct))]
+```
+
+The demand counts and the realised change are not the same quantity when a cell is the target of
+two transitions in one step, or when a transition's anterior class is itself being converted, so
+a small gap is expected even from a perfect allocator. A large one is the pool-exhaustion failure
+`070` warns about.
+
+## The maps
+
+`tabular_to_raster()` gathers the long table into one layer per SSP. All five panels share a
+`0–1` scale so they are readable against each other, which is the whole point of putting them
+side by side.
+
+```{r}
+#| label: alloc2030-maps
+#| fig-width: 14
+#| fig-height: 8
+intensity_rast <- tabular_to_raster(
+  intensity[, .(id_coord, ssp, p_changed)],
+  coords = db$coords_minimal,
+  value_col = "p_changed"
+)
+# tabular_to_raster names layers after the grouping column ("ssp_SSP1"); the panel titles
+# should just be the scenario.
+names(intensity_rast) <- sub("^ssp_", "", names(intensity_rast))
+
+intensity_palette <- grDevices::hcl.colors(64, "Inferno", rev = TRUE)
+
+# terra::panel() rather than terra::plot(): it draws one shared legend for the whole stack
+# instead of repeating an identical one per panel, which is the difference between five maps
+# that can be compared and five maps that merely sit next to each other.
+plot_intensity <- function() {
+  terra::panel(
+    intensity_rast,
+    col = intensity_palette,
+    # `type` must be forced: p_changed takes only n_members + 1 distinct values, and terra
+    # otherwise falls back to a categorical legend, which mislabels the scale and (with few
+    # members) fails to shade the panels at all.
+    type = "continuous",
+    range = c(0, 1),
+    nc = 3,
+    axes = FALSE,
+    loc.main = "topleft",
+    plg = list(title = "p(change)")
+  )
+}
+
+plot_intensity()
+
+# Paths are project-root relative: _quarto.yml sets execute-dir: project.
+grDevices::png(
+  "2026-05-ssp-ch/091-change-intensity-2030.png",
+  width = 2400,
+  height = 1400,
+  res = 150
+)
+plot_intensity()
+invisible(grDevices::dev.off())
+```
+
+A cell reads `0` where no member changed it and `1` where all 20 did. Because the anterior map is
+the same everywhere, the differences between panels are attributable to the SSP demand alone —
+`070`'s rate vectors are the only scenario-varying input at this horizon.
+
+## Where the scenarios disagree
+
+The five panels answer "where does each scenario change things". The complementary question is
+where they *differ*, which is a cheap derived layer worth having next to them: the spread across
+the five scenario means at each cell.
+
+```{r}
+#| label: alloc2030-disagreement
+#| fig-width: 6
+#| fig-height: 5
+# Cell-wise across layers via terra's Summary methods, not app(): app() with an R closure
+# evaluates per cell and is far too slow at 4.1 M.
+disagreement <- max(intensity_rast) - min(intensity_rast)
+
+terra::plot(
+  disagreement,
+  col = intensity_palette,
+  type = "continuous",
+  range = c(0, 1),
+  axes = FALSE,
+  main = paste0("Between-scenario range in change intensity, ", target_label)
+)
+
+terra::global(disagreement, c("mean", "max"), na.rm = TRUE)
+```
+
+```{r}
+#| label: alloc2030-report
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key = , value = ,
+  "alloc2030_target_period", as.character(target_period),
+  "alloc2030_target_label", target_label,
+  "alloc2030_anchor_period", as.character(anchor_period),
+  "alloc2030_climate_framing", climate_framing_sel,
+  "alloc2030_scenarios", paste(scenario_runs$ssp, collapse = ","),
+  "alloc2030_n_members", as.character(n_members),
+  "alloc2030_seed_base", as.character(seed_base),
+  "alloc2030_alloc_param_run", as.character(alloc_param_run),
+  "alloc2030_max_shortfall_pct", as.character(max(abs(delivered$shortfall_pct))),
+  "alloc2030_interventions", "none applied"
+))
+```

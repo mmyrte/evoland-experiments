@@ -113,6 +113,7 @@ Step numbers went from two to three digits in `a220d6d`; the names below are the
 | `071-transition-rates-legacy.qmd` | Original-behaviour rates on dedicated runs, for the replication diff | 🟡 written, unrun |
 | `080-validate-backcasting.qmd` | Estimate patch params → backcast over param choices → validate (fuzzy similarity + figure of merit) | 🟡 written, unrun; no interventions |
 | `090-extrapolate.qmd` | Stochastic extrapolation (forward projection per SSP × climate) | 🟡 written, unrun; SSP subset, no interventions |
+| `091-stochastic-alloc-2030.qmd` | One extrapolated period × 20 members × 5 SSPs → change-intensity maps | 🟡 written, unrun |
 | `090d-report.qmd` | _diag:_ reporting — figures, tables, maps | ⬜ not started |
 
 Two steps this table used to list were removed in `d78838d`: `02-ingest-preds-envidat-eiv.qmd`

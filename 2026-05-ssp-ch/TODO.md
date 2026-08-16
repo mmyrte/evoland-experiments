@@ -407,6 +407,18 @@ remaining MS9-phase-1 work.
 - [ ] **Widen the subset.** Ships at SSP1 + SSP3 under `current`. The full cross registered in
       `001` is 25 leaves; which (SSP × trajectory) pairings are actually worth allocating is
       still open (see "Scenario scope").
+- [x] 🟡 **`091-stochastic-alloc-2030.qmd`** — the smallest useful forward experiment: the first
+      extrapolated period only, 20 stochastic members for each of the five SSPs under `current`,
+      gathered into a per-cell change intensity (share of members in which the cell leaves its
+      last observed class) and plotted as five comparable maps plus a between-scenario range
+      layer. Uses the unperturbed `080` parameter set, written onto the scenario runs rather than
+      run `0`. Written, unrun on the real DB.
+  - [ ] **The five panels are only as different as `070`'s rate vectors.** With one climate
+        framing and one anterior state, the SSP demand is the sole scenario-varying input at
+        this horizon. If the maps come out near-identical, that is a finding about the demand,
+        not a bug — but check `070`'s solved rates before concluding anything.
+  - [ ] **Single-period allocation is not the same test as `090`.** No compounding, so the
+        intensity maps say where change goes *first*, not where a scenario ends up.
 - [ ] **`090d-report.qmd`** — diagnostic: reporting figures, tables, maps (human-facing
       outputs; mutates no state). Should carry at least the change-frequency map over the
       replicate ensemble (per the evoland stochastic-allocation vignette) and the realised-vs-
@@ -443,21 +455,32 @@ in `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` differ sharply in what they
       implemented in `Scripts/Functions/identify_CAs_by_target_and_configuration.R` and friends.
       Scope separately.
 
-## Upstream (evoland-plus) asks arising from 080/090
+## Upstream (evoland-plus) asks arising from 080/090/091
 
-- [ ] 🔴 **`db$alloc_clumpy(seed = ...)` does not work.** The R6 method documents and declares a
-      `seed` argument; `alloc_clumpy()` itself has no such formal and no `...`, and
-      `create_method_binding()` forwards the call verbatim, so passing it dies with
-      *"unused argument (seed = ...)"*. Verified against the pinned commit `64754ee`.
-      `vignettes/stochastic-allocation-sensitivity.qmd` passes it and would fail the same way.
-      `080`/`090` call `set.seed()` instead, which is exact — all CLUMPY randomness goes through
-      R's RNG (`src/alloc_clumpy.cpp`).
-- [ ] **Expose `use_parent_trans_pot` on the multi-period `alloc_clumpy()`.** The potentials for
-      the first backcast period are identical across every replicate and parameter set — same
-      observed anterior state, same models, same predictors — and are recomputed per run.
-      `alloc_clumpy_one_period()` already takes the argument; the wrapper does not pass it.
+- [x] ~~**`db$alloc_clumpy(seed = ...)` does not work.**~~ Resolved upstream in `abc8bca`: the
+      argument was removed rather than implemented, so `set.seed()` before the call is now the
+      sanctioned route. It is exact — all CLUMPY randomness goes through R's RNG
+      (`src/alloc_clumpy.cpp`). All three steps do this.
+- [x] ~~**Expose `use_parent_trans_pot` on the multi-period `alloc_clumpy()`.**~~ Done in
+      `ca4d681`, together with `force_predict_trans_pot`. `091` is built on it: 100 member runs
+      share 5 predictions, because `.has_predictions()` resolves through the run lineage and the
+      write goes to the parent.
+- [ ] 🔴 **`alloc_clumpy()` upserts neighbour predictors after every period, including the
+      last.** `upsert_new_neighbors()` recomputes the neighbourhood predictors for the period
+      just allocated and upserts them into `pred_data_t` — which, unlike `lulc_data_t`, is
+      **not** partitioned by `id_run`, so every upsert rewrites the whole predictor table. For a
+      single-period ensemble that work is entirely wasted (nothing consumes period *n+1*
+      neighbours) and it is what would make `091` unrunnable at 100 members. `091` therefore
+      calls `evoland:::alloc_clumpy_one_period()` and commits `lulc_data_t` itself. Wanted: an
+      `update_neighbors` argument, or skipping the upsert after the last period of the requested
+      sequence. Partitioning `pred_data_t` by `id_run` would help independently.
 - [ ] **`trans_pot_t` is written per run and period** and is the largest thing `080` stores. If
-      disk is tight, member runs need pruning between evaluations.
+      disk is tight, member runs need pruning between evaluations. `091` sidesteps this via
+      `use_parent_trans_pot`; `080`'s chained replicates cannot, past the first period.
+- [ ] **`terra::panel()` / `plot()` need `type = "continuous"`** for an ensemble-share layer.
+      With `n_members + 1` distinct values terra falls back to a categorical legend, printing
+      full-precision fractions as class labels and — at small member counts — failing to shade
+      the panels at all. Not an evoland issue, but it will bite anyone plotting these maps.
 
 ---
 
