@@ -82,7 +82,7 @@ plot_dt <- imp_scored[!is.na(importance_rel)][trans_labels, on = "id_trans", nom
 
 data.table::fwrite(
   plot_dt[pred_labels, on = "id_pred"],
-  "2026-05-ssp-ch/05-covariate-importances-grrf.csv"
+  "2026-05-ssp-ch/050-covariate-importances-grrf.csv"
 )
 
 p <-
