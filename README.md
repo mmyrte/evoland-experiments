@@ -52,9 +52,9 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
 ## Conventions
 
 - **Numbered, ordered pipelines.** Each sub-project is a sequence of numbered steps
-  run in order. New pipelines use **two-digit, zero-padded** stages (`00-`, `01-`,
-  `02-`, …); steps sharing a stage number are independent (e.g. the several
-  `02-ingest-preds-*`), sub-ordered by slug where needed. `2026-05-ssp-ch/` follows
+  run in order. New pipelines use **three-digit, zero-padded** stages (`001-`, `010-`,
+  `020-`, …); steps sharing a stage number are independent (e.g. the several
+  `020-ingest-preds-*`), sub-ordered by slug where needed. `2026-05-ssp-ch/` follows
   this; `2025-10-valparish/` and `2026-07-ssp-rsofun/` still use the older single-digit
   `.r` scheme.
 - **Core vs. diagnostic steps.** `NN-slug.qmd` is a **core** step (mutates the DuckDB /
@@ -73,8 +73,19 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
   (so the root `.Rprofile` / rv activation and relative paths resolve) and
   `freeze: auto` (expensive core steps execute once — re-rendering a report never
   re-runs the model or re-downloads data). Run a stage with
-  `./execute-all.sh '2026-05-ssp-ch/02-*.qmd'`; add `--core` to skip diagnostics or
+  `./execute-all.sh '2026-05-ssp-ch/020-*.qmd'`; add `--core` to skip diagnostics or
   `--diagnostics` for only them. Needs the Quarto CLI + git-lfs on the run machine.
+- **One stage at a time, optionally parallel within it.** `execute-all.sh` groups the
+  matched files by leading number and runs the groups strictly in order. Because steps
+  sharing a stage number are independent by convention, `--workers N` (`-j N`) runs up
+  to `N` of a stage's steps at once — the `evoland_db` DuckLake catalog takes concurrent
+  writers, so the several `020-ingest-preds-*` can ingest in parallel. The default is
+  `--workers 1`, i.e. the previous purely sequential behaviour, which is also what the
+  older pipelines that sub-order a stage by slug need (`2-forcing-soil-1-download.r`
+  before `2-forcing-soil-2-whc.r`). `NNNd-*` diagnostics form a stage of their own, so
+  they still run after the core steps they report on. With more than one worker each
+  step's output is buffered and printed as one block when it finishes; a failing step
+  stops the pipeline once the steps already running have finished.
 - **Reports via git-LFS.** Rendered HTML reports are git-LFS-tracked (`.gitattributes`)
   and committed ad-hoc at checkpoints; the `_freeze/` cache is git-ignored.
 - **State lives in DuckDB.** Each experiment builds a `*.evolanddb` (folder of parquet
