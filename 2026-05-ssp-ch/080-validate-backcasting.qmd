@@ -323,22 +323,20 @@ observed <- merge(
 )
 
 db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
+param_runs <- db$runs_t[kind == "backcast parameters", ]
 simulated <- db$fetch("lulc_data_t", where = glue::glue(
-  "id_run in ({toString(member_runs$id_run)}) and id_period = {id_period_final}"
+  "id_run in ({toString(param_runs$id_run)}) and id_period = {id_period_final}"
 ))[, .(id_run, id_coord, id_lulc_simulated = id_lulc)]
 db$id_run <- 0L
 
-cells <- member_runs[, .(id_run, param_set, replicate)][
-  simulated[observed, on = "id_coord", nomatch = NULL],
-  on = "id_run"
-]
+cells <- simulated[observed, on = "id_coord", nomatch = NULL]
 
 stopifnot(
   "no simulated cells - did allocation write anything?" = nrow(cells) > 0L,
   "a replicate is missing cells" =
-    uniqueN(cells$id_run) == nrow(member_runs)
+    uniqueN(cells$id_run) == nrow(param_runs)
 )
-cells[, .N, by = .(param_set, replicate)]
+cells[, .N, by = .(id_run)]
 ```
 
 ## Quantity check: did the allocator deliver the prescribed change?
@@ -351,7 +349,7 @@ scenario rates, where it is worse because the LP pushes rates above the historic
 
 ```{r}
 #| label: backcast-quantity
-realised_counts <- rbindlist(lapply(member_runs$id_run, function(r) {
+realised_counts <- rbindlist(lapply(param_runs$id_run, function(r) {
   db$id_run <- r
   db$get_obs_trans_rates()[
     id_period %in% backcast_periods,
@@ -361,7 +359,7 @@ realised_counts <- rbindlist(lapply(member_runs$id_run, function(r) {
 db$id_run <- 0L
 
 quantity <- merge(
-  CJ(id_run = member_runs$id_run, id_trans = viable_trans$id_trans, id_period = backcast_periods)[
+  CJ(id_run = param_runs$id_run, id_trans = viable_trans$id_trans, id_period = backcast_periods)[
     obs_rates[, .(id_period, id_trans, count_prescribed = count)],
     on = c("id_period", "id_trans"),
     nomatch = NULL
@@ -447,10 +445,8 @@ fuzzy_one_run <- function(id_run_member) {
   )
 }
 
-fuzzy_dt <- member_runs[, .(id_run, param_set, replicate)][
-  rbindlist(lapply(member_runs$id_run, fuzzy_one_run)),
-  on = "id_run"
-]
+fuzzy_dt <- rbindlist(lapply(param_runs$id_run, fuzzy_one_run))
+
 db$id_run <- 0L
 
 fuzzy_by_param <- fuzzy_dt[, .(
@@ -459,12 +455,12 @@ fuzzy_by_param <- fuzzy_dt[, .(
   similarity_change_sd = sd(similarity_change, na.rm = TRUE),
   n_observed = mean(n_observed),
   n_simulated = mean(n_simulated)
-), by = .(param_set, id_trans)]
+), by = .(id_run, id_trans)]
 
 fuzzy_by_param[db$trans_meta_t, on = "id_trans", nomatch = NULL][
-  order(param_set, similarity_change)
+  order(id_run, similarity_change)
 ][, .(
-  param_set, id_lulc_anterior, id_lulc_posterior,
+  id_run, id_lulc_anterior, id_lulc_posterior,
   similarity = round(similarity, 3),
   similarity_change = round(similarity_change, 3),
   n_observed, n_simulated = round(n_simulated)
@@ -500,7 +496,8 @@ fom_components <- function(dt) {
   )]
 }
 
-fom_by_run <- cells[, fom_components(.SD), by = .(param_set, replicate, id_run)]
+db$lulc_meta_t[, .(id_lulc, name)]
+fom_by_run <- cells[id_lulc_initial != 9, fom_components(.SD), by = .(id_run)]
 fom_by_run[, `:=`(
   fom = hit / (hit + miss + wrong_class + false_alarm),
   agreement = 1 - (miss + wrong_class + false_alarm) / n_cells

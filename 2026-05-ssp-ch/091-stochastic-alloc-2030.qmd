@@ -421,20 +421,27 @@ between renders cannot be compared across them.
 library(ggplot2)
 
 # Chosen in QGIS against the written GeoTIFF; see the note above on why it is this shape.
-zoom_ext <- terra::ext(2658160, 2755026, 1077643, 1301204)
-intensity_clip <- 0.20 # everything at or above this shares the darkest colour; see above
+zoom_ext <- terra::ext(2659160, 2755026, 1077643, 1301204)
+zoom_ext <- terra::ext(2660000, 2710000, 1160000, 1280000)
+zoom_ext <- terra::ext(2660000, 2750000, 1060000, 1310000)
+# zoom_ext <- terra::ext(2690000, 2700000, 1240000, 1260000)
+intensity_clip <- 0.25 # everything at or above this shares the darkest colour
 
-intensity_df <- data.table::as.data.table(
-  terra::as.data.frame(terra::crop(intensity_rast, zoom_ext), xy = TRUE, na.rm = TRUE)
-) |>
+intensity_df <-
+  intensity_rast |>
+  terra::crop(zoom_ext) |>
+  # terra::aggregate(2) |>
+  terra::as.data.frame(xy = TRUE, na.rm = TRUE) |>
+  data.table::as.data.table() |>
   data.table::melt(
     id.vars = c("x", "y"),
     variable.name = "ssp",
     value.name = "p_changed",
     variable.factor = TRUE
   )
+intensity_df[p_changed < 0.1, p_changed := NA_real_]
 
-map_theme <- theme_void(base_size = 7) +
+map_theme <- theme_void(base_size = 10) +
   theme(
     plot.background = element_rect(fill = "white", colour = NA),
     panel.background = element_rect(fill = "white", colour = NA),
@@ -452,17 +459,24 @@ p_intensity <-
   # geom_raster, not geom_tile: ~10 M cells per figure, and tile draws one rect each.
   geom_raster() +
   facet_wrap(vars(ssp), nrow = 1) +
-  scale_fill_gradient(
-    low = "white",
-    high = "black",
-    limits = c(0, intensity_clip),
+  viridis::scale_fill_viridis(
+    # scale_fill_gradient(
+    #   low = "white",
+    #   high = "black",
+    limits = c(0.1, intensity_clip),
     oob = scales::squish, # clip rather than drop: >= intensity_clip is black, not blank
-    na.value = "white",
-    breaks = c(0, intensity_clip / 2, intensity_clip),
+    na.value = "#ddd",
+    # na.value = "white",
+    breaks = c(0.1, intensity_clip),
     # ASCII only: the default PNG device font has no glyph for the >= sign and silently
     # substitutes an ellipsis.
-    labels = c("0", sprintf("%.2f", intensity_clip / 2), sprintf("%.2f+", intensity_clip)),
-    name = "share of\nmembers"
+    labels = c(
+      # seq(from = 0, to = intensity_clip, by = 0.1),
+      "0.1",
+      # sprintf("%.2f+", intensity_clip)
+      sprintf("%.2f ≤", intensity_clip)
+    ),
+    name = "share of members\nallocating any change\ngrey = no change"
   ) +
   # One scale bar, on the first panel only -- five would be clutter at this size.
   ggspatial::annotation_scale(
@@ -478,7 +492,7 @@ p_intensity <-
   coord_sf(crs = 2056, expand = FALSE, datum = NA) +
   map_theme
 
-p_intensity
+# p_intensity
 
 ggsave(
   "2026-05-ssp-ch/091-change-intensity-2030.png",
@@ -546,7 +560,7 @@ p_disagreement <-
   scale_fill_viridis_c(
     option = "inferno",
     direction = -1,
-    limits = c(0, 1),
+    # limits = c(0, 1),
     na.value = "white",
     name = "range across\nscenarios"
   ) +
