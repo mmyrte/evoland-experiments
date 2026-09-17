@@ -73,8 +73,9 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
   (so the root `.Rprofile` / rv activation and relative paths resolve) and
   `freeze: auto` (expensive core steps execute once — re-rendering a report never
   re-runs the model or re-downloads data). Run a stage with
-  `./execute-all.sh '2026-05-ssp-ch/020-*.qmd'`; add `--core` to skip diagnostics or
-  `--diagnostics` for only them. Needs the Quarto CLI + git-lfs on the run machine.
+  `./execute-all.sh '2026-05-ssp-ch/020-*.qmd'` — the glob is the only selector, so
+  narrow it to leave the diagnostics out (as that one does) or to run only them
+  (`'2026-05-ssp-ch/*d-*.qmd'`). Needs the Quarto CLI + git-lfs on the run machine.
 - **One stage at a time, optionally parallel within it.** `execute-all.sh` groups the
   matched files by leading number and runs the groups strictly in order. Because steps
   sharing a stage number are independent by convention, `--workers N` (`-j N`) runs up

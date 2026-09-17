@@ -3,12 +3,10 @@
 # Run a sub-experiment pipeline in order.
 #
 # Usage:
-#   ./execute-all.sh [--core|--diagnostics] [--workers N] '<glob>'
+#   ./execute-all.sh [--workers N] '<glob>'
 #
-#   ./execute-all.sh '2026-05-ssp-ch/02*.qmd'               # everything matching, in order
-#   ./execute-all.sh --core '2026-05-ssp-ch/02*.qmd'        # skip NNNd-* diagnostics
-#   ./execute-all.sh --diagnostics '2026-05-ssp-ch/02*.qmd' # only NNNd-* diagnostics
-#   ./execute-all.sh --workers 4 '2026-05-ssp-ch/02*.qmd'   # up to 4 files of a stage at once
+#   ./execute-all.sh '2026-05-ssp-ch/02*.qmd'             # everything matching, in order
+#   ./execute-all.sh --workers 4 '2026-05-ssp-ch/02*.qmd' # up to 4 files of a stage at once
 #
 # Files are rendered/run in lexical order (stages are zero-padded, so a plain
 # sort gives 020-... < 020d-... < 021-...). `.qmd` files are rendered with the
@@ -36,12 +34,9 @@
 
 set -euo pipefail
 
-mode="all" # all | core | diagnostics
 workers=1
 while [[ $# -gt 1 ]]; do
   case "$1" in
-    --core) mode="core"; shift ;;
-    --diagnostics) mode="diagnostics"; shift ;;
     --workers|-j) workers="${2-}"; shift 2 ;;
     --workers=*|-j=*) workers="${1#*=}"; shift ;;
     -j[0-9]*) workers="${1#-j}"; shift ;;
@@ -50,7 +45,7 @@ while [[ $# -gt 1 ]]; do
 done
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 [--core|--diagnostics] [--workers N] '<glob>'" >&2
+  echo "Usage: $0 [--workers N] '<glob>'" >&2
   exit 1
 fi
 pattern="$1"
@@ -75,34 +70,22 @@ if [[ ${#files[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# Validate leading number, and filter by mode (NNd-* == diagnostic).
-selected=()
+# Every file needs a leading number to place it in a stage, and an extension we
+# know how to run. Checked up front, so nothing starts if any match is unrunnable.
 for file in "${files[@]}"; do
   base="$(basename "$file")"
   if [[ ! "$base" =~ ^[0-9] ]]; then
     echo "Error: File '$base' does not start with a number" >&2
     exit 1
   fi
-  is_diag=false
-  [[ "$base" =~ ^[0-9]+d- ]] && is_diag=true
-  case "$mode" in
-    core) $is_diag && continue ;;
-    diagnostics) $is_diag || continue ;;
-  esac
   case "$base" in
     *.qmd | *.QMD | *.r | *.R) ;;
     *) echo "Error: don't know how to run '$base'" >&2; exit 1 ;;
   esac
-  selected+=( "$file" )
 done
 
-if [[ ${#selected[@]} -eq 0 ]]; then
-  echo "Error: No files left after --$mode filter for pattern '$pattern'" >&2
-  exit 1
-fi
-
 # Lexical sort (LC_ALL=C); zero-padded stages make this the correct run order.
-mapfile -t sorted_files < <(printf '%s\n' "${selected[@]}" | LC_ALL=C sort)
+mapfile -t sorted_files < <(printf '%s\n' "${files[@]}" | LC_ALL=C sort)
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
