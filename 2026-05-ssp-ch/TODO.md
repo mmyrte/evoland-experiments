@@ -186,7 +186,7 @@ spanning a maximally diverse set of futures).
   - `soil_humus` → superseded by `soil_oc_*` (OC is the measurement the EIV indicates).
   - `soil_moisture`, `soil_moisture_variability`, `soil_aeration` → only _partly_ superseded
     by texture; the real replacement is the WHC that
-    `2026-07-ssp-rsofun/2-forcing-soil-2-whc.r` derives by pedotransfer. Until that is
+    `2026-07-ssp-rsofun/011-forcing-soil-whc.r` derives by pedotransfer. Until that is
     ingested here, texture is a rawer predictor, not a better one.
   - `soil_ph`, `soil_nutrients` → **no SSPM counterpart fetched**. The record reportedly has
     N and P layers the rsofun step skips; whether they can stand in is untested.

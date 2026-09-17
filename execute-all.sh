@@ -22,10 +22,11 @@
 # takes concurrent writers. `NNNd-*` diagnostics form their own stage, so they
 # still see the finished stage they report on.
 #
-# Caveat: with --workers > 1 a stage's files run in no particular order, which
-# breaks the older pipelines that sub-order a stage by slug (for instance
-# 2026-07-ssp-rsofun/2-forcing-soil-1-download.r before 2-forcing-soil-2-whc.r).
-# Those need the default --workers 1.
+# Caveat: with --workers > 1 a stage's files run in no particular order. A step that
+# depends on another step of the same stage is therefore a bug in the numbering, not
+# something to work around with --workers 1: give the dependent step the next number
+# (010-forcing-soil-download -> 011-forcing-soil-whc), never a slug suffix. See the
+# repo README, "Three-digit numbering".
 #
 # With --workers 1 output streams as the step produces it. With more workers
 # each step's output is captured and printed in one block when it finishes, so

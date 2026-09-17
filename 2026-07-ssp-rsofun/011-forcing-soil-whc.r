@@ -4,10 +4,10 @@
 #' rsofun's P-model takes a single site parameter `whc` (mm) = plant-available water in
 #' the root zone; its SPLASH bucket sets the water-stress threshold at theta* = 0.6*whc.
 #' whc therefore depends on BOTH soil (this script) AND rooting depth (land cover, from
-#' 3-landcover-fapar.r). To keep the two concerns separable we compute here a purely
+#' 010-landcover-fapar.r). To keep the two concerns separable we compute here a purely
 #' soil-derived, land-cover-independent profile: plant-available water (mm) per SSPM
 #' depth layer. The final scalar whc = integral of that profile to the class rooting
-#' depth is formed at run assembly (see `whc_from_profile()` / 4-run-rsofun.r).
+#' depth is formed at run assembly (see `whc_from_profile()` / 020-run-rsofun.r).
 #'
 #' Source: Swiss Soil Property Map (SSPM; Gupta, Hasler & Alewell 2024,
 #' doi:10.1016/j.geodrs.2023.e00747). QRF maps at 30 m, EPSG:2056, at depths
@@ -95,7 +95,7 @@ whc_from_profile <- function(layers, root_depth_m) {
 # single contract to fill once the on-disk SSPM layout is known.
 # =============================================================================
 
-#' The SSPM layer inventory is produced by 2-forcing-soil-download.r as a data.table with
+#' The SSPM layer inventory is produced by 010-forcing-soil-download.r as a data.table with
 #' columns property ("sand"/"clay"/"OC"), depth_cm (0/30/60/100) and local_path. This
 #' reader consumes that inventory directly, so filenames live in the download script only.
 
@@ -156,5 +156,5 @@ local({
   )
   # coarse fragments reduce AWC
   stopifnot(awc_layer_mm(40, 20, 2, 1, coarse_frac = 0.5) < awc_loam)
-  message("2-forcing-soil-whc.r: sanity checks passed.")
+  message("011-forcing-soil-whc.r: sanity checks passed.")
 })

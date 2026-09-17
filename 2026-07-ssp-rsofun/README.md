@@ -1,6 +1,14 @@
 # SSP-CH × rsofun: process-based land-use suitability predictors
 
-**Status:** planning · **Date:** 2026-07-03
+**Status:** abandoned (2026-09) · **Written:** 2026-07-03
+
+> **Abandoned for now.** The forcing and parameter steps (`010-`, `011-`) were written and
+> carry their own sanity checks, but the steps that would actually use them — the rsofun
+> runs, the decadal aggregation and the coupling loop (`020-`, `030-`, `040-`) — were never
+> written, so no predictor has ever come out of this. It is kept as a design record: the
+> forcing contract, the SSPM → `whc` pedotransfer and the WASIM `[landuse_table]` → fAPAR
+> derivation are the reusable parts, and §4 is written so the eventual WASIM coupling
+> inherits them rather than re-deriving them. Everything below is as of 2026-07-03.
 
 ## 1. Purpose and relationship to `2026-05-ssp-ch`
 
@@ -158,8 +166,8 @@ texture/OM; propagate the PI as an uncertainty layer if we want a soil-uncertain
 Data: Zenodo record 7821650, per-property GeoTIFFs `{property}_{depth}cm_mean_30m.tif`
 (sand/clay/OC × 0/30/60/100 cm; `_error` layers deferred). **EPSG:4326**, 30 m,
 NoData −3.4e38 — so the reader builds a 2056 SpatVector and lets terra reproject on
-extract. `2-forcing-soil-download.r` fetches the 12 mean layers (~6 GB) into the evoland
-cache via `download_and_verify` (md5-checked); `2-forcing-soil-whc.r` consumes that
+extract. `010-forcing-soil-download.r` fetches the 12 mean layers (~6 GB) into the evoland
+cache via `download_and_verify` (md5-checked); `011-forcing-soil-whc.r` consumes that
 inventory. whc is a **joint** soil×land-cover product, so script 2 emits the
 land-cover-independent per-layer AWC profile and `whc_from_profile()` integrates it to
 the class rooting depth (from §3.3) at run assembly.
@@ -175,7 +183,7 @@ via the existing `AS0409_17Cat_to_WaSiM_LansuseTable.rmp`. The **9-class SSP-CH 
 is backported later, without rsofun** (a relabelling of the same pixels), so nothing is
 lost by deviating here.
 
-Consequence: `3-landcover-crosswalk.r` becomes a straight **parser** of the
+Consequence: `010-landcover-fapar.r` becomes a straight **parser** of the
 `[landuse_table]` (now committed at `2026-07-ssp-rsofun/wasim_control_sample.txt`) into a
 per-class daily table of fAPAR / albedo / whc, keyed by WASIM land-use ID — no mapping
 decisions, and one source of truth shared with WASIM.
@@ -220,7 +228,7 @@ first-class distinction here, resolved by the input land-cover map rather than a
 
 ### 3.4 Terrain — already ingested
 
-`2026-05-ssp-ch/02-ingest-preds-dem.qmd` provides 100 m **elevation, slope, aspect** from
+`2026-05-ssp-ch/020-ingest-preds-dem.qmd` provides 100 m **elevation, slope, aspect** from
 DHM25 (EPSG:2056). Elevation → `patm` and radiation; slope/aspect → SPLASH topographic
 radiation corrections; latitude from the grid. swissALTI3D (2 m) is noted there as the
 higher-resolution upgrade if hectare-scale terrain roughness is wanted.
@@ -233,9 +241,9 @@ chain**, encoded in the filename
 **30-year, 365-day-calendar** slice (10950 days) on the 1 km LV95 grid. So:
 
 - the **ensemble/scenario axis is the file set** (model chain × GWL), not a netCDF
-  dimension — parsed by `ch2025_inventory()` in `1-forcing-climate.r`;
+  dimension — parsed by `ch2025_inventory()` in `010-forcing-climate.r`;
 - future **`id_period` maps to GWL** (not calendar decade), which matches the deferred
-  `-gwl` progression already sketched in `02-ingest-preds-ch2025-2-etl.qmd`; model chain
+  `-gwl` progression already sketched in `022-ingest-preds-ch2025-etl.qmd`; model chain
   (× quantile) maps to `id_run`.
 
 CO₂ is **not uniquely determined by a GWL** (different SSPs reach a GWL at different CO₂),
@@ -273,7 +281,7 @@ bridge both (the `.rmp` is the reference for the WASIM side).
 Per pixel, aggregate rsofun daily/monthly outputs to **decadal** statistics (matching
 `periods_t` P10Y), and ingest via `db$add_predictor` keyed by `id_coord`, `id_period`
 (decade / GWL), `id_run` (SSP × quantile), mirroring the deferred `-gwl` ingestion
-described in `02-ingest-preds-ch2025-2-etl.qmd`:
+described in `022-ingest-preds-ch2025-etl.qmd`:
 
 - **α = AET/PET** (Cramer–Prentice moisture index) — canonical plant-available-moisture
 - **`wscal`** — P-model water-stress scalar
@@ -318,18 +326,24 @@ highest-risk item):**
 - **Spin-up:** warm-start each decade from the previous decade's end state (the loop is
   sequential in time) instead of re-spinning every pixel every decade.
 
-## 7. Proposed pipeline (mirrors the `2026-05` numbering convention)
+## 7. Proposed pipeline (three-digit stages, as in `2026-05-ssp-ch`)
 
 ```
-0-setup-db.r                 # reuse/attach ssp-ch.evolanddb (baseline); add rsofun run(s)
-1-forcing-climate.r          # CH2025 daily → vpd, ccov (Hargreaves), rain/snow, patm; SPLASH does PPFD
-2-forcing-soil-download.r    # fetch SSPM mean tifs (Zenodo 7821650) → evoland cache
-2-forcing-soil-whc.r         # SSPM (PTF, soil_hydro) → per-layer AWC; whc_from_profile() at run time
-3-landcover-fapar.r          # parse WASIM [landuse_table] → daily fAPAR/albedo/rootdepth per class
-4-run-rsofun.r               # per-pixel P-model (+BiomeE) over decades; warm-start; chunked
-5-aggregate-indicators.r     # daily → decadal α, wscal, soil moisture, GPP → add_predictor
-6-couple-decadal-loop.r      # feed predictors to transition model; re-run per decade
+001-setup-db.r                 # reuse/attach ssp-ch.evolanddb (baseline); add rsofun run(s)
+010-forcing-climate.r          # CH2025 daily → vpd, ccov (Hargreaves), rain/snow, patm; SPLASH does PPFD
+010-forcing-soil-download.r    # fetch SSPM mean tifs (Zenodo 7821650) → evoland cache
+010-landcover-fapar.r          # parse WASIM [landuse_table] → daily fAPAR/albedo/rootdepth per class
+011-forcing-soil-whc.r         # SSPM (PTF, soil_hydro) → per-layer AWC; whc_from_profile() at run time
+020-run-rsofun.r               # per-pixel P-model (+BiomeE) over decades; warm-start; chunked
+030-aggregate-indicators.r     # daily → decadal α, wscal, soil moisture, GPP → add_predictor
+040-couple-decadal-loop.r      # feed predictors to transition model; re-run per decade
 ```
+
+The three `010-` steps share no state — one derives climate forcings, one downloads the
+SSPM layers, one parses the WASIM table — so they are one stage and can run concurrently
+(`./execute-all.sh --workers 3 '2026-07-ssp-rsofun/010-*.r'`). `011-forcing-soil-whc.r`
+is the one real dependency, consuming what the SSPM download cached, and therefore takes
+the next number. `020-` onwards need all of them and were never written.
 
 ## 8. Open questions / decisions
 
@@ -339,7 +353,7 @@ relabelled later, no crosswalk); netrad not required; forcing needs `fsun` + a r
 split (verified against the fork). Remaining:
 
 1. **AltDep elevation phenology** — the WASIM shift formula is not yet transcribed;
-   `3-landcover-fapar.r` parses `AltDep` but leaves it off. Transcribe the exact WASIM
+   `010-landcover-fapar.r` parses `AltDep` but leaves it off. Transcribe the exact WASIM
    elevation adjustment before enabling (matters across the CH gradient).
 2. **VPD from tmin/tmax** — quantify the Alpine dewpoint≈tmin bias against station RH.
 3. **Hargreaves coefficient `k`** — single CH value vs elevation/region tuning; validate

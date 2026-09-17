@@ -19,30 +19,34 @@ in `2026-05-ssp-ch/` (see the refactor documented there).
 
 ## Pipeline
 
-| Script                     | Step                                                                  |
-| -------------------------- | --------------------------------------------------------------------- |
-| `0-setup-db.r`             | Create `fullch.evolanddb`, square coords grid, periods                |
-| `1-ingest-lulc-data.r`     | Arealstatistik NOAS04 LULC history                                    |
-| `2-ingest-preds-*.r`       | Predictors: population, sonBASE noise, STATENT, ValPar local GeoTIFFs |
-| `3-neighbors.r`            | Neighbourhood predictors                                              |
-| `4-covariate-selection.r`  | Covariance / importance filtering of covariates                       |
-| `5-transition-modelling.r` | GLM partial transition models                                         |
-| `6-transition-rates.r`     | Observed rates + linear extrapolation to future periods               |
-| `7-alloc-params.r`         | Allocation parameters (Dinamica)                                      |
+Three-digit stages, as in `2026-05-ssp-ch/`: the five independent `020-` predictor
+ingests are one stage, everything else is a stage of its own.
+
+| Script                                | Step                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `001-setup-db.r`                      | Create `fullch.evolanddb`, square coords grid, periods                |
+| `010-ingest-lulc-data.r`              | Arealstatistik NOAS04 LULC history                                    |
+| `020-ingest-preds-*.r`                | Predictors: population, sonBASE noise, STATENT, ValPar local GeoTIFFs |
+| `020-ingest-preds-envidat-eiv.qmd`    | SPEEDMIND/EnviDat EIV indicators (the one Quarto step, moved here from `2026-05-ssp-ch/`) |
+| `030-neighbors.r`                     | Neighbourhood predictors                                              |
+| `040-covariate-selection.r`           | Covariance / importance filtering of covariates                       |
+| `050-transition-modelling.r`          | GLM partial transition models                                         |
+| `060-transition-rates.r`              | Observed rates + linear extrapolation to future periods               |
+| `070-alloc-params.r`                  | Allocation parameters (Dinamica)                                      |
 
 ## Open notes (carried forward, not scheduled here)
 
 - [ ] **Bioregions.** Set biogeographic regions
       (`ch.bafu.biogeographische_regionen`). → now `2026-05-ssp-ch` "region ID as
-      indicator". (`1-ingest-lulc-data.r:5`)
+      indicator". (`010-ingest-lulc-data.r:5`)
 - [ ] **Deglaciated-area land-use class.** New class based on the glacier
       inventory; interacts with the small-area inclusion threshold. → carried to
-      `2026-05-ssp-ch`. (`1-ingest-lulc-data.r:7`)
+      `2026-05-ssp-ch`. (`010-ingest-lulc-data.r:7`)
 - [ ] **Arealstatistik 2025 vintage.** Only 1985–2018 selected; AS2025 not yet
-      finished at time of writing. (`1-ingest-lulc-data.r:44`)
+      finished at time of writing. (`010-ingest-lulc-data.r:44`)
 - [ ] **Population classes** `1_3` vs `1_5` interchangeability check.
-      (`2-ingest-preds-pop.r:78`)
+      (`020-ingest-preds-pop.r:78`)
 - [ ] **Covariate cardinality threshold** (`min_cardinality_abs`) not set to a
-      justified value. (`4-covariate-selection.r:6`)
+      justified value. (`040-covariate-selection.r:6`)
 - [ ] **Train/test split** (`sample_frac = 0.3`) not justified. → folded into
-      `2026-05-ssp-ch` transition-model validation (MS9 phase 3). (`5-transition-modelling.r:9`)
+      `2026-05-ssp-ch` transition-model validation (MS9 phase 3). (`050-transition-modelling.r:9`)

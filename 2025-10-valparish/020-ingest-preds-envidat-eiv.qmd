@@ -20,7 +20,7 @@ The EIV codes (Landolt et al. 2010): **R** = soil pH · **N** = nutrients · **F
 **K** = continentality.
 
 > **To be replaced.** The soil layers (`soil_*`) are slated for replacement by the Swiss
-> Soil Property Map ingested in `2026-07-ssp-rsofun/2-forcing-soil-1-download.r` — see
+> Soil Property Map ingested in `2026-07-ssp-rsofun/010-forcing-soil-download.r` — see
 > `TODO.md`.
 
 ### Provenance

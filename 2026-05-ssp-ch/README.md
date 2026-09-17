@@ -150,8 +150,8 @@ not a level.
 | Distance to lakes / rivers / roads | GWN07 / VECTOR25 / swissTLM3D (ValPar local) | **Reused, source replaced** — `02-ingest-preds-swisstlm3d` | GWN07 / VECTOR25 discontinued → swissTLM3D successor, downloaded directly. |
 | `chg_FTE_Sec1/2/3` — annual *change* in FTE per labour-market region | FSO Business Census + STATENT | **Reused, redefined** — `02-ingest-preds-statent` (absolute FTE *levels* per period) | Levels, not change-rates: keeps local signal (e.g. "a farm is here") at the cost of easy extrapolation (see the step's note). |
 | Urban neighbourhood matrices (`n9`/`n11` × versions) | Project internal | **Reused, reimplemented** — `03-neighbors` | evoland generic neighbour predictors over distance bands rather than hand-built kernels. |
-| `Muni_pop` — municipal population | FSO | **Discarded** | Not used in the original *future* (SSP) sheets either; the ingestion is retained only in `2025-10-valparish/2-ingest-preds-pop.r`. |
-| `noise_mean_100m` (sonBASE) | BAFU sonBASE | **Not carried over** | Present in `2025-10-valparish/2-ingest-preds-sonbase.r`; decide whether to re-include (TODO). |
+| `Muni_pop` — municipal population | FSO | **Discarded** | Not used in the original *future* (SSP) sheets either; the ingestion is retained only in `2025-10-valparish/020-ingest-preds-pop.r`. |
+| `noise_mean_100m` (sonBASE) | BAFU sonBASE | **Not carried over** | Present in `2025-10-valparish/020-ingest-preds-sonbase.r`; decide whether to re-include (TODO). |
 | — (no direct climate predictor in the original suitability set) | — | **Added** — `02-ingest-preds-ch2025-*` | CH2025 temperature/precip/heat/cold/snow/drought indices, SSP→GWL mapped. Heating/cooling degree-days excluded (energy-demand, not suitability). |
 | — | — | **Added (planned)** | Bioregions (region ID) and coordinates — see `TODO.md`. |
 

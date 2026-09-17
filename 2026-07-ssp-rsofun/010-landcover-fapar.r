@@ -10,7 +10,7 @@
 #'
 #' with k_extinct = 0.3 from [multilayer_landuse]. Albedo is interpolated likewise (feeds
 #' rsofun net radiation); RootDepth's growing-season maximum gives the rooting depth used
-#' with the soil AWC profile (2-forcing-soil-whc.r) to form the scalar `whc`.
+#' with the soil AWC profile (011-forcing-soil-whc.r) to form the scalar `whc`.
 #'
 #' Source table: 2026-07-ssp-rsofun/wasim_control_sample.txt (19 [landuse_table] entries,
 #' 17 [multilayer_landuse] combinations). Land cover enters rsofun in WASIM's own
@@ -20,7 +20,7 @@
 #' (`db$lulc_data_t`: id_coord, id_lulc, id_period; hive-partitioned) and class identity
 #' in `db$lulc_meta_t`. WASIM class *numbers* need not match evoland's `id_lulc` — the
 #' bridge is `lulc_meta_t`, which carries the class identity for the WASIM-classified run.
-#' `build_landuse_daily_table()` is keyed by WASIM `landuse_id`; 4-run-rsofun.r joins it
+#' `build_landuse_daily_table()` is keyed by WASIM `landuse_id`; 020-run-rsofun.r joins it
 #' to `id_lulc` via `lulc_meta_t` (a `landuse_id` column or a name match), then to pixels
 #' through `lulc_data_t`. So this file stays DB-agnostic and purely parametric.
 #'
@@ -179,7 +179,7 @@ landuse_daily_multilayer <- function(tbl, ml, id) {
 #' Growing-season maximum rooting depth (m) per class -> used to integrate soil AWC.
 rootdepth_rep <- function(tbl, id) max(tbl[landuse_id == id]$rootdepth[[1]])
 
-#' Long daily table over all single-landuse classes: the artifact 4-run-rsofun.r joins
+#' Long daily table over all single-landuse classes: the artifact 020-run-rsofun.r joins
 #' by (landuse_id, doy) to attach fapar/albedo, and by landuse_id for rooting depth.
 build_landuse_daily_table <- function(path = WASIM_CONTROL) {
   tbl <- parse_landuse_table(path)
@@ -211,13 +211,13 @@ local({
     ml <- parse_multilayer()
     stopifnot(nrow(ml) >= 16, all(lengths(ml$layers) >= 1))
     message(
-      "3-landcover-fapar.r: sanity checks passed (parsed ",
+      "010-landcover-fapar.r: sanity checks passed (parsed ",
       nrow(tbl),
       " classes, ",
       nrow(ml),
       " multilayer combos)."
     )
   } else {
-    message("3-landcover-fapar.r: pure checks passed (WASIM control file not on path).")
+    message("010-landcover-fapar.r: pure checks passed (WASIM control file not on path).")
   }
 })

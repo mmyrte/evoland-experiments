@@ -13,7 +13,7 @@ GeoTIFFs, EPSG:4326, NoData `-3.4e38`, one file per `{property}_{depth}_{stat}`.
 
 We fetch the **mean** layers only — the `error` (uncertainty) layers are left for a later
 soil-uncertainty `id_run`. The same 12 files back
-`2026-07-ssp-rsofun/2-forcing-soil-1-download.r`, so the md5sums here are shared with that
+`2026-07-ssp-rsofun/010-forcing-soil-download.r`, so the md5sums here are shared with that
 step; downloading in either place populates the cache for both.
 
 > **~6 GB of downloads** (12 files × ~510 MB). Budget for it.
@@ -27,7 +27,7 @@ step; downloading in either place populates the cache for both.
 | EIV predictor | SSPM counterpart | Verdict |
 | --- | --- | --- |
 | `soil_humus` | `soil_oc_*` (organic carbon) | **Superseded** — OC is the direct measurement the EIV only indicates. |
-| `soil_moisture`, `soil_moisture_variability`, `soil_aeration` | `soil_sand_*` / `soil_clay_*` | **Partly superseded** — texture drives all three, but only through a pedotransfer function. `2026-07-ssp-rsofun/2-forcing-soil-2-whc.r` derives water-holding capacity this way; until that WHC is ingested here, texture is a *rawer* predictor than the EIVs, not a better one. |
+| `soil_moisture`, `soil_moisture_variability`, `soil_aeration` | `soil_sand_*` / `soil_clay_*` | **Partly superseded** — texture drives all three, but only through a pedotransfer function. `2026-07-ssp-rsofun/011-forcing-soil-whc.r` derives water-holding capacity this way; until that WHC is ingested here, texture is a *rawer* predictor than the EIVs, not a better one. |
 | `soil_ph` | — | **No counterpart.** SSPM as fetched here carries no pH layer. |
 | `soil_nutrients` | — | **No counterpart.** The record has N and P layers that the rsofun step explicitly does not fetch; whether they can stand in for the EIV nutrient indicator is untested. |
 
@@ -84,7 +84,7 @@ derive_heterogeneity <- FALSE
 zenodo_record <- "7821650"
 
 # {property, depth_cm} -> md5sum for the mean layers, from the Zenodo record listing.
-# Shared with 2026-07-ssp-rsofun/2-forcing-soil-1-download.r.
+# Shared with 2026-07-ssp-rsofun/010-forcing-soil-download.r.
 sspm_mean_md5 <- data.table::fread(
   text = "
 property depth_cm md5sum

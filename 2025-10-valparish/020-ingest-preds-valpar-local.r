@@ -49,14 +49,14 @@ indicators_1985 <- rowwiseDT(
   #' temperature and cold winters)
   "continentality_100m", "preds/prepared/layers/climatic/continentality_100m.tif",
 
-  #' See 2-ingest-preds-dem.r for DHM25 version
+  #' See 2026-05-ssp-ch/020-ingest-preds-dem.qmd for DHM25 version
   #' Derived Originally SwissAlti3D? Came via valpar.ch, and thence via Speedmind?
   "elevation_mean_100m", "preds/prepared/layers/topographic/elevation_mean_100m.tif",
   "aspect_mean_100m", "preds/prepared/layers/topographic/aspect_mean_100m.tif",
   "slope_mean_100m", "preds/prepared/layers/topographic/slope_mean_100m.tif",
   "hillshade_mean_100m", "preds/prepared/layers/topographic/hillshade_mean_100m.tif",
 
-  #' See 2-ingest-preds-sonbase.r
+  #' See 020-ingest-preds-sonbase.r
   #' Based on SONBASE, road/rail noise emission estimates.
   #' Considering dropping these, since they are strongly correlated with infrastructure and economic
   #' indicators, and are missing air travel and industrial emissions
@@ -70,10 +70,10 @@ indicators_1985 <- rowwiseDT(
   "distance_to_lakes_mean_100m", "preds/prepared/layers/hydrological/distance_to_lakes_mean_100m.tif",
   "distance_to_rivers_mean_100m", "preds/prepared/layers/hydrological/distance_to_rivers_mean_100m.tif",
 
-  # see 2-ingest-preds-pop.r
+  # see 020-ingest-preds-pop.r
   "muni_pop", "preds/prepared/layers/socio_economic/population/muni_pop_1985.tif",
 
-  # see 2-ingest-preds-statent.r
+  # see 020-ingest-preds-statent.r
   "avg_chg_fte_sec1", "preds/prepared/socio_economic/employment/avg_chg_fte_1985_1997_sec1.tif",
   "avg_chg_fte_sec2", "preds/prepared/socio_economic/employment/avg_chg_fte_1985_1997_sec2.tif",
   "avg_chg_fte_sec3", "preds/prepared/socio_economic/employment/avg_chg_fte_1985_1997_sec3.tif",

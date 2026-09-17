@@ -13,12 +13,12 @@
 #'               We set ccov = 100*(1 - fsun_Hargreaves); ppfd is left NA (optional).
 #'   NOT needed: netrad         (SPLASH computes net radiation internally)
 #'
-#' `fapar` is left as NA here; it is joined from 3-landcover-fapar.r (WASIM LAI->fAPAR).
+#' `fapar` is left as NA here; it is joined from 010-landcover-fapar.r (WASIM LAI->fAPAR).
 #'
 #' Design: the PURE derivation functions below are the reusable, unit-testable core and
 #' carry no I/O. The full 4.1M-coord x 10950-day x (modelchain x GWL) product cannot be
 #' materialised, so the CH2025 reader is chunk-oriented (takes a coord subset) and the
-#' streaming application over the grid lives in 4-run-rsofun.r, which sources this file.
+#' streaming application over the grid lives in 020-run-rsofun.r, which sources this file.
 #'
 #' CH2025 layout (from ncdump):
 #'   root/{pr,tas,tasmax,tasmin}/
@@ -147,13 +147,13 @@ derive_pmodel_forcing <- function(pr, tas, tasmin, tasmax, lat_deg, elv, co2, ba
     ppfd = NA_real_, # let SPLASH compute; set rs$ppfd to force Hargreaves PPFD instead
     netrad = NA_real_, # ignored by rsofun; SPLASH computes it
     co2 = co2, # ppm
-    fapar = NA_real_, # joined from 3-landcover-fapar.r
+    fapar = NA_real_, # joined from 010-landcover-fapar.r
     patm = calc_patm(elv) # Pa
   )
 }
 
 # =============================================================================
-# CH2025 reader (chunk-oriented; applied per spatial chunk in 4-run-rsofun.r)
+# CH2025 reader (chunk-oriented; applied per spatial chunk in 020-run-rsofun.r)
 # =============================================================================
 
 #' Inventory the CH2025 daily-gridded tree into (var, modelchain, gwl, path).
@@ -234,5 +234,5 @@ local({
   # no-leap date axis: exactly 365 distinct days per nominal year, no Feb-29
   d <- ch2025_dates(730)
   stopifnot(length(d) == 730, !any(format(d, "%m-%d") == "02-29"))
-  message("1-forcing-climate.r: sanity checks passed.")
+  message("010-forcing-climate.r: sanity checks passed.")
 })

@@ -7,11 +7,11 @@ self-contained experiment with its own numbered R pipeline, `README.md`
 
 ## Sub-projects
 
-| Status   | Sub-project                                  | Purpose                                                                                                                                                                                                                                                                                                    | Docs                                                                        |
-| -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| archived | [`2025-10-valparish/`](2025-10-valparish/)   | Stub that co-evolved with early evoland-plus development. Kept for reference; not expected to run against any specific evoland-plus commit.                                                                                                                                                                | [README](2025-10-valparish/README.md) · [TODO](2025-10-valparish/TODO.md)   |
-| active   | [`2026-05-ssp-ch/`](2026-05-ssp-ch/)         | Re-implementation of the [SSP-CH scenarios](https://ssp-ch-szenarien.wsl.ch/en/) on the new evoland-plus, reusing the elicited land-use demand from `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` but with new, reproducible data sources. **Baseline** (purely empirical/statistical transition model). | [README](2026-05-ssp-ch/README.md) · [TODO](2026-05-ssp-ch/TODO.md)         |
-| planning | [`2026-07-ssp-rsofun/`](2026-07-ssp-rsofun/) | Extends the baseline with **process-based** land-use-suitability predictors from [rsofun](https://github.com/mmyrte/rsofun) (P-model + SPLASH), as an interim stand-in for the eventual WASIM coupling.                                                                                                    | [README](2026-07-ssp-rsofun/README.md) · [TODO](2026-07-ssp-rsofun/TODO.md) |
+| Status    | Sub-project                                  | Purpose                                                                                                                                                                                                                                                                                                    | Docs                                                                        |
+| --------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| archived  | [`2025-10-valparish/`](2025-10-valparish/)   | Stub that co-evolved with early evoland-plus development. Kept for reference; not expected to run against any specific evoland-plus commit.                                                                                                                                                                | [README](2025-10-valparish/README.md)                                       |
+| active    | [`2026-05-ssp-ch/`](2026-05-ssp-ch/)         | Re-implementation of the [SSP-CH scenarios](https://ssp-ch-szenarien.wsl.ch/en/) on the new evoland-plus, reusing the elicited land-use demand from `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx` but with new, reproducible data sources. **Baseline** (purely empirical/statistical transition model). | [README](2026-05-ssp-ch/README.md) · [TODO](2026-05-ssp-ch/TODO.md)         |
+| abandoned | [`2026-07-ssp-rsofun/`](2026-07-ssp-rsofun/) | Would have extended the baseline with **process-based** land-use-suitability predictors from [rsofun](https://github.com/mmyrte/rsofun) (P-model + SPLASH), as an interim stand-in for the eventual WASIM coupling. **Abandoned for now** at the forcing steps; kept as a design record for the WASIM work. | [README](2026-07-ssp-rsofun/README.md) · [TODO](2026-07-ssp-rsofun/TODO.md) |
 
 ## Milestone MS9 — SSP scenarios in evoland-plus
 
@@ -21,9 +21,10 @@ sub-projects:
 - **MS9 phase 1/3 — replicate SSP scenarios in evoland-plus** → `2026-05-ssp-ch/`.
   Reproduce the SSP-CH land-use futures on the new evoland-plus with an empirical
   transition model. This is the baseline everything else builds on.
-- **MS9 phase 2/3 — minimal evoland-plus ↔ biophysical coupling** → `2026-07-ssp-rsofun/`.
-  Add process-based (rsofun/SPLASH) suitability predictors and close a decadal
-  land-cover ↔ water/energy feedback loop.
+- **MS9 phase 2/3 — minimal evoland-plus ↔ biophysical coupling** → `2026-07-ssp-rsofun/`,
+  **abandoned for now**. Would add process-based (rsofun/SPLASH) suitability predictors and
+  close a decadal land-cover ↔ water/energy feedback loop; the forcing steps are written,
+  the coupling is not.
 - **MS9 phase 3/3 — validate transition models** → primarily `2026-05-ssp-ch/`
   (see its TODO "Transition modelling & validation"). Validate the mlr3-based
   transition models, including **backcasting** against observed Arealstatistik
@@ -51,42 +52,53 @@ is not broken (`module load R/4.5.3` on rain leads to weird s4 methods dispatch 
 
 ## Conventions
 
-- **Numbered, ordered pipelines.** Each sub-project is a sequence of numbered steps
-  run in order. New pipelines use **three-digit, zero-padded** stages (`001-`, `010-`,
-  `020-`, …); steps sharing a stage number are independent (e.g. the several
-  `020-ingest-preds-*`), sub-ordered by slug where needed. `2026-05-ssp-ch/` follows
-  this; `2025-10-valparish/` and `2026-07-ssp-rsofun/` still use the older single-digit
-  `.r` scheme.
-- **Core vs. diagnostic steps.** `NN-slug.qmd` is a **core** step (mutates the DuckDB /
-  produces canonical outputs). `NNd-slug.qmd` is an **optional diagnostic** for stage
-  `NN` — read-only, renders a verification/visualisation report, safe to skip. The `d`
-  tag sorts the diagnostic right after its stage and before the next
-  (`02-… < 02d-… < 03-…`).
-- **One known exception to run order.** `2026-05-ssp-ch/02-ingest-preds-ch2025-3-gwl.qmd`
-  carries a `02-` number (it belongs to the CH2025 family) but must run **after** `05`,
-  because projected climate can only be materialised for the *selected* predictor set — the
-  full cross product does not fit. Run at stage 02 it fails loudly rather than writing
-  anything. Whether the numbering should change instead is an open question in that
-  sub-project's `TODO.md`.
+- **Three-digit numbering: `NNN[d]-slug.{qmd,r}`.** Every sub-project is a sequence of
+  numbered steps, and the number is the whole ordering mechanism — a plain lexical sort of
+  the file names is the run order. All three sub-projects now use it.
+  - **Steps that share a number are independent** and may run in any order, or at the same
+    time (the five `020-ingest-preds-*`, say). This is the load-bearing part of the
+    convention: it is what makes `--workers N` safe.
+  - **A step that depends on another in the same family takes the next number.** `020-` are
+    the plain predictor ingests, `021-ingest-preds-ch2025-download` fetches, and
+    `022-ingest-preds-ch2025-etl` consumes what it fetched. Same for
+    `010-forcing-soil-download` → `011-forcing-soil-whc` in the rsofun stub. Never encode
+    that dependency in the slug (`…-1-download`, `…-2-etl`) — a shared number claims the
+    two are independent, and a parallel run will take you up on it.
+  - **Multiples of ten mark the pipeline's phases** (`010-` ingest, `030-` neighbours,
+    `060-` modelling, …), which leaves nine free numbers to insert a dependent step into
+    without renumbering anything. `001-setup-db` comes before all of it.
+  - **A trailing `d` marks a diagnostic** (below), and sorts after its own stage and before
+    the next: `020- … < 020d- … < 021-`.
+- **Core vs. diagnostic steps.** `NNN-slug.qmd` is a **core** step (mutates the DuckDB /
+  produces canonical outputs). `NNNd-slug.qmd` is an **optional diagnostic** for stage
+  `NNN` — read-only, renders a verification/visualisation report, safe to skip.
+- **Ordering by number beats ordering by family.**
+  `2026-05-ssp-ch/051-ingest-preds-ch2025-3-gwl.qmd` belongs to the CH2025 ingest family by
+  slug, but projected climate can only be materialised for the *selected* predictor set (the
+  full cross product does not fit), so it must run after `050-covariate-selection`. Its
+  number says so and its family does not; the number wins. Run it early and it fails loudly
+  rather than writing anything.
 - **Literate Quarto pipelines.** Steps are `.qmd` rendered to self-contained HTML, so
   rationale lives beside the code. A repo-root `_quarto.yml` sets `execute-dir: project`
   (so the root `.Rprofile` / rv activation and relative paths resolve) and
   `freeze: auto` (expensive core steps execute once — re-rendering a report never
-  re-runs the model or re-downloads data). Run a stage with
-  `./execute-all.sh '2026-05-ssp-ch/020-*.qmd'` — the glob is the only selector, so
-  narrow it to leave the diagnostics out (as that one does) or to run only them
-  (`'2026-05-ssp-ch/*d-*.qmd'`). Needs the Quarto CLI + git-lfs on the run machine.
-- **One stage at a time, optionally parallel within it.** `execute-all.sh` groups the
-  matched files by leading number and runs the groups strictly in order. Because steps
-  sharing a stage number are independent by convention, `--workers N` (`-j N`) runs up
-  to `N` of a stage's steps at once — the `evoland_db` DuckLake catalog takes concurrent
-  writers, so the several `020-ingest-preds-*` can ingest in parallel. The default is
-  `--workers 1`, i.e. the previous purely sequential behaviour, which is also what the
-  older pipelines that sub-order a stage by slug need (`2-forcing-soil-1-download.r`
-  before `2-forcing-soil-2-whc.r`). `NNNd-*` diagnostics form a stage of their own, so
-  they still run after the core steps they report on. With more than one worker each
-  step's output is buffered and printed as one block when it finishes; a failing step
-  stops the pipeline once the steps already running have finished.
+  re-runs the model or re-downloads data). Needs the Quarto CLI + git-lfs on the run
+  machine.
+- **Running a pipeline: `execute-all.sh`.** One entrypoint, one glob, in stage order:
+
+  ```sh
+  ./execute-all.sh --workers 4 '2026-05-ssp-ch/0*.qmd'   # or -j 4; default is 1, i.e. serial
+  ```
+
+  It groups the matched files by leading number and runs the groups **strictly in order**,
+  up to `N` steps of one group at a time. Concurrency is safe because steps sharing a
+  number are independent (above) and the `evoland_db` DuckLake catalog takes concurrent
+  writers, so the several `020-ingest-preds-*` ingest at once; `NNNd-*` diagnostics form a
+  stage of their own and still run after the steps they report on. Above one worker each
+  step's output is buffered and printed as one block when it finishes, so nothing
+  interleaves; a failing step stops the pipeline once the steps already running have
+  finished. The glob is the only selector — narrow it to a single stage
+  (`'…/020-*.qmd'`) or to the diagnostics alone (`'…/*d-*.qmd'`).
 - **Reports via git-LFS.** Rendered HTML reports are git-LFS-tracked (`.gitattributes`)
   and committed ad-hoc at checkpoints; the `_freeze/` cache is git-ignored.
 - **State lives in DuckDB.** Each experiment builds a `*.evolanddb` (folder of parquet

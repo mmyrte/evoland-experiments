@@ -7,17 +7,17 @@
 #'
 #' We fetch only the MEAN layers of sand, clay and OC at 0/30/60/100 cm (12 files,
 #' ~510 MB each, ~6 GB total) — the inputs to the pedotransfer whc derivation in
-#' 2-forcing-soil-whc.r. The `error` (uncertainty) layers are left for a later
+#' 011-forcing-soil-whc.r. The `error` (uncertainty) layers are left for a later
 #' soil-uncertainty id_run. N and P are not used.
 #'
-#' Mirrors the download pattern of 2026-05-ssp-ch/02-ingest-preds-dem.qmd: build a
+#' Mirrors the download pattern of 2026-05-ssp-ch/020-ingest-preds-dem.qmd: build a
 #' url+md5sum table and hand it to download_and_verify(), which caches each file under
 #' {cachedir}/{md5sum}/{filename} and returns the local paths (md5-verified).
 
 # TODO this should be implemented in the same pattern as with
-# 2026-05-ssp-ch/02-ingest-preds-ch2025-1-download.qmd
+# 2026-05-ssp-ch/021-ingest-preds-ch2025-download.qmd
 # and
-# 2026-05-ssp-ch/02-ingest-preds-ch2025-2-etl.qmd
+# 2026-05-ssp-ch/022-ingest-preds-ch2025-etl.qmd
 
 library(data.table)
 library(evoland)
@@ -66,7 +66,7 @@ downloaded <- download_and_verify(
   target_dir = getOption("evoland.cachedir")
 )
 
-# Re-attach property/depth so downstream (2-forcing-soil-whc.r) can index by them.
+# Re-attach property/depth so downstream (011-forcing-soil-whc.r) can index by them.
 sspm_files <- merge(
   sspm_mean_md5[, .(md5sum, property, depth_cm, filename)],
   downloaded,
