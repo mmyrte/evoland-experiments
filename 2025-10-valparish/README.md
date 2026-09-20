@@ -49,4 +49,4 @@ ingests are one stage, everything else is a stage of its own.
 - [ ] **Covariate cardinality threshold** (`min_cardinality_abs`) not set to a
       justified value. (`040-covariate-selection.r:6`)
 - [ ] **Train/test split** (`sample_frac = 0.3`) not justified. → folded into
-      `2026-05-ssp-ch` transition-model validation (MS9 phase 3). (`050-transition-modelling.r:9`)
+      `2026-05-ssp-ch` transition-model validation. (`050-transition-modelling.r:9`)

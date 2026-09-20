@@ -1,14 +1,14 @@
 # SSP-CH × rsofun: process-based land-use suitability predictors
 
-**Status:** abandoned (2026-09) · **Written:** 2026-07-03
+**Status:** dormant (2026-09) · **Written:** 2026-07-03
 
-> **Abandoned for now.** The forcing and parameter steps (`010-`, `011-`) were written and
-> carry their own sanity checks, but the steps that would actually use them — the rsofun
-> runs, the decadal aggregation and the coupling loop (`020-`, `030-`, `040-`) — were never
-> written, so no predictor has ever come out of this. It is kept as a design record: the
-> forcing contract, the SSPM → `whc` pedotransfer and the WASIM `[landuse_table]` → fAPAR
-> derivation are the reusable parts, and §4 is written so the eventual WASIM coupling
-> inherits them rather than re-deriving them. Everything below is as of 2026-07-03.
+> **Dormant.** The forcing and parameter steps (`010-`, `011-`) were written and carry their
+> own sanity checks, but the steps that would use them — the rsofun runs, the decadal
+> aggregation and the coupling loop (`020-`, `030-`, `040-`) — were never written, so no
+> predictor has ever come out of this. It is kept as a design record: the forcing contract,
+> the SSPM → `whc` pedotransfer and the WASIM `[landuse_table]` → fAPAR derivation are the
+> reusable parts, and §4 is written so the eventual WASIM coupling inherits them rather than
+> re-deriving them. Everything below is as of 2026-07-03.
 
 ## 1. Purpose and relationship to `2026-05-ssp-ch`
 

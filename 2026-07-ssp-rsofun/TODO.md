@@ -1,19 +1,13 @@
 # TODO — 2026-07-ssp-rsofun
 
-**Abandoned (2026-09) — nothing here is scheduled.** The coupling was never built past
-its forcing steps; the list is kept so a later pick-up (or the eventual WASIM work)
-starts from a known state rather than a blank page.
-
-Task tracker for the process-based coupling (MS9 phase 2/3). The design rationale,
-data contracts, and decisions live in [`README.md`](README.md); this file tracks
-what is built vs. outstanding. See the README's §6 (phased plan) and §8 (open
-questions) for detail.
-
-Legend: ⬜ not started · 🟡 in progress / partial · ✅ done
+**Dormant (2026-09) — nothing here is scheduled.** The coupling was never built past its
+forcing steps; the list is kept so a later pick-up, or the eventual WASIM work, starts from
+a known state rather than a blank page. Design rationale and data contracts are in
+[`README.md`](README.md), §6 (phased plan) and §8 (open questions) in particular.
 
 ---
 
-## Concluded
+## Built
 
 - [x] Design & data-contract write-up (`README.md`): coupling architecture,
       CH2025 forcing gaps, SSPM soil → whc, WASIM `[landuse_table]` → fAPAR, output
