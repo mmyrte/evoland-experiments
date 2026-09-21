@@ -33,7 +33,10 @@ library(data.table)
 library(evoland)
 library(ggplot2)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 
 models <- db$fetch(
   "trans_models_t",

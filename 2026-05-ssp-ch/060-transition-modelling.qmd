@@ -53,7 +53,10 @@ num_trees <- 100L
 max_depth <- 20L
 n_workers <- 21L
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 
 stopifnot(
   "trans_preds_t is empty - run 05-covariate-selection.qmd first" =

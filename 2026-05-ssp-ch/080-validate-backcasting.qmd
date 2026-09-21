@@ -51,7 +51,10 @@ select_score <- "classif.auc" # must match 06
 select_maximize <- TRUE
 id_run_backcast_base <- 2000L # 2000-2999 is free: 001 uses 0/100/1xxx, 071 uses max+n
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 db$id_run <- 0L
 
 # evoland's table classes carry print methods that assume their own columns; a summary derived

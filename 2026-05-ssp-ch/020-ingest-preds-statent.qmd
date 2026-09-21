@@ -24,7 +24,10 @@ below normalise them to sectors S1/S2/S3.
 #| label: ingest-statent-download
 library(evoland)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 coords_minimal <- db$coords_minimal
 
 sources_detailed <- tibble::tribble(

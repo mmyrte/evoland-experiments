@@ -13,7 +13,10 @@ the original implementation's *effective* behaviour, so the two can be diffed.
 library(data.table)
 library(evoland)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 
 # The anchor is the last observed period: the solver starts from what we actually observed,
 # not from the spreadsheet's init_area.
@@ -313,4 +316,3 @@ max_drift <- max(abs(roundtrip$area_replay - roundtrip$area_solved))
 message(sprintf("Round-trip drift for %s: %.3g cells", "ssp1", max_drift))
 # stopifnot("rate table does not reproduce the solved trajectory" = max_drift < 1)
 ```
-

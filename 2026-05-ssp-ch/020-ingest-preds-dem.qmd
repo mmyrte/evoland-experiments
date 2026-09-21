@@ -21,7 +21,10 @@ ASCII-grid ZIP directly from the geo.admin.ch OGD topology server.
 library(data.table)
 library(evoland)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 coords_minimal <- db$coords_minimal
 extent_wide <- db$extent |> terra::extend(1000)
 

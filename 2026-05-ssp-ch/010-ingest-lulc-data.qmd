@@ -23,7 +23,10 @@ Surveys used: **1985 / 1997 / 2009 / 2018**.
 library(evoland)
 library(data.table)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 lulc_files <-
   data.frame(
     url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/32376216/appendix",

@@ -18,7 +18,10 @@ produced sensible spatial fields. Read-only.
 library(evoland)
 library(terra)
 library(data.table)
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 coords_minimal <- db$coords_minimal
 
 # check for pr_DJF, pr_JJA, pr_MAM, pr_SON

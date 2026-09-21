@@ -35,7 +35,10 @@ seed <- 42L
 select_score <- "classif.auc" # must match 06 and 08
 select_maximize <- TRUE
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 db$id_run <- 0L
 
 # Summaries derived from an evoland table inherit its class and print with the wrong header

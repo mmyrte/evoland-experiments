@@ -19,7 +19,8 @@ stopifnot(
 )
 
 db <- evoland_db$new(
-  path = "ssp-ch.evolanddb",
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb",
   report_name = "ssp-ch",
   report_name_pretty = "Replication of SSP-CH in new evoland"
 )
@@ -123,7 +124,7 @@ ssp_specs <- data.table::rowwiseDT(
 gwl_quantiles <- data.table::data.table(gwl_quantile = "q50", q_idx = 2L)
 ```
 
-The NCCS-SSP framing consciously kept SSP and RCP/GWL orthogonal, so steady climate runs are also included. 
+The NCCS-SSP framing consciously kept SSP and RCP/GWL orthogonal, so steady climate runs are also included.
 
 ```{r}
 #| label: setup-db-runs

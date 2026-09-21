@@ -23,7 +23,10 @@ library(data.table)
 library(evoland)
 library(ggplot2)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 
 db$set_full_trans_preds()
 
@@ -60,7 +63,7 @@ imp_scored[, importance_rel := importance / max(importance, na.rm = TRUE), by = 
 
 ## Visualize
 
-Check out the distribution of importance scores. Does not look like 
+Check out the distribution of importance scores. Does not look like
 
 ```{r}
 #| label: covsel-diagnostic-plot

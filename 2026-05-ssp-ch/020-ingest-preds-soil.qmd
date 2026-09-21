@@ -75,7 +75,10 @@ Two further aggregations are worth considering, and one is implemented as an opt
 library(data.table)
 library(evoland)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 coords_minimal <- db$coords_minimal
 
 # Set TRUE to additionally derive within-cell sd predictors (see above).
@@ -162,7 +165,7 @@ memory, so a loop keeps the footprint flat.
 #| label: ingest-soil-load
 # exact model grid: 100 m, EPSG:2056, aligned with coords_t
 template <- db$lulc_data_as_rast(id_period = 1)
-  
+
 orig_format <- paste(
   "SSPM 30 m GeoTIFF (EPSG:4326), reprojected to EPSG:2056 and area-weighted averaged",
   "onto the 100 m model grid via terra::project(method = 'average')"

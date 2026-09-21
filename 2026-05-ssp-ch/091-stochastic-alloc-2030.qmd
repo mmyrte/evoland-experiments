@@ -38,7 +38,10 @@ n_workers <- 20L # future workers for the prediction phase
 member_id_factor <- 1000L # id_run = scenario * factor + member
 member_kind <- "stochastic single-period member"
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(
+  catalog = "postgres:dbname=ducklake_catalog host=/home/jhartman/.local/postgres/socket port=55432",
+  data_path = "/hyclimm/jhartman/ssp-ch.evolanddb"
+)
 db$id_run <- 0L
 
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
