@@ -13,38 +13,33 @@ for them (the original workflow is orchestrated by
 `NCCS-SSP-scenarios/Scripts/LULCC_CH_master.R`) — and the pipeline is rebuilt on the new
 evoland-plus with:
 
-- **Reproducible data sources.** Every predictor is fetched from a public HTTP(S) source with
-  an md5-verified download, replacing the original's local GeoTIFFs of partly unclear
-  provenance. Per-source provenance lives in each `020-ingest-preds-*` step's prose.
+- **Reproducible data sources.** Every predictor is fetched from a public source with an
+  md5-verified download, replacing the original's local GeoTIFFs of partly unclear
+  provenance. Per-source provenance and manipulations live in the `020-ingest-preds-*`
+  steps.
 - **CH2025 climate** instead of CHELSA for the projected runs, mapping SSP decades onto
   global warming levels. See `021-ingest-preds-ch2025-download.qmd`, "Why CH2025".
 
-**Model class.** The transition model is purely empirical/statistical: static, climatological
-and economic predictors, with no biophysical feedback. The process-based extension is the
-dormant `2026-07-ssp-rsofun/` experiment.
-
 **Scenario scope.** SSP0/1/3/4/5.
 
-- SSP2 is excluded because treating it as a business-as-usual case works against the point of
-  scenario analysis, which is to span a maximally diverse set of futures.
+- SSP2 is excluded because it is regularly treated as a business-as-usual case, working
+  against the point of scenario analysis, which is to span a maximally diverse set of
+  futures.
 - SSP0 is a "positive normative visioning" scenario, newly added, mapped to GWL1.5 —
-  [we may already be there](https://climate.copernicus.eu/copernicus-2025-was-third-hottest-year-record).
+  [we may already be there](https://climate.copernicus.eu/copernicus-august-was-worlds-joint-hottest-month-record-pushing-global-temperatures-back-above).
 - The original kept climatological change and socioeconomic pathways orthogonal. Here each SSP
   is realised both against current climatology and against SSP-GWL mappings.
 
 ## Where the SSP demand comes from
 
-`NCCS-SSP-scenarios/Tools/Transition_Tables.xlsx` does **not** carry per-SSP transition rates.
-Only its **BAU** block is populated; the `EI for Nature` / `EI as Culture` / `EI for Society` /
-`Growth and Extinction` blocks of `09_Modified_Trans_Rates` and `10_Modified_Transition_matrix`
-are empty.
+The per-SSP demand input is sourced from
+[`NCCS_simulation_LULC_areas.xlsx`](https://github.com/mmyrte/NCCS-SSP-scenarios/blob/main/Tools/NCCS_simulation_LULC_areas.xlsx):
 
-The authoritative per-SSP demand input is
-**`NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`**: one row per (scenario × LULC
-class) with `init_area`, `final_area_2060`, `final_area_2100` and a qualitative `chosen_shape`
-(`Constant change`, `Instant growth`, `Instant decline`, `Delayed growth`, `Delayed decline`).
-It is keyed by SSP0/1/3/4/5 directly and is what
-`Scripts/Preparation/Simulation_trans_tables_prep.R` reads.
+- It is keyed by SSP0/1/3/4/5 and is what
+  `Scripts/Preparation/Simulation_trans_tables_prep.R` reads.
+- one row per (scenario × LULC class) with `init_area`, `final_area_2060`,
+  `final_area_2100` and a qualitative `chosen_shape` (`Constant change`, `Instant
+  growth`, `Instant decline`, `Delayed growth`, `Delayed decline`).
 
 Those are **class-level area targets**, not transition rates. The original converts one into
 the other with a linear program,
@@ -54,15 +49,6 @@ class, soft curve-shape constraints and a temporal smoothing term. Step `070` us
 corrected LP that evoland-plus now carries; see [`notes-lp-solver.md`](notes-lp-solver.md) for
 the analysis behind that choice.
 
-> Do **not** build a crosswalk between the `EI_*` scenario names and SSP0/1/3/4/5. They are
-> different vintages: matching their 2060 class areas leaves residuals of 3–7 × 10⁵ ha and
-> assigns two SSPs to the same name.
-
-A [written formulation](https://github.com/ethzplus/evoland-plus/issues/32) of a revised solver
-also exists (share space, quadratic terminal-fit and historic-preference terms, zero-history
-penalties, minimax fairness, ridge term, feasibility precheck LP). Being quadratic it cannot
-run on `lpSolve::lp()`, and it is not ported.
-
 ## Domain & periods
 
 - **Extent:** Switzerland, EPSG:2056, 100 m grid (~4.1 M hectare cells).
@@ -70,7 +56,7 @@ run on `lpSolve::lp()`, and it is not ported.
   Eight periods plus the static `id_period 0`; 1–4 observed, 5–8 extrapolated. **Period 8 runs
   2055–2064**, so the 2060 demand targets fall inside it and step `070` treats the 2060 target
   as an interpolation. Decadal steps from 1985 cannot land on 2060.
-- **Runs:** `runs_t` carries the scenario axis, ordered **base → climate trajectory → SSP**.
+- **Runs:** `runs_t` identifies scenarios, ordered **base → climate trajectory → SSP**.
   Climate sits above SSP because it is the heavier per-run payload (~2.2 B stored rows this
   way against ~6.2 B with SSP on top). The ordering is a storage decision and deliberately
   does not mirror the narrative; run `description`s still read "SSP3 under …". Set up in
@@ -109,22 +95,21 @@ marked "written" may have been executed without leaving a trace.
 | `091-stochastic-alloc-2030.qmd` | One period × 20 members × 5 SSPs → change-intensity maps | run, full CH grid |
 | `090d-report.qmd` | _diag:_ reporting — figures, tables, maps | not written |
 
-Interventions are not implemented at any stage; see [`TODO.md`](TODO.md) § Interventions for
+Interventions are not yet implemented at any stage; see [`TODO.md`](TODO.md) § Interventions for
 where that is going.
 
-> **Reference implementations.** `2025-10-valparish/` is not usable as a reference: its
-> `040-`/`050-`/`060-` scripts call `covariance_filter`, `grrf_filter`,
-> `get_pruned_trans_preds_t`, `fit_glm`, `gof_glm` and `create_obs_trans_rates_t`, none of
-> which exist in evoland-plus any more. The live references are the package vignettes —
-> `evoland.qmd` for the calibrate → rates → allocate chain, and
-> `stochastic-allocation-sensitivity.qmd` for the `runs_t` ensemble pattern `080`/`090` use.
+> **Reference implementations.** Check out the package vignettes — `evoland.qmd` for the
+  calibrate → rates → allocate chain, and
+> `stochastic-allocation-sensitivity.qmd` for the `runs_t` ensemble pattern `080`/`090`
+  use.
 
 ## Predictor provenance vs. the original SSP-CH
 
 The predictor set is not a straight copy. The original's covariates are catalogued in
-`NCCS-SSP-scenarios/Tools/Predictor_table.xlsx` (one sheet per timestep); comparing those
-sheets against this pipeline gives the picture below. Its **future** (SSP) sheets already drop
-`Muni_pop`, and its employment predictor is an annual *change* in FTE rather than a level.
+[`Predictor_table.xlsx`](https://github.com/mmyrte/NCCS-SSP-scenarios/blob/main/Tools/Predictor_table.xlsx)
+(one sheet per timestep); comparing those sheets against this pipeline gives the picture
+below. Its **future** (SSP) sheets already drop `Muni_pop`, and its employment predictor
+is an annual *change* in FTE rather than a level.
 
 | Original predictor(s) | Original source | Here | Notes |
 | --- | --- | --- | --- |

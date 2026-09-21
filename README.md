@@ -1,9 +1,9 @@
 # evoland-experiments
 
-Specific [evoland-plus](https://github.com/ethzplus/evoland-plus) experiments;
-code not suitable for general consumption. Each dated sub-directory is a
-self-contained experiment with its own numbered pipeline, `README.md`
-(analytic purpose) and `TODO.md` (open work).
+Specific [evoland-plus](https://github.com/ethzplus/evoland-plus) experiments; code not
+necessarily suitable for general consumption. Each dated sub-directory is a
+self-contained experiment with its own numbered pipeline, `README.md` (analytic purpose)
+and `TODO.md` (open work).
 
 ## Sub-projects
 
@@ -30,54 +30,35 @@ Tracked here until they have a home of their own.
 
 ## Environment
 
-Setup via [rv](https://github.com/A2-ai/rv): `rv init; rv sync` installs CRAN packages and the
-pinned evoland-plus commit. Make sure your R installation is not broken — `module load R/4.5.3`
-on rain gives S4 method dispatch errors; 4.6.1 works.
+Setup via [rv](https://github.com/A2-ai/rv): `rv init; rv sync` installs CRAN packages
+and the pinned evoland-plus commit. Currently using `module load R/4.6.1` rain; not yet
+set up on Euler.
 
 ## Conventions
 
-- **Three-digit numbering: `NNN[d]-slug.{qmd,r}`.** The number is the whole ordering
-  mechanism: a lexical sort of the file names is the run order.
-  - **Steps sharing a number are independent** and may run in any order or at the same time
-    (the several `020-ingest-preds-*`, say). This is what makes `--workers N` safe.
-  - **A step depending on another in the same family takes the next number.** `021-ingest-preds-ch2025-download`
-    fetches, `022-ingest-preds-ch2025-etl` consumes what it fetched. Never encode that
-    dependency in the slug — a shared number claims independence and a parallel run will act
-    on that claim.
-  - **Multiples of ten mark pipeline phases** (`010-` ingest, `030-` neighbours, `060-`
-    modelling, …), leaving nine free numbers to insert a dependent step without renumbering.
-    `001-setup-db` comes first.
-  - **A trailing `d` marks a diagnostic**, sorting after its own stage and before the next:
-    `020- … < 020d- … < 021-`.
-- **Core vs. diagnostic steps.** `NNN-slug.qmd` is a **core** step: it mutates the DuckDB or
-  produces canonical outputs. `NNNd-slug.qmd` is an **optional diagnostic** for stage `NNN` —
-  read-only, renders a verification report, safe to skip.
-- **The number wins over the family.** `2026-05-ssp-ch/051-ingest-preds-ch2025-3-gwl.qmd`
-  belongs to the CH2025 ingest family by slug but must run after `050-covariate-selection`,
-  because projected climate can only be materialised for the selected predictor set. Run it
-  early and it fails loudly rather than writing anything.
-- **Literate Quarto pipelines.** Steps are `.qmd` rendered to self-contained HTML, so
-  rationale lives beside the code. The repo-root `_quarto.yml` sets `execute-dir: project`
-  (so the root `.Rprofile` and relative paths resolve) and `freeze: auto` (re-rendering a
-  report never re-runs the model or re-downloads data). Needs the Quarto CLI and git-lfs.
-- **Running a pipeline: `execute-all.sh`.** One entrypoint, one glob, in stage order:
-
-  ```sh
-  ./execute-all.sh --workers 4 '2026-05-ssp-ch/0*.qmd'   # or -j 4; default 1, i.e. serial
-  ```
-
-  It groups matched files by leading number and runs the groups strictly in order, up to `N`
-  steps of one group at a time. The `evoland_db` DuckLake catalog takes concurrent writers.
-  Above one worker each step's output is buffered and printed as one block, so nothing
-  interleaves; a failing step stops the pipeline once the steps already running have
-  finished. The glob is the only selector — narrow it to one stage (`'…/020-*.qmd'`) or to
-  the diagnostics alone (`'…/*d-*.qmd'`).
-- **Reports via git-LFS.** Rendered HTML is LFS-tracked (`.gitattributes`) and committed at
-  checkpoints; the `_freeze/` cache is git-ignored.
-- **State lives in DuckDB.** Each experiment builds a `*.evolanddb` (a folder of parquet
-  files) via the evoland-plus `evoland_db` R6 class. Predictors go in through
-  `db$add_predictor`, which enforces foreign relations cheaply — no constraint checks as in a
-  fully schematised RDBMS, which is where the speedup comes from.
-- **Data provenance.** Ingest scripts download from public HTTP(S) sources and verify md5sums
-  via `download_and_verify` into the evoland cache. Per-source documentation lives in the
-  step documents.
+- **Three-digit numbering: `NNN[d]-slug.{qmd,r}`.** used with globbing/lexical sort.
+  - Steps **sharing a number** are serially independent and can be run in parallel.
+  - Serial dependence in related scripts takes the next number, e.g.
+    `021-ingest-preds-ch2025-download` fetches, `022-ingest-preds-ch2025-etl` consumes
+    what it fetched.
+  - Multiples of ten mark pipeline phases (`010-` ingest, `030-` neighbours, `060-`
+    modelling, …).
+- **A trailing `d`** marks a diagnostic which is associated with a pipeline stage, but not
+  part of the serial dependence chain. As such it is safe to skip for reproduction, but
+  helpful for understanding decisions/thresholds etc.
+- **Run a pipeline using `execute-all.sh 'folder/glob*-pattern.qmd'`.**
+  - Optional parallelism using
+    `./execute-all.sh --workers 4 '2026-05-ssp-ch/0[0-3][0-9]-*.qmd'`;
+    this glob would run all stages from 001 to 039 without diagnostics.
+- **Quarto pipelines.** Steps are `.qmd` rendered to self-contained HTML, so
+  rationale can live beside the code.
+  - The repo-root `_quarto.yml` sets `execute-dir: project` (so the root `.Rprofile` and
+    relative paths resolve) and `freeze: auto` (only re-render when code changes). Needs
+    the Quarto CLI and git-lfs.
+- **HTML reports uploaded via git-LFS.** Rendered HTML with embedded graphics and richer
+  visualisations (e.g. leaflet) is LFS-tracked (`.gitattributes`); the `_freeze/` cache
+  is git-ignored.
+- **State lives in a DuckLake.** Each experiment builds a git-ignored `*.evolanddb`.
+- **Data provenance.** Ingest scripts ideally download from public sources and verify
+  md5sums via `evoland::download_and_verify()` into the evoland cache, ensuring maximum
+  reproducibility.
