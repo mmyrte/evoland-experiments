@@ -45,7 +45,7 @@ community-weighted means, not 1–5 class indices:
 library(data.table)
 library(evoland)
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db <- evoland_db$new(path = "fullch.evolanddb")
 coords_minimal <- db$coords_minimal
 extent_wide <- db$extent |> terra::extend(1000)
 

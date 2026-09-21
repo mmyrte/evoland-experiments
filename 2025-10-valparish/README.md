@@ -22,17 +22,17 @@ in `2026-05-ssp-ch/` (see the refactor documented there).
 Three-digit stages, as in `2026-05-ssp-ch/`: the five independent `020-` predictor
 ingests are one stage, everything else is a stage of its own.
 
-| Script                                | Step                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------- |
-| `001-setup-db.r`                      | Create `fullch.evolanddb`, square coords grid, periods                |
-| `010-ingest-lulc-data.r`              | Arealstatistik NOAS04 LULC history                                    |
-| `020-ingest-preds-*.r`                | Predictors: population, sonBASE noise, STATENT, ValPar local GeoTIFFs |
-| `020-ingest-preds-envidat-eiv.qmd`    | SPEEDMIND/EnviDat EIV indicators (the one Quarto step, moved here from `2026-05-ssp-ch/`). **It still opens `ssp-ch.evolanddb`** and has not been run against it, so the EIV predictors are in neither pipeline — see `2026-05-ssp-ch/TODO.md` § Soil. |
-| `030-neighbors.r`                     | Neighbourhood predictors                                              |
-| `040-covariate-selection.r`           | Covariance / importance filtering of covariates                       |
-| `050-transition-modelling.r`          | GLM partial transition models                                         |
-| `060-transition-rates.r`              | Observed rates + linear extrapolation to future periods               |
-| `070-alloc-params.r`                  | Allocation parameters (Dinamica)                                      |
+| Script                             | Step                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| `001-setup-db.r`                   | Create `fullch.evolanddb`, square coords grid, periods                                     |
+| `010-ingest-lulc-data.r`           | Arealstatistik NOAS04 LULC history                                                         |
+| `020-ingest-preds-*.r`             | Predictors: population, sonBASE noise, STATENT, ValPar local GeoTIFFs                      |
+| `020-ingest-preds-envidat-eiv.qmd` | SPEEDMIND/EnviDat EIV indicators (moved here from `2026-05-ssp-ch/`, as backup reference). |
+| `030-neighbors.r`                  | Neighbourhood predictors                                                                   |
+| `040-covariate-selection.r`        | Covariance / importance filtering of covariates                                            |
+| `050-transition-modelling.r`       | GLM partial transition models                                                              |
+| `060-transition-rates.r`           | Observed rates + linear extrapolation to future periods                                    |
+| `070-alloc-params.r`               | Allocation parameters (Dinamica)                                                           |
 
 ## Open notes (carried forward, not scheduled here)
 
