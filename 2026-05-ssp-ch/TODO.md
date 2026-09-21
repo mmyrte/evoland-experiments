@@ -67,11 +67,11 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 - [ ] **Run `051-ingest-preds-ch2025-3-gwl.qmd`.** Written, never executed. It projects only the
       climate predictors that survived `050`, which is why it runs after `050` despite the ingest
       slug.
-- [ ] **Seasonal predictors have no projection.** CH2025 publishes `-gwl` aggregates as `yearly`
-      only, while `-obs` also has DJF/MAM/JJA/SON, so any seasonal predictor surviving `050` is
-      frozen at its observed baseline under every GWL run. Either restrict the climate predictors
-      offered to `050` to `*_yearly`, or accept and document the freeze. The step warns when it
-      finds one.
+- [ ] **Verify every ingested predictor has a future counterpart.** `022` already filters the
+      inventory to `time_of_year == "yearly"`, because the seasonal `-obs` aggregates
+      (DJF/MAM/JJA/SON) have no `-gwl` equivalent and would freeze at their observed baseline
+      under every GWL run. The step carries a code TODO to make that check general rather than
+      one hard-coded filter. (`022-ingest-preds-ch2025-etl.qmd:270`)
 - [ ] **Bioclimatic indicators.** CH2025 lacks CHELSA-BIOCLIM+-style variables; decide which to
       derive or source. (wishlist in the appendix of `022-ingest-preds-ch2025-etl.qmd`)
 
@@ -87,26 +87,36 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 ### Soil
 
-- [ ] **Decide EIV vs. SSPM per predictor**, using the `050` scores. SSPM as fetched carries no
-      pH and no nutrient layer, so both are ingested side by side and nothing is retired yet.
-  - `soil_humus` → superseded by `soil_oc_*`.
-  - `soil_moisture`, `soil_moisture_variability`, `soil_aeration` → only partly superseded by
-    texture; the real replacement is the WHC that `2026-07-ssp-rsofun/011-forcing-soil-whc.r`
-    derives by pedotransfer, which is not ingested here.
-  - `soil_ph`, `soil_nutrients` → no SSPM counterpart fetched. The record reportedly has N and
-    P layers; whether they can stand in is untested.
+- [ ] 🔴 **Decide what happens to the EnviDat EIV predictors.** They are not in this pipeline.
+      The step was moved out in `d78838d` and lives at
+      `2025-10-valparish/020-ingest-preds-envidat-eiv.qmd`, where it still opens
+      `ssp-ch.evolanddb` but is outside this pipeline's numbering and has not been run against
+      it; the `050` scores confirm no EIV predictor is in `pred_meta_t`. The SSPM ingest was
+      written on the assumption that the two would sit side by side and be scored against each
+      other, which never happened. Against the six EIV soil layers plus `light_100m`:
+  - `soil_humus` → covered by `soil_oc_*`, which measures directly what the EIV indicates.
+  - `soil_moisture`, `soil_moisture_variability`, `soil_aeration` → partly covered by texture,
+    and only through a pedotransfer function. The real replacement is the WHC that
+    `2026-07-ssp-rsofun/011-forcing-soil-whc.r` derives, which is not ingested here, so texture
+    is currently a rawer predictor than the EIVs were.
+  - `soil_ph`, `soil_nutrients`, `light_100m` → no substitute in the pipeline. The SSPM record
+    reportedly has N and P layers that nothing fetches; whether they can stand in is untested.
+  - Either move the EIV step back in as `020-ingest-preds-envidat-eiv.qmd` and let `050` decide,
+    or record the loss of pH, nutrients and light as a deliberate reduction of the predictor set.
+    `020-ingest-preds-soil.qmd` §"This is only a partial replacement" needs the same correction.
 - [ ] **Eliminate depth collinearity at feature selection.** The four depths are ingested as
-      separate predictors (12 total against the EIVs' 6) because topsoil governs cultivation and
-      deeper layers govern water storage. If that proves unwieldy, the alternative is a
-      trapezoidal 0–100 cm profile mean per property plus the 0 cm value.
+      separate predictors (12 in total) because topsoil governs cultivation and deeper layers
+      govern water storage. If that proves unwieldy, the alternative is a trapezoidal 0–100 cm
+      profile mean per property plus the 0 cm value.
 
 ### Other predictors
 
 - [ ] **Bioregion / subregion collinearity.** The two are strictly nested. `050` should retain at
       most one per transition, and with the correlation pre-filter dropped this rests entirely on
       GRRF's regularisation. Check the retained sets.
-- [ ] **DEM hillshade semantics.** Meant as an insolation proxy; replace with a proper insolation
-      term or leave it out. (`020-ingest-preds-dem.qmd`)
+- [ ] **Insolation.** `020-ingest-preds-dem.qmd` ingests elevation, slope and aspect only. The
+      original's hillshade was discarded as a weak insolation proxy; decide whether a
+      ray-traced insolation predictor is worth adding in its place.
 - [ ] **sonBASE noise.** Decide whether to re-include; the ingestion exists in
       `2025-10-valparish/020-ingest-preds-sonbase.r`.
 
