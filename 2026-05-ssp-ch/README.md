@@ -113,25 +113,20 @@ is an annual *change* in FTE rather than a level.
 
 | Original predictor(s) | Original source | Here | Notes |
 | --- | --- | --- | --- |
-| Soil EIVs: pH, nutrients, moisture, moisture variability, aeration, humus | Descombes et al. 2020 (EnviDat) | **Not ingested** | The step was moved out of this pipeline in `d78838d` and now sits at `2025-10-valparish/020-ingest-preds-envidat-eiv.qmd`, still writing to `ssp-ch.evolanddb` but outside this pipeline's numbering, and it has not been run against it. Texture and OC below cover humus and part of moisture/aeration; `soil_ph` and `soil_nutrients` have no substitute. See `TODO.md`. |
+| Soil EIVs: pH, nutrients, moisture, moisture variability, aeration, humus | Descombes et al. 2020 (EnviDat) | **Not ingested** | Texture and OC (see below) cover humus and part of moisture/aeration; `soil_ph` and `soil_nutrients` have no substitute. See `TODO.md`. |
 | `light_100m` (EIV-L) | Descombes et al. 2020 | **Not ingested** | Same step, same status. |
 | Continentality (EIV-K) | Descombes et al. 2020 | **Discarded** | Weaker than CH2025 climate and likely collinear with bioregions. |
 | Elevation, slope, aspect | swissALTI3D 2 m (ValPar local) | **Reused, source replaced** — `020-ingest-preds-dem` (DHM25) | `elevation_mean_100m`, `slope_mean_100m`, `aspect_mean_100m`. swissALTI3D noted there as an optional higher-res upgrade. |
-| Hillshade | swissALTI3D | **Discarded** | Insolation proxy redundant with slope/aspect; ray-traced insolation would be the proper form. |
+| Hillshade | swissALTI3D | **Discarded** | Insolation proxy redundant with slope x aspect; **TODO** ray-traced insolation would be the proper form. |
 | Distance to lakes / rivers / roads | GWN07 / VECTOR25 / swissTLM3D (ValPar local) | **Reused, source replaced** — `020-ingest-preds-swisstlm3d` | GWN07 / VECTOR25 discontinued; swissTLM3D is the successor. |
 | `chg_FTE_Sec1/2/3` — annual change in FTE per labour-market region | FSO Business Census + STATENT | **Reused, redefined** — `020-ingest-preds-statent` | `fte_sec1/2/3` as absolute levels. Levels keep local signal ("a farm is here") at the cost of easy extrapolation. `021-ingest-preds-statent-ssp` writes per-(run × period) values onto these same three predictors rather than adding new ones. |
-| Urban neighbourhood matrices (`n9`/`n11` × versions) | Project internal | **Reused, reimplemented** — `030-neighbors` | `set_neighbors(max_distance = 1000, distance_breaks = c(0, 100, 500, 1000))` over land-use classes, giving `id_lulc_<n>_dist_[100,500)` and `…_[500,1e+03]` — 20 predictors. Generic distance bands rather than hand-built kernels. |
-| `Muni_pop` — municipal population | FSO | **Discarded** | Unused in the original SSP sheets; ingestion retained only in `2025-10-valparish/020-ingest-preds-pop.r`. |
+| Neighbourhood relations | Project internal | **Reimplemented** — `030-neighbors` | `set_neighbors(max_distance = 1000, distance_breaks = c(0, 100, 500, 1000))` over land-use classes, giving `id_lulc_<n>_dist_[100,500)` and `…_[500,1e+03]` — 20 predictors. Distinct distance bands rather than randomly perturbed kernels. |
+| `Muni_pop` — municipal population | FSO | **Discarded** | Unused in the original SSP sheets (retained in `2025-10-valparish/020-ingest-preds-pop.r`.) |
 | `noise_mean_100m` (sonBASE) | BAFU sonBASE | **Not carried over** | Present in `2025-10-valparish/020-ingest-preds-sonbase.r`; re-inclusion undecided. |
-| — (no direct climate predictor) | — | **Added** — `022-ingest-preds-ch2025-etl`, projected by `051-…-3-gwl` | 18 CH2025 indicators, **yearly aggregates only** — the ETL filters to `time_of_year == "yearly"` because the seasonal ones have no GWL counterpart. Temperature (`tas`, `tasmax`, `tasmin`), precipitation (`pr`, `PR20/40/60`), heat (`HD`, `HW2/3/4`, `VHD`, `SD`, `TN`), cold (`ID`, `FD`, `SNFD`) and dry spells (`CDD`). Heating/cooling degree-days excluded as energy-demand rather than suitability. |
+| Climate predictors | — | **Added** — `022-ingest-preds-ch2025-etl`, projected by `051-…-3-gwl` | 18 CH2025 indicators, **yearly aggregates only** — the ETL filters to `time_of_year == "yearly"` because the seasonal ones have no GWL counterpart. Temperature (`tas`, `tasmax`, `tasmin`), precipitation (`pr`, `PR20/40/60`), heat (`HD`, `HW2/3/4`, `VHD`, `SD`, `TN`), cold (`ID`, `FD`, `SNFD`) and consecutive dry days (`CDD`). Heating/cooling degree-days excluded as energy-demand rather than land use suitability. |
+| Bioclimatic predictors | — | **Not yet added** | Need to be computed from raw CH2025 daily gridded netcdfs. |
 | — | — | **Added** — `020-ingest-preds-soil` (Swiss Soil Property Map) | Sand, clay and organic carbon at 0/30/60/100 cm, 12 predictors, area-weighted from the native 30 m grid. Within-cell sd is available (`derive_heterogeneity`) and off. |
 | — | — | **Added** — `020-ingest-preds-bioregions` | `bioregion` and `biosubregion` as factors. |
-
-### What is actually in the database
-
-As of the `050` run, `pred_meta_t` holds **61 predictors** (`050-covariate-importances-grrf.csv`
-is the record): 18 CH2025 climate, 20 neighbourhood, 12 soil, 3 terrain, 3 distance-to-network,
-3 employment, 2 bioregion. No EIV predictor is among them.
 
 ## Provenance documentation
 
