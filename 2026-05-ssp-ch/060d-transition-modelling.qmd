@@ -1,8 +1,8 @@
 ---
-title: "06d — Transition models: ROC diagnostic"
+title: "060d — Transition models: ROC diagnostic"
 ---
 
-Diagnostic for step `06`. Plots a **ROC curve per transition** from the held-out predictions
+Diagnostic for step `060`. Plots a **ROC curve per transition** from the held-out predictions
 stored by `fit_partial_models()`, plus the AUC ranking that `fit_full_models()` selected on.
 Read-only: reads `trans_models_t`, writes nothing back.
 
@@ -40,7 +40,7 @@ models <- db$fetch(
   cols = c("id_run", "id_trans", "learner_id", "crossval_score", "crossval_predictions")
 )
 
-stopifnot("no models with held-out predictions - run 06 first" = nrow(models) > 0L)
+stopifnot("no models with held-out predictions - run 060 first" = nrow(models) > 0L)
 
 # label transitions by class names rather than ids, so the panels are readable
 trans_labels <-
@@ -135,7 +135,7 @@ ggsave("2026-05-ssp-ch/060d-roc-plots.png", p, width = 11, height = 9)
 
 The number `fit_full_models(select_score = "classif.auc")` actually selects on. Transitions are
 ordered worst-first: the top of this plot is where the modelling is weakest and where a look at
-the retained predictor set from `05` is most likely to pay off.
+the retained predictor set from `050` is most likely to pay off.
 
 ```{r}
 #| label: roc-diagnostic-auc

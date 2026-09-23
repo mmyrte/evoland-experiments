@@ -1,13 +1,13 @@
 ---
-title: "09 — Stochastic extrapolation"
+title: "090 — Stochastic extrapolation"
 ---
 
-Run the forward projection: allocate the SSP transition rates `07` solved from the demand
-targets, using the transition-potential models from `06` and the allocation parameters `08`
+Run the forward projection: allocate the SSP transition rates `070` solved from the demand
+targets, using the transition-potential models from `060` and the allocation parameters `080`
 selected, over the extrapolated periods out to 2060.
 
 Everything this step needs is already in the database. It registers one realisation run per
-(scenario × replicate), calls the allocator, and checks that what came out matches what `07`
+(scenario × replicate), calls the allocator, and checks that what came out matches what `070`
 asked for. Reporting figures, maps and tables are `090d`'s job; this step mutates state and
 verifies it.
 
@@ -18,7 +18,7 @@ backcast replicate, so the subset is a deliberate first pass rather than a limit
 code — widening it is a parameter change.
 
 **No interventions.** The SSP narratives in `NCCS-SSP-scenarios` are realised not only by the
-demand curves (which `07` carries) but also by spatial interventions per SSP. None of them are
+demand curves (which `070` carries) but also by spatial interventions per SSP. None of them are
 applied here; the comments in the allocation section say what each kind would take.
 
 ## Parameters
@@ -56,16 +56,16 @@ db$alloc_params_t <- d
 stopifnot(
   "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
     nrow(db$alloc_params_t) > 0L,
-  "no viable transitions - run 04 and 06" =
+  "no viable transitions - run 040 and 06" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
-  "no fitted models - run 06-transition-modelling.qmd first" =
+  "no fitted models - run 060-transition-modelling.qmd first" =
     nrow(db$trans_models_t) > 0L
 )
 ```
 
 ## Which runs are being allocated
 
-`07` writes its solved rates to every leaf run of an SSP — the leaves differ by climate framing,
+`070` writes its solved rates to every leaf run of an SSP — the leaves differ by climate framing,
 which changes the predictors but not the demand. Selecting a subset here therefore selects
 (demand × climate) pairings, not demand alone.
 
@@ -101,7 +101,7 @@ scenario_runs[, .(id_run, parent_id_run, ssp, climate_framing, gwl_trajectory)]
 The allocator walks contiguous periods, and every period it walks must have a rate for every
 viable transition, or `adjusted_trans_pot_v()` silently drops that transition's potentials for
 that period (it inner-joins potentials to rates) and the transition simply does not happen.
-`07` solves up to the period containing 2060, so the sequence normally ends there.
+`070` solves up to the period containing 2060, so the sequence normally ends there.
 
 ```{r}
 #| label: extrapolate-periods
@@ -148,7 +148,7 @@ dcast(coverage, id_run ~ id_period, value.var = "n_trans")
 ## Register the realisation runs
 
 Each realisation is a child of its scenario run, so it inherits the rates, the projected
-predictors and the allocation parameters, and differs only in RNG state — the same pattern `08`
+predictors and the allocation parameters, and differs only in RNG state — the same pattern `080`
 uses for its replicates and the evoland stochastic-allocation vignette uses for its ensemble.
 Keeping the realisations off the scenario run also means re-running this step with a different
 `n_replicates` never overwrites an earlier ensemble member.
@@ -270,11 +270,11 @@ translation, and should be scoped separately.
 ## Did the allocation deliver the scenario?
 
 `trans_rate_areas()` replays the rate table forward from the observed anchor state analytically —
-the trajectory `07` intended. Comparing it against the realised areas isolates the allocator's
+the trajectory `070` intended. Comparing it against the realised areas isolates the allocator's
 contribution: any gap is the allocator failing to place the demanded change, not the LP or the
 demand.
 
-This is the check `07` explicitly defers to this step. Its concern is concrete: the LP is allowed
+This is the check `070` explicitly defers to this step. Its concern is concrete: the LP is allowed
 to exceed the historic rate envelope, `adjusted_trans_pot_v()` scales potentials by an unbounded
 `rate / mean_value` factor, the row-closure branch then clips the result, and uPAM's pool empties
 before the quota is met. The scenario under-delivers its own demand, silently.

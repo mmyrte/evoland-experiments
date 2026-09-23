@@ -1,12 +1,13 @@
 ---
-title: "07 — Transition rates from SSP demand"
+title: "070 — Transition rates from SSP demand"
 ---
 
 Turn the per-SSP **class-area targets** elicited for the original SSP-CH project into the
 **per-transition rates** that allocation consumes, using the demand-driven LP solver.
 
-Companion step: `07-transition-rates-2-legacy.qmd` produces a second set of rates reproducing
-the original implementation's *effective* behaviour, so the two can be diffed.
+A companion step reproducing the original implementation's *effective* rates, for diffing, existed
+as `071-transition-rates-legacy.qmd` and was removed in `f12d134`; whether it is still wanted is
+open in `TODO.md`.
 
 ```{r}
 #| label: trans-rates-setup
@@ -19,20 +20,23 @@ db <- evoland_db$new(path = "ssp-ch.evolanddb")
 # not from the spreadsheet's init_area.
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 step_periods <- db$periods_t[is_extrapolated == TRUE, id_period]
-lulc_data <- db$lulc_data_t[id_period == 4]
+lulc_data <- db$lulc_data_t[id_period == anchor_period]
 
 stopifnot(
   "no extrapolated periods" = length(step_periods) > 0L,
-  "trans_meta_t is empty - run 04 (and 06, which reconciles viability)" =
+  "trans_meta_t is empty - run 040 (and 060, which reconciles viability)" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L
 )
 ```
 
 ## Demand
 
-The demand table lives in `R/ssp-demand.R`, sourced by this step and by
-`07-transition-rates-2-legacy.qmd` so both solve against exactly the same targets. See that file
-for the source, the `Int_AG` → `arable` crosswalk, and the lowercase-shape trap.
+The class-area targets are transcribed from `NCCS-SSP-scenarios/Tools/NCCS_simulation_LULC_areas.xlsx`
+(sheet "shhet1"), embedded rather than read because that repository is a reference checkout, not
+a dependency. Class names are already mapped to this pipeline's `lulc_meta_t` (the original's
+`Int_AG` is `arable`), and `shape` is normalised to lowercase, which the source is not
+consistently. Areas are cells on the original 4,129,078-cell grid, used as-is: this pipeline's
+grid differs by one cell. They used to live in `R/ssp-demand.R`, removed in `d78838d`.
 
 ```{r}
 #| label: trans-rates-demand
@@ -243,7 +247,7 @@ the historic envelope, and it propagates: `adjusted_trans_pot_v()` scales potent
 **unbounded** `rate / mean_value` multiplier, so when the LP demands several times the observed
 rate the scaled probabilities exceed 1, the row-closure branch clips them, uPAM's quota cannot
 be met and the pool empties early. The scenario then silently under-delivers its own demand.
-`09d` should compare realised areas against `trans_rate_areas()` for exactly this reason.
+`090d` should compare realised areas against `trans_rate_areas()` for exactly this reason.
 
 ## Commit to the SSP runs
 
@@ -254,14 +258,14 @@ which does not change the demand.
 #| label: trans-rates-commit
 runs <- db$runs_t
 
-# 07-2 adds a `rate_solver` column and legacy sibling runs; exclude those here if present.
+# the removed legacy companion added a `rate_solver` column and sibling runs; exclude those if present.
 ssp_runs <- if ("rate_solver" %in% names(runs)) {
   runs[!is.na(ssp) & (is.na(rate_solver) | rate_solver == "solver")]
 } else {
   runs[!is.na(ssp)]
 }
 
-stopifnot("no SSP leaf runs - run 00-setup-db.qmd" = nrow(ssp_runs) > 0L)
+stopifnot("no SSP leaf runs - run 001-setup-db.qmd" = nrow(ssp_runs) > 0L)
 
 for (s in ssp_list) {
   run_ids <- ssp_runs[grepl(s, ssp, ignore.case = TRUE), id_run]
@@ -280,7 +284,7 @@ db$trans_rates_t
 ## Verify the trajectory round-trips
 
 The solved trajectory has to be recoverable from what we stored, or the realised-vs-predicted
-comparison in `09d` is impossible.
+comparison in `090d` is impossible.
 
 ```{r}
 #| label: trans-rates-roundtrip

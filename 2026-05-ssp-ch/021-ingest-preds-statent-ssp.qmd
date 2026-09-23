@@ -1,14 +1,14 @@
 ---
-title: "02 — Predictors: STATENT employment under the SSPs"
+title: "021 — Predictors: STATENT employment under the SSPs"
 ---
 
-Project the hectare-level FTE-by-sector predictors ingested by `02-ingest-preds-statent.qmd`
+Project the hectare-level FTE-by-sector predictors ingested by `020-ingest-preds-statent.qmd`
 forward under each SSP, using the cantonal sectoral employment trajectories elicited for the
 original SSP-CH project.
 
-> **Ordering.** Like `02-ingest-preds-ch2025-3-gwl.qmd`, this writes per-run, per-period
-> predictor data and therefore belongs *after* the SSP leaf runs exist (`00-setup-db.qmd`)
-> and after `02-ingest-preds-statent.qmd` has committed the observed levels.
+> **Ordering.** Like `051-ingest-preds-ch2025-3-gwl.qmd`, this writes per-run, per-period
+> predictor data and therefore belongs *after* the SSP leaf runs exist (`001-setup-db.qmd`)
+> and after `020-ingest-preds-statent.qmd` has committed the observed levels.
 
 ## Provenance: the input is elicited, and we do not know how
 
@@ -66,7 +66,7 @@ the same thing, only coarser (it rasterises the cantonal value directly, so its 
 ## Storage cost, and what it means for the run hierarchy
 
 This is the second per-run, per-period predictor family, so it interacts with the
-`base → climate → SSP` ordering chosen in `00-setup-db.qmd`. Because SSP is the **leaf**,
+`base → climate → SSP` ordering chosen in `001-setup-db.qmd`. Because SSP is the **leaf**,
 projected employment is replicated once per (SSP × climate framing) pairing, whereas projected
 climate is stored once per climate trajectory:
 
@@ -274,7 +274,7 @@ fte_ratio[
 id_period_obs <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 
 pred_ids <- db$pred_meta_t[name %in% c("fte_sec1", "fte_sec2", "fte_sec3"), .(id_pred, name)]
-stopifnot("run 02-ingest-preds-statent.qmd first" = nrow(pred_ids) == 3L)
+stopifnot("run 020-ingest-preds-statent.qmd first" = nrow(pred_ids) == 3L)
 
 observed <-
   db$pred_data_t[id_run == 0L & id_period == id_period_obs & id_pred %in% pred_ids$id_pred][

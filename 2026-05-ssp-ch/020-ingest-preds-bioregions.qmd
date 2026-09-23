@@ -1,5 +1,5 @@
 ---
-title: "02 — Predictors: biogeographic regions"
+title: "020 — Predictors: biogeographic regions"
 ---
 
 Ingest the BAFU **biogeographic regions of Switzerland** as a *categorical* predictor, giving
@@ -14,7 +14,7 @@ splitting the training data.
 
 The layer holds **12 polygons**: 6 regions (`R1`–`R6`) subdivided into 12 subregions
 (`U11`–`U62`). Both are ingested — they are strictly nested, hence collinear by construction,
-so `05-covariate-selection.qmd` should retain at most one of them per transition. The
+so `050-covariate-selection.qmd` should retain at most one of them per transition. The
 covariance/correlation filter is the right place to make that call, not this step.
 
 | Region | Subregions |
@@ -64,7 +64,7 @@ sources_bioreg <-
 
 The shapefile is read straight out of the ZIP via GDAL's `/vsizip/` — the archive is ~4 MB
 and holds a single 12-feature polygon layer, so the unpack-and-cache dance that
-`02-ingest-preds-swisstlm3d.qmd` needs for swissTLM3D is unnecessary here. The `.dbf` is
+`020-ingest-preds-swisstlm3d.qmd` needs for swissTLM3D is unnecessary here. The `.dbf` is
 UTF-8 encoded (per its `.CPG`), which matters for the German region names.
 
 ```{r}

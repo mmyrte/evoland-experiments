@@ -1,15 +1,15 @@
 ---
-title: "06 — Transition models"
+title: "060 — Transition models"
 ---
 
 Fit one transition-potential model per viable transition: a binary classifier answering "given a
-cell in the anterior class, did it transition?", trained on the predictors `05` retained. The
+cell in the anterior class, did it transition?", trained on the predictors `050` retained. The
 fitted models go to `trans_models_t` and are what `predict_trans_pot()` calls at allocation time.
 
 Two passes, following the evoland-plus workflow:
 
 1. **Partial models** — trained on a stratified subsample, scored on the held-out remainder.
-   These produce the goodness-of-fit numbers and the held-out predictions that `06d` plots.
+   These produce the goodness-of-fit numbers and the held-out predictions that `060d` plots.
 2. **Full models** — the best partial model per transition is refitted on all available data.
    `predict_trans_pot()` uses these.
 
@@ -21,7 +21,7 @@ a first pass:
 - The valparish prototype used a GLM; a forest relaxes the linearity and additivity assumptions
   that a GLM imposes on transition potentials, which is the more obviously wrong constraint
   here — suitability surfaces are not monotone in elevation or distance.
-- It needs no tuning to be usable, and `05` has already done the feature selection a forest
+- It needs no tuning to be usable, and `050` has already done the feature selection a forest
   would otherwise have to absorb.
 - It handles the `factor` predictors (`bioregion`) natively, without contrast coding.
 
@@ -56,7 +56,7 @@ n_workers <- 21L
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 stopifnot(
-  "trans_preds_t is empty - run 05-covariate-selection.qmd first" =
+  "trans_preds_t is empty - run 050-covariate-selection.qmd first" =
     nrow(db$trans_preds_t) > 0L
 )
 ```
@@ -65,7 +65,7 @@ stopifnot(
 
 `fit_partial_models()` coerces the learner's `predict_type` to `"prob"` — AUC needs
 probabilities, not hard class labels — and stores the held-out `PredictionClassif` per
-transition, which is what makes `06d` possible.
+transition, which is what makes `060d` possible.
 
 ```{r}
 #| label: transition-modelling-partial
@@ -119,7 +119,7 @@ if (!is.null(cluster)) {
 A forest that cannot separate transitioning from non-transitioning cells will still produce a
 potential surface — an uninformative one. Allocation would then place change essentially at
 random within the anterior class, constrained only by the demand and the patch parameters. That
-is worth catching here rather than inferring it from an odd-looking map in `09d`.
+is worth catching here rather than inferring it from an odd-looking map in `090d`.
 
 ```{r}
 #| label: transition-modelling-compare

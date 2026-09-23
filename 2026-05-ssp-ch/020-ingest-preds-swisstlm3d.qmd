@@ -1,5 +1,5 @@
 ---
-title: "02 — Predictors: swissTLM3D distances"
+title: "020 — Predictors: swissTLM3D distances"
 ---
 
 Derive distance-to-nearest-feature predictors (lakes, rivers, roads) from swissTLM3D.

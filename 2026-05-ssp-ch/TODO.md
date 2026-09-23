@@ -67,11 +67,11 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 - [ ] **Run `051-ingest-preds-ch2025-3-gwl.qmd`.** Written, never executed. It projects only the
       climate predictors that survived `050`, which is why it runs after `050` despite the ingest
       slug.
-- [ ] **Verify every ingested predictor has a future counterpart.** `022` already filters the
-      inventory to `time_of_year == "yearly"`, because the seasonal `-obs` aggregates
-      (DJF/MAM/JJA/SON) have no `-gwl` equivalent and would freeze at their observed baseline
-      under every GWL run. The step carries a code TODO to make that check general rather than
-      one hard-coded filter. (`022-ingest-preds-ch2025-etl.qmd:270`)
+- [ ] **Confirm `022`'s future-counterpart filter on the real cache.** `022` now keeps an
+      `-obs` indicator only if a `-gwl` file for the same `(indicator, time_of_year)` is cached
+      at every warming level, replacing the hard-coded `time_of_year == "yearly"`. Tested on a
+      synthetic cache only; on the next run its skip message should list exactly the seasonal
+      aggregates (DJF/MAM/JJA/SON), and `050`'s retained set should not change.
 - [ ] **Bioclimatic indicators.** CH2025 lacks CHELSA-BIOCLIM+-style variables; decide which to
       derive or source. (wishlist in the appendix of `022-ingest-preds-ch2025-etl.qmd`)
 
@@ -178,10 +178,9 @@ per-transition `mirai` cluster is the only parallelism in `050`.
   - [ ] Disaggregate `static` into convertible and non-convertible members — the deglaciation
         item above already requires this.
   - [ ] Re-elicit demand against classes that can carry a target.
-- [ ] **Housekeeping:** `070`'s prose still points at `R/ssp-demand.R` and a
-      `07-transition-rates-2-legacy.qmd` companion, both removed when the demand table was
-      inlined. Fix the references, and decide whether the legacy-behaviour comparison run is
-      still wanted.
+- [ ] **Decide whether the legacy-behaviour comparison run is still wanted.** It was
+      `071-transition-rates-legacy.qmd`, removed in `f12d134`; `070` still skips its
+      `rate_solver` sibling runs if present.
 
 Reachability is reported and not enforced. `trans_rate_reachability()` found 24 of 50
 SSP × class targets unreachable under observed transition bounds, several by 4–5×, glacier by

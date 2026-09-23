@@ -1,10 +1,10 @@
 ---
-title: "02 — CH2025 climate: projected (GWL) predictors"
+title: "051 — CH2025 climate: projected (GWL) predictors"
 ---
 
-Ingest the `-gwl` CH2025 projections cached by `02-ingest-preds-ch2025-1-download.qmd` as
+Ingest the `-gwl` CH2025 projections cached by `021-ingest-preds-ch2025-download.qmd` as
 period- and run-specific overrides of the observed climatology committed by
-`02-ingest-preds-ch2025-2-etl.qmd`.
+`022-ingest-preds-ch2025-etl.qmd`.
 
 The observed climatology sits at `id_period 0` on run `0`, which evoland treats as the
 **static fallback**: `pred_data_wide.sql` reads `id_period in (0, <target period>)` and, since
@@ -20,7 +20,7 @@ partially-populated slice yields `NA` (then `pred_meta_t$fill_value`) at the mis
 rather than quietly falling back to the baseline there.
 
 > **Ordering — this step is not a plain stage-02 step.** It is numbered `02-…-3-` because it
-> belongs to the CH2025 family, but it should be run **after `05-covariate-selection.qmd`**,
+> belongs to the CH2025 family, but it should be run **after `050-covariate-selection.qmd`**,
 > and re-run whenever the selected predictor set changes. See "Why this cannot ingest
 > everything" below; ingesting the full indicator set for every scenario arm is not
 > tractable, so the step defaults to projecting only the climate predictors that the
@@ -38,14 +38,14 @@ the product of every axis it varies along:
 | GWL trajectories × quantiles | 4 × 1 (q50 default) |
 | yearly climate indicators ingested | 18 |
 
-Because `runs_t` puts **climate above SSP** (see `00-setup-db.qmd`), climate is stored once per
+Because `runs_t` puts **climate above SSP** (see `001-setup-db.qmd`), climate is stored once per
 *climate* run rather than once per SSP arm — 4 copies at the q50 default instead of 20, and
 12 instead of 60 if all three quantiles are registered. The SSP leaves inherit it.
 
 Even so, the full indicator set is ~1.2 × 10⁹ rows at the q50 default. Two further levers
 reduce it, and this step exposes both:
 
-1. **Project only selected predictors.** After `05`, most climate indicators are pruned for
+1. **Project only selected predictors.** After `050`, most climate indicators are pruned for
    most transitions. `pred_names` defaults to the climate predictors still present in
    `trans_preds_t`.
 2. **Project only the quantiles you need.** `q50` is the default; `q5`/`q95` are an
@@ -62,16 +62,16 @@ publishes the GWL aggregates annually, while the `-obs` family additionally carr
 `*_SON`) have no projected counterpart**. Under a GWL run they silently keep their observed
 baseline, i.e. they are held constant into the future.
 
-That is a modelling decision, not a detail: if a seasonal predictor survives `05` and enters
+That is a modelling decision, not a detail: if a seasonal predictor survives `050` and enters
 a transition model, that model's projections carry a frozen seasonal climate while its annual
-terms move. Either restrict the climate predictors offered to `05` to `*_yearly`, or accept
+terms move. Either restrict the climate predictors offered to `050` to `*_yearly`, or accept
 and document the freeze. This step warns about any seasonal climate predictor it finds in the
 selected set.
 
 ## GWL trajectories
 
 The period → GWL schedule is a property of the **climate trajectory**, not of an SSP: the
-trajectories are shared, and several SSPs are realised against each. `00-setup-db.qmd`
+trajectories are shared, and several SSPs are realised against each. `001-setup-db.qmd`
 registers one climate run per (trajectory × quantile) and names the trajectories; the schedule
 itself lives here, where it is consumed.
 
@@ -81,7 +81,7 @@ itself lives here, where it is consumed.
 > `fast30` is **capped**: AR6 puts SSP5-8.5 above 3 °C well before the 2060s, but CH2025
 > publishes nothing higher. That understates late-century SSP5 warming and must be stated in
 > reporting. Which trajectory is a given SSP's "own" realisation is recorded as
-> `default_for_ssp` in `00-setup-db.qmd` and is reporting metadata only.
+> `default_for_ssp` in `001-setup-db.qmd` and is reporting metadata only.
 
 ```{r}
 #| label: ch2025-gwl-trajectories
@@ -148,7 +148,7 @@ pred_names <-
     selected <- db$trans_preds_t
     if (nrow(selected) == 0L) {
       stop(
-        "trans_preds_t is empty - run 05-covariate-selection.qmd first, or set ",
+        "trans_preds_t is empty - run 050-covariate-selection.qmd first, or set ",
         "pred_names_override explicitly. See 'Why this cannot ingest everything' above."
       )
     }
@@ -203,10 +203,10 @@ if (anyNA(inventory[, .(indicator, gwl, uncertainty, time_of_year)])) {
 
 inventory <- inventory[pred_name %in% pred_names & uncertainty %in% quantiles_to_ingest]
 
-# climate runs: the gwl-framing arms registered in 00-setup-db.qmd. These sit ABOVE the
+# climate runs: the gwl-framing arms registered in 001-setup-db.qmd. These sit ABOVE the
 # SSP leaves, so writing here serves every SSP realised against the trajectory.
 gwl_runs <- db$runs_t[climate_framing == "gwl" & gwl_quantile %in% quantiles_to_ingest]
-stopifnot("No gwl-framing runs in runs_t - run 00-setup-db.qmd" = nrow(gwl_runs) > 0L)
+stopifnot("No gwl-framing runs in runs_t - run 001-setup-db.qmd" = nrow(gwl_runs) > 0L)
 
 # (climate id_run, id_period) -> the (gwl, quantile) file that supplies it
 targets <-

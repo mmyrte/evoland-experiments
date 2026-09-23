@@ -1,5 +1,5 @@
 ---
-title: "08 — Backcasting validation"
+title: "080 — Backcasting validation"
 ---
 
 Validate the calibrated model against the past: replay the **observed** transition rates
@@ -20,7 +20,7 @@ right places — plus the allocator's ability to deliver the prescribed quantity
 Two consequences worth stating before any number is read:
 
 - **Non-viable transitions bound the score from above.** Observed change belonging to a
-  transition that `04`/`06` dropped can never be reproduced, because `predict_trans_pot()` only
+  transition that `040`/`060` dropped can never be reproduced, because `predict_trans_pot()` only
   predicts for viable transitions and `adjusted_trans_pot_v()` inner-joins potentials to rates.
   Rows for non-viable transitions in `trans_rates_t` are inert. The `unmodellable` share below
   quantifies that ceiling.
@@ -68,9 +68,9 @@ id_period_final <- max(backcast_periods)
 stopifnot(
   "need at least two observed periods" = length(backcast_periods) >= 1L,
   "backcast periods must be contiguous" = all(diff(backcast_periods) == 1L),
-  "no viable transitions - run 04 (and 06, which reconciles viability)" =
+  "no viable transitions - run 040 (and 060, which reconciles viability)" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
-  "no fitted models - run 06-transition-modelling.qmd first" =
+  "no fitted models - run 060-transition-modelling.qmd first" =
     db$row_count("trans_models_t") > 0L
 )
 
@@ -83,7 +83,7 @@ message(
 ## Observed rates as the backcast demand
 
 Written to run `0`: they are a property of the observed record, not of a scenario, and every
-backcast run inherits them through the run lineage. The scenario rates `07` wrote sit on the SSP
+backcast run inherits them through the run lineage. The scenario rates `070` wrote sit on the SSP
 leaf runs at the *extrapolated* periods, so the two never resolve to the same
 `(id_period, id_trans)` slice.
 
@@ -344,7 +344,7 @@ cells[, .N, by = .(id_run)]
 The first thing to establish is that the allocator hit the demand it was given. uPAM draws
 patches without replacement from the source pool; when the prescribed rate is large relative to
 the pool, or `avoid_aggregation` rejects many candidate patches, the pool empties before the
-quota is met and the run silently under-delivers. `07` flags the same failure mode for the
+quota is met and the run silently under-delivers. `070` flags the same failure mode for the
 scenario rates, where it is worse because the LP pushes rates above the historic envelope.
 
 ```{r}
@@ -656,7 +656,7 @@ is the substantive one; the third governs how the results may be reported.
 1. **Quantity fidelity.** For every viable transition with `count_prescribed > 1000`, the
    replicate-mean shortfall must be below 5 %. A larger shortfall means the allocator could not
    deliver a demand taken straight from the observed record, and nothing downstream —
-   least of all `09`, where the LP pushes rates *above* that record — can be trusted until it is
+   least of all `090`, where the LP pushes rates *above* that record — can be trusted until it is
    understood.
 2. **Allocation skill.** The ensemble FoM must beat the random-within-class null by a factor of
    two. This is a deliberately modest bar: published land-change models mostly land between a
@@ -665,7 +665,7 @@ is the substantive one; the third governs how the results may be reported.
    only meaningful comparison is against a null on this same landscape and period.
 3. **Per-transition honesty.** Transitions flagged `at_chance` above must be reported as
    spatially uninformative. Their quantity is still prescribed and still lands, but their
-   *pattern* is noise, and `09d` must not present maps of them as model output.
+   *pattern* is noise, and `090d` must not present maps of them as model output.
 
 ```{r}
 #| label: backcast-acceptance
@@ -703,7 +703,7 @@ The winner is chosen on the ensemble FoM, with `similarity_change` as the tie-br
 "are the right cells changing", the fuzzy similarity answers "is the change the right shape",
 and only the first is comparable against a null.
 
-The chosen set is written to run `0` so that every SSP run in `09` inherits it through the
+The chosen set is written to run `0` so that every SSP run in `090` inherits it through the
 lineage without further plumbing.
 
 ```{r}

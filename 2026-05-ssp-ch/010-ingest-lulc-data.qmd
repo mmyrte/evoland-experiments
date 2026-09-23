@@ -1,5 +1,5 @@
 ---
-title: "01 — Ingest LULC (Arealstatistik)"
+title: "010 — Ingest LULC (Arealstatistik)"
 ---
 
 Ingest the BFS **Arealstatistik** land-use/land-cover history as the observed LULC states

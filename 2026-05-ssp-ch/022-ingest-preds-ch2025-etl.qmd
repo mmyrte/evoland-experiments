@@ -1,8 +1,8 @@
 ---
-title: "02 — CH2025 climate: ETL"
+title: "022 — CH2025 climate: ETL"
 ---
 
-Read the `-obs` CH2025 netCDFs cached by `02-ingest-preds-ch2025-1-download.qmd` and ingest
+Read the `-obs` CH2025 netCDFs cached by `021-ingest-preds-ch2025-download.qmd` and ingest
 each as a predictor. All dimensions are recovered from the cached **file names** (see
 `nc_filename()` in the download step), so nothing is passed between the two steps in memory.
 Each file is read, transformed and written **one at a time** to keep memory flat — a single
@@ -267,13 +267,35 @@ if (anyNA(inventory[, .(indicator, reference_period, time_of_year)])) {
   )
 }
 
-# TODO filter to be sure this only ingests stuff that is also available into the future
-
 # id_period 0 baseline takes a single reference period
-inventory <- inventory[
-  reference_period == obs_reference_period &
-  time_of_year == "yearly" # the seasonal indicators aren't available for GWLs
+inventory <- inventory[reference_period == obs_reference_period]
+
+# Only ingest what has a future: an (indicator, time_of_year) needs a cached -gwl file at every
+# warming level, or 051 cannot project it and it would freeze at its observed baseline under
+# every GWL run. This is what drops the seasonal indicators, which MeteoSwiss does not publish
+# as -gwl.
+gwl_inventory <- data.table(
+  stem = sub("\\.nc$", "", list.files(cache_dir, pattern = "-gwl_.*\\.nc$"))
+)
+gwl_inventory[,
+  c("product_stem", "indicator", "gwl", "uncertainty", "time_of_year") :=
+    data.table::tstrsplit(stem, "_", fixed = TRUE)
 ]
+stopifnot("no -gwl files cached - run 021 first" = nrow(gwl_inventory) > 0L)
+n_gwl_levels <- data.table::uniqueN(gwl_inventory[["gwl"]])
+projectable <- gwl_inventory[,
+  .(n_gwl = data.table::uniqueN(gwl)),
+  by = .(indicator, time_of_year)
+][n_gwl == n_gwl_levels, .(indicator, time_of_year)]
+
+no_future <- inventory[!projectable, on = .(indicator, time_of_year)]
+if (nrow(no_future) > 0L) {
+  message(
+    "Skipping ", nrow(no_future), " obs files without -gwl counterparts at all ",
+    n_gwl_levels, " warming levels: ", toString(unique(no_future[["pred_name"]]))
+  )
+}
+inventory <- inventory[projectable, on = .(indicator, time_of_year), nomatch = NULL]
 
 message(
   "Found ",

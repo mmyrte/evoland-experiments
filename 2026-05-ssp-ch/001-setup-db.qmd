@@ -1,5 +1,5 @@
 ---
-title: "00 — Setup DB"
+title: "001 — Setup DB"
 ---
 
 Sets up the SSP-CH experiment database: an `evoland_db` store aimed at Arealstatistik land-use plus
@@ -93,7 +93,7 @@ We have a base run from which climate trajectories deviate, on top of which the 
 
 CH2025 publishes three global warming levels (GWL1.5 / GWL2.0 / GWL3.0) as 30-year climatologies.
 The four schedules below are a defensible reading of IPCC AR6 WG1 SPM.8a.
-See `02-ingest-preds-ch2025-3-gwl.qmd` which consumes them.
+See `051-ingest-preds-ch2025-3-gwl.qmd` which consumes them.
 `fast30` is **capped** — AR6 puts SSP5-8.5 above > 3 °C well before the 2060s, but CH2025 publishes
 nothing higher.
 

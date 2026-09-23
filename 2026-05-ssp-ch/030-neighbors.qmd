@@ -1,5 +1,5 @@
 ---
-title: "03 — Neighbourhood predictors"
+title: "030 — Neighbourhood predictors"
 ---
 
 Generate neighbourhood predictors: for each cell, summaries of the surrounding cells

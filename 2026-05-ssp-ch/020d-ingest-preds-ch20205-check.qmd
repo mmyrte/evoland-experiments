@@ -1,8 +1,8 @@
 ---
-title: "02d — CH2025 ingestion check (precip rasters)"
+title: "020d — CH2025 ingestion check (precip rasters)"
 ---
 
-Diagnostic for the CH2025 climate ingestion (`02-ingest-preds-ch2025-*`). Rebuilds the
+Diagnostic for the CH2025 climate ingestion (`021`/`022`/`051-ingest-preds-ch2025-*`). Rebuilds the
 seasonal precipitation predictors (`pr_DJF/JJA/MAM/SON`) from `pred_data_t` back onto
 the coordinate grid and plots them, as a visual sanity check that the extract/load
 produced sensible spatial fields. Read-only.

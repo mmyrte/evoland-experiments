@@ -1,10 +1,10 @@
 ---
-title: "04 — Viable transition identification"
+title: "040 — Viable transition identification"
 ---
 
 Commit the set of **viable** transitions to model: `trans_meta_t` with `is_viable` set by a
 minimum observed-transition count (`min_cardinality_abs`). The threshold is chosen from the
-observed-transition diagnostic in `04d-viable-transition-identification.qmd` — see that report to
+observed-transition diagnostic in `040d-viable-transition-identification.qmd` — see that report to
 justify the value.
 
 ## `static` is no longer excluded as an anterior class
@@ -33,7 +33,7 @@ visible in `lulcc.listbylulc.R:18`, where an exclusion of `Static` as an initial
 but **commented out**.
 
 SSP3's elicited 2060 target asks it to *shrink* (757,680 → 734,012 cells), and SSP0/SSP4 ask it to
-grow by less than its inflow delivers. The reachability precheck in `07` returns a ratio of `Inf`
+grow by less than its inflow delivers. The reachability precheck in `070` returns a ratio of `Inf`
 for those, and the LP misses target by 23,000–41,000 cells with another class forced to absorb the
 discrepancy under mass balance.
 
@@ -46,7 +46,7 @@ fail the threshold on its merits rather than be admitted by name.
 > **This is a problem with the elicitation, not with the model.**
 >
 > `static` is a catch-all for infrastructure, water bodies, rock and scree — see the class
-> definition in `01-ingest-lulc-data.qmd`. Some members genuinely convert (rock and scree revegetate
+> definition in `010-ingest-lulc-data.qmd`. Some members genuinely convert (rock and scree revegetate
 > to shrubland; that is the `Static → Shrubland` edge the original kept), but most do not: lakes
 > and motorways do not become farmland at a rate anyone elicited.
 >
@@ -71,7 +71,7 @@ db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 lulc_meta <- db$lulc_meta_t
 
-# commit with is_viable flag set according to criterion derived from the 04d graph
+# commit with is_viable flag set according to criterion derived from the 040d graph
 db$trans_meta_t <-
   create_trans_meta_t(
     db$trans_v,

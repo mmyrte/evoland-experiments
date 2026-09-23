@@ -1,5 +1,5 @@
 ---
-title: "02 — Predictors: DEM (DHM25)"
+title: "020 — Predictors: DEM (DHM25)"
 ---
 
 Ingest a digital elevation model and derive 100 m terrain predictors (elevation, slope,

@@ -1,10 +1,10 @@
 ---
-title: "05 — Covariate selection"
+title: "050 — Covariate selection"
 ---
 
 Prune the predictor set per viable transition using random forest
-importance, and commit the survivors to `trans_preds_t`. That table is what `06` trains on, and
-what `02-ingest-preds-ch2025-3-gwl.qmd` reads to decide which climate predictors are worth
+importance, and commit the survivors to `trans_preds_t`. That table is what `060` trains on, and
+what `051-ingest-preds-ch2025-3-gwl.qmd` reads to decide which climate predictors are worth
 projecting.
 
 ## Rationale
@@ -93,7 +93,7 @@ p <-
   labs(
     title = "GRRF importance per predictor, relative to the best predictor of each transition",
     subtitle = paste(
-      "Dashed line: the provisional importance_rel_cut = 0.5 in 05.",
+      "Dashed line: the provisional importance_rel_cut = 0.5 in 050.",
       "Look for an empty band; put the cut in it."
     ),
     x = NULL,
@@ -143,7 +143,7 @@ message(sprintf(
 
 Two things must hold before overwriting `trans_preds_t`: every viable transition still has at
 least one predictor, and selection introduced nothing that is not viable. A transition that
-survives `04` but ends up with an empty predictor set cannot be modelled in `06` —
+survives `040` but ends up with an empty predictor set cannot be modelled in `060` —
 `fit_full_models()` would leave its `learner_full` NULL, which aborts allocation later with
 *"No fitted model for viable transition(s)"*.
 
@@ -157,7 +157,7 @@ if (length(missing_trans) > 0L) {
   stop(
     "Viable transition(s) left with no predictors after selection: ",
     paste(missing_trans, collapse = ", "),
-    ". Lower importance_rel_cut, or demote them in 04.",
+    ". Lower importance_rel_cut, or demote them in 040.",
     call. = FALSE
   )
 }
@@ -193,7 +193,7 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
 ## How many predictors survive at each candidate cut?
 
 The threshold is only useful if it leaves every viable transition modellable. A transition
-reduced to zero predictors cannot be fitted in `06`, and `fit_full_models()` would leave its
+reduced to zero predictors cannot be fitted in `060`, and `fit_full_models()` would leave its
 `learner_full` NULL — which aborts allocation later.
 
 ```{r}
@@ -215,7 +215,7 @@ survival
 ```
 
 Pick the largest cut for which `trans_with_none` is 0 and `min_preds` is still comfortably above
-1, then set `importance_rel_cut` in `05-covariate-selection.qmd` to it and record the reasoning
+1, then set `importance_rel_cut` in `050-covariate-selection.qmd` to it and record the reasoning
 there.
 
 ```{r}

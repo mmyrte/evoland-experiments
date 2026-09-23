@@ -1,11 +1,11 @@
 ---
-title: "02 — CH2025 climate: probe & download"
+title: "021 — CH2025 climate: probe & download"
 ---
 
 Discover and download the CH2025 climate-indicator netCDFs from the MeteoSwiss
 [CH2025 web atlas](https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/ext/climate-ch2025-maps.html).
 This is stage 1 (**probe**) + stage 2 (**download**); the ETL that reads the cached files
-into the DB is `02-ingest-preds-ch2025-2-etl.qmd` (and `02-ingest-preds-ch2025-2-gwl.qmd` for the 
+into the DB is `022-ingest-preds-ch2025-etl.qmd` (and `051-ingest-preds-ch2025-3-gwl.qmd` for the 
 projections, but only once we have done feature selection to know which ones are actually useful
 for predictions). The ETL recovers all dimensions from
 the cached file names.
