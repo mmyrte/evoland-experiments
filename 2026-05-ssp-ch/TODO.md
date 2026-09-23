@@ -5,16 +5,17 @@ completed tasks are in git history. Refs point at the relevant `.qmd`.
 
 ## State
 
-`001`–`060` have run against the real database. `070` (rates) and `080`/`090` (backcast,
-extrapolation) are written and have only ever run against a 40×40-cell synthetic replica, which
-proves the API calls and metrics but says nothing about runtime or results. `091` has run on
-the full grid. `090d` is not written.
+`001`–`080` have run using the `parquet_db` database; the `ducklake_db` replacement is
+being implemented because `090` backcast and extrapolation need to be able to run in
+parallel (have only run part-way through until now). `091` has run on the full grid.
+`090d`, reporting on backcast and extrapolation, is not written.
 
-**Next up:** run `070` for real, then size `080` before letting it loose — `n_perturbations ×
-n_replicates` ships at 3 × 3 = 12 member runs, each re-predicting transition potentials over
-4.1 M cells for every allocated period, and nobody has measured one.
+**Next up:** fix ingestion scripts w.r.t. NAs introduced at borders etc. Once that is
+accomplished, ensure that parallel writers also work for allocation. Then run backcast
+and extrapolation for real.
 
-**Environment.** R 4.6.1 on Ubuntu 24.04 with r2u. Working toolchain: data.table 1.18.4
+**Environment for claude code web:**
+R 4.6.1 on Ubuntu 24.04 with r2u. Working toolchain: data.table 1.18.4
 (`rowwiseDT` needs ≥ 1.15), terra 1.9.34, mlr3 1.7.1, lpSolve 5.6.23, GDAL 3.8.4 / GEOS 3.12.1 /
 PROJ 9.4.0. duckdb resolves its extension cache per driver object and fetches extensions over
 http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
@@ -34,18 +35,17 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
       predictors, so keep `fill_value` as a mechanism and stop using it as a mask for missing
       coverage. Retire `029` once ingestion covers the grid.
       (`022-ingest-preds-ch2025-etl.qmd`, `020-ingest-preds-*.qmd`)
-- [ ] **Lower `min_cardinality_abs`.** At 10000 the viable-transition set may be too thin for a
-      clean rate solve; the code carries the note to decrease it until the solver is happy.
-      Settle it against the `040d` observed-transitions plot and the `070` reachability output.
+- [ ] **Lower `min_cardinality_abs`.** At 10000 the viable-transition set is too thin
+      for a clean and realistic rate solve. Settle it both against the `040d`
+      observed-transitions plot and the `070` reachability output.
       (`040-viable-transition-identification.qmd:80`)
 
 ---
 
 ## Scenario realisation
 
-- [ ] **Decide which (SSP × trajectory) pairings are allocated.** `default_for_ssp` records the
-      "own" pairing per SSP; the full 25-leaf cross is registered and cheap to store but not
-      cheap to allocate. (`001-setup-db.qmd`, `090-extrapolate.qmd`)
+- [ ] Extend to 2100 to match NCCS-SSP
+- [ ] **restrict to default_for_ssp (SSP × trajectory) pairings** (`001-setup-db.qmd`, `090-extrapolate.qmd`)
 - [ ] **Ratify the SSP→GWL crosswalk.** Provisional, encoded in one `rowwiseDT` in
       `051-ingest-preds-ch2025-3-gwl.qmd`, read off AR6 WG1 SPM.8a against the three levels
       CH2025 publishes. SSP3 and SSP4 currently share `rise30`; if they should differ, a fifth
@@ -67,68 +67,45 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 - [ ] **Run `051-ingest-preds-ch2025-3-gwl.qmd`.** Written, never executed. It projects only the
       climate predictors that survived `050`, which is why it runs after `050` despite the ingest
       slug.
-- [ ] **Verify every ingested predictor has a future counterpart.** `022` already filters the
-      inventory to `time_of_year == "yearly"`, because the seasonal `-obs` aggregates
-      (DJF/MAM/JJA/SON) have no `-gwl` equivalent and would freeze at their observed baseline
-      under every GWL run. The step carries a code TODO to make that check general rather than
-      one hard-coded filter. (`022-ingest-preds-ch2025-etl.qmd:270`)
+- [ ] add a proper insolation estimate; we don't have cloudiness from the climatologies,
+      so we'll have to take the terrain for ray-tracing based insolation; in interaction
+      with precipitation, this could represent latent shading effects
 - [ ] **Bioclimatic indicators.** CH2025 lacks CHELSA-BIOCLIM+-style variables; decide which to
       derive or source. (wishlist in the appendix of `022-ingest-preds-ch2025-etl.qmd`)
 
 ### Economic (STATENT)
 
-- [ ] 🔴 **Disclose the provenance gap.** The original labels the elicited employment file
+- [ ] **Disclose the provenance gap.** The original labels the elicited employment file
       `Data_citation = "Project Internal"`; no method, assumptions, panel or version has been
-      found. Everything the pipeline projects about employment inherits that. Either find the
-      documentation or state the gap wherever these predictors influence a result.
+      found. Ask Ben or Lena.
 - [ ] **Pin a fetchable source.** The CSV is read from the evoland cache with a pinned md5
       because no verifiable direct URL was reachable. Replace with `download_and_verify()` once
       one is confirmed. (`021-ingest-preds-statent-ssp.qmd`)
 
 ### Soil
 
-- [ ] 🔴 **Decide what happens to the EnviDat EIV predictors.** They are not in this pipeline.
-      The step was moved out in `d78838d` and lives at
-      `2025-10-valparish/020-ingest-preds-envidat-eiv.qmd`, where it still opens
-      `ssp-ch.evolanddb` but is outside this pipeline's numbering and has not been run against
-      it; the `050` scores confirm no EIV predictor is in `pred_meta_t`. The SSPM ingest was
-      written on the assumption that the two would sit side by side and be scored against each
-      other, which never happened. Against the six EIV soil layers plus `light_100m`:
-  - `soil_humus` → covered by `soil_oc_*`, which measures directly what the EIV indicates.
-  - `soil_moisture`, `soil_moisture_variability`, `soil_aeration` → partly covered by texture,
-    and only through a pedotransfer function. The real replacement is the WHC that
-    `2026-07-ssp-rsofun/011-forcing-soil-whc.r` derives, which is not ingested here, so texture
-    is currently a rawer predictor than the EIVs were.
-  - `soil_ph`, `soil_nutrients`, `light_100m` → no substitute in the pipeline. The SSPM record
-    reportedly has N and P layers that nothing fetches; whether they can stand in is untested.
-  - Either move the EIV step back in as `020-ingest-preds-envidat-eiv.qmd` and let `050` decide,
-    or record the loss of pH, nutrients and light as a deliberate reduction of the predictor set.
-    `020-ingest-preds-soil.qmd` §"This is only a partial replacement" needs the same correction.
-- [ ] **Eliminate depth collinearity at feature selection.** The four depths are ingested as
-      separate predictors (12 in total) because topsoil governs cultivation and deeper layers
-      govern water storage. If that proves unwieldy, the alternative is a trapezoidal 0–100 cm
-      profile mean per property plus the 0 cm value.
+- [ ] From SSPM: Add the N and P layers from SSPM
+- [ ] From SSPM: Add bulk densities https://zenodo.org/records/18428152
+- [ ] From SSPM: Add coarse fragments https://zenodo.org/records/17453999
+- [ ] Possibly aggregate across the four depths. They are currently ingested as
+      separate predictors (topsoil->cultivation, deeper layers->water storage)
 
 ### Other predictors
 
 - [ ] **Bioregion / subregion collinearity.** The two are strictly nested. `050` should retain at
       most one per transition, and with the correlation pre-filter dropped this rests entirely on
       GRRF's regularisation. Check the retained sets.
-- [ ] **Insolation.** `020-ingest-preds-dem.qmd` ingests elevation, slope and aspect only. The
-      original's hillshade was discarded as a weak insolation proxy; decide whether a
-      ray-traced insolation predictor is worth adding in its place.
-- [ ] **sonBASE noise.** Decide whether to re-include; the ingestion exists in
-      `2025-10-valparish/020-ingest-preds-sonbase.r`.
 
 ---
 
 ## LULC schema
 
-- [ ] **Arealstatistik 2025.** Add `AS25_72` once the survey is finalised (currently 1985–2018).
-      (`010-ingest-lulc-data.qmd`)
+- [ ] **Arealstatistik 2025.** Add `AS25_72` once the survey is finalised (currently
+      1985–2018; as of the 2026-08-31 release, only Genève, Vaud, Fribourg, Jura, Solothurn,
+      Aargau and the two Basels are done.) See `010-ingest-lulc-data.qmd`
 - [ ] **Deglaciated-area land-use class.** A new class from the glacier inventory, needing
-      disaggregation to represent succession on deglaciating areas, interacting with the
-      small-area inclusion threshold. (`010-ingest-lulc-data.qmd`)
+      disaggregation to represent succession on deglaciating areas. May require specific
+      handling on the viability logic. (`010-ingest-lulc-data.qmd`)
 
 ---
 
@@ -138,13 +115,8 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
       `importance_rel_cut` (currently 0.2) are reasoned but not justified against this data.
       Re-run across a small grid and report how far the retained set moves.
       (`050-covariate-selection.qmd`)
-
-Note for whenever the correlation pre-filter is reconsidered: `FilterFindCorrelation` is
-`integer`/`numeric` only, so a `factor` predictor makes it raise "unsupported feature types",
-which `pred_filter_worker()` turns into an all-`NA` score for the whole transition — a silent
-hole rather than a crash. It scores ≈ `1 − max|r|`, so `corcut` translates to keeping
-`score > 1 - corcut`. `regularization.factor` disables ranger's internal threading, so the
-per-transition `mirai` cluster is the only parallelism in `050`.
+- [x] reconsider correlation filter; never reall made sense for mixed data types
+- [ ] check whether MRMR is a better option https://mlr3filters.mlr-org.com/reference/mlr_filters_mrmr.html
 
 ---
 
@@ -161,33 +133,28 @@ per-transition `mirai` cluster is the only parallelism in `050`.
 
 ## Transition rates
 
-- [ ] **Run `070` against the real database.** Written, unrun. The under-delivery check is
-      deferred to `090`, which verifies realised areas against `trans_rate_areas()`.
+- [ ] model transition rates in two phases: first until 2060, second to 2100
 - [ ] **Re-measure target misses after `040` settles.** `static` is no longer excluded as an
       anterior class, which should relieve the 34,000–67,000-cell misses on SSP0/SSP3/SSP4. If
       `max_target_err` does not fall substantially, the remedy moves to the demand side.
 - [ ] **Restore a finite `max_reachability_ratio`** in `070` once the static ratios come back
       finite. It is at `Inf` only because `static` made them `Inf`.
-- [ ] 🔴 **The `static` area targets are an elicitation defect, knowingly kept.** `static`
+- [x] **The `static` area targets are an elicitation defect, knowingly kept.** `static`
       aggregates infrastructure, water, rock and scree. Some members genuinely convert
-      (rock/scree revegetating to shrubland); most cannot. Giving the class a per-scenario 2060
-      area target treats it as a land use whose extent is a policy outcome, when it is an
-      aggregation artefact standing in for unstated assumptions about deglaciation, reservoirs
-      and sealing. The original's own model could not deliver SSP3's static target. Retained to
-      stay close to the replication, not endorsed. Proper fixes:
+      (rock/scree revegetating to shrubland); most cannot. Giving the class a
+      per-scenario 2060 area target treats it as a land use whose extent is a policy
+      outcome, when it is an aggregation artefact standing in for unstated assumptions
+      about deglaciation, reservoirs and sealing. The original's own model could not
+      deliver SSP3's static target. Retained to stay close to the replication, not
+      endorsed. Proper fix would be to re-elicit demand against classes that can carry a
+      target. Proposed fix:
   - [ ] Disaggregate `static` into convertible and non-convertible members — the deglaciation
         item above already requires this.
-  - [ ] Re-elicit demand against classes that can carry a target.
 - [ ] **Housekeeping:** `070`'s prose still points at `R/ssp-demand.R` and a
       `07-transition-rates-2-legacy.qmd` companion, both removed when the demand table was
       inlined. Fix the references, and decide whether the legacy-behaviour comparison run is
       still wanted.
-
-Reachability is reported and not enforced. `trans_rate_reachability()` found 24 of 50
-SSP × class targets unreachable under observed transition bounds, several by 4–5×, glacier by
-1.81× in all five scenarios, with 42–63 % of solved flow outside the historic envelope. The soft
-bounds are load-bearing, so [#32](https://github.com/ethzplus/evoland-plus/issues/32)'s
-"fail loudly on infeasible targets" would abort every scenario.
+- [ ] find out how to handle transition rates from deterministic transition (deglaciation)
 
 ---
 
@@ -196,28 +163,16 @@ bounds are load-bearing, so [#32](https://github.com/ethzplus/evoland-plus/issue
 - [ ] **Size the run.** `n_perturbations = 3`, `n_replicates = 3`, `fuzzy_window = 11` were
       chosen for legibility. Measure one member run first; start at 1 × 2 and grow.
       (`080-validate-backcasting.qmd`)
-- [ ] 🔴 **Only `frac_expander` is perturbed.** `create_alloc_params_t()` jitters that one
+- [ ] **Only `frac_expander` is perturbed.** `create_alloc_params_t()` jitters that one
       column, so the sweep says nothing about sensitivity to `mean_patch_size` or
-      `patch_elongation`. Widening it needs an upstream change.
-- [ ] **Fuzzy similarity is nearly uninformative as evoland reports it.**
-      `calc_transition_similarity()` binarises the change maps with `NA -> 0` and averages the
-      similarity surface over the whole raster, so the agreeing background dominates and
-      everything scores near 1 (0.94–0.96 on the synthetic replica). `080` also reports
-      `similarity_change`, the same surface masked to cells that changed in either map, and
-      selects on the figure of merit. Consider pushing the masked variant upstream; it is what
-      Dinamica's own validation reads.
-- [ ] **Decide whether the acceptance criteria are right.** `080` proposes quantity fidelity
+      `patch_elongation`.
+  - [ ] Drop jitter upstream, simply return best estimate; leave the
+        jittering/perturbation to whoever is constructing the `alloc_params_t`.
+- [x] **Decide whether the acceptance criteria are right.** `080` proposes quantity fidelity
       (< 5 % shortfall on transitions above 1000 cells), allocation skill (ensemble FoM ≥ 2× the
       random-within-class null) and per-transition honesty (transitions at chance may not be
-      shown as maps in `090d`). The first two are gates in code; the third is a reporting rule
-      nothing enforces.
-- [ ] **Fold this back into `eval_alloc_params_t()`.** The upstream helper runs the same loop but
-      calls `alloc_dinamica()` (needing DinamicaConsole), ignores the `runs_t` hierarchy, runs
-      one realisation per parameter set and reports only the unmasked similarity. A CLUMPY
-      backend plus an `n_replicates` argument would collapse most of `080` into one call.
+      shown as maps in `090d`).
 
-Replicates branch at the root and chain, because a 40-year backcast tests the compounding
-trajectory. A one-step-ahead variant needs no new machinery; the recipe is in `080`'s prose.
 
 ---
 
@@ -225,11 +180,6 @@ trajectory. A one-step-ahead variant needs no new machinery; the recipe is in `0
 
 - [ ] **Widen the `090` subset.** Ships at SSP1 + SSP3 under `current`, via `ssp_subset` /
       `climate_subset`. Depends on the pairing decision above.
-- [ ] **Read `091`'s five panels against `070`'s solved rates.** With one climate framing and one
-      anterior state, the SSP demand is the only scenario-varying input at this horizon. If the
-      maps come out near-identical, that is a finding about the demand. Single-period allocation
-      also does not compound, so the intensity maps say where change goes first, not where a
-      scenario ends up.
 - [ ] **Write `090d-report.qmd`.** Human-facing figures, tables and maps; mutates no state. At
       minimum the change-frequency map over the replicate ensemble and the realised-vs-demanded
       trajectory per class.
@@ -240,6 +190,8 @@ trajectory. A one-step-ahead variant needs no new machinery; the recipe is in `0
 ---
 
 ## Interventions
+
+> This section to be rewritten by session_019fog72qNWbuSjiGBWuP3np
 
 Not implemented at any stage. The three intervention stages in
 `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` are the reference for what is wanted.
@@ -286,6 +238,18 @@ reads them, so the shape is still open.
 
 ## Upstream asks (evoland-plus)
 
+- [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
+      id_runs in that table and to validate the results. Since running multiple id_runs
+      across one or more id_periods is going to be a common analytic scenario, that eval
+      function should be replaced by a more generally useful method accepting an id_run x
+      id_period subset to evaluate with either clumpy or dinamica.
+- [ ] **Fuzzy similarity is nearly uninformative as evoland reports it.**
+      `calc_transition_similarity()` binarises the change maps with `NA -> 0` and averages the
+      similarity surface over the whole raster, so the agreeing background dominates and
+      everything scores near 1 (0.94–0.96 on the synthetic replica). `080` also reports
+      `similarity_change`, the same surface masked to cells that changed in either map, and
+      selects on the figure of merit.
+  - [ ] Push the masked variant upstream; it is what Dinamica's own validation reads.
 - [ ] **An intervention interface**, per the section above.
 - [ ] 🔴 **`alloc_clumpy()` upserts neighbour predictors after every period, including the
       last.** `upsert_new_neighbors()` recomputes the neighbourhood predictors for the period
@@ -298,7 +262,6 @@ reads them, so the shape is still open.
 - [ ] **`trans_pot_t` is written per run and period** and is the largest thing `080` stores. If
       disk is tight, member runs need pruning between evaluations. `091` sidesteps this via
       `use_parent_trans_pot`; `080`'s chained replicates cannot, past the first period.
-- [ ] **Widen `create_alloc_params_t()`'s perturbation** beyond `frac_expander`.
 - [ ] **`terra::panel()` / `plot()` need `type = "continuous"`** for an ensemble-share layer.
       With `n_members + 1` distinct values terra falls back to a categorical legend, printing
       full-precision fractions as class labels and, at small member counts, failing to shade the
