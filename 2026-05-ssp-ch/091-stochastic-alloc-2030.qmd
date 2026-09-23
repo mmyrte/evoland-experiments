@@ -244,9 +244,10 @@ members[, .N, by = .(ssp, parent_id_run)]
 `use_parent_trans_pot = TRUE` makes each member read its scenario's potentials; the call to
 `predict_trans_pot()` inside the allocator then finds them present and returns without work after the first iteration.
 
-`alloc_clumpy_one_period()` is currently internal, hence the `:::`. May want to change upstream: either an
-`update_neighbors` argument on `alloc_clumpy()`, or skipping the upsert after the last period of
-the requested sequence, since nothing consumes it. Recorded in `TODO.md`.
+`alloc_clumpy_one_period()` returns the allocated map without committing it or recomputing the
+neighbour predictors, which nothing consumes after a single period. It is exported upstream since
+ethzplus/evoland-plus#49; `alloc_clumpy(update_neighbors = FALSE)` from #50 would do the same
+once merged.
 
 ```{r}
 #| label: alloc2030-allocate
@@ -259,8 +260,8 @@ for (i in seq_len(nrow(members))) {
   # (src/alloc_clumpy.cpp), so seeding here is exact and per-member reproducible.
   set.seed(members$seed[i])
 
-  lulc_member <- evoland:::alloc_clumpy_one_period(
-    self = db,
+  lulc_member <- alloc_clumpy_one_period(
+    db = db,
     id_period_post = target_period,
     select_score = select_score,
     select_maximize = select_maximize,

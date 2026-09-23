@@ -198,7 +198,8 @@ bounds are load-bearing, so [#32](https://github.com/ethzplus/evoland-plus/issue
       (`080-validate-backcasting.qmd`)
 - [ ] 🔴 **Only `frac_expander` is perturbed.** `create_alloc_params_t()` jitters that one
       column, so the sweep says nothing about sensitivity to `mean_patch_size` or
-      `patch_elongation`. Widening it needs an upstream change.
+      `patch_elongation` — and CLUMPY ignores `frac_expander`, so under CLUMPY the perturbed
+      sets do not differ at all. ethzplus/evoland-plus#52 adds a per-column `sd`.
 - [ ] **Fuzzy similarity is nearly uninformative as evoland reports it.**
       `calc_transition_similarity()` binarises the change maps with `NA -> 0` and averages the
       similarity surface over the whole raster, so the agreeing background dominates and
@@ -244,33 +245,67 @@ trajectory. A one-step-ahead variant needs no new machinery; the recipe is in `0
 Not implemented at any stage. The three intervention stages in
 `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` are the reference for what is wanted.
 
-**Direction.** The intervention infrastructure should not live in the main evoland-plus
-package. evoland-plus should expose an **interface** for these manipulations, and ad-hoc
-interventions get built on it here. `intrv_meta_t` / `intrv_masks_t` exist upstream and nothing
-reads them, so the shape is still open.
+**Direction (settled).** No intervention infrastructure upstream: `intrv_meta_t` /
+`intrv_masks_t` are to be removed from evoland-plus, and interventions are built here, per
+period, on the exported single-period allocators (ethzplus/evoland-plus#49):
+
+1. `db$predict_trans_pot(p, …)` under the scenario run;
+2. read the run's `trans_pot_t` for `p`, edit, write it back — the **whole** slice per
+   `(id_trans, id_period_post)`, since a run inherits its ancestors' potentials slice-wise and
+   a partial write hides the rest of the parent's slice;
+3. `alloc_clumpy_one_period()` / `alloc_dinamica_one_period()` reuse the edited potentials
+   (they only predict when none exist) and return the map without committing it;
+4. edit the map (post-allocation), `db$commit(…, "lulc_data_t")`, then
+   `db$upsert_new_neighbors(p)` — in that order, or the next period predicts from stale
+   neighbour predictors.
+
+This depends on #49's `id_run` key on `trans_pot_t`; before it, one run's writes overwrote
+every other run's potentials for the same transition, period and cell.
+
+**On rescaling.** `adjusted_trans_pot_v()` rescales each transition's potentials to its target
+rate, so a masked adjustment relocates change rather than adding it. That is the right
+behaviour, not a loss: the fitted models' base rates are artefacts of the training data, and
+rescaling re-estimates the intercept against the scenario demand (a prior-shift correction; CLUE-S
+does the same with its per-class iteration variables). It keeps quantity (`trans_rates_t`) and
+location (`trans_pot_t`) separate. The original's non-rescaled "Absolute" values were not
+meaningful: "set to 0.1" is a 100× boost for a transition whose potentials sit near 0.001 and
+almost nothing for one near 0.2. Under Dinamica this left quantity intact (the transition
+matrix fixes it) but made the maps arbitrary scores; under CLUMPY's uSAM it would change the
+quantity too. Two consequences:
+- Express adjustments as **multiplicative factors** (odds ratios, "k× as likely inside the
+  mask"), which pass through the rescaling unchanged and state the scenario assumption plainly;
+  zero is an exact exclusion. This is the mask as a predictor with an imposed rather than
+  estimated coefficient. The original's `Relative` method (percentile-mean gaps, thresholds,
+  sign rules) has no such reading and is not worth reproducing.
+- An intervention meant to change *how much* land changes belongs in the demand (`070`), not in
+  the potentials.
+
+The linear scaling is itself an approximation to a logit-scale intercept shift; the two agree
+for rare transitions and diverge only where potentials are high.
 
 - [ ] **Decide whether post-hoc probability adjustment is the right mechanism at all.**
-      Manipulating transition potentials after they have been estimated is hard to defend.
-      Better: have the transition models take the constraint into account — protected areas as a
-      predictor, for instance — so the intervention is part of the estimate. Custom mlr3 learners
-      that admit such manual constraints are one route. Quantile remapping is out of scope for
-      that approach.
-- [ ] **Pre-allocation (patch geometry)** is already reachable: write a modified
-      `alloc_params_t` row set onto the SSP run instead of inheriting run 0's. Two conversions
-      needed — `Param_adjust_type: Relative` vs `Absolute`, and `Patch_Isometry` (a Dinamica
-      parameter) back through `isometry_from_elongation()`, which is not injective over its flat
-      segments. The YAML's numbers were tuned against the original's parameter estimates (see
-      `Spatial_intervention_updates.txt`, where SSP1's 0.20 patcher target was cut to 0.15), so
-      they do not transfer unexamined.
-- [ ] **Allocation (masked probability adjustment)** needs an upstream change whichever
-      direction is taken. The evoland analogue is editing `trans_pot_t` between prediction and
-      allocation, but `alloc_clumpy_one_period()` calls `predict_trans_pot()` unconditionally as
-      its first act and that write overwrites any edit; `use_parent_trans_pot` only redirects
-      which run is predicted for. Needs a `skip_prediction` flag or a hook. Note also that
-      `adjusted_trans_pot_v()` rescales each transition's potentials to match the target rate, so
-      raising potentials inside a mask moves change rather than adding it.
-- [ ] **Post-allocation (direct map edit)** is trivial: rewrite `lulc_data_t` for the run and
-      period after allocation and before the next period is allocated.
+      The adjustments are harder to defend than the rescaling. Better: have the transition
+      models take the constraint into account — protected areas as a predictor, for instance —
+      so the intervention is part of the estimate. Custom mlr3 learners that admit such manual
+      constraints are one route.
+- [ ] **Pre-allocation: drop `Spatial_zoning` (proposed).** It is the only pre-allocation
+      intervention in the YAMLs: `Perc_patcher` for transitions into Urban, 0 in SSP0/3/5, 0.15
+      in SSP1, 0.5 in SSP4. Dinamica-only; CLUMPY has no expander/patcher split, and its
+      `avoid_aggregation` only prevents merging with patches of the same time step, so adjacency
+      to existing urban comes entirely from the potentials (urban neighbour predictors). The
+      calibrated patcher fractions were already ~0.15–0.27 (`Spatial_intervention_updates.txt`),
+      so the scenario contrast is small. If it must be kept, express it at the allocation stage:
+      scale urban-transition potentials in cells with no urban neighbour in the nearest distance
+      class by k (k = 0 ≡ patcher 0); the 0.15 / 0.5 settings would need calibrating.
+- [ ] **Allocation-stage interventions** per the recipe above. Masks filtered by current land use
+      (`From_lulc_filter`), per-time-step masks, the `Agri_*` marginality quartile and
+      `Intervention_ranking` all live here and need only the anterior `lulc_data_t`.
+- [ ] **Post-allocation: deterministic glacier transitions.** No YAML defines a
+      `Post-allocation` intervention; the one post-allocation step the original ran is
+      `Scripts/Dinamica_integration/Dinamica_deterministic_trans.R`, which overwrites
+      glacier / non-glacier cells from a per-scenario glacier index after allocation. Model it
+      as a map edit in step 4, and keep the area it moves out of the demand the rate solver
+      allocates (`070` currently marks deglaciation viable for the bounds only).
 - [ ] **Masks have no reproducible source.** The YAML's ValPar-local paths
       (`Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd`, municipality typology, …)
       need the treatment the `020-` steps gave the predictors.
@@ -286,19 +321,31 @@ reads them, so the shape is still open.
 
 ## Upstream asks (evoland-plus)
 
-- [ ] **An intervention interface**, per the section above.
-- [ ] 🔴 **`alloc_clumpy()` upserts neighbour predictors after every period, including the
-      last.** `upsert_new_neighbors()` recomputes the neighbourhood predictors for the period
-      just allocated and upserts them into `pred_data_t`, which is not partitioned by `id_run`,
-      so every upsert rewrites the whole predictor table. For a single-period ensemble that work
-      is wasted, and it is what would make `091` unrunnable at 100 members; `091` therefore calls
-      `evoland:::alloc_clumpy_one_period()` and commits `lulc_data_t` itself. Wanted: an
-      `update_neighbors` argument, or skipping the upsert after the last requested period.
-      Partitioning `pred_data_t` by `id_run` would help independently.
-- [ ] **`trans_pot_t` is written per run and period** and is the largest thing `080` stores. If
-      disk is tight, member runs need pruning between evaluations. `091` sidesteps this via
-      `use_parent_trans_pot`; `080`'s chained replicates cannot, past the first period.
-- [ ] **Widen `create_alloc_params_t()`'s perturbation** beyond `frac_expander`.
+Open PRs; bump the `evoland` pin in `rproject.toml` / `rv.lock` as they merge. The pin currently
+sits on #49's head, which `091` needs.
+
+- [ ] **Intervention interface** — ethzplus/evoland-plus#49: `trans_pot_t` keyed by `id_run`,
+      the run-lineage read fix below, and `alloc_clumpy_one_period()` /
+      `alloc_dinamica_one_period()` exported with matching signatures. Then remove
+      `intrv_meta_t` / `intrv_masks_t` upstream.
+- [ ] 🔴 **Run-lineage reads returned every ancestor's rows** for tables without `id_period`
+      (`alloc_params_t`, `trans_pot_t`, `trans_models_t`, `trans_preds_t`); fixed in #49. In
+      `091`, members' lineage runs through their scenario run to run 0, and both carry
+      `alloc_params_t` (from `091` and `090`), so `alloc_params_clumpy_v()` returned each
+      transition twice and `alloc_clumpy_one_period()` passed misaligned patch parameters to
+      C++. **Re-run `091`** on the new pin, and check `080` if run 0 already held parameters
+      from an earlier execution when it ran.
+- [ ] **`update_neighbors` argument on `alloc_clumpy()` / `alloc_dinamica()`** — #50 (stacked
+      on #49). Skips the neighbour upsert after the last requested period. `pred_data_t` is
+      already partitioned by `id_run` and `id_period`.
+- [ ] **`prune_trans_pot()`** — #51. Deletes the active run's own `trans_pot_t` rows so `080`'s
+      chained replicates can drop potentials once evaluated; disk is freed by `$checkpoint()`
+      under the catalog retention settings. Wire into `080` once merged.
+- [ ] **Widen `create_alloc_params_t()`'s perturbation** — #52: `sd` per column, covering
+      `mean_patch_size`, `patch_size_variance` and `patch_elongation`. Wire into `080` once
+      merged (see Validation).
+- [ ] **Masked fuzzy similarity** (`similarity_change`) and a CLUMPY backend for
+      `eval_alloc_params_t()`; see Validation.
 - [ ] **`terra::panel()` / `plot()` need `type = "continuous"`** for an ensemble-share layer.
       With `n_members + 1` distinct values terra falls back to a categorical legend, printing
       full-precision fractions as class labels and, at small member counts, failing to shade the
