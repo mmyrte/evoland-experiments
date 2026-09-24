@@ -1,0 +1,4150 @@
+Group: Calibration
+  Functors:
+     Functor: DetermineTransitionMatrix
+      Description: Determine single step and multi-step transition matrices.
+       Inputs:
+         (0) Name: initialLandscape
+          Type: CategoricalMap
+          Description: Initial map of land use and cover classes.
+         (1) Name: finalLandscape
+          Type: CategoricalMap
+          Description: Final map of land use and cover classes.
+         (2) Name: timeSteps
+          Type: PositiveIntegerValue
+          Description: Number of time steps between initial and final landscape maps.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: singleStepMatrix
+          Type: TransitionMatrix
+          Description: Transition matrix for the entire period.
+         (1) Name: multiStepMatrix
+          Type: TransitionMatrix
+          Description: Transition matrix for a time step specified by the number of time units that the period is divided.
+     Functor: DetermineWeightsOfEvidenceCoefficients
+      Description: Determine the Weights of Evidence coefficients for selected spatial variables.
+       Inputs:
+         (0) Name: initialLandscape
+          Type: CategoricalMap
+          Description: Initial map of land use and cover classes
+         (1) Name: finalLandscape
+          Type: CategoricalMap
+          Description: Final map of land use and cover classes
+         (2) Name: ranges
+          Type: Weights
+          Description: Pre-defined intervals for continuous gray-tone variable.
+       Optional Inputs:
+         (0) Name: fixAbnormalWeights
+           Type: BooleanValue
+           Description: If true, recalculate abnormal weights. Otherwise, assume abnormal values are zero.
+         (1) Name: potentialTransitionCriteria
+           Type: BooleanValue
+           Description: If true, it is understood that, in analyzing the transition from category C to category P, any instance where C transitions to X (where X is different from P) signifies that the transition was possible but not executed. Otherwise, it is understood that the transition was possible but not executed only if X is equal to category C. This flag affects the analysis of concurrent transitions.
+       Outputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Obtained coefficients for selected spatial variables with respect to a transition or set of transitions.
+         (1) Name: report
+          Type: Table
+          Description: Table containing additional informations about the coefficient calculations.
+     Functor: DetermineWeightsOfEvidenceContinuousOccurrences
+      Description: Determine Weights of Evidence coefficients for selected spatial variables.
+       Inputs:
+         (0) Name: occurrences
+          Type: Map
+          Description: 
+         (1) Name: mask
+          Type: Map
+          Description: 
+         (2) Name: ranges
+          Type: Weights
+          Description: Pre-defined ranges for continuous gray-tone variable.
+       Optional Inputs:
+         (0) Name: fixAbnormalWeights
+           Type: BooleanValue
+           Description: If true, recalculate abnormal weights. Otherwise, assume abnormal values are zero.
+       Outputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Obtained coefficients for selected spatial variables.
+     Functor: DetermineWeightsOfEvidenceCorrelation
+      Description: Calculate correlation between pair of maps.
+       Inputs:
+         (0) Name: ranges
+          Type: Weights
+          Description: Pre-defined Intervals for continuous gray-tone variables.
+         (1) Name: transition
+          Type: TransitionSet
+          Description: Transitions for which the correlation will be calculated.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: report
+          Type: Table
+          Description: Table containing additional informations about the correlation calculations.
+     Functor: DetermineWeightsOfEvidenceRanges
+      Description: Define the best ranges or intervals employed to categorize continuous gray-tone variables.
+       Inputs:
+         (0) Name: initialLandscape
+          Type: CategoricalMap
+          Description: Initial map of land use and cover classes.
+         (1) Name: finalLandscape
+          Type: CategoricalMap
+          Description: Final map of land use and cover classes.
+         (2) Name: skeleton
+          Type: WeightsOfEvidenceSkeleton
+          Description: Spatial variables selected and their types - Category or continuous gray-tone -, and the parameters specified for range definitions, such as increment, maximum and minimum deltas, and tolerance angle.
+       Optional Inputs:
+         (0) Name: fixAbnormalWeights
+           Type: BooleanValue
+           Description: If true, recalculate abnormal weights. Otherwise, assume abnormal values are zero.
+         (1) Name: potentialTransitionCriteria
+           Type: BooleanValue
+           Description: If true, it is understood that, in analyzing the transition from category C to category P, any instance where C transitions to X (where X is different from P) signifies that the transition was possible but not executed. Otherwise, it is understood that the transition was possible but not executed only if X is equal to category C. This flag affects the analysis of concurrent transitions.
+       Outputs:
+         (0) Name: ranges
+          Type: Weights
+          Description: Intervals defined for continuous gray-tone variable.
+     Functor: GeneticAlgorithmTool
+      Description: Global Optimization tool. Solves a Genetic Algorithm that mimics the principle of biological evolution in a search for a global optimization solution for the contained model.
+       Inputs:
+         (0) Name: useConvergenceStoppingCriteria
+          Type: BooleanValue
+          Description: If true, the optimization process will halt if evolution of generations becomes asymptotic, as defined by the asymptotic parameter. Otherwise, the total number of generations specified by "Number Of Generations" is used.
+         (1) Name: numberOfGenerations
+          Type: PositiveIntegerValue
+          Description: If the "Use Convergence Stopping Criteria" is true, the "Number Of Generations" specifies the minimum number of generations to detect convergence. Otherwise, it becomes the maximum number of generations.
+         (2) Name: populationSize
+          Type: PositiveIntegerValue
+          Description: Number of individuals per population.
+         (3) Name: individualGenotype
+          Type: LookupTableGroup
+          Description: The genotype that defines the template for individuals.
+         (4) Name: defaultLowerBound
+          Type: RealValue
+          Description: The default lower value for alleles.
+         (5) Name: defaultUpperBound
+          Type: RealValue
+          Description: The default upper value for alleles.
+       Optional Inputs:
+         (0) Name: convergenceLimit
+           Type: Percent
+           Description: Convergence limit (in percentage of fitness variation) across the given number of generations used to halt the optimization process.
+         (1) Name: lowerBound
+           Type: LookupTableGroup (nullable)
+           Description: The lower limits per alleles. If omitted, the "Default Lower Bound" is used for missing limits.
+         (2) Name: upperBound
+           Type: LookupTableGroup (nullable)
+           Description: The upper limits per alleles. If omitted, the "Default Upper Bound" is used for missing limits.
+         (3) Name: metaHeuristicEvaluationPercent
+           Type: Percent (nullable)
+           Description: A percentage of individuals whose finesses are obtained via meta-heuristic estimation (in percentage of individuals).
+         (4) Name: maximumLogLevel
+           Type: LogTag (nullable)
+           Description: Maximum log level used to run the contained functors.
+         (5) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: bestIndividual
+          Type: LookupTableGroup
+          Description: The resulting best individual from all generations.
+         (1) Name: bestIndividualFitness
+          Type: RealValue
+          Description: The 'fitness' score of the overall best individual.
+         (2) Name: bestFitnessPerGeneration
+          Type: LookupTable
+          Description: The 'fitness' score of the overall best individual per generation.
+         (3) Name: worstFitnessPerGeneration
+          Type: LookupTable
+          Description: The 'fitness' score of the worst individual per generation.
+         (4) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: GetCurrentIndividual
+      Description: When placed within the "GeneticAlgorithmTool", this functor gets the individual from the current genetic algorithm iteration.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: currentIndividual
+           Type: LookupTableGroup (nullable)
+           Description: Get individual from the current genetic algorithm iteration.
+       Outputs:
+         (0) Name: currentIndividual
+          Type: LookupTableGroup
+          Description: Returns the individual from the current genetic algorithm iteration.
+     Functor: SetFitness
+      Description: Once the fitness score is calculated, this functor is used to get the 'fitness' score for the current individual and to pass it to the Genetic Algorithm functor.
+       Inputs:
+         (0) Name: fitness
+          Type: RealValue
+          Description: Get the fitness score for the current individual.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: fitness
+          Type: RealValue
+          Description: Pass the fitness score of the current individual to the "GeneticAlgorithmTool".
+ Group: Calibration (Suppl.)
+  Functors:
+     Functor: WeightsOfEvidenceSkeleton
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: WeightsOfEvidenceSkeleton
+          Description: Value or constant representing Weights of Evidence Skeleton.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: WeightsOfEvidenceSkeleton
+          Description: Value or constant representing Weights of Evidence Skeleton provided as the functor input.
+ Group: Control
+  Functors:
+     Functor: CategoricalMapJunction
+      Description: Pick one categorical map from two execution pipelines.
+       Inputs:
+         (0) Name: possibleMap1
+          Type: CategoricalMap
+          Description: Map of classes or categories output from an execution pipeline.
+         (1) Name: possibleMap2
+          Type: CategoricalMap
+          Description: Map of classes or categories output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: map
+          Type: CategoricalMap
+          Description: Categorical map picked.
+     Functor: DoWhile
+      Description: Execute contained functors while "Set While Condition" is true.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: ExecutionPolicy
+      Description: Execute contained functors using a specified processor policy.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: maximumGranularity
+           Type: NonNegativeIntegerValue
+           Description: Maximum granularity used to split a job in parallel tasks. Set 0 for default.
+         (1) Name: forceSpecifiedGranularity
+           Type: BooleanValue
+           Description: Use strictly the specified granularity.
+         (2) Name: computingTarget
+           Type: Enum (nullable)
+           Description: Flag defining how the execution of the contained functors should be handled: "Default" suggests the use of accelerator computing devices, if they are available, but also the use of regular workers; "Processors Only" forces the use of regular workes; "Accelerator Devices Only" forces the use of accelerator computing devices, but might raise execution errors if there are not any such devices available.
+       Outputs: (none)
+     Functor: Exit
+      Description: Abort the execution showing an additional message.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: message
+           Type: String (nullable)
+           Description: Additional message possibly explaining the reasons for cancelling the execution. If a reason is provided, it will be presented to the user. Otherwise, the execution will be silently cancelled.
+       Outputs: (none)
+     Functor: FolderJunction
+      Description: Pick one folder from two execution pipelines.
+       Inputs:
+         (0) Name: possibleFolder1
+          Type: Folder
+          Description: Folder output from an execution pipeline.
+         (1) Name: possibleFolder2
+          Type: Folder
+          Description: Folder output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: folder
+          Type: Folder
+          Description: Folder picked.
+     Functor: For
+      Description: Make a set of functors iterate a number of times.
+       Inputs:
+         (0) Name: firstIterationStep
+          Type: RealValue
+          Description: Initial step or model iteration.
+         (1) Name: lastIterationStep
+          Type: RealValue
+          Description: Last step or model iteration.
+       Optional Inputs:
+         (0) Name: stepIncrement
+           Type: RealValue
+           Description: Increment/decrement used to set next step or model iteration.
+         (1) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: ForEach
+      Description: Execute contained functors once per each element of a given lookup table.
+       Inputs:
+         (0) Name: elements
+          Type: BaseTable
+          Description: Input table.
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: ForEachCategory
+      Description: Execute contained functors once per each class or category of a given map.
+       Inputs:
+         (0) Name: categorization
+          Type: Categorization
+          Description: Categorization.
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: ForEachRegion
+      Description: Create and manage regions identified by a categorical map, whose classes represent regions, and execute contained functors once per each region.
+       Inputs:
+         (0) Name: regions
+          Type: CategoricalMap
+          Description: Map of subregions, e.g., countries, states, counties, etc.
+       Optional Inputs:
+         (0) Name: borderCells
+           Type: NonNegativeIntegerValue
+           Description: Number of lines and columns used to create an additional border around regions.
+         (1) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: Group
+      Description: Execute contained functors
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: IfNotThen
+      Description: Execute contained functors conditionally.
+       Inputs:
+         (0) Name: condition
+          Type: BooleanValue
+          Description: 
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: IfThen
+      Description: Execute contained functors conditionally.
+       Inputs:
+         (0) Name: condition
+          Type: BooleanValue
+          Description: 
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: IndexOrName
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: IndexOrName
+          Description: Value or constant representing index or a name.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: IndexOrName
+          Description: Value or constant representing index or a name provided as the functor input.
+     Functor: LogPolicy
+      Description: Execute contained functors, setting maximum log level.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: maximumLogLevel
+           Type: LogTag
+           Description: Maximum log Level.
+         (1) Name: forceSpecifiedLogLevel
+           Type: BooleanValue
+           Description: Only the specified maximum level is reported.
+       Outputs: (none)
+     Functor: LookupTableJunction
+      Description: Pick one lookup table from two execution pipelines.
+       Inputs:
+         (0) Name: possibleTable1
+          Type: LookupTable
+          Description: Lookup table output from an execution pipeline.
+         (1) Name: possibleTable2
+          Type: LookupTable
+          Description: Lookup table output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Lookup table picked.
+     Functor: MapJunction
+      Description: Pick one map from two execution pipelines.
+       Inputs:
+         (0) Name: possibleMap1
+          Type: Map
+          Description: Any type of map output from an execution pipeline.
+         (1) Name: possibleMap2
+          Type: Map
+          Description: Any type of map output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map picked.
+     Functor: MuxCategoricalMap
+      Description: Initiate and feedback a loop variable containing a categorical map.
+       Inputs:
+         (0) Name: initial
+          Type: CategoricalMap
+          Description: Initial map of classes or categories.
+         (1) Name: feedback
+          Type: CategoricalMap
+          Description: Map of classes or categories generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: map
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+     Functor: MuxKmlTimeline
+      Description: Initiate and feedback a loop variable containing a kml timeline.
+       Inputs:
+         (0) Name: initial
+          Type: KmlTimeline
+          Description: Initial kml timeline.
+         (1) Name: feedback
+          Type: KmlTimeline
+          Description: Kml timeline generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: kml
+          Type: KmlTimeline
+          Description: Timeline Kml.
+     Functor: MuxLookupTable
+      Description: Initiate and feedback a loop variable containing a lookup table.
+       Inputs:
+         (0) Name: initial
+          Type: LookupTable
+          Description: Initial lookup table.
+         (1) Name: feedback
+          Type: LookupTable
+          Description: Lookup table generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Lookup table.
+     Functor: MuxMap
+      Description: Initiate and feedback a loop variable containing a map. 
+       Inputs:
+         (0) Name: initial
+          Type: Map
+          Description: Initial map.
+         (1) Name: feedback
+          Type: Map
+          Description: Map generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map.
+     Functor: MuxTable
+      Description: Initiate and feedback a loop variable containing a table.
+       Inputs:
+         (0) Name: initial
+          Type: Table
+          Description: Initial table.
+         (1) Name: feedback
+          Type: Table
+          Description: Table generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: Table.
+     Functor: MuxTuple
+      Description: Initiate and feedback a loop variable containing a tuple.
+       Inputs:
+         (0) Name: initial
+          Type: Tuple
+          Description: Initial tuple.
+         (1) Name: feedback
+          Type: Tuple
+          Description: Tuple generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Tuple.
+     Functor: MuxValue
+      Description: Initiate and feedback a loop variable containing a value.
+       Inputs:
+         (0) Name: initial
+          Type: RealValue
+          Description: Initial value.
+         (1) Name: feedback
+          Type: RealValue
+          Description: Value generated from model step.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: value
+          Type: RealValue
+          Description: Value.
+     Functor: Print
+      Description: Print messages to the application console.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: initialMessage
+           Type: String (nullable)
+           Description: Message printed before the execution of the container content.
+         (1) Name: finalMessage
+           Type: String (nullable)
+           Description: Message printed after the execution of the container content.
+         (2) Name: logLevel
+           Type: LogTag
+           Description: Message log level.
+       Outputs: (none)
+     Functor: Repeat
+      Description: Execute contained functors a specified number of times.
+       Inputs:
+         (0) Name: iterations
+          Type: NonNegativeIntegerValue
+          Description: Number of iterations.
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+     Functor: RunExternalProcess
+      Description: Run an external process.
+       Inputs:
+         (0) Name: fileName
+          Type: String
+          Description: Name of executable file.
+         (1) Name: parameters
+          Type: String
+          Description: Parameters to be passed to executable file.
+       Optional Inputs:
+         (0) Name: waitProcessCompletion
+           Type: BooleanValue
+           Description: If true, wait external process to finish execution.
+         (1) Name: secondsToWait
+           Type: IntegerValue
+           Description: Time in seconds to wait external process. Zero means wait process to finish execution.
+       Outputs:
+         (0) Name: exitCode
+          Type: IntegerValue
+          Description: Exit code reported by the process.
+     Functor: RunRemotely
+      Description: Execute contents using a network Coordinator
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: coordinatorConnectionInfo
+           Type: ConnectionInfo (nullable)
+           Description: Coordinator connection details. If not provided, the details specified in the application settings will be used.
+         (1) Name: coordinatorIdentifier
+           Type: String (nullable)
+           Description: Optional Identifier used by the coordinator to reference this container when presenting information.
+         (2) Name: networkErrorBehavior
+           Type: Enum (nullable)
+           Description: Behavior to be adopted in case of a network error (e.g., coordinator unreachable). If not provided, the behavior specified in the application settings will be used.
+         (3) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+         (4) Name: requirementExpression
+           Type: ImageExpression (nullable)
+           Description: Image expression with the requisites for this RunRemotely, which will only run if the expression is not null.
+         (5) Name: jobWaitTimeLimit
+           Type: PositiveIntegerValue (nullable)
+           Description: Maximum waiting time in seconds for a job posted to the coordinator. When a timeout occurs, networkErrorBehavior is executed.
+       Outputs:
+         (0) Name: ranRemotely
+          Type: BooleanValue
+          Description: If an error ocurred and this functor ran locally this value will be false.
+         (1) Name: sequenceOutput
+          Type: None
+          Description: It ensures this container to execute necessarily before the functor that is connected by this port.
+     Functor: SetWhileCondition
+      Description: This functor is used to store the current value which will be evaluated before the next iteration of the while loop.
+       Inputs:
+         (0) Name: condition
+          Type: BooleanValue
+          Description: Get the value which will be assigned to the while functor.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: condition
+          Type: BooleanValue
+          Description: Pass the condition value to the while functor.
+     Functor: SkipAllOnError
+      Description: Execute contained functors, capturing and ignoring any error that may occur in enveloped functors. Unlike its "Skip On Error" counterpart, this container discards the results produced by any contained functors that were run before the occurrence of an error.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: trapAndIgnoreErrors
+           Type: BooleanValue
+           Description: If true, errors that may occur in enveloped functors are captured and ignored. Otherwise, behaves as a regular "Group".
+       Outputs:
+         (0) Name: executionCompletedSucessfully
+          Type: BooleanValue
+          Description: If true, the execution of the container was completed without errors.
+     Functor: SkipOnError
+      Description: Execute contained functors, capturing and ignoring any error that may occur in enveloped functors. Unlike its "Skip All On Error" counterpart, this container does not discard the results produced by any contained functors that were run before the occurrence of an error.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: trapAndIgnoreErrors
+           Type: BooleanValue
+           Description: If true, errors that may occur in enveloped functors are captured and ignored. Otherwise, behaves as a regular "Group".
+       Outputs:
+         (0) Name: executionCompletedSucessfully
+          Type: BooleanValue
+          Description: If true, the execution of the container was completed without errors.
+     Functor: Step
+      Description: Receive and pass on current model step or iteration.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: RealValue
+           Description: Current step or model iteration.
+       Outputs:
+         (0) Name: step
+          Type: RealValue
+          Description: Current step or model iteration.
+     Functor: StringJunction
+      Description: Pick one string from two execution pipelines.
+       Inputs:
+         (0) Name: possibleString1
+          Type: String
+          Description: String output from an execution pipeline.
+         (1) Name: possibleString2
+          Type: String
+          Description: String output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: string
+          Type: String
+          Description: String picked.
+     Functor: SubmodelGroup
+      Description: Container responsible for executing the functors contained within, using submodel semantics.
+       Inputs: (none)
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: TableJunction
+      Description: Pick one table from two execution pipelines.
+       Inputs:
+         (0) Name: possibleTable1
+          Type: Table
+          Description: Table output from an execution pipeline.
+         (1) Name: possibleTable2
+          Type: Table
+          Description: Table output from an execution pipeline.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: Table picked.
+     Functor: ValueJunction
+      Description: Pick one value from two execution pipelines.
+       Inputs:
+         (0) Name: possibleValue1
+          Type: RealValue
+          Description: Value output from an execution pipeline
+         (1) Name: possibleValue2
+          Type: RealValue
+          Description: Value output from an execution pipeline
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: value
+          Type: RealValue
+          Description: Value picked.
+     Functor: While
+      Description: Execute contained functors while "Set While Condition" is true.
+       Inputs:
+         (0) Name: initialCondition
+          Type: BooleanValue
+          Description: The initial expression value for the while Functor.
+       Optional Inputs:
+         (0) Name: sequenceInput
+           Type: None (nullable)
+           Description: It ensures the functor that is connected by this port to execute necessarily before this group.
+       Outputs:
+         (0) Name: sequenceOutput
+          Type: None
+          Description: It ensures this group to execute necessarily before the functor that is connected by this port.
+ Group: Control (Suppl.)
+  Functors:
+     Functor: LogTag
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: LogTag
+          Description: Value or constant representing log level.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: LogTag
+          Description: Value or constant representing log level provided as the functor input.
+ Group: Distributed
+  Functors:
+     Functor: CreateConnectionInfo
+      Description: Create a ConnectionInfo from input data.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: address
+           Type: String
+           Description: Hostname, IPv4 or IPv6 address. IPv4 addresses are divided into four octets, each represented as a number between 0 and 255, separated by dots (e.g., 192.168.0.1). IPv6 addresses are divided into eight groups of four hexadecimal digits, separated by colons (e.g., 2001:0db8:85a3:0000:0000:8a2e:0370:7334).
+         (1) Name: port
+           Type: PositiveIntegerValue (nullable)
+           Description: Port number (must be in the range 1 to 65535).
+       Outputs:
+         (0) Name: result
+          Type: ConnectionInfo
+          Description: Created ConnectionInfo from input data.
+ Group: GDAL / OGR
+  Functors:
+     Functor: RasterizeShape
+      Description: Rasterize a given shape. This functor is a wrapper around the gdal_rasterize from the GDAL/OGR library.
+       Inputs:
+         (0) Name: inputShapeFilename
+          Type: GenericFilename
+          Description: The filename of the input shape that will be rasterized.
+         (1) Name: outputMapFilename
+          Type: MapFilename
+          Description: The filename of the resulting map representing the rasterized shape.
+       Optional Inputs:
+         (0) Name: defaultOutputValue
+           Type: RealValue (nullable)
+           Description: Default value used to represent all rasterized features from the input shape in the resulting map. Either this value or the "Shape Attribute Name" must be defined, but both cannot be defined simultaneously.
+         (1) Name: shapeAttributeName
+           Type: String (nullable)
+           Description: Name of the shape attribute field used to define the values of the resulting map. Either the attribute name or the "Default Output Value" must be specified, but both cannot be defined simultaneously.
+         (2) Name: outputMapCellType
+           Type: CellType
+           Description: Data cell type of the resulting map. For this functor, the cell types "Unsigned 1-Bit Integer" and "Signed 8-Bit Integer" are just an alias for "Unsigned 8-Bit Integer".
+         (3) Name: outputMapNullValue
+           Type: NullValue
+           Description: Null value of the resulting map.
+         (4) Name: outputMapCellWidth
+           Type: RealValue (nullable)
+           Description: The cell width in the resulting map. Must be defined together with the cell height. However, the definition of expected cell height/width and number of lines/columns are mutually exclusive. The cell width must be expressed in unit compatible with the projection of the resulting map.
+         (5) Name: outputMapCellHeight
+           Type: RealValue (nullable)
+           Description: The cell height in the resulting map. Must be defined together with the cell width. However, the definition of expected cell height/width and number of lines/columns are mutually exclusive. The cell height must be expressed in unit compatible with the projection of the resulting map.
+         (6) Name: outputMapLines
+           Type: PositiveIntegerValue (nullable)
+           Description: The number of lines expected in the resulting map. Must be defined together with the number of columns. However, the definition of expected number of lines/columns and cell height/width are mutually exclusive.
+         (7) Name: outputMapColumns
+           Type: PositiveIntegerValue (nullable)
+           Description: The number of columns expected in the resulting map. Must be defined together with the number of lines. However, the definition of expected number of lines/columns and cell height/width are mutually exclusive.
+         (8) Name: useCellCenterOnly
+           Type: BooleanValue
+           Description: If true, the interception between lines/polygons and cells is calculated using the cell centers only. Otherwise, all parts of the cells are used.
+         (9) Name: useCompression
+           Type: BooleanValue
+           Description: If true, the resulting map is compressed. It does not have any effect if compression is not supported by the output format.
+         (10) Name: layerName
+           Type: String (nullable)
+           Description: Layer from the datasource containing the input features that will be rasterized. This definition and "Select Statement" are mutually exclusive.
+         (11) Name: selectStatement
+           Type: String (nullable)
+           Description: SQL statement to be evaluated against the datasource to produce a virtual layer containing the input features that will be rasterized. This definition and "Layer Name" are mutually exclusive.
+         (12) Name: whereStatement
+           Type: String (nullable)
+           Description: SQL WHERE expression used to select features from the input layer that will be rasterized.
+         (13) Name: additionalGDALRasterizeArguments
+           Type: String
+           Description: Additional arguments that will be passed to the invocation of the "gdal_rasterize" executable. These arguments are passed after all the other arguments.
+       Outputs:
+         (0) Name: outputMapFilename
+          Type: MapFilename
+          Description: The filename of the resulting map. This is the same filename provided to the corresponding input port.
+     Functor: TransformMap
+      Description: Reproject and transform a given map. This functor is a wrapper around the gdalwarp and gdal_translate utilities from the GDAL/OGR library.
+       Inputs:
+         (0) Name: inputMapFilename
+          Type: MapFilename
+          Description: The filename of the input map that will be transformed.
+         (1) Name: outputMapFilename
+          Type: MapFilename
+          Description: The filename of the resulting transformed map.
+       Optional Inputs:
+         (0) Name: outputFormatMapFilename
+           Type: MapFilename (nullable)
+           Description: The filename of the format map. If the format map is provided, its projection, extents and cell size are used as the default attributes of the resulting transformed map. This filename cannot be used together with the "Output Map Projection".
+         (1) Name: outputMapProjection
+           Type: Projection (nullable)
+           Description: If provided, this projection is used to transform the input map and generate the resulting transformed map. In this case, the extents and cell size of the resulting map are calculated automatically (their definitions can be overridden using the appropriate settings). The output projection cannot be used together with the "Output Format Filename".
+         (2) Name: outputMapCellType
+           Type: CellType
+           Description: Data cell type of the resulting transformed map. For this functor, the cell types "Unsigned 1-Bit Integer" and "Signed 8-Bit Integer" are just an alias for "Unsigned 8-Bit Integer".
+         (3) Name: outputMapNullValue
+           Type: NullValue
+           Description: Null value of the resulting transformed map.
+         (4) Name: resamplingMethod
+           Type: Enum
+           Description: Resampling method to use.
+         (5) Name: additionalInputMapNullValue
+           Type: NullValue (nullable)
+           Description: Additional value representing null values in the input map that will be transformed. Cells with such value are also treated as null cells. This is particularly useful for defining a null value for an image file that does not have this definition.
+         (6) Name: inputMapProjection
+           Type: Projection (nullable)
+           Description: If defined, the input map is assumed to have this projection. Otherwise, the projection provided by the input map itself is used.
+         (7) Name: outputMapLines
+           Type: PositiveIntegerValue (nullable)
+           Description: The number of lines expected in the resulting transformed map. Must be defined together with the number of columns. However, the definition of expected number of lines/columns and cell height/width are mutually exclusive.
+         (8) Name: outputMapColumns
+           Type: PositiveIntegerValue (nullable)
+           Description: The number of columns expected in the resulting transformed map. Must be defined together with the number of lines. However, the definition of expected number of lines/columns and cell height/width are mutually exclusive.
+         (9) Name: outputMapCellWidth
+           Type: RealValue (nullable)
+           Description: The cell width in the resulting transformed map. Must be defined together with the cell height. However, the definition of expected cell height/width and number of lines/columns are mutually exclusive. The cell width must be expressed in unit compatible with the projection of the resulting transformed map.
+         (10) Name: outputMapCellHeight
+           Type: RealValue (nullable)
+           Description: The cell height in the resulting transformed map. Must be defined together with the cell width. However, the definition of expected cell height/width and number of lines/columns are mutually exclusive. The cell height must be expressed in unit compatible with the projection of the resulting transformed map.
+         (11) Name: useCompression
+           Type: BooleanValue
+           Description: If true, the resulting transformed map is compressed. It does not have any effect if compression is not supported by the output format.
+         (12) Name: additionalGDALWarpArguments
+           Type: String
+           Description: Additional arguments that will be passed to the invocation of the "gdalwarp" executable. These arguments are passed after all the other arguments.
+         (13) Name: additionalGDALTranslateArguments
+           Type: String
+           Description: Additional arguments that will be passed to the invocation of the "gdal_translate" executable. These arguments are passed after all the other arguments.
+       Outputs:
+         (0) Name: outputMapFilename
+          Type: MapFilename
+          Description: The filename of the resulting transformed map. This is the same filename provided to the corresponding input port.
+ Group: Input/Output
+  Functors:
+     Functor: GenerateTemporaryFile
+      Description: Create a temporary file
+       Inputs:
+         (0) Name: extension
+          Type: String
+          Description: The desired extension for the generated temporary file. Extension must contain letters and numbers only.
+       Optional Inputs:
+         (0) Name: createFile
+           Type: BooleanValue
+           Description: If generated filename will be created or have its path reserved only.
+       Outputs:
+         (0) Name: filename
+          Type: GenericFilename
+          Description: The filename of the generated temporary file.
+     Functor: LoadCategoricalMap
+      Description: Load map of classes or categories.
+       Inputs:
+         (0) Name: filename
+          Type: MapFilename
+          Description: Name and path of input map file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: nullValue
+           Type: NullValue (nullable)
+           Description: Additional value used to represent null cell. Cells with such value are also treated as null cells. This is particularly useful for assigning null value to image files that do not have this definition.
+         (1) Name: storageMode
+           Type: Enum
+           Description: Flag suggesting how the map should be handled: "Default" forces use of the memory allocation policy in the settings; "Prefer Memory" suggests that the map should be loaded into memory; "Prefer Disk" suggests that the map should be kept in disk and loaded only on-demand piece by piece; "Load As Sparse" suggests that only the non-null value cells should be stored in memory, minimizing storage in detriment of access time. This flag is only a hint, and the runtime is free to ignore it based on some other information.
+         (2) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (3) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (4) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: map
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+     Functor: LoadCompressedKml
+      Description: Load a kmz.
+       Inputs:
+         (0) Name: filename
+          Type: KmzFilename
+          Description: Name and path of input map file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: kml
+          Type: Kml
+          Description: Kml.
+     Functor: LoadLookupTable
+      Description: Load a lookup table.
+       Inputs:
+         (0) Name: filename
+          Type: LookupTableFilename
+          Description: Name and path of input lookup table file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Lookup table.
+     Functor: LoadMap
+      Description: Load a map.
+       Inputs:
+         (0) Name: filename
+          Type: MapFilename
+          Description: Name and path of input map file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: nullValue
+           Type: NullValue (nullable)
+           Description: Additional value used to represent null cell. Cells with such value are also treated as null cells. This is particularly useful for assigning null value to image files that do not have this definition.
+         (1) Name: storageMode
+           Type: Enum
+           Description: Flag suggesting how the map should be handled: "Default" forces use of the memory allocation policy in the settings; "Prefer Memory" suggests that the map should be loaded into memory; "Prefer Disk" suggests that the map should be kept in disk and loaded only on-demand piece by piece; "Load As Sparse" suggests that only the non-null value cells should be stored in memory, minimizing storage in detriment of access time. This flag is only a hint, and the runtime is free to ignore it based on some other information.
+         (2) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (3) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (4) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map.
+     Functor: LoadTable
+      Description: Load a table.
+       Inputs:
+         (0) Name: filename
+          Type: TableFilename
+          Description: Name and path of input table file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: uniqueIdKeyColumnCreation
+           Type: Enum
+           Description: Flag describing the behavior of the table loader: "If Necessary" : Create a unique id key column if necessary;"Do Not Create" : Do not create a unique id key column;"Always" : Always create a unique id key column.When active, this flag makes the table loader prepend a key column in the table (with auto incrementing numbers).
+         (1) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (2) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (3) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: Table.
+     Functor: LoadTextFile
+      Description: Load a text file.
+       Inputs:
+         (0) Name: filename
+          Type: GenericFilename
+          Description: Name and path of input file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: text
+          Type: String
+          Description: String.
+     Functor: LoadWeights
+      Description: Load Weights of Evidence coefficients or Weights of Evidence ranges.
+       Inputs:
+         (0) Name: filename
+          Type: WeightsFilename
+          Description: Name and path of input Weights file. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Weights of Evidence coefficients or Weights of Evidence  ranges.
+     Functor: SaveCompressedKml
+      Description: Save a kml.
+       Inputs:
+         (0) Name: kml
+          Type: Kml
+          Description: Any kml.
+         (1) Name: filename
+          Type: KmzFilename
+          Description: Name and path of raster map file to be written. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs: (none)
+     Functor: SaveLookupTable
+      Description: Save a lookup table.
+       Inputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Any lookup table.
+         (1) Name: filename
+          Type: LookupTableFilename
+          Description: Name and path of lookup table file to be written. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs: (none)
+     Functor: SaveMap
+      Description: Save a map.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any map.
+         (1) Name: filename
+          Type: MapFilename
+          Description: Name and path of raster map file to be written. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: useCompression
+           Type: BooleanValue
+           Description: If true, raster file is compressed, only available for some formats.
+         (3) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+         (4) Name: ignoreCostlySparseCategories
+           Type: BooleanValue
+           Description: If true, categories that are sparse and too costly to be written are ignored.
+       Outputs: (none)
+     Functor: SaveTable
+      Description: Save a table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Any table.
+         (1) Name: filename
+          Type: TableFilename
+          Description: Name and path of table file to be written. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs: (none)
+     Functor: SaveTextFile
+      Description: Save a text.
+       Inputs:
+         (0) Name: text
+          Type: String
+          Description: Any text, set of strings.
+         (1) Name: filename
+          Type: GenericFilename
+          Description: Name and path of file to be written. File format is automatically selected based on the filename extension. If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs: (none)
+     Functor: SaveWeights
+      Description: Save Weights of Evidence coefficients or Weights of Evidence ranges.
+       Inputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Any Weights of Evidence coefficients or Weights of Evidence ranges.
+         (1) Name: filename
+          Type: WeightsFilename
+          Description: Name and path of Weights file to be written. File format is automatically selected based on the filename extension.  If path is not specified, file location is the same of model script.
+       Optional Inputs:
+         (0) Name: suffixDigits
+           Type: NonNegativeIntegerValue
+           Description: Number of digits used to represent filename suffix equivalent to model step or iteration.
+         (1) Name: step
+           Type: NonNegativeIntegerValue (nullable)
+           Description: Current step or model iteration.
+         (2) Name: workdir
+           Type: Workdir (nullable)
+           Description: Work directory path.
+       Outputs: (none)
+     Functor: Workdir
+      Description: This functor sets the path for the working directory used by model functors to read and write files.
+       Inputs:
+         (0) Name: folder
+          Type: Folder
+          Description: Working directory. The functor defines a working directory for contained functors.
+       Optional Inputs: (none)
+       Outputs: (none)
+ Group: Integration
+  Functors:
+     Functor: CalculatePythonExpression
+      Description: This functor runs an Python instance with the defined user expression.
+       Inputs:
+         (0) Name: expression
+          Type: Code
+          Description: The expression that will run on Python.
+       Optional Inputs:
+         (0) Name: packages
+           Type: String
+           Description: Required packages to be installed by PIP (one per line). Each package can be identified either by its name or by specifying a filename or URL pointing to the corresponding wheel file. Packages that are already installed will be ignored.
+       Outputs:
+         (0) Name: result
+          Type: Struct
+          Description: A struct containing the output values generated by the expression.
+     Functor: CalculateRExpression
+      Description: This functor runs an external R instance with the defined user expression.
+       Inputs:
+         (0) Name: expression
+          Type: Code
+          Description: The expression that will run on R.
+         (1) Name: treatWarningAsErrors
+          Type: BooleanValue
+          Description: Warnings on R script will be considered errors.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Struct
+          Description: A struct containing the output values generated by the expression.
+     Functor: ExtractStructLookupTable
+      Description: Extract a lookup table from a Struct by it's name.
+       Inputs:
+         (0) Name: struct
+          Type: Struct
+          Description: Struct to extract the lookup table from.
+         (1) Name: name
+          Type: String
+          Description: Lookup table name on struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: lookupTable
+          Type: LookupTable
+          Description: Extracted lookup table.
+     Functor: ExtractStructNumber
+      Description: Extract a number from a Struct by it's name.
+       Inputs:
+         (0) Name: struct
+          Type: Struct
+          Description: Struct to extract the number from.
+         (1) Name: name
+          Type: String
+          Description: Number name on struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: number
+          Type: RealValue
+          Description: Extracted number.
+     Functor: ExtractStructString
+      Description: Extract a string from a Struct by it's name.
+       Inputs:
+         (0) Name: struct
+          Type: Struct
+          Description: Struct to extract the string from.
+         (1) Name: name
+          Type: String
+          Description: String name on struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: string
+          Type: String
+          Description: Extracted string.
+     Functor: ExtractStructTable
+      Description: Extract a table from a Struct by it's name.
+       Inputs:
+         (0) Name: struct
+          Type: Struct
+          Description: Struct to extract the table from.
+         (1) Name: name
+          Type: String
+          Description: Table name on struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: Extracted table.
+     Functor: ExtractStructTuple
+      Description: Extract a tuple from a Struct by it's name.
+       Inputs:
+         (0) Name: struct
+          Type: Struct
+          Description: Struct to extract the tuple from.
+         (1) Name: name
+          Type: String
+          Description: Tuple name on struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Extracted tuple.
+     Functor: ReceiveLookupTable
+      Description: Receive a lookup Table using an opened communication session.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Lookup Table identifier.
+       Outputs:
+         (0) Name: lookupTable
+          Type: LookupTable
+          Description: Received lookup table.
+     Functor: ReceiveNumber
+      Description: Receive a number using an opened communication session.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Number identifier.
+       Outputs:
+         (0) Name: number
+          Type: RealValue
+          Description: Received number.
+     Functor: ReceiveString
+      Description: Receive a string using an opened communication session.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: String identifier.
+       Outputs:
+         (0) Name: string
+          Type: String
+          Description: Received string.
+     Functor: ReceiveTable
+      Description: Receive a table using an opened communication session.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Table identifier.
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: Received table.
+     Functor: ReceiveTuple
+      Description: Receive a number tuple using an opened communication session.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Tuple identifier.
+       Outputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Received tuple.
+     Functor: SendLookupTable
+      Description: Send a Lookup Table using an opened communication session.
+       Inputs:
+         (0) Name: lookupTable
+          Type: LookupTable
+          Description: Any Lookup Table.
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Lookup Table identifier.
+       Outputs:
+         (0) Name: outLookupTable
+          Type: LookupTable
+          Description: Input Lookup Table.
+     Functor: SendNumber
+      Description: Send a number using an opened communication session.
+       Inputs:
+         (0) Name: number
+          Type: RealValue
+          Description: Any number.
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Number identifier.
+       Outputs:
+         (0) Name: outNumber
+          Type: RealValue
+          Description: Input number.
+     Functor: SendString
+      Description: Send a string using an opened communication session.
+       Inputs:
+         (0) Name: string
+          Type: String
+          Description: Any string.
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: String identifier.
+       Outputs:
+         (0) Name: outString
+          Type: String
+          Description: Input string.
+     Functor: SendTable
+      Description: Send a Table using an opened communication session.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Any Table.
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Table identifier.
+       Outputs:
+         (0) Name: outTable
+          Type: Table
+          Description: Input Table.
+     Functor: SendTuple
+      Description: Send a number tuple using an opened communication session.
+       Inputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Any number-only tuple.
+       Optional Inputs:
+         (0) Name: tag
+           Type: String
+           Description: Tuple identifier.
+       Outputs:
+         (0) Name: outTuple
+          Type: Tuple
+          Description: Input tuple.
+ Group: Lookup Table
+  Functors:
+     Functor: CalcLookupTableDifference
+      Description: This functor calculates the difference between two lookup tables.
+       Inputs:
+         (0) Name: firstTable
+          Type: LookupTable
+          Description: The first lookup table.
+         (1) Name: secondTable
+          Type: LookupTable
+          Description: The second lookup table.
+       Optional Inputs:
+         (0) Name: useSymmetricalDifference
+           Type: BooleanValue
+           Description: If true, the symmetrical difference between the two lookup tables is calculated; otherwise, the relative complement is used.
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: The resulting lookup table
+     Functor: CalcLookupTableIntersection
+      Description: This functor calculates a lookup table that is the intersection of two lookup tables.
+       Inputs:
+         (0) Name: firstTable
+          Type: LookupTable
+          Description: The first lookup table.
+         (1) Name: secondTable
+          Type: LookupTable
+          Description: The second lookup table.
+       Optional Inputs:
+         (0) Name: useFirstTableToSolveDuplicatedKey
+           Type: BooleanValue
+           Description: If true, in the case of duplicated keys, the value of the first table is selected; otherwise, the value of the second table is selected.
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: The resulting lookup table.
+     Functor: CalcLookupTableUnion
+      Description: This functor calculates a table that is the union of two lookup tables.
+       Inputs:
+         (0) Name: firstTable
+          Type: LookupTable
+          Description: The first lookup table.
+         (1) Name: secondTable
+          Type: LookupTable
+          Description: The second lookup table.
+       Optional Inputs:
+         (0) Name: useFirstTableToSolveDuplicatedKey
+           Type: BooleanValue
+           Description: If true, in the case of duplicated keys, the value of the first table is selected; otherwise, the value of the second table is selected.
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: The resulting lookup table.
+     Functor: CalculateLookupTable
+      Description: Calculate a lookup table.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: keyName
+           Type: Name (nullable)
+           Description: Name of keys. If omitted, the correspoding name from the format table will be used.
+         (1) Name: valueName
+           Type: Name (nullable)
+           Description: Name of values. If omitted, the corresponding name from the format table will be used.
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: Lookup table.
+     Functor: CalculateLookupTable2
+      Description: Calculate a lookup table.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+         (1) Name: format
+          Type: LookupTable
+          Description: The output format table.
+       Optional Inputs:
+         (0) Name: keyName
+           Type: Name (nullable)
+           Description: Name of keys. If omitted, the correspoding name from the format table will be used.
+         (1) Name: valueName
+           Type: Name (nullable)
+           Description: Name of values. If omitted, the corresponding name from the format table will be used.
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: Lookup table.
+     Functor: CreateLookupTable
+      Description: This functor creates a custom lookup table filled in with a specified value.
+       Inputs:
+         (0) Name: initialKey
+          Type: RealValue
+          Description: The initial key.
+         (1) Name: finalKey
+          Type: RealValue
+          Description: The final key.
+       Optional Inputs:
+         (0) Name: initialValue
+           Type: RealValue
+           Description: The initial value.
+         (1) Name: finalValue
+           Type: RealValue
+           Description: The final value.
+         (2) Name: increment
+           Type: RealValue
+           Description: The increment between keys.
+         (3) Name: keyName
+           Type: Name
+           Description: Name of keys
+         (4) Name: valueName
+           Type: Name
+           Description: Name of values
+       Outputs:
+         (0) Name: result
+          Type: LookupTable
+          Description: The resulting lookup table.
+     Functor: CreateLookupTableGroup
+      Description: This functor creates a group of lookup tables
+       Inputs: (none)
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: lookupTableGroup
+          Type: LookupTableGroup
+          Description: The lookup table group, comprising a set of lookup tables.
+     Functor: ExtractLookupTableAttributes
+      Description: This functor extracts attributes and summary statistics from a lookup table. The following items can be calculated:
+
+Static Attributes:
+[1] ["uniqueKeys"] number of unique keys (rows),
+
+Statistical Key Attributes:
+Value from each key/value pair is used as the number of key occurrences.
+[10] ["minKey"] minimum key,
+[11] ["maxKey"] maximum key,
+[12] ["meanKey"] mean key,
+[13] ["modeKey"] mode key,
+[14] ["keyVar"] key variance,
+[15] ["keyStd"] key standard deviation,
+[16] ["medianKey"] median key,
+
+Statistical Value Attributes:
+[20] ["minValue"] minimum value,
+[21] ["maxValue"] maximum value,
+[22] ["meanValue"] mean value,
+[23] ["modeValue"] mode value,
+[24] ["valueVar"] value variance,
+[25] ["valueStd"] value standard deviation,
+[26] ["medianValue"] median value,
+
+Dynamic Key & Value Attributes:
+[30] ["keySum"] key sum,
+[31] ["valueSum"] value sum,
+[32] ["keyValueProdSum"] sum of key/value product
+       Inputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: A lookup table.
+       Optional Inputs:
+         (0) Name: extractStatisticalKeyAttributes
+           Type: BooleanValue
+           Description: If true, the calculation includes statistical key attributes (items 10-16).
+         (1) Name: extractStatisticalValueAttributes
+           Type: BooleanValue
+           Description: If true, the calculation includes statistical value attributes (items 20-26).
+         (2) Name: extractDynamicKeyValueAttributes
+           Type: BooleanValue
+           Description: If true, the calculation includes dynamic key/value attributes (items 30-32).
+       Outputs:
+         (0) Name: attributes
+          Type: LookupTable
+          Description: Table containing the calculated attributes.
+     Functor: ExtractLookupTableFromLookupTableGroup
+      Description: This functor extracts a lookup table from a lookup table group.
+       Inputs:
+         (0) Name: lookupTableGroup
+          Type: LookupTableGroup
+          Description: The input lookup table group.
+         (1) Name: lookupTableIndex
+          Type: PositiveIntegerValue
+          Description: The index corresponding to a lookup table in the lookup table group.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: lookupTable
+          Type: LookupTable
+          Description: The resulting lookup table.
+     Functor: GetLookupTableValue
+      Description: Retrieve a lookup table value corresponding to a specified key.
+       Inputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Any lookup table.
+         (1) Name: key
+          Type: RealValue
+          Description: Table key to search for.
+       Optional Inputs:
+         (0) Name: valueIfNotFound
+           Type: RealValue (nullable)
+           Description: This value will be returned if the key is not present in the table.
+       Outputs:
+         (0) Name: value
+          Type: RealValue
+          Description: The value corresponding to the given key.
+     Functor: LookupTable
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: LookupTable
+          Description: Value or constant representing lookup table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: LookupTable
+          Description: Value or constant representing lookup table provided as the functor input.
+     Functor: LookupTableFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: LookupTableFilename
+          Description: Value or constant representing lookup table filename.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: LookupTableFilename
+          Description: Value or constant representing lookup table filename provided as the functor input.
+     Functor: SetLookupTableValue
+      Description: Insert values into a lookup table.
+       Inputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Lookup table in which the values will be inserted.
+         (1) Name: key
+          Type: RealValue
+          Description: Key to the line in which the value will be inserted.
+         (2) Name: value
+          Type: RealValue
+          Description: Value to be inserted.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: updatedTable
+          Type: LookupTable
+          Description: Updated lookup table.
+     Functor: SortLookupTable
+      Description: Sort the content of a lookup table.
+       Inputs:
+         (0) Name: valuesOrIds
+          Type: LookupTable
+          Description: The input list of values or ids. The keys are used to specify the order of the values or ids in this list. This list is used as a list of values if the additional property list is not provided. Otherwise, the list is assumed to represent ids whose values are specified in the property list.
+       Optional Inputs:
+         (0) Name: useAscendingOrder
+           Type: BooleanValue
+           Description: If true, the list is sorted from lowest to highest (ascending order). Otherwise, the list is sorted from highest to lowest (descending order).
+         (1) Name: properties
+           Type: LookupTable (nullable)
+           Description: List specifying the values corresponding to the ids provided by the "valuesOrIds" list.
+       Outputs:
+         (0) Name: sortedValuesOrIds
+          Type: LookupTable
+          Description: List of sorted values or ids.
+ Group: Map Algebra
+  Functors:
+     Functor: AssignMapCategories
+      Description: This functor assigns a set of categories to a map. It also allows combination or replacement of the existing map categories with a new set of categories.
+       Inputs:
+         (0) Name: inputMap
+          Type: Map
+          Description: The map that receives the new categories.
+         (1) Name: inputCategories
+          Type: Categorization
+          Description: Categorization set (classes) to be assigned to input map.
+       Optional Inputs:
+         (0) Name: combineCategories
+           Type: BooleanValue
+           Description: If true, the functor will combine the categories of the input map with the given category set. Otherwise, the categories in the input map will be replaced by the given category set.
+       Outputs:
+         (0) Name: outputMap
+          Type: CategoricalMap
+          Description: A copy of the input map with a new categorization set.
+     Functor: CalcAreas
+      Description: Calculate area of each map category.
+       Inputs:
+         (0) Name: source
+          Type: CategoricalMap
+          Description: Map whose non-null cells correspond to categories or classes.
+       Optional Inputs:
+         (0) Name: useAuthalicArea
+           Type: BooleanValue
+           Description: If set to true, the area of each cell in a geographic grid (Lat/Long) is computed using an authalic sphere, which preserves surface area during projection. This improves the accuracy of area calculations across all latitudes by avoiding distortions in geographic coordinate systems. If the grid is geographic but the flag is set to false, all cells are treated as having the same area, calculated by treating the length of one degree of latitude or longitude as a constant 111255 meters.
+       Outputs:
+         (0) Name: areas
+          Type: Table
+          Description: Area of each map category. The resulting table has columns "Category" (key corresponding to the category in the feature map), "Area_In_Cells", "Area_In_Hectares" and "Area_In_Square_Meters" (corresponding to areas of each category in cells, hectares and square meters, respectively). All columns store real values.
+     Functor: CalcCostAllocationMap
+      Description: Assign map cells to their least-cost source feature.
+       Inputs:
+         (0) Name: sources
+          Type: CategoricalMap
+          Description: Map whose non-null cells correspond to source features.
+         (1) Name: costsOrDirections
+          Type: Map
+          Description: Map of accumulated cost per cell or its corresponding cost directions.
+         (2) Name: inputRepresentsDirections
+          Type: BooleanValue
+          Description: If true, assume that the map passed to "Costs Or Directions" represents cost directions. Otherwise, the map is assumed to represent costs. A cell in a direction map can only have eight possible values, from 0 to 8, corresponding to each one of the directions in a Moore neighborhood (NONE=0, NW=1, N=2, NE=3, E=4, SE=5, S=6, SW=7, and W=8).
+       Optional Inputs:
+         (0) Name: useLottery
+           Type: BooleanValue
+           Description: If true, choose pathway randomly between equal cost cells.
+       Outputs:
+         (0) Name: allocation
+          Type: CategoricalMap
+          Description: Areas of influence of source features.
+     Functor: CalcCostMap
+      Description: Generate accumulated cost surface map.
+       Inputs:
+         (0) Name: sources
+          Type: Map
+          Description: Map whose non-null cells correspond to source features.
+         (1) Name: frictions
+          Type: Map
+          Description: Friction surface map, describing costs to cross cells.
+         (2) Name: alsoCalculateCostDirectionMap
+          Type: BooleanValue
+          Description: If true, the cost direction map will also be generated during the cost calculation and placed in the "Directions" output port. Otherwise, that output port will be left empty. Directions are represented using a Moore neighborhood (NONE=0, NW=1, N=2, NE=3, E=4, SE=5, S=6, SW=7, and W=8).
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value (any but zero).
+         (2) Name: diagonalsCostMore
+           Type: BooleanValue
+           Description: If true, moving across diagonal cells costs more than across orthogonal cells.
+         (3) Name: maximumNumberOfPasses
+           Type: NonNegativeIntegerValue
+           Description: Maximum number of passes used to calculate the cost map. Set 0 for optimum solution. The use of any value different from 0 is just a hint and can be ignored by the cost calculation.
+         (4) Name: frictionsAreRelative
+           Type: BooleanValue
+           Description: If true, the friction values are relative to map resolution and represent friction units per meter.
+       Outputs:
+         (0) Name: costs
+          Type: Map
+          Description: Map showing accumulated cost from source features per cell.
+         (1) Name: directions
+          Type: Map
+          Description: Map showing the directions following the least costly path in the cost map. Directions are represented using Moore neighborhood (NONE=0, NW=1, N=2, NE=3, E=4, SE=5, S=6, SW=7, and W=8).
+     Functor: CalcCumulativeFlowMap
+      Description: Calculate accumulated flow map.
+       Inputs:
+         (0) Name: flowDirections
+          Type: Map
+          Description: Flow direction map.
+       Optional Inputs:
+         (0) Name: weight
+           Type: Map (nullable)
+           Description: Weight of flow map.
+         (1) Name: flowPartition
+           Type: Map (nullable)
+           Description: The partition of the flow.
+         (2) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (3) Name: nullValue
+           Type: NullValue
+           Description: Null value (any but zero).
+         (4) Name: accumulationIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces map file to be saved as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: flowAccumulation
+          Type: Map
+          Description: Flow cumulative map.
+     Functor: CalcDestinationMap
+      Description: Calculate destination map.
+       Inputs:
+         (0) Name: attraction
+          Type: Map
+          Description: Map of attractiveness.
+         (1) Name: horizontalQuadrants
+          Type: PositiveIntegerValue
+          Description: Number of horizontal quadrants.
+         (2) Name: verticalQuadrants
+          Type: PositiveIntegerValue
+          Description: Number of vertical quadrants.
+       Optional Inputs:
+         (0) Name: minimumDistanceBetweenDestinations
+           Type: NonNegativeIntegerValue
+           Description: Minimum distance between adjacent destinations (in meters).
+         (1) Name: maximumAttemptsPerDestination
+           Type: PositiveIntegerValue
+           Description: Number of attempts to draw a destination.
+         (2) Name: destinationsPerQuadrant
+           Type: NonNegativeIntegerValue
+           Description: Number of destination per quadrant.
+         (3) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (4) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (5) Name: destinationIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces map file to be saved as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: destination
+          Type: Map
+          Description: Map showing destination cells.
+     Functor: CalcDistanceAllocationMap
+      Description: Assign map cells to their nearest source feature.
+       Inputs:
+         (0) Name: source
+          Type: CategoricalMap
+          Description: Map whose non-null cells correspond to source features.
+       Optional Inputs:
+         (0) Name: mask
+           Type: Map (nullable)
+           Description: Map whose null cells mask distance calculation.
+       Outputs:
+         (0) Name: allocation
+          Type: CategoricalMap
+          Description: Areas of influence of source features.
+     Functor: CalcDistanceMap
+      Description: Calculate distance from specified map categories.
+       Inputs:
+         (0) Name: categoricalMap
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: categories
+          Type: IntSet
+          Description: List of classes or categories to which distance maps are calculated.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (2) Name: truncateDistance
+           Type: BooleanValue
+           Description: If true, distances exceeding data cell type range are truncated.
+       Outputs:
+         (0) Name: distance
+          Type: Map
+          Description: Map(s) of distances to cell classes or categories.
+     Functor: CalcDistanceToFeatureMap
+      Description: Calculate distance to non-null cells.
+       Inputs:
+         (0) Name: source
+          Type: CategoricalMap
+          Description: Map whose non-null cells correspond to source features.
+       Optional Inputs:
+         (0) Name: mask
+           Type: Map (nullable)
+           Description: Map whose null cells mask distance calculation.
+         (1) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (2) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (3) Name: truncateDistance
+           Type: BooleanValue
+           Description: If true, distances exceeding data cell type range are truncated.
+       Outputs:
+         (0) Name: distance
+          Type: Map
+          Description: Map of distances to source features.
+     Functor: CalcFlowDirectionMap
+      Description: Calculate flow directions.
+       Inputs:
+         (0) Name: elevation
+          Type: Map
+          Description: Elevation map.
+       Optional Inputs:
+         (0) Name: diagonalsAreLonger
+           Type: BooleanValue
+           Description: If true, the flow across diagonal cells is attenuated by square root of two.
+         (1) Name: returnAllDirections
+           Type: BooleanValue
+           Description: If true, returns the flow directions leaving a cell packed as a bitwise combination of all possible directions.
+         (2) Name: useLottery
+           Type: BooleanValue
+           Description: If true, chooses randomly between equal directions. This flag is ignored if "Return All Directions" is true.
+         (3) Name: flowAlsoInFlatAreas
+           Type: BooleanValue
+           Description: If true, flow direction is calculated for flat areas (zero slope cells).
+         (4) Name: flowDirectionIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces map file to be saved as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: flowDirections
+          Type: Map
+          Description: Flow direction map.
+     Functor: CalcHilltop
+      Description: Calculate protected areas from specified map.
+       Inputs:
+         (0) Name: elevationPatches
+          Type: Map
+          Description: Map depicting the location of the hypsometric slices identified by their unique identifier.
+         (1) Name: elevationTable
+          Type: LookupTable
+          Description: Identifiers of hypsometric slices and their mean elevation values.
+       Optional Inputs:
+         (0) Name: slopeTable
+           Type: LookupTable (nullable)
+           Description: Identifiers of hypsometric slices and their mean slope values.
+         (1) Name: areaTable
+           Type: LookupTable (nullable)
+           Description: Identifiers of hypsometric slices and their area values.
+         (2) Name: hillMinimumHeight
+           Type: RealValue (nullable)
+           Description: Least height that classifies a feature as a hill. Height is the vertical distance between hill top and base.
+         (3) Name: hillMaximumHeight
+           Type: RealValue (nullable)
+           Description: Maximum height of a hill. Beyond that the feature becomes a mountain.
+         (4) Name: hillBaseSlope
+           Type: RealValue (nullable)
+           Description: In degrees. Maximum slope of hill base.
+         (5) Name: hillMinimumSlope
+           Type: RealValue (nullable)
+           Description: In degrees. Least slope of dip line from hill top to base.
+         (6) Name: plateauMinimumArea
+           Type: RealValue (nullable)
+           Description: In hectares. Least hilltop area of plateau (plateau is a flat hilltop).
+         (7) Name: plateauMaximumSlope
+           Type: RealValue (nullable)
+           Description: In degrees. Maximum mean slope of plateau.
+         (8) Name: escarpmentMinimumSlope
+           Type: RealValue (nullable)
+           Description: Minimum average slope of a border area that classifies this one as an escarpment.
+         (9) Name: leastDistance
+           Type: RealValue (nullable)
+           Description: Least distance between hilltops.
+         (10) Name: hillsideFraction
+           Type: RealValue (nullable)
+           Description: Hillside fraction from top to base defined as protected area.(0-1)
+         (11) Name: classifyUpperAreas
+           Type: BooleanValue (nullable)
+           Description: If true, protected areas are extended to upper hillside.
+       Outputs:
+         (0) Name: hilltop
+          Type: LookupTable
+          Description: Table of hilltop protected areas.
+         (1) Name: hillsHeight
+          Type: LookupTable
+          Description: Table of hills identifiers and their height.
+         (2) Name: hillDipSlope
+          Type: LookupTable
+          Description: Table of hills identifiers and their dip slope.
+         (3) Name: plateaus
+          Type: LookupTable
+          Description: Table of plateau top areas.
+         (4) Name: localMaxima
+          Type: LookupTable
+          Description: Table of local maxima.
+         (5) Name: localMinima
+          Type: LookupTable
+          Description: Table of local minima.
+     Functor: CalcIntegralMap
+      Description: Generate an integral image from input map.
+       Inputs:
+         (0) Name: input
+          Type: Map
+          Description: Any map file.
+       Optional Inputs:
+         (0) Name: useFullPrecision
+           Type: BooleanValue
+           Description: Select this option if output map should use the largest possible Cell Type, to prevent precision errors when the sum is potentially bigger than Input map Cell Type limits.
+       Outputs:
+         (0) Name: result
+          Type: Map
+          Description: Resulting integral map.
+     Functor: CalcInteractionPotentialMap
+      Description: Generate gravitational interaction potential map.
+       Inputs:
+         (0) Name: source
+          Type: Map
+          Description: Map whose non-null cells correspond to source features. In this case, the values of the non-null cells are used as gravity factor.
+       Optional Inputs:
+         (0) Name: mask
+           Type: Map (nullable)
+           Description: Map whose null cells mask the interaction potential calculation.
+         (1) Name: distanceDecayExponent
+           Type: RealValue
+           Description: 
+         (2) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (3) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+       Outputs:
+         (0) Name: interactionPotential
+          Type: Map
+          Description: Map showing total gravity  per cell to all sources features.
+     Functor: CalcPatchLabelMap
+      Description: Assign labels to map patches.
+       Inputs:
+         (0) Name: source
+          Type: Map
+          Description: Map whose continuous non-null cells correspond to patches.
+       Optional Inputs:
+         (0) Name: initialPatchLabel
+           Type: IntegerValue
+           Description: The lowest value that will be use to label a patch.
+         (1) Name: onlyOrthogonalsAreAllowed
+           Type: BooleanValue
+           Description: If true, only movements across orthogonal cells are allowed.
+         (2) Name: windowLines
+           Type: PositiveIntegerValue
+           Description: Number of lines of neighbor search window. Even line numbers are automatically rounded to the nearest odd number.
+         (3) Name: windowColumns
+           Type: PositiveIntegerValue
+           Description: Number of columns of neighbor search window. Even column numbers are automatically rounded to the nearest odd number.
+         (4) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (5) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (6) Name: patchLabelsAreSparse
+           Type: BooleanValue
+           Description: If true, this flag forces map file to be saved as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+         (7) Name: useSequentialPatchLabels
+           Type: BooleanValue
+           Description: If true, patch labels are defined sequentially. Otherwise, there may be gaps in the label sequence used to identify patches.
+       Outputs:
+         (0) Name: patchLabels
+          Type: CategoricalMap
+          Description: Categorical map.
+     Functor: CalcPathwayMap
+      Description: Find least cost pathways between source features and current network.
+       Inputs:
+         (0) Name: network
+          Type: CategoricalMap
+          Description: Network map.
+         (1) Name: sources
+          Type: Map
+          Description: Map whose non-null cells correspond to source features.
+         (2) Name: costsOrDirections
+          Type: Map
+          Description: Map of accumulated cost per cell or its corresponding cost directions.
+         (3) Name: inputRepresentsDirections
+          Type: BooleanValue
+          Description: If true, assume that the map passed to "Costs Or Directions" represents cost directions. Otherwise, the map is assumed to represent costs. A cell in a direction map can only have eight possible values, from 0 to 8, corresponding to each one of the directions in a Moore neighborhood (NONE=0, NW=1, N=2, NE=3, E=4, SE=5, S=6, SW=7, and W=8).
+       Optional Inputs:
+         (0) Name: useLottery
+           Type: BooleanValue
+           Description: If true, and "Input Represents Direction" is false, choose pathway randomly between equal cost cells.
+         (1) Name: mergeNetworks
+           Type: BooleanValue
+           Description: If true, merge the calculated least-cost pathways into current network map.
+       Outputs:
+         (0) Name: network
+          Type: CategoricalMap
+          Description: Network or leat-cost pathway map.
+     Functor: CalcSlopeMap
+      Description: Calculate slope from elevation map.
+       Inputs:
+         (0) Name: elevation
+          Type: Map
+          Description: Elevation map.
+       Optional Inputs:
+         (0) Name: diagonalsAreLonger
+           Type: BooleanValue
+           Description: If true, length across cell diagonal greater than cell resolution is taken into account.
+         (1) Name: slopeInPercent
+           Type: BooleanValue
+           Description: If true, the slope is represented in percent, otherwise in degrees.
+         (2) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (3) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (4) Name: slopeIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces map file to be saved as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: slope
+          Type: Map
+          Description: Slope map.
+     Functor: CalcWOfEProbabilityMap
+      Description: Calculate a spatial probability map using Weights of Evidence.
+       Inputs:
+         (0) Name: landscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: weights
+          Type: Weights
+          Description: Weights of Evidence coefficients.
+         (2) Name: transitions
+          Type: TransitionSet
+          Description: List of transitions for which spatial probability maps are calculated.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+       Outputs:
+         (0) Name: probabilities
+          Type: Map
+          Description: Map of spatial probabilities.
+     Functor: CalculateCategoricalMap
+      Description: Calculate a categorical map using algebraic or logical expression involving maps, tables and values.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (2) Name: resultIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces the output map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+         (3) Name: resultFormat
+           Type: Map (nullable)
+           Description: Map representing the output format.
+       Outputs:
+         (0) Name: result
+          Type: CategoricalMap
+          Description: Categorical map.
+     Functor: CalculateCategoricalMap2
+      Description: Calculate a categorical map using algebraic or logical expression involving maps, tables and values.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (2) Name: resultIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces the output map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+         (3) Name: resultFormat
+           Type: Map (nullable)
+           Description: Map representing the output format.
+       Outputs:
+         (0) Name: result
+          Type: CategoricalMap
+          Description: Categorical map.
+     Functor: CalculateMap
+      Description: Calculate a map using algebraic or logical expression involving maps, tables and values.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (2) Name: resultIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces the output map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+         (3) Name: resultFormat
+           Type: Map (nullable)
+           Description: Map representing the output format.
+       Outputs:
+         (0) Name: result
+          Type: Map
+          Description: Map.
+     Functor: CalculateMap2
+      Description: Calculate a map using algebraic or logical expression involving maps, tables and values.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (2) Name: resultIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces the output map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+         (3) Name: resultFormat
+           Type: Map (nullable)
+           Description: Map representing the output format.
+       Outputs:
+         (0) Name: result
+          Type: Map
+          Description: Map.
+     Functor: CreateCategoricalMap
+      Description: Create an empty map of classes or categories.
+       Inputs:
+         (0) Name: lines
+          Type: PositiveIntegerValue
+          Description: Number of lines.
+         (1) Name: columns
+          Type: PositiveIntegerValue
+          Description: Number of columns.
+         (2) Name: cellType
+          Type: CellType
+          Description: Data cell type.
+         (3) Name: nullValue
+          Type: NullValue
+          Description: Null value
+         (4) Name: categories
+          Type: Categorization
+          Description: The map categories.
+         (5) Name: projection
+          Type: Projection
+          Description: The map projection.
+         (6) Name: cellWidth
+          Type: RealValue
+          Description: The cell width. The unit used to represent the cell width is based on the projection assigned.
+         (7) Name: cellHeight
+          Type: RealValue
+          Description: The cell height. The unit used to represent the cell height is based on the projection assigned.
+         (8) Name: registrationCoordinateY
+          Type: RealValue
+          Description: The registration coordinate Y. The unit used to represent the registration coordinate is based on the projection assigned. Corresponds to Northing or Latitude.
+         (9) Name: registrationCoordinateX
+          Type: RealValue
+          Description: The registration coordinate X. The unit used to represent the registration coordinate is based on the projection assigned. Corresponds to Easting or Longitude.
+       Optional Inputs:
+         (0) Name: registrationCellY
+           Type: PositiveIntegerValue
+           Description: The registration cell line. The line 1 is the topmost line.
+         (1) Name: registrationCellX
+           Type: PositiveIntegerValue
+           Description: The registration cell column. The column 1 is the leftmost column.
+         (2) Name: createAsSparse
+           Type: BooleanValue
+           Description: This flag forces the map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: map
+          Type: CategoricalMap
+          Description: Map.
+     Functor: CreateCubeMap
+      Description: Assemble maps into a cube raster data set (multilayer map).
+       Inputs:
+         (0) Name: cellType
+          Type: CellType
+          Description: Map cell type.
+         (1) Name: nullValue
+          Type: NullValue
+          Description: Null value.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Multilayer map file.
+     Functor: CreateKml
+      Description: Create a kml from a map.
+       Inputs:
+         (0) Name: map
+          Type: CategoricalMap
+          Description: Map to be transformed to an georeference image inside Google Earth.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: kml
+          Type: Kml
+          Description: Kml.
+     Functor: CreateMap
+      Description: Create an empty map.
+       Inputs:
+         (0) Name: lines
+          Type: PositiveIntegerValue
+          Description: Number of lines.
+         (1) Name: columns
+          Type: PositiveIntegerValue
+          Description: Number of columns.
+         (2) Name: cellType
+          Type: CellType
+          Description: Data cell type.
+         (3) Name: nullValue
+          Type: NullValue
+          Description: Null value
+         (4) Name: projection
+          Type: Projection
+          Description: The map projection.
+         (5) Name: cellWidth
+          Type: RealValue
+          Description: The cell width. The unit used to represent the cell width is based on the projection assigned.
+         (6) Name: cellHeight
+          Type: RealValue
+          Description: The cell height. The unit used to represent the cell height is based on the projection assigned.
+         (7) Name: registrationCoordinateY
+          Type: RealValue
+          Description: The registration coordinate Y. The unit used to represent the registration coordinate is based on the projection assigned. Corresponds to Northing or Latitude.
+         (8) Name: registrationCoordinateX
+          Type: RealValue
+          Description: The registration coordinate X. The unit used to represent the registration coordinate is based on the projection assigned. Corresponds to Easting or Longitude.
+       Optional Inputs:
+         (0) Name: registrationCellY
+           Type: PositiveIntegerValue
+           Description: The registration cell line. The line 1 is the topmost line.
+         (1) Name: registrationCellX
+           Type: PositiveIntegerValue
+           Description: The registration cell column. The column 1 is the leftmost column.
+         (2) Name: createAsSparse
+           Type: BooleanValue
+           Description: This flag forces the map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory in detriment of access time.
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map.
+     Functor: CreateString
+      Description: This functor generates a string based on contained parameters and a pre-defined format string.
+       Inputs:
+         (0) Name: format
+          Type: String
+          Description: The format string, used to generate the output string.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: String
+          Description: The string generated by this functor.
+     Functor: ExtractCategoricalMapAttributes
+      Description: Extract attributes and summary statistics from a map and its categories. The following items can be calculated:
+
+Dynamic Attributes:
+[8] ["nullCells"] number of null cells,
+[9] ["nonNullCells"] number of non-null cells,
+[10] ["minCell"] minimum non-null cell,
+[11] ["maxCell"] maximum non-null cell,
+[12] ["cellSum"] sum of non-null cells.
+
+Statistical Attributes:
+[13] ["meanCell"] mean of non-null cells,
+[14] ["cellVar"] variance of non-null cells,
+[15] ["cellStd"] standard deviation of non-null cells,
+[16] ["modecell"] mode of non-null cells,
+[17] ["medianCell"] median of non-null cells.
+[18] ["uniqueCells"] number of unique occurrences of non-null cells.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any input map.
+         (1) Name: categoryMap
+          Type: CategoricalMap
+          Description: Categorical map relative to first map.
+       Optional Inputs:
+         (0) Name: extractStatisticalAttributes
+           Type: BooleanValue
+           Description: If true, calculation includes statistical attributes (items 13-18).
+       Outputs:
+         (0) Name: attributes
+          Type: Table
+          Description: Table containing the map attributes per category.
+     Functor: ExtractMapAttributes
+      Description: Extract attributes and summary statistics from a map. The following items can be calculated:
+
+Static Attributes:
+[1] ["lines"] number of lines,
+[2] ["columns"] number of columns,
+[3] ["cells"] number of cells,
+[4] ["layers"] number of layers,
+[5] ["cellHeight"] cell height (in meters),
+[6] ["cellWidth"] cell width (in meters),
+[7] ["cellArea"] cell area (in hectares),
+[19] ["cellType"] cell type code,
+[20] ["nullValue"] null value.
+[21] ["registrationCoordinateY"] registration coordinate Y.
+[22] ["registrationCoordinateX"] registration coordinate X.
+[23] ["registrationCellY"] coordinate of registration cell Y.
+[24] ["registrationCellX"] coordinate of registration cell X.
+[25] ["rotationY"] rotation around Y.
+[26] ["rotationX"] rotation around X.
+[27] ["originalCellHeight"] cell height (as defined by the projection).
+[28] ["originalCellWidth"] cell width (as defined by the projection).
+
+Dynamic Attributes:
+[8] ["nullCells"] number of null cells,
+[9] ["nonNullCells"] number of non-null cells,
+[10] ["minCell"] minimum non-null cell,
+[11] ["maxCell"] maximum non-null cell,
+[12] ["cellSum"] sum of non-null cells.
+
+Statistical Attributes:
+[13] ["meanCell"] mean of non-null cells,
+[14] ["cellVar"] variance of non-null cells,
+[15] ["cellStd"] standard deviation of non-null cells,
+[16] ["modecell"] mode of non-null cells,
+[17] ["medianCell"] median of non-null cells.
+[18] ["uniqueCells"] number of unique occurrences of non-null cells.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any input map.
+       Optional Inputs:
+         (0) Name: extractDynamicAttributes
+           Type: BooleanValue
+           Description: If true, calculation includes attributes that may change over time (items 8-12).
+         (1) Name: extractStatisticalAttributes
+           Type: BooleanValue
+           Description: If true, calculation includes statistical attributes (items 13-18).
+       Outputs:
+         (0) Name: attributes
+          Type: LookupTable
+          Description: Table containing the map attributes.
+         (1) Name: layerAttributes
+          Type: Table
+          Description: Table containing the layer attributes.
+     Functor: ExtractMapLayer
+      Description: Extract a layer from a cube raster data set.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any multilayer map file.
+         (1) Name: layerIndexOrName
+          Type: IndexOrName
+          Description: Layer index or name. The layer index is specified by its order from top to bottom.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: layer
+          Type: Map
+          Description: Extracted layer.
+     Functor: GetMapCategories
+      Description: This functor extracts a set of categories from the input map, if categories are defined.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Map with categories.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: categories
+          Type: Categorization
+          Description: The category set of the input map.
+     Functor: GetMapValue
+      Description: Retrieve cell value at specified line and column location.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any map.
+         (1) Name: cellLine
+          Type: PositiveIntegerValue
+          Description: Line number. The upper line is indexed using 1 as the line number.
+         (2) Name: cellColumn
+          Type: PositiveIntegerValue
+          Description: Colum number. The leftmost column is indexed using 1 as the column number.
+       Optional Inputs:
+         (0) Name: valueIfNull
+           Type: RealValue
+           Description: Value returned in case a null value is found.
+       Outputs:
+         (0) Name: cellValue
+          Type: RealValue
+          Description: Extracted value.
+     Functor: GetProjectionInfo
+      Description: Retrieve information about the corresponding projection.
+       Inputs:
+         (0) Name: projection
+          Type: Projection
+          Description: The projection whose information will be retrieved.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: wkt
+          Type: String
+          Description: The projection using the WKT (well-known text) syntax.
+         (1) Name: ermapperEquivalentProjection
+          Type: String
+          Description: The name of the projection using the equivalent ER Mapper keyword.
+         (2) Name: ermapperEquivalentDatum
+          Type: String
+          Description: The name of the projection datum using the equivalent ER Mapper keyword.
+         (3) Name: ermapperEquivalentUnit
+          Type: String
+          Description: The name of the projection unit using the equivalent ER Mapper keyword.
+         (4) Name: utmHemisphere
+          Type: IntegerValue
+          Description: The code corresponding to the UTM projection hemisphere, if the projection is UTM. -1 = Undefined, 1 = North Hemisphere and 2 = South Hemisphere.
+         (5) Name: utmZone
+          Type: IntegerValue
+          Description: The code corresponding to the UTM projection zone, if the projection is UTM, or -1.
+         (6) Name: coordinateType
+          Type: IntegerValue
+          Description: The code corresponding to the projection coordinate type, if it applies. -1 = Undefined, 1 = Eastings/Northings and 2 = Latitude/Longitude
+         (7) Name: proj4
+          Type: String
+          Description: The projection using the PROJ.4 syntax.
+         (8) Name: epsgCode
+          Type: IntegerValue
+          Description: The projection EPSG code, if it applies, or -1.
+     Functor: InsertMapLayer
+      Description: Inserts (or replace) a layer in a map in a given position.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Map where the layer will be inserted.
+         (1) Name: layer
+          Type: Map
+          Description: Layer to be inserted in the map.
+         (2) Name: layerPosition
+          Type: NonNegativeIntegerValue
+          Description: Position where the layer will be inserted in the map. If the position is zero or points to a position beyond the current number of layers in the map, the new layer will be inserted in the last position.
+       Optional Inputs:
+         (0) Name: layerName
+           Type: Name (nullable)
+           Description: Name that the layer will have in the map. If not defined, an automatic name will be generated.
+         (1) Name: replaceLayer
+           Type: BooleanValue
+           Description: If true, replace the layer at the given position with the new layer. Otherwise, the layer located at the given position (and all following layers) is shifted to the next position to accommodate the new layer.
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map with the new layer.
+     Functor: MapIndexer
+      Description: This functor index the values of a map using values from another as indices resulting in a lookup table where keys are the values from the first map and table values are the values from the second map.
+       Inputs:
+         (0) Name: keyMap
+          Type: Map
+          Description: The input map with the keys.
+         (1) Name: valueMap
+          Type: Map
+          Description: The input map with the values.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: The resulting table containing the Key Map values as keys and Value Map values as values.
+     Functor: SetKmlTimeline
+      Description: This functor inserts a georeference image kml into a timeline kml.
+       Inputs:
+         (0) Name: kml
+          Type: Kml
+          Description: Kml with the georefence image.
+       Optional Inputs:
+         (0) Name: kmlTimeline
+           Type: KmlTimeline (nullable)
+           Description: Kml that is already with timeline.
+         (1) Name: beginTime
+           Type: Date (nullable)
+           Description: Image begin date. The date has specifics formats: Year: YYYY; 
+YearMonth: YYYY-MM
+Complete date: YYYY-MM-DD
+
+         (2) Name: endTime
+           Type: Date (nullable)
+           Description: Image end date.The date has specifics formats: 
+Year: YYYY
+YearMonth: YYYY-MM
+Complete date: YYYY-MM-DD
+
+       Outputs:
+         (0) Name: result
+          Type: KmlTimeline
+          Description: The resulting kml.
+     Functor: SetMapValues
+      Description: Create a map from table values.
+       Inputs:
+         (0) Name: valueTable
+          Type: LookupTable
+          Description: Input table containing the cell values. The table keys represent the cell identifier.
+         (1) Name: lineTable
+          Type: LookupTable
+          Description: Input table containing the lines (Y coordinates). The table keys represent the cell identifier. The upper line uses 1 as the line number.
+         (2) Name: columnTable
+          Type: LookupTable
+          Description: Input table containing the columns (X coordinates). The table keys represent the cell identifier. The leftmost column uses 1 as the column number.
+         (3) Name: mapFormat
+          Type: Map
+          Description: Map used to define the output format.
+         (4) Name: cellType
+          Type: CellType
+          Description: Data cell type.
+         (5) Name: nullValue
+          Type: NullValue
+          Description: Null value.
+       Optional Inputs:
+         (0) Name: resultIsSparse
+           Type: BooleanValue
+           Description: If true, this flag forces the output map to be created as a sparse raster set. Sparse raster set stores only non-null value cells, minimizing storage memory, yet increasing access time.
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: The input map.
+ Group: Map Algebra (Suppl.)
+  Functors:
+     Functor: BooleanValue
+      Description: Structure that can be used to connect two other functors or as a constant value. Previously known as "Bool".
+       Inputs:
+         (0) Name: constant
+          Type: BooleanValue
+          Description: Value or constant representing boolean.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: BooleanValue
+          Description: Value or constant representing boolean provided as the functor input.
+     Functor: CategoricalMap
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: CategoricalMap
+          Description: Value or constant representing map whose cell identifiers represent categories.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: CategoricalMap
+          Description: Value or constant representing map whose cell identifiers represent categories. provided as the functor input.
+     Functor: Categories
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Categorization
+          Description: Value or constant representing map categories.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Categorization
+          Description: Value or constant representing map categories provided as the functor input.
+     Functor: CellType
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: CellType
+          Description: Value or constant representing cell type.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: CellType
+          Description: Value or constant representing cell type provided as the functor input.
+     Functor: Code
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Code
+          Description: Value or constant representing string.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Code
+          Description: Value or constant representing string provided as the functor input.
+     Functor: Folder
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Folder
+          Description: Value or constant representing a folder, directory or zip file.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Folder
+          Description: Value or constant representing a folder, directory or zip file provided as the functor input.
+     Functor: GenericFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: GenericFilename
+          Description: Value or constant representing a generic filename.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: GenericFilename
+          Description: Value or constant representing a generic filename provided as the functor input.
+     Functor: ImageExpression
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: ImageExpression
+          Description: Value or constant representing an algebraic expression.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: ImageExpression
+          Description: Value or constant representing an algebraic expression provided as the functor input.
+     Functor: IntSet
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: IntSet
+          Description: Value or constant representing an integer set.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: IntSet
+          Description: Value or constant representing an integer set provided as the functor input.
+     Functor: IntegerValue
+      Description: Structure that can be used to connect two other functors or as a constant value. Previously known as "Int".
+       Inputs:
+         (0) Name: constant
+          Type: IntegerValue
+          Description: Value or constant representing an integer.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: IntegerValue
+          Description: Value or constant representing an integer provided as the functor input.
+     Functor: Kml
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Kml
+          Description: Value or constant representing a kml.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Kml
+          Description: Value or constant representing a map provided as the functor input.
+     Functor: KmzFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: KmzFilename
+          Description: Value or constant representing a kmz filename.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: KmzFilename
+          Description: Value or constant representing a kmz filename provided as the functor input.
+     Functor: Map
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Map
+          Description: Value or constant representing a map.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Map
+          Description: Value or constant representing a map provided as the functor input.
+     Functor: MapFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: MapFilename
+          Description: Value or constant representing a map filename.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: MapFilename
+          Description: Value or constant representing a map filename provided as the functor input.
+     Functor: Name
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Name
+          Description: Value or constant representing a name.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Name
+          Description: Value or constant representing a name provided as the functor input.
+     Functor: NameMap
+      Description: Identify a map by assigning a name to it.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any input map.
+         (1) Name: mapName
+          Type: Name
+          Description: Map name identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NameTable
+      Description: Identify a table / lookup table by assigning a name to it.
+       Inputs:
+         (0) Name: table
+          Type: BaseTable
+          Description: Table / lookup table.
+         (1) Name: tableName
+          Type: Name
+          Description: Table / lookup table number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NameValue
+      Description: Identify a value by assigning a name to it.
+       Inputs:
+         (0) Name: value
+          Type: RealValue
+          Description: Value.
+         (1) Name: valueName
+          Type: Name
+          Description: Value name identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NonNegativeIntegerValue
+      Description: Non-negative integer declarer. Previously known as "NonNegativeInt".
+       Inputs:
+         (0) Name: constant
+          Type: NonNegativeIntegerValue
+          Description: Non-negative integer constant
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: NonNegativeIntegerValue
+          Description: Non-negative integer object
+     Functor: None
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: None
+          Description: Value or constant representing null value.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: None
+          Description: Value or constant representing null value provided as the functor input.
+     Functor: NullValue
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: NullValue
+          Description: Value or constant representing null value.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: NullValue
+          Description: Value or constant representing null value provided as the functor input.
+     Functor: NumberAndNameMap
+      Description: Identify a map by assigning a number and name to it.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any input map.
+         (1) Name: mapName
+          Type: Name
+          Description: Map name identifier.
+       Optional Inputs:
+         (0) Name: mapNumber
+           Type: NonNegativeIntegerValue
+           Description: Map number identifier.
+       Outputs: (none)
+     Functor: NumberFolder
+      Description: Identify a folder by assigning a number to it.
+       Inputs:
+         (0) Name: value
+          Type: Folder
+          Description: Any value.
+         (1) Name: valueNumber
+          Type: PositiveIntegerValue
+          Description: Value number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberMap
+      Description: Identify a map by assigning a number to it.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any input map.
+         (1) Name: mapNumber
+          Type: PositiveIntegerValue
+          Description: Map number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberString
+      Description: Identify a string by assigning a number to it.
+       Inputs:
+         (0) Name: value
+          Type: String
+          Description: Any value.
+         (1) Name: valueNumber
+          Type: PositiveIntegerValue
+          Description: Value number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberTable
+      Description: Identify a table / lookup table by assigning a number to it.
+       Inputs:
+         (0) Name: table
+          Type: BaseTable
+          Description: Table / lookup table.
+         (1) Name: tableNumber
+          Type: PositiveIntegerValue
+          Description: Table / lookup table number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberValue
+      Description: Identify a value by assigning a number to it.
+       Inputs:
+         (0) Name: value
+          Type: RealValue
+          Description: Any value.
+         (1) Name: valueNumber
+          Type: PositiveIntegerValue
+          Description: Value number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: Percent
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Percent
+          Description: Value or constant representing percent.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Percent
+          Description: Value or constant representing percent provided as the functor input.
+     Functor: PositiveIntegerValue
+      Description: Structure that can be used to connect two other functors or as a constant value. Previously known as "PositiveInt".
+       Inputs:
+         (0) Name: constant
+          Type: PositiveIntegerValue
+          Description: Value or constant representing a positive integer.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: PositiveIntegerValue
+          Description: Value or constant representing a positive integer provided as the functor input.
+     Functor: Projection
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Projection
+          Description: Value or constant representing projections.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Projection
+          Description: Value or constant representing map projections provided as the functor input.
+     Functor: RealValue
+      Description: Structure that can be used to connect two other functors or as a constant value. Previously known as "Double".
+       Inputs:
+         (0) Name: constant
+          Type: RealValue
+          Description: Value or constant representing double precision real.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: RealValue
+          Description: Value or constant representing double precision real provided as the functor input.
+     Functor: String
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: String
+          Description: Value or constant representing string.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: String
+          Description: Value or constant representing string provided as the functor input.
+     Functor: Struct
+      Description: Structure that can be used to store identified data.
+       Inputs:
+         (0) Name: constant
+          Type: Struct
+          Description: A previously initialized struct.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Struct
+          Description: Struct provided by the input port.
+ Group: Region
+  Functors:
+     Functor: GetAllRegionsInfo
+      Description: Gets boundary details for a all regions at once.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs:
+         (0) Name: regionsInfo
+          Type: Table
+          Description: Table containing boundary details for all regions. The table has format "RegionId*:real, RegionLines:real, RegionColumns:real, RegionTopYCoordinate:real, RegionLeftXCoordinate:real, RegionBottomYCoordinate:real, RegionRightXCoordinate:real", representing the number of lines, number of columns, top Y boundary, left X boundary, bottom Y boundary and right X boundary, respectively.
+     Functor: GetRegionInfo
+      Description: Gets map and boundary details for a selected region.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs:
+         (0) Name: regionMask
+          Type: CategoricalMap
+          Description: Map representing the region mask.
+         (1) Name: regionLines
+          Type: PositiveIntegerValue
+          Description: Number of lines of region.
+         (2) Name: regionColumns
+          Type: PositiveIntegerValue
+          Description: Number of columns of region.
+         (3) Name: regionProjection
+          Type: Projection
+          Description: Coordinate reference system of the source map containing the region.
+         (4) Name: regionTopYCoordinate
+          Type: RealValue
+          Description: Top Y of region.
+         (5) Name: regionLeftXCoordinate
+          Type: RealValue
+          Description: Left X of region.
+         (6) Name: regionBottomYCoordinate
+          Type: RealValue
+          Description: Bottom Y of region.
+         (7) Name: regionRightXCoordinate
+          Type: RealValue
+          Description: Right X of region.
+     Functor: MergeRegionalCategoricalMaps
+      Description: Merge regional categorical maps into a single map.
+       Inputs:
+         (0) Name: globalMapName
+          Type: Name
+          Description: Name of regional categorical maps specified in functor "Regional Map".
+       Optional Inputs:
+         (0) Name: mergeNonRegionCells
+           Type: BooleanValue
+           Description: If true, cells from the regional map located outside the region mask are combined, including the additional border cells. Otherwise, these cells are ignored. The combination of two cells are possible only if they have the same value or one of them is a null value.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs:
+         (0) Name: globalMap
+          Type: CategoricalMap
+          Description: A mosaic of regional categorical maps.
+     Functor: MergeRegionalMaps
+      Description: Merge regional maps into a single map.
+       Inputs:
+         (0) Name: globalMapName
+          Type: Name
+          Description: Name of regional maps specified in functor RegionalMap.
+       Optional Inputs:
+         (0) Name: mergeNonRegionCells
+           Type: BooleanValue
+           Description: If true, cells from the regional map located outside the region mask are combined, including the additional border cells. Otherwise, these cells are ignored. The combination of two cells are possible only if they have the same value or one of them is a null value.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by Region Manager.
+       Outputs:
+         (0) Name: globalMap
+          Type: Map
+          Description: A mosaic of regional maps.
+     Functor: Region
+      Description: Receive internally the identifier number of a region and passes on to functors enveloped by it.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by the Region Manager.
+       Outputs: (none)
+     Functor: RegionManager
+      Description: Create and manage regions identified in a categorical map, whose classes represent regions.
+       Inputs:
+         (0) Name: regions
+          Type: CategoricalMap
+          Description: Map of subregions, e.g., countries, states, counties, etc.
+       Optional Inputs:
+         (0) Name: borderCells
+           Type: NonNegativeIntegerValue
+           Description: Number of lines and columns used to create an additional border around regions.
+       Outputs: (none)
+     Functor: RegionManagerValue
+      Description: Functor that can be used to connect two other functors using a "Region Manager".
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: regionManager
+           Type: RegionManager
+           Description: Value representing an instance of the "Region Manager" type.
+       Outputs:
+         (0) Name: regionManager
+          Type: RegionManager
+          Description: Value representing the instance of "Region Manager" type provided as the functor input.
+     Functor: RegionalCategoricalMap
+      Description: Store all categorical regional maps produced within RegionManager.
+       Inputs:
+         (0) Name: globalMapName
+          Type: Name
+          Description: Name for the regional maps.
+         (1) Name: regionalMap
+          Type: CategoricalMap
+          Description: Any map.
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs: (none)
+     Functor: RegionalMap
+      Description: Store all regional maps produced within RegionManager.
+       Inputs:
+         (0) Name: globalMapName
+          Type: Name
+          Description: Name of regional maps.
+         (1) Name: regionalMap
+          Type: Map
+          Description: Any categorical map.
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs: (none)
+     Functor: RegionalizeCategoricalMap
+      Description: Split a categorical map into a series of regional maps.
+       Inputs:
+         (0) Name: globalMap
+          Type: CategoricalMap
+          Description: Any categorical map.
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: keepNonRegionCells
+           Type: BooleanValue
+           Description: If true, cells from the regional map located outside the region mask are preserved, including the additional border cells. Otherwise, these cells are filled with null values.
+         (2) Name: recreateCategories
+           Type: BooleanValue
+           Description: If true, it recreates the category information for the cropped region based on the values present in that region. Otherwise, it retains the original category information from the global map, regardless of the presence of those values in the cropped region.
+         (3) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs:
+         (0) Name: regionalMap
+          Type: CategoricalMap
+          Description: Regional categorical map.
+     Functor: RegionalizeMap
+      Description: Split a map into a series of regional maps.
+       Inputs:
+         (0) Name: globalMap
+          Type: Map
+          Description: Any map.
+       Optional Inputs:
+         (0) Name: regionId
+           Type: IntegerValue
+           Description: Region identifier.
+         (1) Name: keepNonRegionCells
+           Type: BooleanValue
+           Description: If true, cells from the regional map located outside the region mask are preserved, including the additional border cells. Otherwise, these cells are filled with null values.
+         (2) Name: regionManager
+           Type: RegionManager
+           Description: This is internally linked by RegionManager.
+       Outputs:
+         (0) Name: regionalMap
+          Type: Map
+          Description: Regional map.
+ Group: Simulation
+  Functors:
+     Functor: AddChangeMatrix
+      Description: Add two matrices of quantity of changes.
+       Inputs:
+         (0) Name: addend1
+          Type: ChangeMatrix
+          Description: Sum addend.
+         (1) Name: addend2
+          Type: ChangeMatrix
+          Description: Sum addend.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: sum
+          Type: ChangeMatrix
+          Description: Matrix of total quantity of changes.
+     Functor: CalcChangeMatrix
+      Description: Calculate quantity of change per transition in number of cells.
+       Inputs:
+         (0) Name: landscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: transitionMatrix
+          Type: TransitionMatrix
+          Description: Matrix of transition rates.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: changes
+          Type: ChangeMatrix
+          Description: Matrix of numbers of cells to be changed.
+     Functor: Expander
+      Description: Expand or contract previous patches of a certain class or category.
+       Inputs:
+         (0) Name: landscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: probabilities
+          Type: Map
+          Description: Map of spatial probabilities.
+         (2) Name: changes
+          Type: ChangeMatrix
+          Description: Matrix of quantity of changes.
+         (3) Name: transitionParameters
+          Type: TransitionFunctionParameterMatrix
+          Description: Matrix of transition function parameters.
+       Optional Inputs:
+         (0) Name: neighborWindowLines
+           Type: PositiveIntegerValue
+           Description: Number of lines of the neighborhood search window.
+         (1) Name: neighborWindowColumns
+           Type: PositiveIntegerValue
+           Description: Number of columns of the neighborhood search window.
+         (2) Name: pruneFactor
+           Type: RealValue
+           Description: 
+       Outputs:
+         (0) Name: changedLandscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: corrodedProbabilities
+          Type: Map
+          Description: Map of depleted spatial probabilities.
+         (2) Name: remainingChanges
+          Type: ChangeMatrix
+          Description: Matrix of quantity of remaining changes.
+     Functor: ModulateChangeMatrix
+      Description: Split the quantity of changes.
+       Inputs:
+         (0) Name: changes
+          Type: ChangeMatrix
+          Description: Matrix of quantity of changes.
+         (1) Name: modulationRates
+          Type: PercentMatrix
+          Description: Matrix of percents.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: modulatedChanges
+          Type: ChangeMatrix
+          Description: Matrix of current quantity of changes.
+         (1) Name: complementaryChanges
+          Type: ChangeMatrix
+          Description: Matrix of complementary quantity of changes.
+     Functor: Patcher
+      Description: Generate new patches of a certain class or category.
+       Inputs:
+         (0) Name: landscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: probabilities
+          Type: Map
+          Description: Map of spatial probabilities.
+         (2) Name: changes
+          Type: ChangeMatrix
+          Description: Matrix of quantity of changes.
+         (3) Name: transitionParameters
+          Type: TransitionFunctionParameterMatrix
+          Description: Matrix of transition function parameters.
+       Optional Inputs:
+         (0) Name: neighborWindowLines
+           Type: PositiveIntegerValue
+           Description: Number of lines of the neighborhood search window.
+         (1) Name: neighborWindowColumns
+           Type: PositiveIntegerValue
+           Description: Number of columns of the neighborhood search window.
+         (2) Name: pruneFactor
+           Type: RealValue
+           Description: 
+       Outputs:
+         (0) Name: changedLandscape
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: corrodedProbabilities
+          Type: Map
+          Description: Map of depleted spatial probabilities.
+         (2) Name: remainingChanges
+          Type: ChangeMatrix
+          Description: Matrix of quantity of remaining changes.
+     Functor: PatcherContinuousState
+      Description: Generate new patches of a certain class or category.
+       Inputs:
+         (0) Name: continuousLandscape
+          Type: Map
+          Description: Map of stocks. Each cell represent the amount of stock stored (in units per hectare).
+         (1) Name: probabilities
+          Type: Map
+          Description: Map of spatial probabilities.
+         (2) Name: quota
+          Type: RealValue
+          Description: Accumulation quota (in units).
+         (3) Name: mean
+          Type: RealValue
+          Description: Patch mean (in hectares).
+         (4) Name: variance
+          Type: RealValue
+          Description: Patch variance (in hectares).
+         (5) Name: isometry
+          Type: RealValue
+          Description: Patch isometry.
+       Optional Inputs:
+         (0) Name: neighborWindowLines
+           Type: PositiveIntegerValue
+           Description: Number of lines of the neighborhood search window.
+         (1) Name: neighborWindowColumns
+           Type: PositiveIntegerValue
+           Description: Number of columns of the neighborhood search window.
+         (2) Name: pruneFactor
+           Type: RealValue
+           Description: 
+       Outputs:
+         (0) Name: modifiedContinuousLandscape
+          Type: Map
+          Description: Map of remaining stocks.
+         (1) Name: modifiedProbabilities
+          Type: Map
+          Description: Map of depleted spatial probabilities.
+         (2) Name: remainingQuota
+          Type: RealValue
+          Description: 
+ Group: Simulation (Suppl.)
+  Functors:
+     Functor: ChangeMatrix
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: ChangeMatrix
+          Description: Value or constant representing change matrix.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: ChangeMatrix
+          Description: Value or constant representing change matrix provided as the functor input.
+     Functor: NeighborhoodTable
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: NeighborhoodTable
+          Description: Value or constant representing neighborhood table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: NeighborhoodTable
+          Description: Value or constant representing neighborhood table provided as the functor input.
+     Functor: PercentMatrix
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: PercentMatrix
+          Description: Value or constant representing  percent matrix.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: PercentMatrix
+          Description: Value or constant representing  percent matrix provided as the functor input.
+     Functor: TransitionFunctionParameterMatrix
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TransitionFunctionParameterMatrix
+          Description: Value or constant representing transition parameter matrix.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TransitionFunctionParameterMatrix
+          Description: Value or constant representing transition parameter matrix provided as the functor input.
+     Functor: TransitionMatrix
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TransitionMatrix
+          Description: Value or constant representing a transition matrix.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TransitionMatrix
+          Description: Value or constant representing a transition matrix provided as the functor input.
+     Functor: TransitionSet
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TransitionSet
+          Description: Value or constant representing a transition set.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TransitionSet
+          Description: Value or constant representing a transition set provided as the functor input.
+     Functor: Weights
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Weights
+          Description: Value or constant representing weights.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Weights
+          Description: Value or constant representing weights provided as the functor input.
+     Functor: WeightsFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: WeightsFilename
+          Description: Value or constant representing a filename of Weights of Evidence coefficients or ranges.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: WeightsFilename
+          Description: Value or constant representing a filename of Weights of Evidence coefficients  or ranges provided as the functor input.
+ Group: Stack
+  Functors:
+     Functor: SelectFolder
+      Description: Pick up a folder from a series of folders.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: folder
+          Type: Folder
+          Description: Folder.
+     Functor: SelectLookupTable
+      Description: Pick up a lookup table from a series of tables.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: table
+          Type: LookupTable
+          Description: Lookup table.
+     Functor: SelectMap
+      Description: Pick up a map from a series of maps.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: map
+          Type: Map
+          Description: Map.
+     Functor: SelectMapFilename
+      Description: Pick up a map filename from a series of filenames.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: mapFilename
+          Type: MapFilename
+          Description: Map filename.
+     Functor: SelectPercentMatrix
+      Description: Pick up a percent matrix from a series of matrices.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: percentMatrix
+          Type: PercentMatrix
+          Description: Matrix of percents.
+     Functor: SelectString
+      Description: Pick up a string from a series of strings.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: string
+          Type: String
+          Description: String.
+     Functor: SelectTableFilename
+      Description: Pick up a table filename from a series of filenames.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: tableFilename
+          Type: TableFilename
+          Description: Table filename.
+     Functor: SelectTransitionFunctionParameterMatrix
+      Description: Pick up a matrix of transition function parameters from a series of matrices.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: functionParameterMatrix
+          Type: TransitionFunctionParameterMatrix
+          Description: Matrix of transition function parameters.
+     Functor: SelectTransitionMatrix
+      Description: Pick up a transition matrix from a series of matrices.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: transitionMatrix
+          Type: TransitionMatrix
+          Description: Matrix of transition rates.
+     Functor: SelectWeights
+      Description: Pick up Weight of Evidence coefficients from a series of coefficients.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration. 
+       Outputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Weights of Evidence coefficients.
+     Functor: SelectWeightsFilename
+      Description: Pick up a filename containing Weight of Evidence coefficients from a series of filenames.
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: step
+           Type: PositiveIntegerValue
+           Description: Current index, step or model iteration.
+       Outputs:
+         (0) Name: weightsFilename
+          Type: WeightsFilename
+          Description: Weights filename.
+ Group: Stack (Suppl.)
+  Functors:
+     Functor: NumberMapFilename
+      Description: Identify a map filename by assigning a number to it.
+       Inputs:
+         (0) Name: mapFilename
+          Type: MapFilename
+          Description: Any input map filename.
+         (1) Name: filenameNumber
+          Type: PositiveIntegerValue
+          Description: Map filename number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberPercentMatrix
+      Description: Identify a percent matrix by assigning a number to it.
+       Inputs:
+         (0) Name: percentMatrix
+          Type: PercentMatrix
+          Description: Matrix of percents.
+         (1) Name: matrixNumber
+          Type: PositiveIntegerValue
+          Description: Matrix number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberTableFilename
+      Description: Identify a table filename by assigning a number to it.
+       Inputs:
+         (0) Name: tableFilename
+          Type: TableFilename
+          Description: Any table filename.
+         (1) Name: filenameNumber
+          Type: PositiveIntegerValue
+          Description: Table filename number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberTransitionFunctionParameterMatrix
+      Description: Identify a matrix of transition function parameters by assigning a number to it.
+       Inputs:
+         (0) Name: functionParameterMatrix
+          Type: TransitionFunctionParameterMatrix
+          Description: Matrix of transition function parameters.
+         (1) Name: matrixNumber
+          Type: PositiveIntegerValue
+          Description: Matrix number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberTransitionMatrix
+      Description: Identify a transition matrix by assigning a number to it.
+       Inputs:
+         (0) Name: transitionMatrix
+          Type: TransitionMatrix
+          Description: Matrix of transition rates.
+         (1) Name: matrixNumber
+          Type: PositiveIntegerValue
+          Description: Matrix identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberWeights
+      Description: Identify a list of Weight of Evidence coefficients by assigning a number to it.
+       Inputs:
+         (0) Name: weights
+          Type: Weights
+          Description: Weights of Evidence coefficients.
+         (1) Name: weightNumber
+          Type: PositiveIntegerValue
+          Description: coefficient identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: NumberWeightsFilename
+      Description: Identify a filename of Weights of Evidence coefficients by assigning a number to it.
+       Inputs:
+         (0) Name: weightsFilename
+          Type: WeightsFilename
+          Description: Any filename of Weights of Evidence coefficients.
+         (1) Name: filenameNumber
+          Type: PositiveIntegerValue
+          Description: Weights of Evidence filename number identifier.
+       Optional Inputs: (none)
+       Outputs: (none)
+ Group: Statistics
+  Functors:
+     Functor: CalcHistogram
+      Description: This functor calculates a histogram from a map.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: Any map.
+       Optional Inputs:
+         (0) Name: intervalWidth
+           Type: RealValue
+           Description: Width of the histogram interval.
+         (1) Name: cumulative
+           Type: BooleanValue
+           Description: If true, the calculated histogram is cumulative.
+         (2) Name: relative
+           Type: BooleanValue
+           Description: If true, the values in the histogram are normalized by the total number of occurrences.
+       Outputs:
+         (0) Name: histogram
+          Type: LookupTable
+          Description: The calculated histogram.
+     Functor: CalcKernelMap
+      Description: Calculate kernel density of an event map representing a point pattern.
+       Inputs:
+         (0) Name: events
+          Type: Map
+          Description: Map showing the events location. Events are represented by non null cells, indicating the number of occurrences.
+         (1) Name: bandwidth
+          Type: RealValue
+          Description: The kernel radius (in meters).
+       Optional Inputs:
+         (0) Name: mask
+           Type: Map (nullable)
+           Description: Map whose null cells mask the kernel calculation.
+         (1) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+       Outputs:
+         (0) Name: kernelMap
+          Type: Map
+          Description: 
+     Functor: CalcNeighborhood
+      Description: Calculate the list of neighbors for each source feature.
+       Inputs:
+         (0) Name: source
+          Type: CategoricalMap
+          Description: Map whose non-null cells correspond to source features.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: neighborhood
+          Type: NeighborhoodTable
+          Description: Neighbors of each source feature in the source map.
+     Functor: CalcSpatialLag
+      Description: Calculate a spatial regression.
+       Inputs:
+         (0) Name: pLag
+          Type: RealValue
+          Description: 
+         (1) Name: wNeighborhoods
+          Type: NeighborhoodTable
+          Description: 
+         (2) Name: x1
+          Type: LookupTable
+          Description: 
+         (3) Name: bCoefficients
+          Type: LookupTable
+          Description: 
+         (4) Name: eError
+          Type: RealValue
+          Description: 
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: yResult
+          Type: LookupTable
+          Description: 
+         (1) Name: yPredictedResult
+          Type: LookupTable
+          Description: 
+ Group: Table
+  Functors:
+     Functor: AddTableColumn
+      Description: This functor creates a new column in the given table. The position where the new column is inserted determines whether the new column is a key or data column.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table where the new column will be created.
+         (1) Name: columnName
+          Type: Name
+          Description: The new column name.
+         (2) Name: columnType
+          Type: TableCellType
+          Description: The new column cell type.
+       Optional Inputs:
+         (0) Name: columnIndex
+           Type: NonNegativeIntegerValue
+           Description: Index representing the position where the column will be inserted. If the index is zero or greater than the last column index, the column is placed as the last table column. If the column already exists, the existing column index will be kept.
+         (1) Name: columnShouldBeKey
+           Type: BooleanValue
+           Description: This flag is meaningful only when the column is created after the last key column and before the first data column. If true, the new column represents a key column, otherwise, it represents a data one.
+         (2) Name: columnValues
+           Type: Table (nullable)
+           Description: Table whose data column values represent the initial values of the new data column for each one of the corresponding keys. This table must have as many key columns as the table where the column will be inserted, with the same types, but one data column only. Column names are ignored. If the new column represents a key column, this table not be specified. If the column already exists, these values will be merged with the existent ones, overriding all conflicting definitions.
+         (3) Name: defaultValue
+           Type: TableValue (nullable)
+           Description: Value that will be assigned to cells of the new column not mentioned by the "Column Values" table. If a default value is not provided, 0 or "" are used. Using this setting may degrade performance.
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table containing the new column.
+     Functor: AddTableRow
+      Description: This functor adds a row in specified table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table where the new row should be created.
+         (1) Name: values
+          Type: Tuple
+          Description: All values to be added as the new row.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table with the new row.
+     Functor: AddTupleValue
+      Description: Append a value to a tuple
+       Inputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Input tuple to which the value will be added to.
+         (1) Name: value
+          Type: TableValue
+          Description: Value to be appended to the tuple.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Tuple
+          Description: Resulting tuple after insertion of the value.
+     Functor: CalculateValue
+      Description: Calculate a value.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: defaultValue
+           Type: RealValue (nullable)
+           Description: Value to be passed in case an algebraic error occurs.
+       Outputs:
+         (0) Name: result
+          Type: RealValue
+          Description: The calculated value.
+     Functor: CalculateValue2
+      Description: Calculate a value.
+       Inputs:
+         (0) Name: expression
+          Type: ImageExpression
+          Description: Algebraic or logical expression.
+       Optional Inputs:
+         (0) Name: defaultValue
+           Type: RealValue (nullable)
+           Description: Value to be passed in case an algebraic error occurs.
+       Outputs:
+         (0) Name: result
+          Type: RealValue
+          Description: The calculated value.
+     Functor: CreateEmptyTable
+      Description: This functor creates a new empty table using a model table as a format.
+       Inputs:
+         (0) Name: formatTable
+          Type: Table
+          Description: Input table containing the model used to create the new empty table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting empty table.
+     Functor: ExtractMapValues
+      Description: This functor extracts map values and coordinates and stores them in lookup tables.
+       Inputs:
+         (0) Name: map
+          Type: Map
+          Description: The input map.
+       Optional Inputs:
+         (0) Name: keysType
+           Type: Enum
+           Description: Behavior for creating unique ids for each table row in the resulting cell table. 
+With "Default", the id will be random, if the execution is parallel, or sequential, otherwise. With the "Use Map Values As keys", the map values will be used to identify the cells in the output table. With the "Use Coordinate indexes as Keys", the indexes of map coordinates will be used to identify the cells in the output table.
+         (1) Name: includeNullValues
+           Type: BooleanValue
+           Description: If true, the null values will be included into output table.
+       Outputs:
+         (0) Name: cells
+          Type: Table
+          Description: The resulting table containing the corresponding values and coordinates. The table has columns "Id" (key corresponding to a unique identifier), "Value" (cell value), "Line" and "Column" (corresponding to the cell line and column). The upper line is indexed using 1 as the line number. The leftmost column is indexed using 1 as the column number.
+     Functor: GetTableColumn
+      Description: This functor retrieves a data column from the specified table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table from where the data column will be retrieved.
+         (1) Name: columnIndexOrName
+          Type: IndexOrName
+          Description: Index or name of the column to be retrieved. The column must represent a data column.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table formed by the retrieved column and the corresponding keys.
+     Functor: GetTableFromKey
+      Description: This functor retrieves the sub-table corresponding to the given chain of keys from a given input table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: The input table.
+         (1) Name: keys
+          Type: Tuple
+          Description: Chain of keys identifying the sub-table that will be retrieved.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting sub-table.
+     Functor: GetTableInfo
+      Description: Gets information about the columns of a given input table or lookup table.
+       Inputs:
+         (0) Name: table
+          Type: BaseTable
+          Description: Input table or lookup table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: tableInfo
+          Type: Table
+          Description: Table containing detailed information about all input table columns.
+         (1) Name: columnNames
+          Type: Table
+          Description: Table containing name and corresponding index for each input table column.
+     Functor: GetTableKeys
+      Description: This functor returns a table mapping unique indices to the keys of a given table. In case the keys of the given table are represented by numbers, those numbers itself will be used as unique indices.
+       Inputs:
+         (0) Name: table
+          Type: BaseTable
+          Description: The input table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: keys
+          Type: Table
+          Description: The table containing the keys from the input table first key column.
+     Functor: GetTableRow
+      Description: Get a row from a table
+       Inputs:
+         (0) Name: keys
+          Type: Tuple
+          Description: Keys corresponding to the desired row
+         (1) Name: table
+          Type: Table
+          Description: Table to extract the row from
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Tuple
+          Description: Row extracted from table
+     Functor: GetTableValue
+      Description: Get a value from a table
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table to extract the value from.
+         (1) Name: keys
+          Type: Tuple
+          Description: Keys corresponding to the desired value.
+         (2) Name: column
+          Type: IndexOrName
+          Description: Column name or index where the value is located.
+       Optional Inputs:
+         (0) Name: valueIfNotFound
+           Type: TableValue (nullable)
+           Description: This value to be returned if any of the keys is not present in the table.
+       Outputs:
+         (0) Name: result
+          Type: TableValue
+          Description: Value extracted from table
+     Functor: GetTupleSize
+      Description: Get the number of elements of a tuple
+       Inputs:
+         (0) Name: tuple
+          Type: Tuple
+          Description: Tuple to get the size from
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: NonNegativeIntegerValue
+          Description: Number of elements of the input tuple
+     Functor: GetTupleValue
+      Description: Get a value from a tuple
+       Inputs:
+         (0) Name: index
+          Type: PositiveIntegerValue
+          Description: Index of desired value in tuple
+         (1) Name: tuple
+          Type: Tuple
+          Description: Tuple to extract the value from
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: TableValue
+          Description: Value extracted from tuple
+     Functor: LookupTableGroup
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: LookupTableGroup
+          Description: Value or constant representing a lookup table group, comprising a set of lookup tables.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: LookupTableGroup
+          Description: Value or constant representing a lookup table group provided as the functor input.
+     Functor: MergeSubTables
+      Description: 
+       Inputs:
+         (0) Name: baseTable
+          Type: Table
+          Description: Table where the resulting combined sub-tables will be stored.
+         (1) Name: tableName
+          Type: Name
+          Description: Table name.
+       Optional Inputs:
+         (0) Name: allowNamesWithNoAssociatedSubTables
+           Type: BooleanValue
+           Description: If false, an error will be reported if there are no subtables corresponding to the given name.
+         (1) Name: tableManager
+           Type: TableManager
+           Description: This is internally linked by TableManager.
+       Outputs:
+         (0) Name: table
+          Type: Table
+          Description: 
+     Functor: RemoveTableColumn
+      Description: This functor removes a data column from the given table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table from where the new column will be removed.
+         (1) Name: columnIndexOrName
+          Type: IndexOrName
+          Description: Index or name of the data column to be removed.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table without the specified data column.
+     Functor: ReorderTableColumn
+      Description: Move a column to a new position. It is possible to move key or data columns. However, data columns cannot be moved to a position occupied by a key column or vice-versa.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: The input table.
+         (1) Name: columnIndexOrName
+          Type: IndexOrName
+          Description: Index or name of the column to be moved.
+         (2) Name: newColumnIndex
+          Type: NonNegativeIntegerValue
+          Description: Column index where the specified column will be re-inserted. The column currently located at this position (and all following columns) is shifted to the next position. The use of 0 forces the column to become either the last table column or the last key column.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table.
+     Functor: SetTableByKey
+      Description: This functor updates or inserts a sub-table corresponding to the given chain of keys in a table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: The input table.
+         (1) Name: keys
+          Type: Tuple
+          Description: Chain of keys identifying the sub-table that will be updated or insert.
+         (2) Name: subTable
+          Type: Table
+          Description: Sub-table that will be inserted in the input table. The column names in the sub-table must match the corresponding names in the input table. The column types must also be compatible.
+       Optional Inputs:
+         (0) Name: ignoreColumnNames
+           Type: BooleanValue
+           Description: Flag indicating if the column names of the sub-table should be validated against the input table.
+         (1) Name: combineSubTables
+           Type: BooleanValue
+           Description: Flag indicating to merge the sub-table that will be inserted in the input table with the existing sub-table on input table.
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table.
+     Functor: SetTableCellValue
+      Description: This functor inserts a value in a table.
+       Inputs:
+         (0) Name: table
+          Type: Table
+          Description: Table where the value will be inserted.
+         (1) Name: column
+          Type: IndexOrName
+          Description: Name or index of the column where the new value will be inserted.
+         (2) Name: keys
+          Type: Tuple
+          Description: Corresponding key of the cell row.
+         (3) Name: value
+          Type: TableValue
+          Description: Value that will be inserted in the table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: Table
+          Description: The resulting table containing the new value.
+     Functor: SetTableColumnName
+      Description: Replace a column name in a table or lookup table.
+       Inputs:
+         (0) Name: table
+          Type: BaseTable
+          Description: Table or lookup table containing the target column.
+         (1) Name: column
+          Type: IndexOrName
+          Description: Target column where the change will occur.
+         (2) Name: name
+          Type: Name
+          Description: New column name.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: result
+          Type: BaseTable
+          Description: The resulting table or lookup table.
+     Functor: SubTable
+      Description: 
+       Inputs:
+         (0) Name: tableName
+          Type: Name
+          Description: Table name.
+         (1) Name: keys
+          Type: Tuple
+          Description: Keys used to identify the sub-table.
+         (2) Name: subTable
+          Type: Table
+          Description: Sub-table.
+       Optional Inputs:
+         (0) Name: emptySubTableIsAllowed
+           Type: BooleanValue
+           Description: If true, an empty table can be passed as the sub-table without raising an error.
+         (1) Name: tableManager
+           Type: TableManager
+           Description: This is internally linked by TableManager.
+       Outputs:
+         (0) Name: object
+          Type: Table
+          Description: Subtable value
+     Functor: Table
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Table
+          Description: Value or constant representing a table.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Table
+          Description: Value or constant representing a table provided as the functor input.
+     Functor: TableCellType
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TableCellType
+          Description: Value or constant representing a table cell type.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TableCellType
+          Description: Value or constant representing a table cell type provided as the functor input.
+     Functor: TableFilename
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TableFilename
+          Description: Value or constant representing a table filename.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TableFilename
+          Description: Value or constant representing a table filename provided as the functor input.
+     Functor: TableManager
+      Description: Create and manage tables.
+       Inputs: (none)
+       Optional Inputs: (none)
+       Outputs: (none)
+     Functor: TableManagerValue
+      Description: Functor that can be used to connect two other functors using a "Table Manager".
+       Inputs: (none)
+       Optional Inputs:
+         (0) Name: tableManager
+           Type: TableManager
+           Description: Value representing an instance of the "Table Manager" type.
+       Outputs:
+         (0) Name: tableManager
+          Type: TableManager
+          Description: Value representing the instance of "Table Manager" type provided as the functor input.
+     Functor: TableValue
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: TableValue
+          Description: Value or constant representing table value.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: TableValue
+          Description: Value or constant representing table value provided as the functor input.
+     Functor: Tuple
+      Description: Structure that can be used to connect two other functors or as a constant value.
+       Inputs:
+         (0) Name: constant
+          Type: Tuple
+          Description: Value or constant representing tuple.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: object
+          Type: Tuple
+          Description: Value or constant representing tuple provided as the functor input.
+ Group: Tools
+  Functors:
+     Functor: ExtractRuntimeStatistics
+      Description: Execute contained functors and extract informations about the execution.The following items will be calculated:
+
+[1] Number of elapsed seconds to execute contained functors
+
+       Inputs: (none)
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: attributes
+          Type: LookupTable
+          Description: Table containing the extracted information.
+     Functor: GetEnvironmentValue
+      Description: Get Environment Value for a given Key.
+       Inputs:
+         (0) Name: key
+          Type: Enum
+          Description: Type of value to return.
+       Optional Inputs: (none)
+       Outputs:
+         (0) Name: value
+          Type: String
+          Description: Value for the selected Key.
+ Group: Validation
+  Functors:
+     Functor: CalcReciprocalSimilarityMap
+      Description: Calculate two-way fuzzy similarity index between two maps.
+       Inputs:
+         (0) Name: firstMap
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+         (1) Name: secondMap
+          Type: CategoricalMap
+          Description: Map of classes or categories.
+       Optional Inputs:
+         (0) Name: windowSize
+           Type: PositiveIntegerValue
+           Description: Window size with equal number of lines and columns. Only odd numbers are acceptable.
+         (1) Name: useExponentialDecay
+           Type: BooleanValue
+           Description: If true, the similarity is calculated using an exponential decay function truncated by the window size. Otherwise, a constant function is used, in which 1 is the similarity value if corresponding cells are found within the search window, and zero if not.
+         (2) Name: cellType
+           Type: CellType
+           Description: Data cell type.
+         (3) Name: nullValue
+           Type: NullValue
+           Description: Null value.
+         (4) Name: exponentialDecayDivisor
+           Type: RealValue
+           Description: Value used to attenuate the distance in the exponential decay function.
+       Outputs:
+         (0) Name: firstSimilarity
+          Type: Map
+          Description: Map showing the spatial match from the first to the second input map.
+         (1) Name: firstMean
+          Type: RealValue
+          Description: The mean similarity index for given window size comparing the first map to the second.
+         (2) Name: secondSimilarity
+          Type: Map
+          Description: Map showing the spatial match from the second to the first input map.
+         (3) Name: secondMean
+          Type: RealValue
+          Description: The mean similarity index for given window size comparing the second map to the first.
+[0m
