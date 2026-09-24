@@ -1,6 +1,7 @@
-# Rendered Quarto reports are committed ad-hoc via git-LFS (they are large,
-# self-contained HTML with base64-embedded figures). Requires `git lfs install`
-# on the machine that commits them.
-2026-05-ssp-ch/*.html filter=lfs diff=lfs merge=lfs -text
-2026-05-ssp-ch/**/*.html filter=lfs diff=lfs merge=lfs -text
+# Rendered Quarto reports live in an `html-reports/` folder beside the sources
+# they come from (see _quarto.yml + quarto-post-render.sh) and are committed
+# ad-hoc via git-LFS: they are large, self-contained HTML with base64-embedded
+# figures. Requires `git lfs install` on the machine that commits them.
+**/html-reports/**/*.html filter=lfs diff=lfs merge=lfs -text
+**/html-reports/**/*.png filter=lfs diff=lfs merge=lfs -text
 2026-05-ssp-ch/**/*.png filter=lfs diff=lfs merge=lfs -text

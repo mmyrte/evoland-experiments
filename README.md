@@ -55,9 +55,13 @@ set up on Euler.
   - The repo-root `_quarto.yml` sets `execute-dir: project` (so the root `.Rprofile` and
     relative paths resolve) and `freeze: auto` (only re-render when code changes). Needs
     the Quarto CLI and git-lfs.
-- **HTML reports uploaded via git-LFS.** Rendered HTML with embedded graphics and richer
-  visualisations (e.g. leaflet) is LFS-tracked (`.gitattributes`); the `_freeze/` cache
-  is git-ignored.
+- **HTML reports land in `html-reports/`** beside the sources they come from, e.g.
+  `2026-05-ssp-ch/html-reports/050-covariate-selection.html`. Quarto writes a report next to
+  its `.qmd`, so a post-render hook (`quarto-post-render.sh`, wired up in `_quarto.yml`)
+  files it; this happens for `quarto render <file>` and for a whole-project render alike, so
+  the step directories hold sources only.
+  - Rendered HTML with embedded graphics and richer visualisations (e.g. leaflet) is
+    LFS-tracked (`.gitattributes`) and committed ad-hoc; the `_freeze/` cache is git-ignored.
 - **State lives in a DuckLake.** Each experiment builds a git-ignored `*.evolanddb`.
 - **Data provenance.** Ingest scripts ideally download from public sources and verify
   md5sums via `evoland::download_and_verify()` into the evoland cache, ensuring maximum

@@ -6,6 +6,11 @@ project:
   # Execute every doc from the repo root, so the root .Rprofile (which activates
   # rv) is sourced and the relative `ssp-ch.evolanddb` path resolves as before.
   execute-dir: project
+  # Quarto writes each report next to its .qmd; this moves it into an
+  # `html-reports/` folder beside the source. See the script for why it is a
+  # post-render step rather than an output setting. Runs for a single-file
+  # render as well as a whole-project one.
+  post-render: bash quarto-post-render.sh
 
 format:
   html:

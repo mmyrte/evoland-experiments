@@ -66,7 +66,8 @@ the analysis behind that choice.
 
 See the top-level README, "Conventions", for the numbering scheme. "run" below means a
 rendered report or an output raster is committed; reports are committed ad-hoc, so a step
-marked "written" may have been executed without leaving a trace.
+marked "written" may have been executed without leaving a trace. Rendered reports are in
+[`html-reports/`](html-reports/).
 
 | Step | Purpose | State |
 | --- | --- | --- |

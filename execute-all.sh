@@ -10,10 +10,11 @@
 #
 # Files are rendered/run in lexical order (stages are zero-padded, so a plain
 # sort gives 020-... < 020d-... < 021-...). `.qmd` files are rendered with the
-# Quarto CLI (which executes the embedded R and writes a self-contained HTML
-# report next to the source); `.r`/`.R` files are run with Rscript (back-compat
-# for sub-projects not yet converted to Quarto). Everything runs from the repo
-# root so the root .Rprofile (rv activation) and relative paths resolve.
+# Quarto CLI, which executes the embedded R and writes a self-contained HTML
+# report into an `html-reports/` folder beside the source (see _quarto.yml and
+# quarto-post-render.sh); `.r`/`.R` files are run with Rscript (back-compat for
+# sub-projects not yet converted to Quarto). Everything runs from the repo root
+# so the root .Rprofile (rv activation) and relative paths resolve.
 #
 # Files sharing a leading number form one stage. Stages always run strictly one
 # after another; within a stage the files are assumed independent (that is the
