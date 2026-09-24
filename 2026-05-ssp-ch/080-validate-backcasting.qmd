@@ -27,8 +27,7 @@ Two consequences worth stating before any number is read:
 - **Persistence is not skill.** The great majority of Swiss hectares keep their class across a
   survey interval — `040d`'s observed-transition plot has the exact figure — so any whole-map
   agreement statistic is dominated by cells nobody had to get right. Every metric here is
-  therefore computed on **change**, not on the map. `agreement` is reported alongside the figure
-  of merit only to show how uninformative it is.
+  therefore computed on **change**, not on the map.
 
 ## Parameters
 
@@ -127,22 +126,33 @@ unmodellable[is_viable == FALSE & cells > 1000]
 `create_alloc_params_t()` measures, per viable transition and per observed period pair, the mean
 and variance of new-patch area, patch elongation, and the split between cells that **expand** an
 existing patch of the target class and cells that start a **new** patch; it then averages over
-the period pairs and emits `n_perturbations` further sets that jitter `frac_expander`
-(`frac_patcher` following as `1 - frac_expander`).
+the period pairs and returns that best estimate. The `n_perturbations` further sets are built
+here: each jitters `frac_expander` by a normal draw with sd `perturb_sd`, clamped to [0, 1], with
+`frac_patcher` following as `1 - frac_expander`.
 
-Only `frac_expander` is perturbed upstream, so this sweep explores the expander/patcher split
-and nothing else. That is the parameter the SSP interventions also target, which makes it the
+Only `frac_expander` is perturbed, so this sweep explores the expander/patcher split and
+nothing else. That is the parameter the SSP interventions also target, which makes it the
 defensible one to sweep first, but it means a poor `mean_patch_size` estimate will not show up
-as parameter sensitivity here.
+as parameter sensitivity here. Widening the sweep is a change to `perturb_alloc_params()` only.
 
 ```{r}
 #| label: backcast-alloc-params
-alloc_params <- db$create_alloc_params_t(
-  n_perturbations = n_perturbations,
-  sd = perturb_sd
-)
+db$id_run <- 0L
+best_estimate <- db$create_alloc_params_t()
 
-# The returned id_run is a 1-based parameter-set index, not a real run.
+perturb_alloc_params <- function(params, sd) {
+  jittered <- pmin(1, pmax(0, params$frac_expander + rnorm(nrow(params), sd = sd)))
+  copy(params)[, `:=`(frac_expander = jittered, frac_patcher = 1 - jittered)]
+}
+
+# id_run here is a 1-based parameter-set index, not a real run; set 1 is the best estimate.
+set.seed(seed)
+alloc_params <- rbindlist(c(
+  list(copy(best_estimate)[, id_run := 1L]),
+  lapply(seq_len(n_perturbations), function(i) {
+    perturb_alloc_params(best_estimate, perturb_sd)[, id_run := 1L + i]
+  })
+))
 param_sets <- sort(unique(alloc_params$id_run))
 plain(alloc_params)[, .(
   n_trans = .N,
@@ -307,36 +317,41 @@ waste. `alloc_clumpy_one_period()` has a `use_parent_trans_pot` argument for thi
 multi-period `alloc_clumpy()` wrapper does not expose it; exposing it upstream would remove
 roughly a third of the prediction cost of this step.
 
-## Observed and simulated end states
+## Simulated end states
+
+The backcast writes each allocated run's maps to `lulc_data_t`; the validation below reads them
+from there. Here we only check that every allocated run covers the observed grid.
 
 ```{r}
 #| label: backcast-maps
-db$id_run <- 0L
-observed <- merge(
-  db$fetch("lulc_data_t", where = glue::glue(
-    "id_run = 0 and id_period = {id_period_initial}"
-  ))[, .(id_coord, id_lulc_initial = id_lulc)],
-  db$fetch("lulc_data_t", where = glue::glue(
-    "id_run = 0 and id_period = {id_period_final}"
-  ))[, .(id_coord, id_lulc_observed = id_lulc)],
-  by = "id_coord"
+allocated_runs <- db$runs_t[kind == "backcast parameters", .(id_run)]
+# which parameter set each allocated run belongs to; replicate members, if allocated, too
+run_param_set <- rbind(
+  param_runs[, .(id_run, param_set = param_sets)],
+  member_runs[, .(id_run, param_set)]
+)[id_run %in% allocated_runs$id_run]
+
+db$id_run <- NULL # the lineage-free read expression spans all runs
+simulated_cells <- db$get_query(
+  "select id_run, count(*)::integer as n_cells from {lulc_read_expr}
+  where id_run in ({allocated_runs$id_run*}) and id_period = {id_period_final}
+  group by id_run",
+  lulc_read_expr = db$get_read_expr("lulc_data_t")
 )
-
-db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
-param_runs <- db$runs_t[kind == "backcast parameters", ]
-simulated <- db$fetch("lulc_data_t", where = glue::glue(
-  "id_run in ({toString(param_runs$id_run)}) and id_period = {id_period_final}"
-))[, .(id_run, id_coord, id_lulc_simulated = id_lulc)]
 db$id_run <- 0L
-
-cells <- simulated[observed, on = "id_coord", nomatch = NULL]
+n_observed_cells <- db$get_query(
+  "select count(*)::integer from {lulc_read_expr} where id_period = {id_period_final}",
+  lulc_read_expr = db$get_read_expr("lulc_data_t"),
+  as_atomic = TRUE
+)
 
 stopifnot(
-  "no simulated cells - did allocation write anything?" = nrow(cells) > 0L,
-  "a replicate is missing cells" =
-    uniqueN(cells$id_run) == nrow(param_runs)
+  "no simulated cells - did allocation write anything?" = nrow(simulated_cells) > 0L,
+  "an allocated run is missing cells" =
+    nrow(simulated_cells) == nrow(allocated_runs) &&
+      all(simulated_cells$n_cells == n_observed_cells)
 )
-cells[, .N, by = .(id_run)]
+simulated_cells
 ```
 
 ## Quantity check: did the allocator deliver the prescribed change?
@@ -349,7 +364,7 @@ scenario rates, where it is worse because the LP pushes rates above the historic
 
 ```{r}
 #| label: backcast-quantity
-realised_counts <- rbindlist(lapply(param_runs$id_run, function(r) {
+realised_counts <- rbindlist(lapply(allocated_runs$id_run, function(r) {
   db$id_run <- r
   db$get_obs_trans_rates()[
     id_period %in% backcast_periods,
@@ -359,7 +374,11 @@ realised_counts <- rbindlist(lapply(param_runs$id_run, function(r) {
 db$id_run <- 0L
 
 quantity <- merge(
-  CJ(id_run = param_runs$id_run, id_trans = viable_trans$id_trans, id_period = backcast_periods)[
+  CJ(
+    id_run = allocated_runs$id_run,
+    id_trans = viable_trans$id_trans,
+    id_period = backcast_periods
+  )[
     obs_rates[, .(id_period, id_trans, count_prescribed = count)],
     on = c("id_period", "id_trans"),
     nomatch = NULL
@@ -384,19 +403,13 @@ quantity[order(-shortfall_pct)][1:15][
 
 ## (c1) Fuzzy similarity of differences
 
-`calc_transition_similarity()` is evoland's port of Dinamica's "similarity of differences": for
-one transition it builds the observed and simulated **change** maps, then compares them with a
-distance-decayed moving window, so a patch placed one cell off still scores.
-
-Two things about the returned number:
-
-- It is computed over the **whole raster**, not over the changed cells: the change maps are
-  binarised with `NA -> 0` and the background agrees almost everywhere, so `similarity` sits
-  near 1 for every transition and every parameter set and discriminates poorly. We therefore
-  also report `similarity_change`, the mean of the same similarity surface **masked to cells
-  that changed in either map**, which is the quantity Dinamica's validation actually reads.
-- `similarity` is the *minimum* of the two directional means; `similarity_change` is masked from
-  `sim1` only (observed → simulated), because that is the only surface the function returns.
+`calc_transition_similarity()` is evoland's port of Dinamica's "similarity of differences"
+(Hagen 2003): for one transition it builds the observed and simulated **change** maps, and gives
+each changed cell a membership in the other map's change that decays with the distance to the
+nearest change there (`exp(-d / 2)` within the window, 1 in the same cell), so a patch placed one
+cell off still scores. Each direction is averaged over that map's own changed cells only, so the
+unchanged background does not enter; `similarity` is the minimum of the two directions, so a
+simulation cannot score well by placing much more or much less change than was observed.
 
 ```{r}
 #| label: backcast-fuzzy
@@ -423,46 +436,31 @@ fuzzy_one_run <- function(id_run_member) {
     SIMPLIFY = FALSE
   )
 
-  masked_mean <- function(x) {
-    if (is.null(x$similarity_map) || !is.finite(x$similarity)) {
-      return(NA_real_)
-    }
-    changed <- !is.na(x$observed_change) | !is.na(x$simulated_change)
-    terra::global(
-      terra::mask(x$similarity_map, changed, maskvalues = c(0, NA)),
-      "mean",
-      na.rm = TRUE
-    )[1, 1]
-  }
-
   data.table(
     id_run = id_run_member,
     id_trans = viable_trans$id_trans,
     similarity = vapply(res, \(x) as.numeric(x$similarity), numeric(1L)),
-    similarity_change = vapply(res, masked_mean, numeric(1L)),
     n_observed = vapply(res, \(x) as.numeric(x$n_observed), numeric(1L)),
     n_simulated = vapply(res, \(x) as.numeric(x$n_simulated), numeric(1L))
   )
 }
 
-fuzzy_dt <- rbindlist(lapply(param_runs$id_run, fuzzy_one_run))
+fuzzy_dt <- rbindlist(lapply(allocated_runs$id_run, fuzzy_one_run))
 
 db$id_run <- 0L
 
-fuzzy_by_param <- fuzzy_dt[, .(
+fuzzy_by_param <- run_param_set[fuzzy_dt, on = "id_run"][, .(
+  similarity_sd = sd(similarity, na.rm = TRUE),
   similarity = mean(similarity, na.rm = TRUE),
-  similarity_change = mean(similarity_change, na.rm = TRUE),
-  similarity_change_sd = sd(similarity_change, na.rm = TRUE),
   n_observed = mean(n_observed),
   n_simulated = mean(n_simulated)
-), by = .(id_run, id_trans)]
+), by = .(param_set, id_trans)]
 
 fuzzy_by_param[db$trans_meta_t, on = "id_trans", nomatch = NULL][
-  order(id_run, similarity_change)
+  order(param_set, similarity)
 ][, .(
-  id_run, id_lulc_anterior, id_lulc_posterior,
+  param_set, id_lulc_anterior, id_lulc_posterior,
   similarity = round(similarity, 3),
-  similarity_change = round(similarity_change, 3),
   n_observed, n_simulated = round(n_simulated)
 )]
 ```
@@ -480,172 +478,133 @@ The cross-tabulation of observed against simulated end class, restricted to the 
 $\mathrm{FoM} = B / (A + B + C + D)$ — the intersection of observed and simulated change over
 their union. It ignores the correct-null cell, which is why it is the right statistic here.
 
+`db$figure_of_merit_v()` computes it in the database: the initial and observed maps from run
+`0`, each allocated run's simulated map through its own lineage, one row per run, and with
+`by_transition = TRUE` one row per run and transition.
+
+**Deglaciation is excluded.** Glacier transitions are not viable (`040` excludes glacier as an
+anterior class) and are applied deterministically in the extrapolation, so the backcast never
+moves a glacier cell and every observed deglaciation cell would count as a miss the model was
+never meant to get. `figure_of_merit_v()` has no class filter, but because no glacier cell is
+simulated to change, the exclusion is exact after the fact: glacier cells contribute only
+misses, equal to their observed change, and to the null only that same observed change to the
+union.
+
 ```{r}
 #| label: backcast-fom
-fom_components <- function(dt) {
-  dt[, .(
-    hit = sum(id_lulc_observed != id_lulc_initial & id_lulc_simulated == id_lulc_observed),
-    miss = sum(id_lulc_observed != id_lulc_initial & id_lulc_simulated == id_lulc_initial),
-    wrong_class = sum(
-      id_lulc_observed != id_lulc_initial &
-        id_lulc_simulated != id_lulc_initial &
-        id_lulc_simulated != id_lulc_observed
-    ),
-    false_alarm = sum(id_lulc_observed == id_lulc_initial & id_lulc_simulated != id_lulc_initial),
-    n_cells = .N
-  )]
-}
+id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
 
-db$lulc_meta_t[, .(id_lulc, name)]
-fom_by_run <- cells[id_lulc_initial != 9, fom_components(.SD), by = .(id_run)]
-fom_by_run[, `:=`(
-  fom = hit / (hit + miss + wrong_class + false_alarm),
-  agreement = 1 - (miss + wrong_class + false_alarm) / n_cells
-)]
-fom_by_run[order(-fom)]
-```
-
-### The null: allocating change at random within the anterior class
-
-The FoM of a model that gets the quantity right but the location purely by chance is available
-in closed form, which is cheaper and less arbitrary than running a scrambled-potential control.
-Within an anterior class $u$ of $N_u$ cells, of which the model converts $S_{uv}$ to $v$ and the
-record converts $O_{uv}$, random placement gives $\mathbb{E}[B_{uv}] = S_{uv} O_{uv} / N_u$, and
-the expected union of change over the class is $S_u + O_u - S_u O_u / N_u$.
-
-```{r}
-#| label: backcast-null
-n_by_ant <- observed[, .(n_ant = as.numeric(.N)), by = .(id_lulc_ant = id_lulc_initial)]
-
-# Observed flow is a property of the record; simulated flow is the replicate mean per set.
-obs_flow <- observed[
-  id_lulc_initial != id_lulc_observed,
-  .(obs = as.numeric(.N)),
-  by = .(id_lulc_ant = id_lulc_initial, id_lulc_post = id_lulc_observed)
-]
-sim_flow <- cells[
-  id_lulc_initial != id_lulc_simulated,
-  .(sim = .N / n_replicates),
-  by = .(param_set, id_lulc_ant = id_lulc_initial, id_lulc_post = id_lulc_simulated)
-]
-
-flow <- merge(
-  CJ(param_set = param_sets, unique = TRUE)[, k := 1L][
-    obs_flow[, k := 1L],
-    on = "k",
-    allow.cartesian = TRUE
-  ][, -"k"],
-  sim_flow,
-  by = c("param_set", "id_lulc_ant", "id_lulc_post"),
-  all = TRUE
+fom_args <- list(
+  id_period_anterior = id_period_initial,
+  id_period_post = id_period_final,
+  id_run_reference = 0L,
+  id_run_simulated = allocated_runs$id_run
 )
-flow[is.na(obs), obs := 0][is.na(sim), sim := 0]
-flow <- n_by_ant[flow, on = "id_lulc_ant"]
+fom_by_trans_run <- do.call(db$figure_of_merit_v, c(fom_args, by_transition = TRUE))
+fom_by_run <- do.call(db$figure_of_merit_v, fom_args)
 
-null_by_param <- flow[,
-  {
-    by_ant <- .SD[, .(
-      obs_u = sum(obs),
-      sim_u = sum(sim),
-      hits = sum(obs * sim / n_ant),
-      n_ant = n_ant[1]
-    ), by = id_lulc_ant]
-    by_ant[, union_u := obs_u + sim_u - obs_u * sim_u / n_ant]
-    .(fom_null = sum(by_ant$hits) / sum(by_ant$union_u))
-  },
-  by = param_set
+stopifnot(
+  "the backcast moved glacier cells; the deglaciation exclusion below no longer holds" =
+    fom_by_trans_run[id_lulc_anterior %in% id_lulc_glacier, all(simulated == 0L)]
+)
+
+# figure_of_merit_v() reports the null per transition as a ratio; recover its expected hits
+hits_from_fom <- function(fom, observed, simulated) fom * (observed + simulated) / (1 + fom)
+fom_by_trans_run[, hits_null := hits_from_fom(figure_of_merit_null, observed, simulated)]
+
+deglaciation <- fom_by_trans_run[
+  id_lulc_anterior %in% id_lulc_glacier,
+  .(observed_glacier = sum(observed)),
+  by = id_run
 ]
+fom_by_run <- deglaciation[fom_by_run, on = "id_run"]
+fom_by_run[is.na(observed_glacier), observed_glacier := 0L]
+fom_by_run <- fom_by_trans_run[
+  !id_lulc_anterior %in% id_lulc_glacier,
+  .(hits_null = sum(hits_null)),
+  by = id_run
+][fom_by_run, on = "id_run"]
+fom_by_run[, `:=`(
+  misses = misses - observed_glacier,
+  # the null's union over all classes, less the glacier share, which is its observed change
+  union_null = hits_null / figure_of_merit_null - observed_glacier
+)]
+fom_by_run[, `:=`(
+  figure_of_merit = hits / (hits + wrong_hits + misses + false_alarms),
+  producers_accuracy = hits / (hits + wrong_hits + misses),
+  figure_of_merit_null = hits_null / union_null
+)]
 
-# Per-transition, so a transition allocated at chance can be named rather than averaged away.
-null_by_trans <- flow[, .(
-  param_set, id_lulc_ant, id_lulc_post,
-  hits_null = obs * sim / n_ant,
-  union_null = obs + sim - obs * sim / n_ant
-)][, fom_null := hits_null / union_null]
-
-null_by_param
+fom_by_run[order(-figure_of_merit), .(
+  id_run, hits, wrong_hits, misses, false_alarms,
+  figure_of_merit = round(figure_of_merit, 4),
+  figure_of_merit_null = round(figure_of_merit_null, 4),
+  producers_accuracy = round(producers_accuracy, 3),
+  users_accuracy = round(users_accuracy, 3)
+)]
 ```
 
-Per-transition FoM uses the same decomposition, so it is directly comparable with the null
-above: hits are cells the record and the model both moved from `u` to `v`, and the denominator
-is the union of the two flows.
+The null — the FoM of a model that gets the quantity right but the location purely by chance —
+is available in closed form, which is cheaper and less arbitrary than running a
+scrambled-potential control. Within an anterior class $u$ of $N_u$ cells, of which the model
+converts $S_{uv}$ to $v$ and the record converts $O_{uv}$, random placement gives
+$\mathbb{E}[B_{uv}] = S_{uv} O_{uv} / N_u$, and the expected union of change over the class is
+$S_u + O_u - S_u O_u / N_u$; `figure_of_merit_v()` returns it as `figure_of_merit_null`.
+
+Per-transition FoM uses the same decomposition, so it is directly comparable with its null:
+hits are cells the record and the model both moved from `u` to `v`, and the denominator is the
+union of the two flows.
 
 ```{r}
 #| label: backcast-fom-by-trans
-sim_t <- cells[
-  id_lulc_initial != id_lulc_simulated,
-  .(sim_t = .N / n_replicates),
-  by = .(param_set, id_lulc_ant = id_lulc_initial, id_lulc_post = id_lulc_simulated)
-]
-hit_t <- cells[
-  id_lulc_initial != id_lulc_observed & id_lulc_simulated == id_lulc_observed,
-  .(hit_t = .N / n_replicates),
-  by = .(param_set, id_lulc_ant = id_lulc_initial, id_lulc_post = id_lulc_observed)
-]
+fom_by_trans <- run_param_set[fom_by_trans_run, on = "id_run"][
+  !id_lulc_anterior %in% id_lulc_glacier,
+  .(
+    observed = mean(observed),
+    simulated = mean(simulated),
+    hits = mean(hits),
+    hits_null = mean(hits_null)
+  ),
+  by = .(param_set, id_lulc_anterior, id_lulc_posterior)
+][, `:=`(
+  figure_of_merit = hits / (observed + simulated - hits),
+  figure_of_merit_null = hits_null / (observed + simulated - hits_null)
+)][, at_chance := is.finite(figure_of_merit) & is.finite(figure_of_merit_null) &
+  figure_of_merit <= figure_of_merit_null]
 
-fom_by_trans <- Reduce(
-  function(x, y) merge(x, y, by = c("param_set", "id_lulc_ant", "id_lulc_post"), all = TRUE),
-  list(
-    flow[, .(param_set, id_lulc_ant, id_lulc_post, obs_t = obs)],
-    sim_t,
-    hit_t
-  )
-)
-for (j in c("obs_t", "sim_t", "hit_t")) set(fom_by_trans, which(is.na(fom_by_trans[[j]])), j, 0)
-
-fom_by_trans[, fom := hit_t / (obs_t + sim_t - hit_t)]
-fom_by_trans <- null_by_trans[
-  , .(param_set, id_lulc_ant, id_lulc_post, fom_null)
-][fom_by_trans, on = c("param_set", "id_lulc_ant", "id_lulc_post")]
-fom_by_trans[, at_chance := is.finite(fom) & is.finite(fom_null) & fom <= fom_null]
-
-fom_by_trans[order(param_set, fom)][, .(
-  param_set, id_lulc_ant, id_lulc_post,
-  obs_t = round(obs_t), sim_t = round(sim_t),
-  fom = round(fom, 3), fom_null = round(fom_null, 3), at_chance
+fom_by_trans[order(param_set, figure_of_merit)][, .(
+  param_set, id_lulc_anterior, id_lulc_posterior,
+  observed = round(observed), simulated = round(simulated),
+  figure_of_merit = round(figure_of_merit, 3),
+  figure_of_merit_null = round(figure_of_merit_null, 3),
+  at_chance
 )]
 ```
 
-## (c3) Probabilistic cross-tabulation over the replicate ensemble
+## (c3) Expected figure of merit over the replicate ensemble
 
-A single realisation's cross-tabulation is one draw from the allocator. Averaging the per-cell
-class **frequency** across the replicates of a parameter set turns the hard cross-tabulation
-into a soft one whose entries are expected cell counts, and the FoM computed from it is the
-ensemble expectation rather than one sample of it. This is the cross-tabulation "weighted by
-probabilistic allocation" the handover asks for; the weights come from the ensemble, so
-`n_replicates` is what controls their resolution.
-
-```{r}
-#| label: backcast-ensemble
-ens <- cells[, .(p = .N / n_replicates), by = .(param_set, id_coord, id_lulc_simulated)]
-ens <- observed[ens, on = "id_coord"]
-
-soft_crosstab <- ens[, .(expected_cells = sum(p)), by = .(
-  param_set, id_lulc_observed, id_lulc_simulated
-)]
-
-dcast(
-  soft_crosstab[param_set == min(param_sets)],
-  id_lulc_observed ~ id_lulc_simulated,
-  value.var = "expected_cells",
-  fill = 0
-)
-```
+A single realisation is one draw from the allocator. Averaging the counts over the allocated
+runs of a parameter set gives the expected hits, misses, wrong hits and false alarms, and the FoM
+computed from those is the ensemble expectation rather than one sample of it (the mean of the
+per-run ratios would not be). With one allocated run per parameter set, as currently, the two
+coincide.
 
 ```{r}
 #| label: backcast-ensemble-fom
-soft_fom <- ens[, .(
-  hit = sum(p[id_lulc_observed != id_lulc_initial & id_lulc_simulated == id_lulc_observed]),
-  miss = sum(p[id_lulc_observed != id_lulc_initial & id_lulc_simulated == id_lulc_initial]),
-  wrong_class = sum(p[
-    id_lulc_observed != id_lulc_initial &
-      id_lulc_simulated != id_lulc_initial &
-      id_lulc_simulated != id_lulc_observed
-  ]),
-  false_alarm = sum(p[id_lulc_observed == id_lulc_initial & id_lulc_simulated != id_lulc_initial])
-), by = param_set][, fom_expected := hit / (hit + miss + wrong_class + false_alarm)][]
+ensemble_fom <- run_param_set[fom_by_run, on = "id_run"][, .(
+  n_runs = .N,
+  hits = mean(hits),
+  wrong_hits = mean(wrong_hits),
+  misses = mean(misses),
+  false_alarms = mean(false_alarms),
+  hits_null = mean(hits_null),
+  union_null = mean(union_null)
+), by = param_set][, `:=`(
+  fom_expected = hits / (hits + wrong_hits + misses + false_alarms),
+  fom_null = hits_null / union_null
+)]
 
-soft_fom[order(-fom_expected)]
+ensemble_fom[order(-fom_expected)]
 ```
 
 ## Acceptance criteria
@@ -675,11 +634,7 @@ quantity_gate <- quantity[
   by = .(id_trans, id_period)
 ][mean_shortfall_pct > 5]
 
-skill_gate <- merge(
-  soft_fom[, .(param_set, fom_expected)],
-  null_by_param,
-  by = "param_set"
-)[, ratio := fom_expected / fom_null][]
+skill_gate <- ensemble_fom[, .(param_set, fom_expected, fom_null, ratio = fom_expected / fom_null)]
 
 if (nrow(quantity_gate) > 0L) {
   warning(
@@ -699,7 +654,7 @@ list(quantity_gate = quantity_gate, skill_gate = skill_gate)
 
 ## Select the parameter set and promote it
 
-The winner is chosen on the ensemble FoM, with `similarity_change` as the tie-break: FoM answers
+The winner is chosen on the ensemble FoM, with the mean `similarity` as the tie-break: FoM answers
 "are the right cells changing", the fuzzy similarity answers "is the change the right shape",
 and only the first is comparable against a null.
 
@@ -708,14 +663,11 @@ lineage without further plumbing.
 
 ```{r}
 #| label: backcast-select
-param_score <- Reduce(
-  function(x, y) merge(x, y, by = "param_set"),
-  list(
-    soft_fom[, .(param_set, fom_expected)],
-    null_by_param,
-    fuzzy_by_param[, .(similarity_change = mean(similarity_change, na.rm = TRUE)), by = param_set]
-  )
-)[order(-fom_expected, -similarity_change)]
+param_score <- merge(
+  ensemble_fom[, .(param_set, fom_expected, fom_null)],
+  fuzzy_by_param[, .(similarity = mean(similarity, na.rm = TRUE)), by = param_set],
+  by = "param_set"
+)[order(-fom_expected, -similarity)]
 
 best_param <- param_score$param_set[1]
 message("Selected parameter set ", best_param)
@@ -729,7 +681,7 @@ param_score
 for (p in param_sets) {
   db$alloc_params_t <- as_alloc_params_t(merge(
     copy(alloc_params[id_run == p])[, id_run := param_run_id(p)][, -"similarity"],
-    fuzzy_by_param[param_set == p, .(id_trans, similarity = similarity_change)],
+    fuzzy_by_param[param_set == p, .(id_trans, similarity)],
     by = "id_trans",
     all.x = TRUE
   ))
@@ -738,7 +690,7 @@ for (p in param_sets) {
 db$id_run <- 0L
 db$alloc_params_t <- as_alloc_params_t(merge(
   copy(alloc_params[id_run == best_param])[, id_run := 0L][, -"similarity"],
-  fuzzy_by_param[param_set == best_param, .(id_trans, similarity = similarity_change)],
+  fuzzy_by_param[param_set == best_param, .(id_trans, similarity)],
   by = "id_trans",
   all.x = TRUE
 ))
@@ -749,9 +701,9 @@ db$alloc_params_t
 > allocate the observed periods per parameter set, then score with
 > `calc_transition_similarity()` — but it calls `alloc_dinamica()`, so it needs a
 > DinamicaConsole installation, it does not use the `runs_t` hierarchy for the parameter
-> sets, it runs one realisation per set (no ensemble), and it reports only the unmasked
-> similarity. Folding the CLUMPY backend and an `n_replicates` argument into it would let
-> this step collapse back to one call.
+> sets, it runs one realisation per set (no ensemble), and it reports no figure of merit.
+> Folding the CLUMPY backend and an `n_replicates` argument into it would let this step
+> collapse back to one call.
 
 ```{r}
 #| label: backcast-report
@@ -766,7 +718,7 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   "backcast_selected_param_set", as.character(best_param),
   "backcast_fom_expected", as.character(signif(param_score$fom_expected[1], 4)),
   "backcast_fom_null", as.character(signif(param_score$fom_null[1], 4)),
-  "backcast_similarity_change", as.character(signif(param_score$similarity_change[1], 4)),
+  "backcast_similarity", as.character(signif(param_score$similarity[1], 4)),
   "backcast_unmodellable_pct", as.character(signif(max(unmodellable$unmodellable_pct), 3))
 ))
 ```

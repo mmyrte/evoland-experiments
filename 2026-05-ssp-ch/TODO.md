@@ -162,12 +162,12 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 - [ ] **Size the run.** `n_perturbations = 3`, `n_replicates = 3`, `fuzzy_window = 11` were
       chosen for legibility. Measure one member run first; start at 1 × 2 and grow.
       (`080-validate-backcasting.qmd`)
-- [ ] **Only `frac_expander` is perturbed.** `create_alloc_params_t()` jitters that one
+- [ ] **Only `frac_expander` is perturbed.** `080`'s `perturb_alloc_params()` jitters that one
       column, so the sweep says nothing about sensitivity to `mean_patch_size` or
-      `patch_elongation`.
-  - [ ] Drop jitter upstream, simply return best estimate; leave the
+      `patch_elongation`. Widening it is now a local change to that function.
+  - [x] Drop jitter upstream, simply return best estimate; leave the
         jittering/perturbation to whoever is constructing the `alloc_params_t`.
-        ethzplus/evoland-plus#53, merged; `080` now needs to construct its perturbed runs.
+        ethzplus/evoland-plus#53, merged; `080` builds its perturbed sets itself.
 - [x] **Decide whether the acceptance criteria are right.** `080` proposes quantity fidelity
       (< 5 % shortfall on transitions above 1000 cells), allocation skill (ensemble FoM ≥ 2× the
       random-within-class null) and per-transition honesty (transitions at chance may not be
@@ -272,29 +272,26 @@ for rare transitions and diverge only where potentials are high.
 
 ethzplus/evoland-plus#49 (per-run `trans_pot_t`, run-lineage reads, exported single-period
 allocators), #50 (`update_neighbors`) and #53 (`create_alloc_params_t()` returns the best
-estimate only) are merged into `develop`. The `evoland` pin in `rproject.toml` / `rv.lock` still
-sits on #49's pre-merge head; bumping it to `develop` needs the `080` change under Validation.
+estimate only) and #55 (validation metrics) are merged into `develop`, and the `evoland` pin in
+`rproject.toml` / `rv.lock` is on `develop` (ecebf27); `080` is adapted to it.
 
-- [ ] 🔴 **Bump the pin and re-run `091`.** Before #49, run-lineage reads of tables without
+- [ ] 🔴 **Re-run `080` and `091` on the pinned `develop`** (on the group's infrastructure, as
+      part of running the pipeline end to end). The pin is bumped; neither step has run on it
+      yet, and `080`'s rewritten evaluation has only been checked on a synthetic database.
+      Before #49, run-lineage reads of tables without
       `id_period` returned every ancestor's rows. In `091`, members' lineage runs through their
       scenario run to run 0, and both carry `alloc_params_t` (from `091` and `090`), so
       `alloc_clumpy_one_period()` passed misaligned patch parameters to C++. Also check `080`
       if run 0 already held parameters from an earlier execution when it ran.
-- [ ] **Fuzzy similarity of differences** — ethzplus/evoland-plus#55. The old
+- [x] **Fuzzy similarity of differences** — ethzplus/evoland-plus#55, merged. The old
       `calc_transition_similarity()` compared kernel-weighted category shares over the whole
-      raster, so the unchanged background dominated and everything scored near 1 (0.94–0.96
-      on the synthetic replica). `080`'s `similarity_change`, the same surface masked to cells
-      that changed in either map, does **not** fix that: disjoint change still scores 0.93. #55
-      reimplements it after Hagen (2003) / Dinamica: nearest-change distance decay, averaged
-      over each map's own changed cells, minimum of the two directions. It also adds
-      `db$figure_of_merit_v()` (components, producer's/user's accuracy, the random-within-class
-      null, per simulated run and optionally per transition, read from the DB with a reference
-      run for the initial/observed maps), which covers `080`'s (c2)/(c3) FoM and null code.
-      Once merged and pinned, in `080`:
-      - drop `similarity_change` and read `similarity` directly;
-      - replace the hand-rolled FoM with `figure_of_merit_v()`;
-      - `observed_change` / `simulated_change` are now logical maps (`TRUE` = changed), so
-        the `!is.na()` tests there become plain logical tests.
+      raster, so the unchanged background dominated and everything scored near 1; `080`'s
+      masked `similarity_change` did not fix that. #55 reimplements it after Hagen (2003) /
+      Dinamica, and adds `db$figure_of_merit_v()`. `080` now reads `similarity` directly and
+      takes its figure of merit, null and per-transition FoM from `figure_of_merit_v()`.
+  - [ ] `figure_of_merit_v()` has no class filter, so `080` excludes deglaciation after the
+        fact. That is exact only while no glacier cell is simulated to change, which `080`
+        asserts. An anterior-class filter upstream would remove the workaround.
 - [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
       id_runs in that table and to validate the results. Since running multiple id_runs
       across one or more id_periods is going to be a common analytic scenario, that eval
