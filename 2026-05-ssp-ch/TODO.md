@@ -167,7 +167,7 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
       `patch_elongation`.
   - [ ] Drop jitter upstream, simply return best estimate; leave the
         jittering/perturbation to whoever is constructing the `alloc_params_t`.
-        ethzplus/evoland-plus#53; `080` needs to construct its perturbed runs once merged.
+        ethzplus/evoland-plus#53, merged; `080` now needs to construct its perturbed runs.
 - [x] **Decide whether the acceptance criteria are right.** `080` proposes quantity fidelity
       (< 5 % shortfall on transitions above 1000 cells), allocation skill (ensemble FoM ≥ 2× the
       random-within-class null) and per-transition honesty (transitions at chance may not be
@@ -270,38 +270,31 @@ for rare transitions and diverge only where potentials are high.
 
 ## Upstream asks (evoland-plus)
 
-Bump the `evoland` pin in `rproject.toml` / `rv.lock` as these merge. The pin currently sits
-on #49's head, which `091` needs.
+ethzplus/evoland-plus#49 (per-run `trans_pot_t`, run-lineage reads, exported single-period
+allocators), #50 (`update_neighbors`) and #53 (`create_alloc_params_t()` returns the best
+estimate only) are merged into `develop`. The `evoland` pin in `rproject.toml` / `rv.lock` still
+sits on #49's pre-merge head; bumping it to `develop` needs the `080` change under Validation.
 
+- [ ] 🔴 **Bump the pin and re-run `091`.** Before #49, run-lineage reads of tables without
+      `id_period` returned every ancestor's rows. In `091`, members' lineage runs through their
+      scenario run to run 0, and both carry `alloc_params_t` (from `091` and `090`), so
+      `alloc_clumpy_one_period()` passed misaligned patch parameters to C++. Also check `080`
+      if run 0 already held parameters from an earlier execution when it ran.
+- [ ] **Fuzzy similarity of differences** — ethzplus/evoland-plus#55. The old
+      `calc_transition_similarity()` compared kernel-weighted category shares over the whole
+      raster, so the unchanged background dominated and everything scored near 1 (0.94–0.96
+      on the synthetic replica). `080`'s `similarity_change`, the same surface masked to cells
+      that changed in either map, does **not** fix that: disjoint change still scores 0.93. #55
+      reimplements it after Hagen (2003) / Dinamica: nearest-change distance decay, averaged
+      over each map's own changed cells, minimum of the two directions. Once merged and
+      pinned, drop `similarity_change` from `080` and read `similarity` directly.
 - [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
       id_runs in that table and to validate the results. Since running multiple id_runs
       across one or more id_periods is going to be a common analytic scenario, that eval
       function should be replaced by a more generally useful method accepting an id_run x
       id_period subset to evaluate with either clumpy or dinamica.
-- [ ] **Fuzzy similarity is nearly uninformative as evoland reports it.**
-      `calc_transition_similarity()` binarises the change maps with `NA -> 0` and averages the
-      similarity surface over the whole raster, so the agreeing background dominates and
-      everything scores near 1 (0.94–0.96 on the synthetic replica). `080` also reports
-      `similarity_change`, the same surface masked to cells that changed in either map, and
-      selects on the figure of merit.
-  - [ ] Push the masked variant upstream; it is what Dinamica's own validation reads.
-- [ ] **Intervention interface** — ethzplus/evoland-plus#49: `trans_pot_t` keyed by `id_run`,
-      the run-lineage read fix below, and `alloc_clumpy_one_period()` /
-      `alloc_dinamica_one_period()` exported with matching signatures (the Dinamica one tested
-      against Dinamica EGO 8.11.2). Then remove `intrv_meta_t` / `intrv_masks_t` upstream.
-- [ ] 🔴 **Run-lineage reads returned every ancestor's rows** for tables without `id_period`
-      (`alloc_params_t`, `trans_pot_t`, `trans_models_t`, `trans_preds_t`); fixed in #49. In
-      `091`, members' lineage runs through their scenario run to run 0, and both carry
-      `alloc_params_t` (from `091` and `090`), so `alloc_params_clumpy_v()` returned each
-      transition twice and `alloc_clumpy_one_period()` passed misaligned patch parameters to
-      C++. **Re-run `091`** on the new pin, and check `080` if run 0 already held parameters
-      from an earlier execution when it ran.
-- [ ] **`update_neighbors` argument on `alloc_clumpy()` / `alloc_dinamica()`** — #50 (stacked
-      on #49). Skips the neighbour upsert after the last requested period; `091` now calls the
-      exported `alloc_clumpy_one_period()` directly. `pred_data_t` is already partitioned by
-      `id_run` and `id_period`.
-- [ ] **`create_alloc_params_t()` returns the best estimate only** — #53; see Validation.
-      `080` then builds its perturbed parameter runs itself.
+- [ ] **Remove `intrv_meta_t` / `intrv_masks_t`** — #54, with a vignette on representing
+      policy mechanisms (settlement form, spatial steering, exogenous change). Awaiting review.
 - [ ] **`terra::panel()` / `plot()` need `type = "continuous"`** for an ensemble-share layer.
       With `n_members + 1` distinct values terra falls back to a categorical legend, printing
       full-precision fractions as class labels and, at small member counts, failing to shade the
