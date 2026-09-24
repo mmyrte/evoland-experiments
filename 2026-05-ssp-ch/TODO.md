@@ -287,10 +287,14 @@ sits on #49's pre-merge head; bumping it to `develop` needs the `080` change und
       that changed in either map, does **not** fix that: disjoint change still scores 0.93. #55
       reimplements it after Hagen (2003) / Dinamica: nearest-change distance decay, averaged
       over each map's own changed cells, minimum of the two directions. It also adds
-      `calc_figure_of_merit()` (components, producer's/user's accuracy, the random-within-class
-      null, per transition, ensembles as a list of maps), which covers `080`'s (c2)/(c3) FoM and
-      null code. Once merged and pinned, drop `similarity_change` from `080`, read `similarity`
-      directly, and replace the hand-rolled FoM with `calc_figure_of_merit()`.
+      `db$figure_of_merit_v()` (components, producer's/user's accuracy, the random-within-class
+      null, per simulated run and optionally per transition, read from the DB with a reference
+      run for the initial/observed maps), which covers `080`'s (c2)/(c3) FoM and null code.
+      Once merged and pinned, in `080`:
+      - drop `similarity_change` and read `similarity` directly;
+      - replace the hand-rolled FoM with `figure_of_merit_v()`;
+      - `observed_change` / `simulated_change` are now logical maps (`TRUE` = changed), so
+        the `!is.na()` tests there become plain logical tests.
 - [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
       id_runs in that table and to validate the results. Since running multiple id_runs
       across one or more id_periods is going to be a common analytic scenario, that eval
