@@ -288,34 +288,89 @@ step.
 > observed map. Both designs are worth having; the chained one is the one a backcast is usually
 > asked for, so it is the one implemented.
 
+### Deterministic glacier change
+
+Glacier transitions are not modelled (`040` excludes glacier as an anterior class): their
+extent follows the climate, not the land use drivers, so they are imposed on the simulated map
+after each period is allocated, before the next period is allocated from it. In the backcast
+the imposed change is the **observed** one: every cell that turned into or out of glacier
+between two surveys takes its observed class. In the extrapolation (`090`) the same step will
+take its assignments from GloGEM glacier model output instead; `apply_deterministic_change()`
+only needs a table of `id_coord` and the class to impose.
+
+```{r}
+#| label: backcast-glacier
+id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
+
+db$id_run <- 0L
+glacier_change <- db$get_query(
+  "select post.id_period, post.id_coord, post.id_lulc
+  from {lulc_read_expr} ant
+  inner join {lulc_read_expr} post
+    on post.id_coord = ant.id_coord and post.id_period = ant.id_period + 1
+  where post.id_period in ({backcast_periods*})
+    and ant.id_lulc != post.id_lulc
+    and (ant.id_lulc in ({id_lulc_glacier*}) or post.id_lulc in ({id_lulc_glacier*}))",
+  lulc_read_expr = db$get_read_expr("lulc_data_t")
+)
+
+# impose `assignments` (id_coord, id_lulc) on an allocated lulc_data_t, by reference
+apply_deterministic_change <- function(lulc, assignments) {
+  lulc[assignments, on = "id_coord", id_lulc := i.id_lulc]
+}
+
+glacier_change[, .N, by = id_period]
+```
+
+### Allocation
+
+Every replicate is allocated one period at a time with `alloc_clumpy_one_period()`, so the
+glacier change can be imposed between periods; the multi-period `alloc_clumpy()` has no such
+hook. Each replicate is seeded with its own registered seed: CLUMPY draws through R's RNG, so
+`set.seed()` makes each replicate reproducible and the replicates independent of each other.
+
+The transition potentials for the *first* backcast period are identical across every replicate
+of a parameter set (same observed anterior state, same models, same predictors), so the first
+period reads them from the parameter-set run with `use_parent_trans_pot = TRUE`: the first
+replicate predicts them onto the parent and its siblings reuse them. Later periods start from
+each replicate's own simulated map and are predicted per replicate.
+
 ```{r}
 #| label: backcast-allocate
 #| output: false
-backcast_replicate_runs <- db$runs_t[kind == "backcast parameters", .(id_run, seed)]
+replicate_runs <- db$runs_t[kind == "backcast replicate", .(id_run, seed)]
 options("evoland.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 20)
-for (id in backcast_replicate_runs[, id_run]) {
-  db$id_run <- id
-  # set.seed(backcast_replicate_runs[id_run == id, seed])
-  set.seed(4555)
+for (i in seq_len(nrow(replicate_runs))) {
+  db$id_run <- replicate_runs$id_run[i]
+  set.seed(replicate_runs$seed[i])
 
-  db$alloc_clumpy(
-    id_periods = backcast_periods,
-    select_score = select_score,
-    select_maximize = select_maximize
-  )
+  for (id_period_post in backcast_periods) {
+    lulc_simulated <- alloc_clumpy_one_period(
+      db = db,
+      id_period_post = id_period_post,
+      select_score = select_score,
+      select_maximize = select_maximize,
+      use_parent_trans_pot = id_period_post == min(backcast_periods)
+    )
+    apply_deterministic_change(
+      lulc_simulated,
+      glacier_change[id_period == id_period_post, .(id_coord, id_lulc)]
+    )
+    db$commit(lulc_simulated, "lulc_data_t", method = "upsert")
+    # the next period's prediction reads the neighbour predictors of this one
+    if (id_period_post != max(backcast_periods)) {
+      db$upsert_new_neighbors(id_period_post)
+    }
+  }
 }
 future::plan("sequential")
 db$id_run <- 0L
 ```
 
-Each of these runs writes its own `trans_pot_t` slice (one value per cell, viable transition and
-period), which is by far the largest thing the backcast stores. The potentials for the *first*
-backcast period are in fact identical across every replicate and every parameter set — same
-observed anterior state, same models, same predictors — so recomputing them per run is pure
-waste. `alloc_clumpy_one_period()` has a `use_parent_trans_pot` argument for this, but the
-multi-period `alloc_clumpy()` wrapper does not expose it; exposing it upstream would remove
-roughly a third of the prediction cost of this step.
+Each replicate still writes its own `trans_pot_t` slice for every period after the first (one
+value per cell, viable transition and period), which is by far the largest thing the backcast
+stores.
 
 ## Simulated end states
 
@@ -324,12 +379,8 @@ from there. Here we only check that every allocated run covers the observed grid
 
 ```{r}
 #| label: backcast-maps
-allocated_runs <- db$runs_t[kind == "backcast parameters", .(id_run)]
-# which parameter set each allocated run belongs to; replicate members, if allocated, too
-run_param_set <- rbind(
-  param_runs[, .(id_run, param_set = param_sets)],
-  member_runs[, .(id_run, param_set)]
-)[id_run %in% allocated_runs$id_run]
+allocated_runs <- db$runs_t[kind == "backcast replicate", .(id_run)]
+run_param_set <- member_runs[, .(id_run, param_set)] # parameter set of each replicate
 
 db$id_run <- NULL # the lineage-free read expression spans all runs
 simulated_cells <- db$get_query(
@@ -482,58 +533,21 @@ their union. It ignores the correct-null cell, which is why it is the right stat
 `0`, each allocated run's simulated map through its own lineage, one row per run, and with
 `by_transition = TRUE` one row per run and transition.
 
-**Deglaciation is excluded.** Glacier transitions are not viable (`040` excludes glacier as an
-anterior class) and are applied deterministically in the extrapolation, so the backcast never
-moves a glacier cell and every observed deglaciation cell would count as a miss the model was
-never meant to get. `figure_of_merit_v()` has no class filter, but because no glacier cell is
-simulated to change, the exclusion is exact after the fact: glacier cells contribute only
-misses, equal to their observed change, and to the null only that same observed change to the
-union.
+**Glacier cells are excluded.** Their change is imposed from the record (see (b)), so a cell
+that starts or ends as glacier is a hit by construction and says nothing about the model;
+`exclude_id_lulc` leaves out every cell whose initial or observed class is glacier.
 
 ```{r}
 #| label: backcast-fom
-id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
-
 fom_args <- list(
   id_period_anterior = id_period_initial,
   id_period_post = id_period_final,
   id_run_reference = 0L,
-  id_run_simulated = allocated_runs$id_run
+  id_run_simulated = allocated_runs$id_run,
+  exclude_id_lulc = id_lulc_glacier
 )
-fom_by_trans_run <- do.call(db$figure_of_merit_v, c(fom_args, by_transition = TRUE))
 fom_by_run <- do.call(db$figure_of_merit_v, fom_args)
-
-stopifnot(
-  "the backcast moved glacier cells; the deglaciation exclusion below no longer holds" =
-    fom_by_trans_run[id_lulc_anterior %in% id_lulc_glacier, all(simulated == 0L)]
-)
-
-# figure_of_merit_v() reports the null per transition as a ratio; recover its expected hits
-hits_from_fom <- function(fom, observed, simulated) fom * (observed + simulated) / (1 + fom)
-fom_by_trans_run[, hits_null := hits_from_fom(figure_of_merit_null, observed, simulated)]
-
-deglaciation <- fom_by_trans_run[
-  id_lulc_anterior %in% id_lulc_glacier,
-  .(observed_glacier = sum(observed)),
-  by = id_run
-]
-fom_by_run <- deglaciation[fom_by_run, on = "id_run"]
-fom_by_run[is.na(observed_glacier), observed_glacier := 0L]
-fom_by_run <- fom_by_trans_run[
-  !id_lulc_anterior %in% id_lulc_glacier,
-  .(hits_null = sum(hits_null)),
-  by = id_run
-][fom_by_run, on = "id_run"]
-fom_by_run[, `:=`(
-  misses = misses - observed_glacier,
-  # the null's union over all classes, less the glacier share, which is its observed change
-  union_null = hits_null / figure_of_merit_null - observed_glacier
-)]
-fom_by_run[, `:=`(
-  figure_of_merit = hits / (hits + wrong_hits + misses + false_alarms),
-  producers_accuracy = hits / (hits + wrong_hits + misses),
-  figure_of_merit_null = hits_null / union_null
-)]
+fom_by_trans_run <- do.call(db$figure_of_merit_v, c(fom_args, by_transition = TRUE))
 
 fom_by_run[order(-figure_of_merit), .(
   id_run, hits, wrong_hits, misses, false_alarms,
@@ -558,18 +572,15 @@ union of the two flows.
 ```{r}
 #| label: backcast-fom-by-trans
 fom_by_trans <- run_param_set[fom_by_trans_run, on = "id_run"][
-  !id_lulc_anterior %in% id_lulc_glacier,
+  ,
   .(
     observed = mean(observed),
     simulated = mean(simulated),
     hits = mean(hits),
-    hits_null = mean(hits_null)
+    figure_of_merit_null = mean(figure_of_merit_null)
   ),
   by = .(param_set, id_lulc_anterior, id_lulc_posterior)
-][, `:=`(
-  figure_of_merit = hits / (observed + simulated - hits),
-  figure_of_merit_null = hits_null / (observed + simulated - hits_null)
-)][, at_chance := is.finite(figure_of_merit) & is.finite(figure_of_merit_null) &
+][, figure_of_merit := hits / (observed + simulated - hits)][, at_chance := is.finite(figure_of_merit) & is.finite(figure_of_merit_null) &
   figure_of_merit <= figure_of_merit_null]
 
 fom_by_trans[order(param_set, figure_of_merit)][, .(
@@ -583,11 +594,12 @@ fom_by_trans[order(param_set, figure_of_merit)][, .(
 
 ## (c3) Expected figure of merit over the replicate ensemble
 
-A single realisation is one draw from the allocator. Averaging the counts over the allocated
-runs of a parameter set gives the expected hits, misses, wrong hits and false alarms, and the FoM
-computed from those is the ensemble expectation rather than one sample of it (the mean of the
-per-run ratios would not be). With one allocated run per parameter set, as currently, the two
-coincide.
+A single realisation is one draw from the allocator. Averaging the counts over the
+`n_replicates` replicates of a parameter set gives the expected hits, misses, wrong hits and
+false alarms, and the FoM computed from those is the ensemble expectation rather than one
+sample of it (the mean of the per-run ratios would not be). The null is averaged over the
+replicates as it is: it depends on the simulated quantities only, which barely differ between
+replicates of one parameter set.
 
 ```{r}
 #| label: backcast-ensemble-fom
@@ -597,12 +609,8 @@ ensemble_fom <- run_param_set[fom_by_run, on = "id_run"][, .(
   wrong_hits = mean(wrong_hits),
   misses = mean(misses),
   false_alarms = mean(false_alarms),
-  hits_null = mean(hits_null),
-  union_null = mean(union_null)
-), by = param_set][, `:=`(
-  fom_expected = hits / (hits + wrong_hits + misses + false_alarms),
-  fom_null = hits_null / union_null
-)]
+  fom_null = mean(figure_of_merit_null)
+), by = param_set][, fom_expected := hits / (hits + wrong_hits + misses + false_alarms)]
 
 ensemble_fom[order(-fom_expected)]
 ```

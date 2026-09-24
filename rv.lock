@@ -569,7 +569,7 @@ dependencies = []
 [[packages]]
 name = "evoland"
 version = "0.1.0.9000"
-source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "ecebf2701ea4ce2ad6adae674d462b2414458930" }
+source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "d1ee3cf65d1e30055638d29104fddc6526868b87" }
 force_source = true
 dependencies = [
     "DBI",

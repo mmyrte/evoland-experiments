@@ -255,6 +255,11 @@ for rare transitions and diverge only where potentials are high.
       glacier / non-glacier cells from a per-scenario glacier index after allocation. Model it
       as a map edit in step 4, and keep the area it moves out of the demand the rate solver
       allocates (`070` currently marks deglaciation viable for the bounds only).
+  - [x] Backcast (`080`): every cell that turned into or out of glacier between two surveys
+        takes its observed class after each period is allocated
+        (`apply_deterministic_change()`); glacier cells are left out of the figure of merit.
+  - [ ] Extrapolation (`090`): the same step with assignments from GloGEM glacier model
+        output, per scenario and period; needs an ingestion step for GloGEM.
 - [ ] **Masks have no reproducible source.** The YAML's ValPar-local paths
       (`Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd`, municipality typology, …)
       need the treatment the `020-` steps gave the predictors.
@@ -272,10 +277,12 @@ for rare transitions and diverge only where potentials are high.
 
 ethzplus/evoland-plus#49 (per-run `trans_pot_t`, run-lineage reads, exported single-period
 allocators), #50 (`update_neighbors`) and #53 (`create_alloc_params_t()` returns the best
-estimate only) and #55 (validation metrics) are merged into `develop`, and the `evoland` pin in
-`rproject.toml` / `rv.lock` is on `develop` (ecebf27); `080` is adapted to it.
+estimate only) and #55 (validation metrics) are merged into `develop`. The `evoland` pin in
+`rproject.toml` / `rv.lock` is on the head of #57 (d1ee3cf: `lulc_crosstab_v()` and
+`figure_of_merit_v(exclude_id_lulc = )`, which `080` uses); bump it to `develop` once #57 is
+merged.
 
-- [ ] 🔴 **Re-run `080` and `091` on the pinned `develop`** (on the group's infrastructure, as
+- [ ] 🔴 **Re-run `080` and `091` on the new pin** (on the group's infrastructure, as
       part of running the pipeline end to end). The pin is bumped; neither step has run on it
       yet, and `080`'s rewritten evaluation has only been checked on a synthetic database.
       Before #49, run-lineage reads of tables without
@@ -289,9 +296,9 @@ estimate only) and #55 (validation metrics) are merged into `develop`, and the `
       masked `similarity_change` did not fix that. #55 reimplements it after Hagen (2003) /
       Dinamica, and adds `db$figure_of_merit_v()`. `080` now reads `similarity` directly and
       takes its figure of merit, null and per-transition FoM from `figure_of_merit_v()`.
-  - [ ] `figure_of_merit_v()` has no class filter, so `080` excludes deglaciation after the
-        fact. That is exact only while no glacier cell is simulated to change, which `080`
-        asserts. An anterior-class filter upstream would remove the workaround.
+- [ ] **Cross-tabulation** — ethzplus/evoland-plus#57 adds `db$lulc_crosstab_v()` (two periods,
+      each from its own run). Not used in `080` yet; the observed-vs-simulated table of the
+      final period is the obvious place.
 - [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
       id_runs in that table and to validate the results. Since running multiple id_runs
       across one or more id_periods is going to be a common analytic scenario, that eval
