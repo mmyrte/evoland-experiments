@@ -4,26 +4,31 @@
 #' number-sections: true
 #' ---
 #'
-#' A backcast on a synthetic 30 × 30 landscape. Domain and classes follow the evoland-plus vignette
-#' `stochastic-allocation-sensitivity.qmd`; unlike the vignette, the initial map is structured
-#' (urban clustered where accessible, forest on better sites) and change between periods follows a known process driven by two latent drivers and the neighbourhood,
-#' so that there is something to learn. Calibrate on the transition from period 1 to 2, allocate
-#' period 3 from the observed period 2 `n_realisations` times with CLUMPY, and validate every
-#' realisation against the observed period 3, which calibration never sees.
+#' A backcast on a synthetic 30 × 30 landscape. Domain and classes follow the
+#' evoland-plus vignette `stochastic-allocation-sensitivity.qmd`; unlike the
+#' vignette, the initial map is structured (urban clustered where accessible,
+#' forest on better sites) and change between periods follows a known process
+#' driven by two latent drivers and the neighbourhood, so that there is
+#' something to learn. Calibrate on the transition from period 1 to 2, allocate
+#' period 3 from the observed period 2 `n_realisations` times with CLUMPY, and
+#' validate every realisation against the observed period 3, which calibration
+#' never sees.
 #'
 #' Keeping the backcast honest:
 #'
 #' - Periods 1 and 2 are observed, period 3 is flagged as extrapolated. Model fitting and
-#'   allocation-parameter estimation therefore only see the transition 1 → 2.
+#' allocation-parameter estimation therefore only see the transition 1 -> 2.
 #' - The observed period 3 sits in a run of its own (`id_run_observed`), a child of the base run.
-#'   The ensemble runs are siblings of it and cannot read it; the figure-of-merit view reads it
-#'   as the reference.
+#' The ensemble runs are siblings of it and cannot read it; the figure-of-merit
+#' view reads it as the reference.
 #' - The demand for period 3 is the observed quantity of each transition from 2 to 3, as in the
-#'   comparison protocol: the figure is about *where* change is placed, not how much.
+#' comparison protocol: the figure is about *where* change is placed, not how
+#' much.
 #'
 
 #| label: setup
 #| output: false
+set.seed(1337)
 library(evoland)
 library(data.table)
 library(terra)
@@ -53,12 +58,13 @@ db$lulc_meta_t <- create_lulc_meta_t(list(
 template_rast <- terra::rast(
   crs = "EPSG:2056",
   extent = terra::ext(c(
-    xmin = 2697000, xmax = 2697000 + 30 * 100,
-    ymin = 1252000, ymax = 1252000 + 30 * 100
+    xmin = 2697000,
+    xmax = 2697000 + 30 * 100,
+    ymin = 1252000,
+    ymax = 1252000 + 30 * 100
   )),
   resolution = 100
 )
-n_cells <- terra::ncell(template_rast)
 
 db$coords_t <- create_coords_t_square(
   epsg = 2056L,
@@ -75,9 +81,13 @@ db$periods_t <- create_periods_t(
 )
 db$periods_t
 
+#' ## Drivers
+#'
+#' The drivers are the underlying forces influencing both the synthetic
+#' landscape and the synthetic explanatory variables.
 
 #| label: drivers
-set.seed(321)
+# normalize to 0-1
 scale01 <- function(x) {
   rng <- terra::global(x, c("min", "max"), na.rm = TRUE)
   (x - rng[1, 1]) / (rng[1, 2] - rng[1, 1])
@@ -89,37 +99,61 @@ smooth_field <- function(template, sd = 1, w = 7) {
 }
 
 xy <- terra::crds(template_rast, df = TRUE)
-x_grad <- terra::setValues(template_rast, (xy$x - min(xy$x)) / (max(xy$x) - min(xy$x)))
-y_grad <- terra::setValues(template_rast, (xy$y - min(xy$y)) / (max(xy$y) - min(xy$y)))
-accessibility <- scale01(0.55 * (1 - x_grad) + 0.25 * (1 - y_grad) + 0.20 * smooth_field(template_rast, w = 9))
-site_quality <- scale01(0.50 * y_grad + 0.35 * smooth_field(template_rast, w = 5) + 0.15 * x_grad)
+x_grad <- terra::setValues(
+  template_rast,
+  (xy$x - min(xy$x)) / (max(xy$x) - min(xy$x))
+)
+y_grad <- terra::setValues(
+  template_rast,
+  (xy$y - min(xy$y)) / (max(xy$y) - min(xy$y))
+)
+accessibility <- scale01({
+  0.55 * (1 - x_grad)
+  +0.25 * (1 - y_grad)
+  +0.20 * smooth_field(template_rast, w = 9)
+})
+site_quality <- scale01({
+  0.50 * y_grad
+  +0.35 * smooth_field(template_rast, w = 5)
+  +0.15 * x_grad
+})
 random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
 
-
-#' The true process. Per period, each cell of an anterior class draws at most one transition with
-#' these probabilities, where `share_k` is the share of class k among the 5 × 5 neighbourhood:
+#' The true process. Per period, each cell of an anterior class draws at most
+#' one transition with these probabilities, where `share_k` is the share of
+#' class k among the 5 × 5 neighbourhood:
 #'
 #' | transition | logit of the per-period probability |
 #' |---|---|
-#' | arable → urban | −5.5 + 7 · share_urban + 3 · accessibility |
-#' | forest → urban | −7 + 6 · share_urban + 3 · accessibility |
-#' | forest → arable | −5 + 4 · (1 − site_quality) + 3 · share_arable |
-#' | arable → forest | −6 + 4 · site_quality · (1 − accessibility) + 3 · share_forest |
+#' | arable -> urban | −5.5 + 7 * share_urban + 3 * accessibility |
+#' | forest -> urban | −7 + 6 * share_urban + 3 * accessibility |
+#' | forest -> arable | −5 + 4 * (1 − site_quality) + 3 * share_arable |
+#' | arable -> forest | −6 + 4 * site_quality * (1 − accessibility) + 3 * share_forest |
 
 #| label: synthesize-lulc
 #| fig-asp: 0.3
-set.seed(123)
 # initial landscape: urban clustered where accessible, a small immutable lake, forest on the
 # better sites, arable on the rest
-urban_score <- scale01(0.7 * accessibility + 0.3 * smooth_field(template_rast, w = 3))
+urban_score <- scale01(
+  0.7 * accessibility + 0.3 * smooth_field(template_rast, w = 3)
+)
 lake_score <- smooth_field(template_rast, w = 7)
-forest_score <- scale01(0.6 * smooth_field(template_rast, w = 5) + 0.4 * site_quality)
-q <- function(r, p) stats::quantile(terra::values(r), p, na.rm = TRUE)
+forest_score <- scale01(
+  0.6 * smooth_field(template_rast, w = 5) + 0.4 * site_quality
+)
+qntl <- function(r, p) stats::quantile(terra::values(r), p, na.rm = TRUE)
+
 initial <- terra::ifel(
-  urban_score > q(urban_score, 0.88), 3,
+  urban_score > qntl(urban_score, 0.88),
+  3, # urban
   terra::ifel(
-    lake_score > q(lake_score, 0.97), 4,
-    terra::ifel(forest_score > q(forest_score, 0.45), 1, 2)
+    lake_score > qntl(lake_score, 0.97),
+    4, # static
+    terra::ifel(
+      forest_score > qntl(forest_score, 0.45),
+      1, # forest
+      2  # arable
+    )
   )
 )
 
@@ -133,10 +167,32 @@ step_process <- function(map) {
   share_arable <- neighbour_share(map, 2)
   share_forest <- neighbour_share(map, 1)
   probs <- list(
-    list(from = 2, to = 3, p = plogis_rast(-5.5 + 7 * share_urban + 3 * accessibility)),
-    list(from = 1, to = 3, p = plogis_rast(-7 + 6 * share_urban + 3 * accessibility)),
-    list(from = 1, to = 2, p = plogis_rast(-5 + 4 * (1 - site_quality) + 3 * share_arable)),
-    list(from = 2, to = 1, p = plogis_rast(-6 + 4 * site_quality * (1 - accessibility) + 3 * share_forest))
+    # arable -> urban
+    list(
+      from = 2,
+      to = 3,
+      p = plogis_rast(-5.5 + 7 * share_urban + 3 * accessibility)
+    ),
+    # forest -> urban
+    list(
+      from = 1,
+      to = 3,
+      p = plogis_rast(-7 + 6 * share_urban + 3 * accessibility)
+    ),
+    # forest -> arable
+    list(
+      from = 1,
+      to = 2,
+      p = plogis_rast(-5 + 4 * (1 - site_quality) + 3 * share_arable)
+    ),
+    # arable -> forest
+    list(
+      from = 2,
+      to = 1,
+      p = plogis_rast(
+        -6 + 4 * site_quality * (1 - accessibility) + 3 * share_forest
+      )
+    )
   )
   anterior <- terra::values(map, mat = FALSE)
   posterior <- anterior
@@ -145,7 +201,10 @@ step_process <- function(map) {
   for (tr in probs) {
     p <- terra::values(tr$p, mat = FALSE)
     at_risk <- anterior == tr$from
-    flips <- at_risk & draw >= cumulative & draw < cumulative + p & posterior == anterior
+    flips <- at_risk &
+      draw >= cumulative &
+      draw < cumulative + p &
+      posterior == anterior
     posterior[flips] <- tr$to
     cumulative[at_risk] <- cumulative[at_risk] + p[at_risk]
   }
@@ -154,62 +213,80 @@ step_process <- function(map) {
 
 lulc_2 <- step_process(initial)
 lulc_3 <- step_process(lulc_2)
-synthetic_lulc <- c(initial, lulc_2, lulc_3) |> setNames(paste0("id_period=", 1:3))
+synthetic_lulc <- c(initial, lulc_2, lulc_3) |>
+  setNames(paste0("id_period=", 1:3))
 
 plot(
   synthetic_lulc,
   nc = 3,
-  col = data.frame(value = 1:4, color = c("#91B690", "#EB9486", "#F3DE8A", "#CBC6D2"))
+  col = data.frame(
+    value = 1:4,
+    color = c("#91B690", "#EB9486", "#F3DE8A", "#CBC6D2")
+  )
 )
 
 lulc_long <- extract_using_coords_t(synthetic_lulc, db$coords_t)[,
-  .(id_coord, id_period = as.integer(sub(".*[^0-9]", "", layer)), id_lulc = value)
+  .(
+    id_coord,
+    id_period = as.integer(sub(".*[^0-9]", "", layer)),
+    id_lulc = value
+  )
 ]
 lulc_long[, .N, by = .(id_period, id_lulc)][order(id_period, id_lulc)]
 
-db$lulc_data_t <- as_lulc_data_t(lulc_long[id_period <= 2L, .(id_run = 0L, id_coord, id_period, id_lulc)])
-
+db$lulc_data_t <- as_lulc_data_t(lulc_long[
+  id_period <= 2L,
+  .(id_run = 0L, id_coord, id_period, id_lulc)
+])
 
 #' # Predictors
 
-#' The model sees the two drivers, a nuisance field, and evoland's neighbourhood predictors
-#' (computed from the land use map), but not the functional form above.
+#' The model sees the two drivers, a nuisance field, and evoland's neighbourhood
+#' predictors (computed from the land use map), but not the functional form
+#' above.
 
 #| label: predictors
 db$pred_meta_t <- create_pred_meta_t(list(
   accessibility = list(description = "synthetic driver", data_type = "float"),
   site_quality = list(description = "synthetic driver", data_type = "float"),
-  random_nuisance = list(description = "synthetic nuisance", data_type = "float")
+  random_nuisance = list(
+    description = "synthetic nuisance",
+    data_type = "float"
+  )
 ))
 
-db$pred_data_t <-
-  extract_using_coords_t(
-    c(accessibility, site_quality, random_nuisance) |>
-      setNames(c("accessibility", "site_quality", "random_nuisance")),
-    db$coords_minimal
-  )[, layer := as.character(layer)][,
-    .(
-      id_coord,
-      id_run = 0L,
-      id_period = 0L,
-      id_pred = fcase(
-        layer == "accessibility", 1L,
-        layer == "site_quality", 2L,
-        layer == "random_nuisance", 3L
-      ),
-      value
-    )
-  ] |>
+db$pred_data_t <- extract_using_coords_t(
+  c(accessibility, site_quality, random_nuisance) |>
+    setNames(c("accessibility", "site_quality", "random_nuisance")),
+  db$coords_minimal
+)[, layer := as.character(layer)][,
+  .(
+    id_coord,
+    id_run = 0L,
+    id_period = 0L,
+    id_pred = fcase(
+      layer == "accessibility",
+      1L,
+      layer == "site_quality",
+      2L,
+      layer == "random_nuisance",
+      3L
+    ),
+    value
+  )
+] |>
   as_pred_data_t()
 
-db$set_neighbors(max_distance = 1000, distance_breaks = c(0, 300, 1000), quiet = TRUE)
+db$set_neighbors(
+  max_distance = 1000,
+  distance_breaks = c(0, 300, 1000),
+  quiet = TRUE
+)
 db$generate_neighbor_predictors()
 
-
-#' # Calibration on 1 → 2
+#' # Calibration on 1 -> 2
 
 #| label: calibrate
-set.seed(666)
 db$trans_meta_t <- create_trans_meta_t(
   db$trans_v,
   min_cardinality_abs = 10,
@@ -218,7 +295,9 @@ db$trans_meta_t <- create_trans_meta_t(
 db$set_full_trans_preds()
 
 trans_pred_scored <- db$get_pred_filter_score(
-  filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart"))
+  filter = mlr3filters::FilterImportance$new(
+    learner = mlr3::lrn("classif.rpart")
+  )
 )
 db$commit(
   trans_pred_scored[order(-importance)][, head(.SD, 4), by = id_trans],
@@ -226,10 +305,12 @@ db$commit(
   method = "overwrite"
 )
 
-trans_models <- db$fit_full_models(learner = mlr3::lrn("classif.ranger", num.trees = 200))
-modeled_trans <- unique(
-  trans_models$id_trans[!vapply(trans_models$learner_full, is.null, logical(1L))]
+trans_models <- db$fit_full_models(
+  learner = mlr3::lrn("classif.ranger", num.trees = 200)
 )
+modeled_trans <- unique(trans_models$id_trans[
+  !vapply(trans_models$learner_full, is.null, logical(1L))
+])
 db$trans_models_t <- trans_models
 trans_meta <- db$trans_meta_t
 trans_meta[, is_viable := is_viable & id_trans %in% modeled_trans]
@@ -238,15 +319,16 @@ db$trans_meta_t <- trans_meta
 db$alloc_params_t <- db$create_alloc_params_t()
 db$trans_meta_t[is_viable == TRUE]
 
-
-#' # Demand: observed quantities 2 → 3
+#' # Demand: observed quantities 2 -> 3
 
 #| label: demand
-observed_2_3 <-
-  lulc_long[id_period == 2L, .(id_coord, id_lulc_anterior = id_lulc)][
-    lulc_long[id_period == 3L, .(id_coord, id_lulc_posterior = id_lulc)],
-    on = "id_coord"
-  ]
+observed_2_3 <- lulc_long[
+  id_period == 2L,
+  .(id_coord, id_lulc_anterior = id_lulc)
+][
+  lulc_long[id_period == 3L, .(id_coord, id_lulc_posterior = id_lulc)],
+  on = "id_coord"
+]
 anterior_totals <- observed_2_3[, .(n_anterior = .N), by = id_lulc_anterior]
 observed_counts <- observed_2_3[
   id_lulc_anterior != id_lulc_posterior,
@@ -254,21 +336,20 @@ observed_counts <- observed_2_3[
   by = .(id_lulc_anterior, id_lulc_posterior)
 ]
 
-rates_3 <-
-  db$trans_meta_t[is_viable == TRUE, .(id_trans, id_lulc_anterior, id_lulc_posterior)][
-    observed_counts,
-    on = .(id_lulc_anterior, id_lulc_posterior),
-    nomatch = NULL
-  ][anterior_totals, on = "id_lulc_anterior", nomatch = NULL][,
-    .(id_run = 0L, id_period = 3L, id_trans, count, rate = count / n_anterior)
-  ]
+rates_3 <- db$trans_meta_t[
+  is_viable == TRUE,
+  .(id_trans, id_lulc_anterior, id_lulc_posterior)
+][observed_counts, on = .(id_lulc_anterior, id_lulc_posterior), nomatch = NULL][
+  anterior_totals,
+  on = "id_lulc_anterior",
+  nomatch = NULL
+][, .(id_run = 0L, id_period = 3L, id_trans, count, rate = count / n_anterior)]
 db$trans_rates_t <- as_trans_rates_t(rates_3)
 
 # change the model cannot produce: transitions not viable after 1 -> 2
 unmodelled_change <- observed_counts[, sum(count)] - rates_3[, sum(count)]
 rates_3
 unmodelled_change
-
 
 #' # Runs: the held-out observation and the ensemble
 
@@ -285,13 +366,14 @@ runs <- data.table(
 )
 db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
 
-db$lulc_data_t <- as_lulc_data_t(
-  lulc_long[id_period == 3L, .(id_run = id_run_observed, id_coord, id_period, id_lulc)]
-)
-
+db$lulc_data_t <- as_lulc_data_t(lulc_long[
+  id_period == 3L,
+  .(id_run = id_run_observed, id_coord, id_period, id_lulc)
+])
 
 #| label: allocate
 #| output: false
+
 for (id in seq_len(n_realisations)) {
   db$id_run <- id
   set.seed(runs[id_run == id, seed])
@@ -304,32 +386,38 @@ for (id in seq_len(n_realisations)) {
   )
 }
 
-
 #' # A deterministic comparator on the same potentials
 #'
-#' Tools without stochastic allocation return one map. As a stand-in until the real
-#' comparators run (`2026-09-model-comparison/`), allocate the same demand deterministically on
-#' the same adjusted potentials: greedily, highest potential first, one class per cell. This
-#' isolates the allocator's contribution; it says nothing about how Dinamica or LCM would score.
+#' Tools without stochastic allocation return one map. As a stand-in until the
+#' real comparators run (`2026-09-model-comparison/`), allocate the same demand
+#' deterministically on the same adjusted potentials: greedily, highest
+#' potential first, one class per cell. This isolates the allocator's
+#' contribution; it says nothing about how Dinamica or LCM would score.
 
 #| label: deterministic
 db$id_run <- 0L
 adjusted <- db$adjusted_trans_pot_v(3L)
 str(adjusted)
 
-
 #| label: deterministic-alloc
-pot_col <- intersect(c("value", "trans_pot", "potential", "prob"), names(adjusted))[1]
+pot_col <- intersect(
+  c("value", "trans_pot", "potential", "prob"),
+  names(adjusted)
+)[1]
 stopifnot("unknown adjusted potential column" = !is.na(pot_col))
 
-candidates <-
-  adjusted[, .(id_coord, id_trans, potential = get(pot_col))][
-    db$trans_meta_t[, .(id_trans, id_lulc_posterior)],
-    on = "id_trans",
-    nomatch = NULL
-  ][rates_3[, .(id_trans, quota = count)], on = "id_trans", nomatch = NULL][order(-potential)]
+candidates <- adjusted[, .(id_coord, id_trans, potential = get(pot_col))][
+  db$trans_meta_t[, .(id_trans, id_lulc_posterior)],
+  on = "id_trans",
+  nomatch = NULL
+][rates_3[, .(id_trans, quota = count)], on = "id_trans", nomatch = NULL][
+  order(-potential)
+]
 
-remaining <- setNames(candidates[, quota[1], by = id_trans]$V1, candidates[, unique(id_trans)])
+remaining <- setNames(
+  candidates[, quota[1], by = id_trans]$V1,
+  candidates[, unique(id_trans)]
+)
 assigned <- new.env()
 greedy <- candidates[, {
   keep <- logical(.N)
@@ -348,7 +436,6 @@ greedy <- candidates[, {
 deterministic_map <- lulc_long[id_period == 2L, .(id_coord, id_lulc)]
 deterministic_map[greedy, on = "id_coord", id_lulc := i.id_lulc]
 
-
 #' # Validation
 
 #| label: fom
@@ -361,9 +448,10 @@ fom <- db$figure_of_merit_v(
 )
 
 # expected counts of the ensemble: ratio of mean counts, not mean of ratios
-fom_ensemble <- fom[, lapply(.SD, mean), .SDcols = c("hits", "wrong_hits", "misses", "false_alarms")][,
-  figure_of_merit := hits / (hits + wrong_hits + misses + false_alarms)
-]
+fom_ensemble <- fom[,
+  lapply(.SD, mean),
+  .SDcols = c("hits", "wrong_hits", "misses", "false_alarms")
+][, figure_of_merit := hits / (hits + wrong_hits + misses + false_alarms)]
 
 fom_counts <- function(anterior, observed, simulated) {
   obs_change <- anterior != observed
@@ -382,30 +470,50 @@ fom_deterministic <- maps[, fom_counts(anterior, observed, deterministic)]
 
 # the ensemble as a probabilistic forecast of change, against single maps (Brier score, lower
 # is better); needs the realisations, so fetched here rather than in the figure section
-simulated_all <- db$fetch("lulc_data_t", where = glue::glue("id_run between 1 and {n_realisations} and id_period = 3"))[,
-  .(id_run, id_coord, simulated = id_lulc)
-]
+simulated_all <- db$fetch(
+  "lulc_data_t",
+  where = glue::glue("id_run between 1 and {n_realisations} and id_period = 3")
+)[, .(id_run, id_coord, simulated = id_lulc)]
 brier <- maps[, .(id_coord, anterior, observed, deterministic)][
-  simulated_all[, .(id_run, id_coord, simulated)], on = "id_coord"
-][, .(
-  p_ensemble = mean(simulated != anterior),
-  y = as.numeric(observed[1] != anterior[1]),
-  deterministic = as.numeric(deterministic[1] != anterior[1])
-), by = id_coord]
-brier_draws <- maps[, .(id_coord, anterior, observed)][simulated_all, on = "id_coord"][,
-  .(brier = mean((as.numeric(simulated != anterior) - as.numeric(observed != anterior))^2)),
+  simulated_all[, .(id_run, id_coord, simulated)],
+  on = "id_coord"
+][,
+  .(
+    p_ensemble = mean(simulated != anterior),
+    y = as.numeric(observed[1] != anterior[1]),
+    deterministic = as.numeric(deterministic[1] != anterior[1])
+  ),
+  by = id_coord
+]
+brier_draws <- maps[, .(id_coord, anterior, observed)][
+  simulated_all,
+  on = "id_coord"
+][,
+  .(
+    brier = mean(
+      (as.numeric(simulated != anterior) - as.numeric(observed != anterior))^2
+    )
+  ),
   by = id_run
 ]
 
 summary_tab <- data.table(
   quantity = c(
-    "realisations: median FoM", "realisations: 5-95 %",
-    "ensemble expected FoM", "deterministic greedy", "random-allocation null",
-    "Brier: ensemble change frequency", "Brier: single realisations (median)", "Brier: deterministic"
+    "realisations: median FoM",
+    "realisations: 5-95 %",
+    "ensemble expected FoM",
+    "deterministic greedy",
+    "random-allocation null",
+    "Brier: ensemble change frequency",
+    "Brier: single realisations (median)",
+    "Brier: deterministic"
   ),
   value = c(
     sprintf("%.3f", median(fom$figure_of_merit)),
-    paste(sprintf("%.3f", quantile(fom$figure_of_merit, c(0.05, 0.95))), collapse = " to "),
+    paste(
+      sprintf("%.3f", quantile(fom$figure_of_merit, c(0.05, 0.95))),
+      collapse = " to "
+    ),
     sprintf("%.3f", fom_ensemble$figure_of_merit),
     sprintf("%.3f", fom_deterministic),
     sprintf("%.3f", mean(fom$figure_of_merit_null)),
@@ -416,14 +524,17 @@ summary_tab <- data.table(
 )
 knitr::kable(summary_tab)
 
-
 #' # Figure
 #'
-#' Map panels are coloured by the figure-of-merit outcome rather than land-use class: the figure
-#' is about where change goes, and the outcome classes are what the metric counts.
+#' Map panels are coloured by the figure-of-merit outcome rather than land-use
+#' class: the figure is about where change goes, and the outcome classes are
+#' what the metric counts.
 
 #| label: figure-data
-simulated <- maps[, .(id_coord, anterior, observed)][simulated_all, on = "id_coord"]
+simulated <- maps[, .(id_coord, anterior, observed)][
+  simulated_all,
+  on = "id_coord"
+]
 
 coords_xy <- db$coords_t[, .(id_coord, x = lon, y = lat)]
 
@@ -431,21 +542,38 @@ outcome <- function(anterior, observed, simulated) {
   obs_change <- anterior != observed
   sim_change <- anterior != simulated
   fcase(
-    obs_change & sim_change & simulated == observed, "hit",
-    obs_change & sim_change, "wrong hit",
-    obs_change, "miss",
-    sim_change, "false alarm",
+    obs_change & sim_change & simulated == observed,
+    "hit",
+    obs_change & sim_change,
+    "wrong hit",
+    obs_change,
+    "miss",
+    sim_change,
+    "false alarm",
     default = "persistence"
   )
 }
 
 # the realisation shown is the one closest to the ensemble median
-shown_run <- fom[order(abs(figure_of_merit - median(figure_of_merit)))][1, id_run]
+shown_run <- fom[order(abs(figure_of_merit - median(figure_of_merit)))][
+  1,
+  id_run
+]
 
-panel_obs <- maps[, .(id_coord, status = fifelse(anterior != observed, "observed change", "persistence"))]
-panel_draw <- simulated[id_run == shown_run, .(id_coord, status = outcome(anterior, observed, simulated))]
-panel_det <- maps[, .(id_coord, status = outcome(anterior, observed, deterministic))]
-panel_freq <- simulated[, .(p_change = mean(simulated != anterior)), by = id_coord]
+panel_obs <- maps[,
+  .(
+    id_coord,
+    status = fifelse(anterior != observed, "observed change", "persistence")
+  )
+]
+panel_draw <- simulated[
+  id_run == shown_run,
+  .(id_coord, status = outcome(anterior, observed, simulated))
+]
+panel_freq <- simulated[,
+  .(p_change = mean(simulated != anterior)),
+  by = id_coord
+]
 observed_change_cells <- maps[anterior != observed, .(id_coord)]
 
 #| label: figure
@@ -464,8 +592,17 @@ seq_blue <- c("#fcfcfb", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b")
 
 theme_map <- theme_void(base_size = 9) +
   theme(
-    plot.title = element_text(size = 9, face = "bold", hjust = 0, margin = margin(b = 3)),
-    plot.subtitle = element_text(size = 8, colour = "#555555", margin = margin(b = 4)),
+    plot.title = element_text(
+      size = 9,
+      face = "bold",
+      hjust = 0,
+      margin = margin(b = 3)
+    ),
+    plot.subtitle = element_text(
+      size = 8,
+      colour = "#555555",
+      margin = margin(b = 4)
+    ),
     plot.margin = margin(2, 8, 2, 8),
     legend.position = "bottom",
     legend.title = element_blank(),
@@ -476,7 +613,10 @@ theme_map <- theme_void(base_size = 9) +
 map_panel <- function(d, title, subtitle = NULL) {
   ggplot(coords_xy[d, on = "id_coord"], aes(x, y, fill = status)) +
     geom_tile(colour = "white", linewidth = 0.15) +
-    scale_fill_manual(values = outcome_cols, breaks = intersect(names(outcome_cols)[-1], unique(d$status))) +
+    scale_fill_manual(
+      values = outcome_cols,
+      breaks = intersect(names(outcome_cols)[-1], unique(d$status))
+    ) +
     coord_equal(expand = FALSE) +
     labs(title = title, subtitle = subtitle) +
     theme_map
@@ -492,18 +632,21 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord"], aes(x, y)) +
   geom_tile(aes(fill = p_change), colour = "white", linewidth = 0.15) +
   geom_tile(
     data = coords_xy[observed_change_cells, on = "id_coord"],
-    fill = NA, colour = "#1a1a1a", linewidth = 0.45, width = 70, height = 70
+    fill = NA,
+    colour = "#1a1a1a",
+    linewidth = 0.45,
+    width = 70,
+    height = 70
   ) +
   scale_fill_gradientn(
-    colours = seq_blue, limits = c(0, 1), breaks = c(0, 0.5, 1),
+    colours = seq_blue,
+    limits = c(0, 1),
+    breaks = c(0, 0.5, 1),
     name = "share of realisations",
     guide = guide_colourbar(title.position = "top", title.hjust = 0.5)
   ) +
   coord_equal(expand = FALSE) +
-  labs(
-    title = "(c) Change frequency",
-    subtitle = "outline: observed change"
-  ) +
+  labs(title = "(c) Change frequency", subtitle = "outline: observed change") +
   theme_map +
   theme(
     legend.title = element_text(size = 7.5),
@@ -513,33 +656,121 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord"], aes(x, y)) +
 
 fom_null <- mean(fom$figure_of_merit_null)
 refs <- data.table(
-  label = c("persistence", "random allocation", "deterministic, same potentials", "ensemble expected"),
+  label = c(
+    "persistence",
+    "random allocation",
+    "deterministic, same potentials",
+    "ensemble expected"
+  ),
   value = c(0, fom_null, fom_deterministic, fom_ensemble$figure_of_merit)
 )
 p_d <- ggplot(fom, aes(x = figure_of_merit, y = 0)) +
   geom_vline(xintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
-  geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  geom_vline(
+    xintercept = fom_null,
+    colour = "#9a9a9a",
+    linewidth = 0.4,
+    linetype = "22"
+  ) +
   geom_violin(fill = "#cde2fb", colour = NA, width = 0.7) +
-  geom_jitter(height = 0.18, width = 0, size = 1.1, colour = "#2a78d6", alpha = 0.7) +
-  geom_point(data = refs[3], aes(x = value, y = 0), shape = 23, size = 3, fill = "#eb6834", colour = "white", stroke = 0.8) +
-  geom_point(data = refs[4], aes(x = value, y = 0), shape = 21, size = 3, fill = "#0d366b", colour = "white", stroke = 0.8) +
-  annotate("text", x = 0, y = 0.66, label = " persistence", hjust = 0, size = 2.5, colour = "#555555") +
-  annotate("text", x = fom_null, y = 0.66, label = " random allocation", hjust = 0, size = 2.5, colour = "#555555") +
-  annotate("segment", x = refs[4, value], xend = refs[4, value], y = -0.08, yend = -0.36, colour = "#0d366b", linewidth = 0.3) +
-  annotate("text", x = refs[4, value], y = -0.42, label = "ensemble expectation ", hjust = 1, size = 2.5, colour = "#0d366b") +
-  annotate("segment", x = refs[3, value], xend = refs[3, value], y = -0.08, yend = -0.5, colour = "#eb6834", linewidth = 0.3) +
-  annotate("text", x = refs[3, value], y = -0.56, label = "deterministic allocation, same potentials ", hjust = 1, size = 2.5, colour = "#b8461c") +
+  geom_jitter(
+    height = 0.18,
+    width = 0,
+    size = 1.1,
+    colour = "#2a78d6",
+    alpha = 0.7
+  ) +
+  geom_point(
+    data = refs[3],
+    aes(x = value, y = 0),
+    shape = 23,
+    size = 3,
+    fill = "#eb6834",
+    colour = "white",
+    stroke = 0.8
+  ) +
+  geom_point(
+    data = refs[4],
+    aes(x = value, y = 0),
+    shape = 21,
+    size = 3,
+    fill = "#0d366b",
+    colour = "white",
+    stroke = 0.8
+  ) +
+  annotate(
+    "text",
+    x = 0,
+    y = 0.66,
+    label = " persistence",
+    hjust = 0,
+    size = 2.5,
+    colour = "#555555"
+  ) +
+  annotate(
+    "text",
+    x = fom_null,
+    y = 0.66,
+    label = " random allocation",
+    hjust = 0,
+    size = 2.5,
+    colour = "#555555"
+  ) +
+  annotate(
+    "segment",
+    x = refs[4, value],
+    xend = refs[4, value],
+    y = -0.08,
+    yend = -0.36,
+    colour = "#0d366b",
+    linewidth = 0.3
+  ) +
+  annotate(
+    "text",
+    x = refs[4, value],
+    y = -0.42,
+    label = "ensemble expectation ",
+    hjust = 1,
+    size = 2.5,
+    colour = "#0d366b"
+  ) +
+  annotate(
+    "segment",
+    x = refs[3, value],
+    xend = refs[3, value],
+    y = -0.08,
+    yend = -0.5,
+    colour = "#eb6834",
+    linewidth = 0.3
+  ) +
+  annotate(
+    "text",
+    x = refs[3, value],
+    y = -0.56,
+    label = "deterministic allocation, same potentials ",
+    hjust = 1,
+    size = 2.5,
+    colour = "#b8461c"
+  ) +
   scale_y_continuous(limits = c(-0.62, 0.72), breaks = NULL) +
-  scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.02, 0.08))) +
+  scale_x_continuous(
+    limits = c(0, NA),
+    expand = expansion(mult = c(0.02, 0.08))
+  ) +
   labs(
     title = "(d) Figure of merit against the held-out observation",
     subtitle = sprintf("one dot per realisation (n = %d)", n_realisations),
-    x = "figure of merit", y = NULL
+    x = "figure of merit",
+    y = NULL
   ) +
   theme_minimal(base_size = 9) +
   theme(
     plot.title = element_text(size = 9, face = "bold", margin = margin(b = 3)),
-    plot.subtitle = element_text(size = 8, colour = "#555555", margin = margin(b = 4)),
+    plot.subtitle = element_text(
+      size = 8,
+      colour = "#555555",
+      margin = margin(b = 4)
+    ),
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
@@ -547,7 +778,14 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = 0)) +
 
 maps_row <- (p_a | p_b) + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
-fig2 <- (maps_row | p_c) / p_d + plot_layout(heights = c(1.3, 1), widths = c(2, 1))
-ggsave(file.path(out_dir, "fig2-ensembles.pdf"), fig2, width = 7.2, height = 5.6, device = cairo_pdf)
+fig2 <- (maps_row | p_c) / p_d +
+  plot_layout(heights = c(1.3, 1), widths = c(2, 1))
+ggsave(
+  file.path(out_dir, "fig2-ensembles.pdf"),
+  fig2,
+  width = 7.2,
+  height = 5.6,
+  device = cairo_pdf
+)
 # ggsave(file.path(out_dir, "fig2-ensembles.png"), fig2, width = 7.2, height = 5.6, dpi = 200, bg = "white")
 fig2
