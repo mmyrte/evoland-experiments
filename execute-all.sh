@@ -121,10 +121,10 @@ stage_key() {
 run_file() {
   local file="$1"
   case "$file" in
-    *.qmd | *.QMD)
+    *.qmd | *.QMD | *.r | *.R)
       (cd "$script_dir" && quarto render "$file") ;;
-    *.r | *.R)
-      (cd "$script_dir" && Rscript "$file") ;;
+    # *.r | *.R)
+    #   (cd "$script_dir" && Rscript "$file") ;;
     *)
       echo "Error: don't know how to run '$(basename "$file")'" >&2; return 2 ;;
   esac
