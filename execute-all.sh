@@ -220,6 +220,7 @@ if (( workers > 1 )); then
   tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/execute-all.XXXXXX")"
 fi
 
+# FIXME this isn't available on macos, can we have an OS agnostic solution?
 mapfile -t stages < <(
   for file in "${sorted_files[@]}"; do
     stage_key "$(basename "$file")"

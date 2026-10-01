@@ -1,27 +1,27 @@
----
-title: "Figure 2 mock-up: ensembles vs. single maps"
-date: last-modified
-number-sections: true
----
+#' ---
+#' title: "Figure 2 mock-up: ensembles vs. single maps"
+#' date: last-modified
+#' number-sections: true
+#' ---
+#'
+#' A backcast on a synthetic 30 × 30 landscape. Domain and classes follow the evoland-plus vignette
+#' `stochastic-allocation-sensitivity.qmd`; unlike the vignette, the initial map is structured
+#' (urban clustered where accessible, forest on better sites) and change between periods follows a known process driven by two latent drivers and the neighbourhood,
+#' so that there is something to learn. Calibrate on the transition from period 1 to 2, allocate
+#' period 3 from the observed period 2 `n_realisations` times with CLUMPY, and validate every
+#' realisation against the observed period 3, which calibration never sees.
+#'
+#' Keeping the backcast honest:
+#'
+#' - Periods 1 and 2 are observed, period 3 is flagged as extrapolated. Model fitting and
+#'   allocation-parameter estimation therefore only see the transition 1 → 2.
+#' - The observed period 3 sits in a run of its own (`id_run_observed`), a child of the base run.
+#'   The ensemble runs are siblings of it and cannot read it; the figure-of-merit view reads it
+#'   as the reference.
+#' - The demand for period 3 is the observed quantity of each transition from 2 to 3, as in the
+#'   comparison protocol: the figure is about *where* change is placed, not how much.
+#'
 
-A backcast on a synthetic 30 × 30 landscape. Domain and classes follow the evoland-plus vignette
-`stochastic-allocation-sensitivity.qmd`; unlike the vignette, the initial map is structured
-(urban clustered where accessible, forest on better sites) and change between periods follows a known process driven by two latent drivers and the neighbourhood,
-so that there is something to learn. Calibrate on the transition from period 1 to 2, allocate
-period 3 from the observed period 2 `n_realisations` times with CLUMPY, and validate every
-realisation against the observed period 3, which calibration never sees.
-
-Keeping the backcast honest:
-
-- Periods 1 and 2 are observed, period 3 is flagged as extrapolated. Model fitting and
-  allocation-parameter estimation therefore only see the transition 1 → 2.
-- The observed period 3 sits in a run of its own (`id_run_observed`), a child of the base run.
-  The ensemble runs are siblings of it and cannot read it; the figure-of-merit view reads it
-  as the reference.
-- The demand for period 3 is the observed quantity of each transition from 2 to 3, as in the
-  comparison protocol: the figure is about *where* change is placed, not how much.
-
-```{r}
 #| label: setup
 #| output: false
 library(evoland)
@@ -37,11 +37,9 @@ unlink(db_path, recursive = TRUE)
 
 n_realisations <- 100L
 id_run_observed <- 1000L
-```
 
-# Database, domain and synthetic landscape
+#' # Database, domain and synthetic landscape
 
-```{r}
 #| label: create-db
 db <- evoland_db$new(path = db_path)
 
@@ -76,9 +74,8 @@ db$periods_t <- create_periods_t(
   end_extrapolated = "2020-01-01"
 )
 db$periods_t
-```
 
-```{r}
+
 #| label: drivers
 set.seed(321)
 scale01 <- function(x) {
@@ -97,19 +94,18 @@ y_grad <- terra::setValues(template_rast, (xy$y - min(xy$y)) / (max(xy$y) - min(
 accessibility <- scale01(0.55 * (1 - x_grad) + 0.25 * (1 - y_grad) + 0.20 * smooth_field(template_rast, w = 9))
 site_quality <- scale01(0.50 * y_grad + 0.35 * smooth_field(template_rast, w = 5) + 0.15 * x_grad)
 random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
-```
 
-The true process. Per period, each cell of an anterior class draws at most one transition with
-these probabilities, where `share_k` is the share of class k among the 5 × 5 neighbourhood:
 
-| transition | logit of the per-period probability |
-|---|---|
-| arable → urban | −5.5 + 7 · share_urban + 3 · accessibility |
-| forest → urban | −7 + 6 · share_urban + 3 · accessibility |
-| forest → arable | −5 + 4 · (1 − site_quality) + 3 · share_arable |
-| arable → forest | −6 + 4 · site_quality · (1 − accessibility) + 3 · share_forest |
+#' The true process. Per period, each cell of an anterior class draws at most one transition with
+#' these probabilities, where `share_k` is the share of class k among the 5 × 5 neighbourhood:
+#'
+#' | transition | logit of the per-period probability |
+#' |---|---|
+#' | arable → urban | −5.5 + 7 · share_urban + 3 · accessibility |
+#' | forest → urban | −7 + 6 · share_urban + 3 · accessibility |
+#' | forest → arable | −5 + 4 · (1 − site_quality) + 3 · share_arable |
+#' | arable → forest | −6 + 4 · site_quality · (1 − accessibility) + 3 · share_forest |
 
-```{r}
 #| label: synthesize-lulc
 #| fig-asp: 0.3
 set.seed(123)
@@ -172,14 +168,13 @@ lulc_long <- extract_using_coords_t(synthetic_lulc, db$coords_t)[,
 lulc_long[, .N, by = .(id_period, id_lulc)][order(id_period, id_lulc)]
 
 db$lulc_data_t <- as_lulc_data_t(lulc_long[id_period <= 2L, .(id_run = 0L, id_coord, id_period, id_lulc)])
-```
 
-# Predictors
 
-The model sees the two drivers, a nuisance field, and evoland's neighbourhood predictors
-(computed from the land use map), but not the functional form above.
+#' # Predictors
 
-```{r}
+#' The model sees the two drivers, a nuisance field, and evoland's neighbourhood predictors
+#' (computed from the land use map), but not the functional form above.
+
 #| label: predictors
 db$pred_meta_t <- create_pred_meta_t(list(
   accessibility = list(description = "synthetic driver", data_type = "float"),
@@ -209,11 +204,10 @@ db$pred_data_t <-
 
 db$set_neighbors(max_distance = 1000, distance_breaks = c(0, 300, 1000), quiet = TRUE)
 db$generate_neighbor_predictors()
-```
 
-# Calibration on 1 → 2
 
-```{r}
+#' # Calibration on 1 → 2
+
 #| label: calibrate
 set.seed(666)
 db$trans_meta_t <- create_trans_meta_t(
@@ -243,11 +237,10 @@ db$trans_meta_t <- trans_meta
 
 db$alloc_params_t <- db$create_alloc_params_t()
 db$trans_meta_t[is_viable == TRUE]
-```
 
-# Demand: observed quantities 2 → 3
 
-```{r}
+#' # Demand: observed quantities 2 → 3
+
 #| label: demand
 observed_2_3 <-
   lulc_long[id_period == 2L, .(id_coord, id_lulc_anterior = id_lulc)][
@@ -275,11 +268,10 @@ db$trans_rates_t <- as_trans_rates_t(rates_3)
 unmodelled_change <- observed_counts[, sum(count)] - rates_3[, sum(count)]
 rates_3
 unmodelled_change
-```
 
-# Runs: the held-out observation and the ensemble
 
-```{r}
+#' # Runs: the held-out observation and the ensemble
+
 #| label: runs
 runs <- data.table(
   id_run = c(0L, id_run_observed, seq_len(n_realisations)),
@@ -296,9 +288,8 @@ db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
 db$lulc_data_t <- as_lulc_data_t(
   lulc_long[id_period == 3L, .(id_run = id_run_observed, id_coord, id_period, id_lulc)]
 )
-```
 
-```{r}
+
 #| label: allocate
 #| output: false
 for (id in seq_len(n_realisations)) {
@@ -312,23 +303,21 @@ for (id in seq_len(n_realisations)) {
     update_neighbors = FALSE
   )
 }
-```
 
-# A deterministic comparator on the same potentials
 
-Tools without stochastic allocation return one map. As a stand-in until the real
-comparators run (`2026-09-model-comparison/`), allocate the same demand deterministically on
-the same adjusted potentials: greedily, highest potential first, one class per cell. This
-isolates the allocator's contribution; it says nothing about how Dinamica or LCM would score.
+#' # A deterministic comparator on the same potentials
+#'
+#' Tools without stochastic allocation return one map. As a stand-in until the real
+#' comparators run (`2026-09-model-comparison/`), allocate the same demand deterministically on
+#' the same adjusted potentials: greedily, highest potential first, one class per cell. This
+#' isolates the allocator's contribution; it says nothing about how Dinamica or LCM would score.
 
-```{r}
 #| label: deterministic
 db$id_run <- 0L
 adjusted <- db$adjusted_trans_pot_v(3L)
 str(adjusted)
-```
 
-```{r}
+
 #| label: deterministic-alloc
 pot_col <- intersect(c("value", "trans_pot", "potential", "prob"), names(adjusted))[1]
 stopifnot("unknown adjusted potential column" = !is.na(pot_col))
@@ -358,11 +347,10 @@ greedy <- candidates[, {
 
 deterministic_map <- lulc_long[id_period == 2L, .(id_coord, id_lulc)]
 deterministic_map[greedy, on = "id_coord", id_lulc := i.id_lulc]
-```
 
-# Validation
 
-```{r}
+#' # Validation
+
 #| label: fom
 db$id_run <- NULL
 fom <- db$figure_of_merit_v(
@@ -427,14 +415,13 @@ summary_tab <- data.table(
   )
 )
 knitr::kable(summary_tab)
-```
 
-# Figure
 
-Map panels are coloured by the figure-of-merit outcome rather than land-use class: the figure
-is about where change goes, and the outcome classes are what the metric counts.
+#' # Figure
+#'
+#' Map panels are coloured by the figure-of-merit outcome rather than land-use class: the figure
+#' is about where change goes, and the outcome classes are what the metric counts.
 
-```{r}
 #| label: figure-data
 simulated <- maps[, .(id_coord, anterior, observed)][simulated_all, on = "id_coord"]
 
@@ -460,9 +447,7 @@ panel_draw <- simulated[id_run == shown_run, .(id_coord, status = outcome(anteri
 panel_det <- maps[, .(id_coord, status = outcome(anterior, observed, deterministic))]
 panel_freq <- simulated[, .(p_change = mean(simulated != anterior)), by = id_coord]
 observed_change_cells <- maps[anterior != observed, .(id_coord)]
-```
 
-```{r}
 #| label: figure
 #| fig-width: 7.2
 #| fig-height: 5.6
@@ -566,4 +551,3 @@ fig2 <- (maps_row | p_c) / p_d + plot_layout(heights = c(1.3, 1), widths = c(2, 
 ggsave(file.path(out_dir, "fig2-ensembles.pdf"), fig2, width = 7.2, height = 5.6, device = cairo_pdf)
 ggsave(file.path(out_dir, "fig2-ensembles.png"), fig2, width = 7.2, height = 5.6, dpi = 200, bg = "white")
 fig2
-```
