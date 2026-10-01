@@ -107,16 +107,18 @@ y_grad <- terra::setValues(
   template_rast,
   (xy$y - min(xy$y)) / (max(xy$y) - min(xy$y))
 )
-accessibility <- scale01({
-  0.55 * (1 - x_grad)
-  +0.25 * (1 - y_grad)
-  +0.20 * smooth_field(template_rast, w = 9)
-})
-site_quality <- scale01({
-  0.50 * y_grad
-  +0.35 * smooth_field(template_rast, w = 5)
-  +0.15 * x_grad
-})
+# trailing `+`: inside `{}`, a line starting with `+` is a statement of its own and
+# only the last one would be returned
+accessibility <- scale01(
+  0.55 * (1 - x_grad) +
+    0.25 * (1 - y_grad) +
+    0.20 * smooth_field(template_rast, w = 9)
+)
+site_quality <- scale01(
+  0.50 * y_grad +
+    0.35 * smooth_field(template_rast, w = 5) +
+    0.15 * x_grad
+)
 random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
 
 #' The true process. Per period, each cell of an anterior class draws at most
@@ -523,6 +525,152 @@ summary_tab <- data.table(
   )
 )
 knitr::kable(summary_tab)
+
+#' # Probabilistic scores: which class, not just whether
+#'
+#' The Brier scores above only ask *whether* a cell changes. A realisation that
+#' turns a forest cell into arable land where it actually became urban counts as
+#' correct. The multiclass Brier score (Brier, 1950) scores the full outcome:
+#' for each cell, the sum over posterior classes k of (p_k - o_k)^2, where o is
+#' the observed class as a one-hot vector. It ranges from 0 to 2. A hard map
+#' scores 0 on a correct cell and 2 on any miss, false alarm or wrong hit, so
+#' for single maps it is twice the share of cells that are wrong.
+#'
+#' Scores are averaged over the cells that can change: those whose anterior
+#' class has at least one viable transition. Averaging over the lake and over
+#' classes the model holds fixed would only dilute the differences.
+#'
+#' Forecasts compared:
+#'
+#' - **ensemble**: the share of realisations that end in each class; also its
+#'   *fair* version (Ferro, 2014), which removes the penalty a finite ensemble
+#'   pays for sampling noise, sum_k p_k (1 - p_k) / (M - 1);
+#' - **adjusted potentials**: the per-cell transition probabilities the
+#'   allocator samples from, with persistence as the remainder. This is the
+#'   probability map any tool with a potential surface already offers;
+#' - **climatology**: every cell of an anterior class gets that class's demand
+#'   rates. It is the probabilistic counterpart of the random-allocation null,
+#'   and the reference for the skill score BSS = 1 - BS / BS_climatology;
+#' - **persistence**, the **deterministic** map, and **single realisations**.
+
+#| label: brier-multiclass
+viable <- db$trans_meta_t[
+  is_viable == TRUE,
+  .(id_trans, id_lulc_anterior, id_lulc_posterior)
+]
+classes <- sort(unique(c(maps$anterior, maps$observed)))
+eligible <- maps[anterior %in% viable$id_lulc_anterior, id_coord]
+anterior_of <- maps[id_coord %in% eligible, .(id_coord, anterior)]
+
+# a forecast is a long table (id_coord, class, p); classes it omits get p = 0
+complete_p <- function(f) {
+  f <- f[id_coord %in% eligible, .(p = sum(p)), by = .(id_coord, class)]
+  f[CJ(id_coord = eligible, class = classes), on = .(id_coord, class)][
+    is.na(p),
+    p := 0
+  ][]
+}
+one_hot <- function(col) maps[, .(id_coord, class = get(col), p = 1)]
+# transition probabilities per cell, with persistence as the remainder
+with_persistence <- function(trans_p) {
+  stay <- trans_p[, .(leave = sum(p)), by = id_coord][
+    anterior_of,
+    on = "id_coord"
+  ][is.na(leave), leave := 0][, .(id_coord, class = anterior, p = 1 - leave)]
+  rbind(trans_p, stay)
+}
+
+observed_p <- complete_p(one_hot("observed"))[, .(id_coord, class, o = p)]
+
+brier <- function(f, n_members = NA_integer_) {
+  d <- complete_p(f)[observed_p, on = .(id_coord, class)][
+    anterior_of,
+    on = "id_coord"
+  ]
+  cell <- d[,
+    .(
+      multi = sum((p - o)^2),
+      # probability of leaving the anterior class vs. whether it left
+      change = (sum(p[class != anterior]) - sum(o[class != anterior]))^2,
+      noise = if (is.na(n_members)) 0 else sum(p * (1 - p)) / (n_members - 1)
+    ),
+    by = id_coord
+  ]
+  cell[, .(
+    multiclass = mean(multi),
+    multiclass_fair = mean(multi - noise),
+    change_only = mean(change)
+  )]
+}
+
+forecasts <- list(
+  ensemble = simulated_all[,
+    .(p = .N / n_realisations),
+    by = .(id_coord, class = simulated)
+  ],
+  potentials = with_persistence(
+    adjusted[viable, on = "id_trans", nomatch = NULL][,
+      .(id_coord, class = id_lulc_posterior, p = value)
+    ]
+  ),
+  climatology = with_persistence(
+    anterior_of[
+      viable[rates_3[, .(id_trans, rate)], on = "id_trans", nomatch = NULL],
+      on = c(anterior = "id_lulc_anterior"),
+      allow.cartesian = TRUE,
+      nomatch = NULL
+    ][, .(id_coord, class = id_lulc_posterior, p = rate)]
+  ),
+  persistence = one_hot("anterior"),
+  deterministic = one_hot("deterministic")
+)
+scores <- rbindlist(
+  lapply(names(forecasts), function(nm) {
+    brier(forecasts[[nm]], if (nm == "ensemble") n_realisations else NA)
+  }),
+  idcol = "forecast"
+)[, forecast := names(forecasts)[forecast]]
+
+draw_scores <- rbindlist(lapply(seq_len(n_realisations), function(r) {
+  brier(simulated_all[id_run == r, .(id_coord, class = simulated, p = 1)])
+}))
+scores <- rbind(
+  scores,
+  draw_scores[, lapply(.SD, median)][, forecast := "single realisation (median)"],
+  draw_scores[, lapply(.SD, quantile, 0.05)][, forecast := "single realisation (5 %)"],
+  draw_scores[, lapply(.SD, quantile, 0.95)][, forecast := "single realisation (95 %)"]
+)
+clim <- scores[forecast == "climatology"]
+scores[, `:=`(
+  bss_multiclass = 1 - multiclass / clim$multiclass,
+  bss_change_only = 1 - change_only / clim$change_only
+)]
+knitr::kable(
+  scores[, .(
+    forecast,
+    multiclass,
+    multiclass_fair,
+    bss_multiclass,
+    change_only,
+    bss_change_only
+  )],
+  digits = 4
+)
+
+#' Context for the scores: how many cells are scored, how much observed change
+#' falls on them, and how much of it the model cannot produce at all.
+
+#| label: brier-context
+observed_change <- maps[id_coord %in% eligible & anterior != observed]
+data.table(
+  eligible_cells = length(eligible),
+  observed_change = nrow(observed_change),
+  of_which_unmodelled = observed_change[
+    !viable,
+    on = c(anterior = "id_lulc_anterior", observed = "id_lulc_posterior")
+  ][, .N],
+  viable_transitions = nrow(viable)
+)
 
 #' # Figure
 #'

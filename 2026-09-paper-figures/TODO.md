@@ -2,10 +2,17 @@
 
 ## Figure 2
 
-- [ ] **Decide what (d) argues.** FoM alone favours the deterministic map (see README). Options:
-      add a Brier / reliability panel for the change-frequency surface; or plot FoM against the
-      Brier score, one point per realisation plus the ensemble and deterministic maps; or keep
-      (d) as is and make the spread argument in the text.
+- [ ] **Decide what (d) argues.** FoM alone favours the deterministic map, and the multiclass
+      Brier score gives the ensemble no meaningful edge over the adjusted potentials or
+      climatology (see README). Candidate argument: single-map scores are unreliable (FoM spread),
+      and map-level quantities need an ensemble. A panel showing the distribution of a
+      configuration metric or a non-linear downstream response would make the second point;
+      the per-cell Brier score cannot.
+- [ ] **Strengthen the signal** so that skill scores mean something: a larger grid, more change
+      per period, or more calibration periods. Currently the potentials reach a skill of 0.04
+      over climatology.
+- [ ] Panel (d): show FoM as a discrete distribution (dot histogram per H) instead of a violin,
+      since the banding is intrinsic.
 - [ ] **Replace the deterministic stand-in** with the real single-map tools (Dinamica EGO,
       lulcc, TerrSet LCM) once `2026-09-model-comparison/` produces them. Add the
       neighbourhood-only null from that TODO.
@@ -14,7 +21,7 @@
       source: ranger threading, tie-breaking in the predictor ranking, or RNG state consumed by
       set-up code.
 - [ ] Only two of the four process transitions become viable after calibrating on a single
-      period (forest → arable, arable → urban); about 10 cells of observed change are
+      period (forest → arable, arable → urban); 7 of 56 cells of observed change are
       unmodelled. Either tune the process rates or lower `min_cardinality_abs` further.
 - [ ] Decide whether the mock-up stays synthetic or moves to a real Arealstatistik extent once
       the comparison pipeline exists.
