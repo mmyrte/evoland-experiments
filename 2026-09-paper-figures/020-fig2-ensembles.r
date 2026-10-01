@@ -549,5 +549,5 @@ maps_row <- (p_a | p_b) + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 fig2 <- (maps_row | p_c) / p_d + plot_layout(heights = c(1.3, 1), widths = c(2, 1))
 ggsave(file.path(out_dir, "fig2-ensembles.pdf"), fig2, width = 7.2, height = 5.6, device = cairo_pdf)
-ggsave(file.path(out_dir, "fig2-ensembles.png"), fig2, width = 7.2, height = 5.6, dpi = 200, bg = "white")
+# ggsave(file.path(out_dir, "fig2-ensembles.png"), fig2, width = 7.2, height = 5.6, dpi = 200, bg = "white")
 fig2
