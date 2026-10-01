@@ -36,6 +36,16 @@
 
 set -euo pipefail
 
+# Needs bash >= 4.3: `mapfile` (4.0) and the worker pool's `wait -n` (4.3).
+# macOS ships bash 3.2 as /bin/bash; install a newer one (e.g. `brew install bash`)
+# and make sure it comes first on PATH, since the shebang uses `env bash`.
+if (( ${BASH_VERSINFO[0]:-0} * 100 + ${BASH_VERSINFO[1]:-0} < 403 )); then
+  echo "Error: $0 needs bash >= 4.3, but is running under bash ${BASH_VERSION:-unknown} ($BASH)." >&2
+  echo "On macOS, install a newer bash (brew install bash) and put it first on PATH," >&2
+  echo "or run the script with it explicitly: /opt/homebrew/bin/bash $0 ..." >&2
+  exit 1
+fi
+
 workers=1
 while [[ $# -gt 1 ]]; do
   case "$1" in
