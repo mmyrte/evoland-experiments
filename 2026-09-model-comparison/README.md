@@ -133,8 +133,8 @@ What these numbers say, so far:
 
 1. **Every tool beats random allocation, none by much.** FoM is 0.024–0.035 against a null of
    ~0.020. PIE is a hard case for location: ~4 % of cells change, much of it scattered. Read
-   the results as relative statements, not as skill. (TODO: check what Moulds et al. 2015
-   report for their own PIE runs.)
+   the results as relative statements, not as skill. (Moulds et al. 2015 show FoM for PIE only
+   graphically; see TODO.)
 2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
    regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
    42 % of the variance to the allocator, 29 % to the estimator, 2 % to their interaction and
