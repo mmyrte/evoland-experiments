@@ -50,6 +50,8 @@ library(mlr3learners)
 options(synthetic_process.source_only = TRUE)
 source("2026-09-paper-figures/000-synthetic-process.r")
 
+options(evoland.ducklake_db_append_warning = FALSE)
+
 grid_sizes <- c(30L, 90L)
 landscape_seeds <- c(1337L, 2024L, 4711L)
 calibration_periods <- c(1L, 2L)
@@ -389,7 +391,10 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
-        db$commit(trans_preds, "trans_preds_t", method = "upsert")
+        # append, not upsert: every column of trans_preds_t is a key column, and
+        # evoland's MERGE then has an empty `update set` (DuckDB parser error). Each
+        # configuration writes its own id_run slice, so append cannot duplicate rows.
+        db$commit(trans_preds, "trans_preds_t", method = "append")
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
           models <- db$fit_full_models(
@@ -450,15 +455,63 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
 
 #' # All cases
 
+#' Cases are independent (each has its own database), so they run in parallel
+#' on a PSOCK cluster, largest domains first for load balancing. Set the
+#' option `learner_comparison.workers` to override the number of workers.
+
 #| label: run
 #| output: false
 cases <- CJ(n_grid = grid_sizes, landscape_seed = landscape_seeds, n_calib = calibration_periods)
-results <- rbindlist(
-  lapply(seq_len(nrow(cases)), function(i) {
-    run_case(cases$n_grid[i], cases$landscape_seed[i], cases$n_calib[i])
-  }),
-  use.names = TRUE,
-  fill = TRUE
+setorder(cases, -n_grid, landscape_seed, n_calib)
+n_workers <- getOption(
+  "learner_comparison.workers",
+  max(1L, min(nrow(cases), parallel::detectCores() - 1L))
+)
+cl <- parallel::makeCluster(n_workers)
+parallel::clusterCall(
+  cl,
+  function(wd, lib) {
+    setwd(wd)
+    .libPaths(lib)
+    NULL
+  },
+  getwd(),
+  .libPaths()
+)
+parallel::clusterEvalQ(cl, {
+  suppressPackageStartupMessages({
+    library(evoland)
+    library(data.table)
+    library(terra)
+    library(mlr3learners)
+  })
+  # one thread per worker: the workers are the parallelism
+  data.table::setDTthreads(1L)
+  options(
+    synthetic_process.source_only = TRUE,
+    evoland.ducklake_db_append_warning = FALSE
+  )
+  source("2026-09-paper-figures/000-synthetic-process.r")
+  NULL
+})
+parallel::clusterExport(
+  cl,
+  c("run_case", "learner_specs", "pred_names", "available_static", "process_preds")
+)
+results <- tryCatch(
+  rbindlist(
+    parallel::parLapplyLB(
+      cl,
+      seq_len(nrow(cases)),
+      function(i, cases) {
+        run_case(cases$n_grid[i], cases$landscape_seed[i], cases$n_calib[i])
+      },
+      cases = cases
+    ),
+    use.names = TRUE,
+    fill = TRUE
+  ),
+  finally = parallel::stopCluster(cl)
 )
 fwrite(results, file.path(out_dir, "learner-comparison.csv"))
 
