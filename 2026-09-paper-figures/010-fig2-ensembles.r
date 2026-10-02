@@ -212,7 +212,16 @@ trans_meta <- db$trans_meta_t
 trans_meta[, is_viable := is_viable & id_trans %in% modeled_trans]
 db$trans_meta_t <- trans_meta
 
-db$alloc_params_t <- db$create_alloc_params_t()
+alloc_params_estimated <- db$create_alloc_params_t()
+alloc_params_estimated
+# The synthetic process changes cells independently, so single-cell allocation (uSAM) is the
+# allocator that matches it. The estimated "patches" (mean 1.1-1.2 cells) are clusters induced
+# by the neighbourhood terms of the process. Allocating with them (uPAM) moves change onto
+# less probable neighbours: the logistic-regression ensemble then puts 28 % of its change in
+# the top 5 % of true probabilities instead of the 36 % a sampler of the truth puts there.
+db$alloc_params_t <- as_alloc_params_t(
+  copy(alloc_params_estimated)[, `:=`(mean_patch_size = 1, patch_size_variance = 0)][]
+)
 db$trans_meta_t[is_viable == TRUE]
 
 #' # Demand: observed quantities 2 -> 3
