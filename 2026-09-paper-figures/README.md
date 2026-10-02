@@ -7,6 +7,12 @@ synthetic cases so they run in minutes. [`TODO.md`](TODO.md) holds the open work
 Outputs are written to `figures/` and copied by hand to `evoland-plus-paper/figures/`. A second
 Overleaf project on this repo would remove the copy step.
 
+**Running:** `000-synthetic-process.r` defines the synthetic process and the scores, and the
+`010-*` steps source it. The steps are independent (own databases, own outputs), so they share
+one stage: `./execute-all.sh --workers 3 '2026-09-paper-figures/0*'` renders `000`, then the
+three `010` steps in parallel. `010-learner-comparison` additionally runs its cases on its own
+PSOCK cluster.
+
 | Step | Figure | What it shows |
 | --- | --- | --- |
 | [`000-synthetic-process.r`](000-synthetic-process.r) | — | Synthetic process and scores, sourced by the skill-attribution and learner-comparison steps |
@@ -18,15 +24,21 @@ Overleaf project on this repo would remove the copy step.
 
 The domain is a synthetic 90 × 90 grid (map panels: the 30 × 30 block with the most observed
 change), set up like the evoland-plus vignette
-`stochastic-allocation-sensitivity.qmd`. Two differences from the vignette:
+`stochastic-allocation-sensitivity.qmd`, with these differences:
 
 - **Structured initial map:** urban land clusters where accessibility is high, there is a
   small immutable lake, forest sits on the better sites and arable land takes the rest.
 - **Known change process:** land use changes through a stated logistic process
   (`000-synthetic-process.r`), so the model has a signal to learn. The vignette's noise
   increments have none.
-- **Estimator:** ranger with 500 trees and `min.node.size = 50` on all available predictors,
-  the best setting in `010-learner-comparison` without logistic regression's home advantage.
+- **Estimators:** a random forest (ranger, 500 trees, `min.node.size = 50`, all available
+  predictors), the best setting in `010-learner-comparison` without logistic regression's home
+  advantage; and a logistic regression, which is correctly specified for this logistic process
+  and so shows what allocation does with potentials close to the truth. Each has its own
+  ensemble of 100 realisations under its own parent run.
+- **Allocation:** single-cell (uSAM). The process changes cells independently; the estimated
+  1.1–1.2-cell "patches" are clusters induced by its neighbourhood terms, and allocating with
+  them (uPAM) moves change onto less probable neighbours (see below).
 
 The backcast works as follows:
 
@@ -36,74 +48,73 @@ The backcast works as follows:
   of the ensemble runs, so the ensemble cannot read it.
 - **Demand** is the observed 2 → 3 quantity of each viable transition. The figure is about
   *where* change is placed, not how much.
-- **Ensemble:** 100 CLUMPY realisations, each run registered in `runs_t` with its own seed.
-- **Deterministic stand-in:** the same demand is also allocated greedily on the same adjusted
-  potentials. This stands in for tools without stochastic allocation until
+- **Ensembles:** 100 CLUMPY realisations per learner, each run registered in `runs_t` with its
+  own seed.
+- **Deterministic stand-in:** the same demand is also allocated greedily on each learner's
+  adjusted potentials. This stands in for tools without stochastic allocation until
   `2026-09-model-comparison/` provides the real Dinamica, lulcc and LCM runs.
 
-Panels:
-- **(a)** observed change
-- **(b)** one realisation, the draw with the median figure of merit, coloured by outcome
-  (hit / miss / false alarm / wrong hit)
-- **(c)** change frequency across the ensemble, with the observed change outlined
-- **(d)** FoM of every realisation, the ensemble expectation (from mean counts), the
-  deterministic map, and the persistence and random-allocation nulls
+Panels, on a 3 × 2 grid with a legend each:
+- **(a)** observed land use in period 3, with the change since period 2 outlined
+- **(b)** one random-forest realisation, the draw with the median figure of merit, coloured by
+  outcome (hit / miss / false alarm / wrong hit)
+- **(c)** change frequency across the random-forest ensemble, with the observed change outlined
+- **(d)** FoM of every realisation, one row per learner, with each ensemble's expectation (from
+  mean counts), each deterministic map, and the persistence and random-allocation nulls
+- **(e)** where change is placed: the cumulative distribution of changed cells over the
+  percentile of their true probability, for the observed change, the realisations (median and
+  5–95 % band) and the deterministic maps; the diagonal is random allocation
 
 ### What the numbers say (last render)
 
 All four transitions are viable; none of the 573 observed changes on the 6687 forest and arable
 cells is unmodelled.
 
-| quantity | value |
-| --- | --- |
-| FoM, realisations: median (5–95 %) | 0.105 (0.093–0.118) |
-| FoM, ensemble expectation | 0.105 |
-| FoM, deterministic greedy | 0.240 |
-| FoM, random-allocation null | 0.033 |
-
-Multiclass Brier score over the cells that can change, and skill against climatology:
-
-| forecast | Brier | skill vs. climatology |
+| | random forest | logistic regression |
 | --- | --- | --- |
-| adjusted potentials | 0.133 | 0.160 |
-| ensemble frequency (fair: 0.136) | 0.137 | 0.134 |
-| climatology | 0.159 | 0 |
-| persistence | 0.171 | −0.08 |
-| deterministic greedy | 0.209 | −0.31 |
-| single realisation, median | 0.275 | −0.74 |
+| FoM, realisations: median (5–95 %) | 0.136 (0.121–0.150) | 0.151 (0.139–0.162) |
+| FoM, ensemble expectation | 0.136 | 0.150 |
+| FoM, deterministic greedy | 0.244 | 0.257 |
+| Brier skill, adjusted potentials | 0.160 | 0.183 |
+| Brier skill, ensemble frequency (fair) | 0.164 | 0.184 |
+| Brier skill, deterministic | −0.30 | −0.27 |
+| Brier skill, single realisation (median) | −0.62 | −0.58 |
 
-What changed with the larger domain and the calibrated learner:
+References: FoM of random allocation 0.033; Brier skill of the true probabilities 0.191 (skill is
+against climatology; multiclass Brier score over the cells that can change).
 
-1. **Estimation is no longer the bottleneck.** The potentials reach a skill of 0.16. The truth
-   reaches about 0.18 on this landscape (`010-skill-attribution`), so the estimates capture almost 90 % of it.
-2. **The ensemble frequency is slightly worse than its potentials** (Brier +0.004). That is the
-   uPAM patch loss measured in `010-skill-attribution`: the synthetic process changes single cells, while the
-   estimated patches average 1.1–1.2 cells.
-3. **The "unreliable single-map score" argument largely disappears.** The FoM spread across draws
-   is 0.093–0.118 at 90 × 90, against 0.029–0.105 at 30 × 30. It was a small-domain effect.
-4. **The deterministic map still wins FoM by a factor of 2.3** (0.240 vs. 0.105), and it is the
-   worst probabilistic forecast after single draws (skill −0.31). Greedy allocation puts all
-   change on the highest potentials. The realisations spread it in proportion to the
-   probabilities, as the observed change does.
+Panel (e) ranks every changed cell by its true transition probability, as a percentile among
+the cells that could make the same transition:
 
-So the figure's case for stochastic allocation has to be the bias of the deterministic map,
-not a score: point 4, made visible in **panel (e)**. For every changed cell it takes the
-percentile of the cell's adjusted potential among all cells that could make the same transition,
-which lets the four transitions be pooled. It then compares the distribution of those percentiles
-for the observed change, the realisations and the greedy map:
+| changed cells | share in top 5 % | median percentile |
+| --- | --- | --- |
+| expected under the true probabilities | 0.361 | — |
+| observed | 0.361 | 0.909 |
+| realisations, random forest (median) | 0.334 | 0.900 |
+| realisations, logistic regression (median) | 0.381 | 0.918 |
+| deterministic, random forest | 0.649 | 0.964 |
+| deterministic, logistic regression | 0.731 | 0.970 |
 
-| changed cells | share in top 5 % of potential | median percentile | KS distance to observed |
-| --- | --- | --- | --- |
-| observed | 0.34 | 0.90 | — |
-| realisations (median) | 0.26 | 0.87 | 0.10 |
-| deterministic greedy | 0.74 | 0.97 | 0.57 |
+What the figure argues:
 
-Observed change happens across the upper half of the potential range, not only at its top. The
-realisations reproduce that, the greedy map does not: three quarters of its change sits in the
-top 5 %. This is Mazy's allocation-bias argument, shown empirically, and it is the same mechanism
-that wins the greedy map its FoM. The realisations' residual distance (0.10: slightly too little
-change at both the bottom and the very top) reflects the estimated potentials, not the
-allocator; `010-skill-attribution` showed that uSAM reproduces the potentials it is given.
+1. **FoM is the wrong yardstick for a stochastic process.** The deterministic maps score nearly
+   twice the FoM of any realisation, because they put all change on the most probable cells.
+   Panel (e) shows that observed change does not do that: only a third of it falls in the top
+   5 %, exactly what the true probabilities predict. The realisations reproduce this; the
+   deterministic maps put two thirds to three quarters of their change there.
+2. **The ensemble loses nothing.** Its frequency is as good a probabilistic forecast as the
+   potentials it samples from (skill 0.164 vs. 0.160, 0.184 vs. 0.183), and the hard maps are
+   worse than climatology.
+3. **Why logistic regression fits so neatly.** The synthetic process is logistic in the drivers
+   and neighbourhood shares, so a logistic regression is correctly specified: its potentials
+   reach 96 % of the skill of the truth, and an unbiased sampler of near-true probabilities
+   reproduces the observed placement in expectation. It slightly overshoots the top 5 % (0.38
+   vs. 0.36), within what one observed draw can show. The random forest is close but less
+   sharp. On real data, no learner has this advantage.
+4. **Patches matter.** With uPAM on the estimated patches, the logistic-regression ensemble put
+   only 28 % of its change in the top 5 %, and its ensemble lost skill against its potentials
+   (0.166 vs. 0.183). Patch parameters estimated from a neighbourhood-driven process are not
+   neutral: they describe clustering that the neighbourhood terms already produce.
 
 ## Skill attribution: potentials or allocation?
 
