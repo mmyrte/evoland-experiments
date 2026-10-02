@@ -957,7 +957,7 @@ ggsave(
   file.path(out_dir, "fig2-ensembles.pdf"),
   fig2,
   width = 7.2,
-  height = 6.6,
-  device = cairo_pdf
+  height = 6.6
+  # device = cairo_pdf
 )
 fig2
