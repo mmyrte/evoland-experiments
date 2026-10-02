@@ -1,0 +1,17 @@
+tool,stage,n,total_s,median_s
+cluinpy,allocate,20,170.86,6.98
+cluinpy,fit_suitability,1,13.92,13.92
+cross-clumpy,allocate,60,146.76,2.425
+dinamica-native,allocate,20,10.24,0.515
+dinamica-native,calibrate,1,1.71,1.71
+evoland,alloc_params,1,1.38,1.38
+evoland,fit_log_reg,1,5.42,5.42
+evoland,fit_ranger,1,58.08,58.08
+evoland,neighbours,1,12.31,12.31
+evoland,predict_log_reg,1,8.24,8.24
+evoland,predict_ranger,1,38.7,38.7
+evoland-clumpy,allocate,40,118.73,2.675
+evoland-dinamica,allocate,40,293.43,6.775
+lulcc,allocate_clues,20,96.38,4.775
+lulcc,allocate_ordered,20,60.48,2.99
+lulcc,fit_glm,1,5.65,5.65

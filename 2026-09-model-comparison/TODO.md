@@ -1,101 +1,97 @@
 # TODO — 2026-09-model-comparison
 
-Open work. Design rationale is in [`README.md`](README.md). Nothing is built yet.
+Open work. Design rationale and first results are in [`README.md`](README.md).
 
-## Decide before writing any code
+## Done (2026-10-02)
 
-- [ ] **Study extent.** Full SSP-CH extent; if any one of the other tools fails due to memory
-      pressure/computation time, that is a direct result (although we can afford to run it on a
-      machine with 2TiB of RAM x 128 cores)
-- [ ] **Predictor set.** A small set every tool can take, reused from `2026-05-ssp-ch/`
-      ingestion. Deliberately not the full SSP-CH set. See README.
-- [ ] **Calibration / validation period pair**, out of the four observed Arealstatistik
-      periods. See README.
-- [ ] **Which comparators are actually in reach.** TerrSet needs a Windows machine and leads to
-      point&click adventures; drop it. Dinamica standalone needs a workable headless setup beyond what
-      `alloc_dinamica()` already drives.
-- [x] **How to compare?** Lead with a comparison of
-      usability/robustness/reproducibility/accessibility/auditability criteria, see readme. Then follow
-      up with a quantitative comparison where feasible, but again focus on feasibility.
+- [x] Benchmark case: Plum Island Ecosystems from lulcc, replacing the Arealstatistik plan.
+- [x] Protocol: calibrate 1985 → 1991, allocate 1991 → 1999 on observed demand, validate against
+      held-out 1999.
+- [x] evoland reference run: logistic regression and random forest; CLUMPY and Dinamica
+      allocation (`010`, `020`).
+- [x] Dinamica standalone, headless: Weights of Evidence calibration and Expander/Patcher
+      allocation in two `.ego` scripts (`030-dinamica-native/`).
+- [x] lulcc: GLM suitability, CLUE-S and Ordered (`030-lulcc.r`).
+- [x] CLUinPy: logistic suitability, CLUMondo allocation (`030-cluinpy*`).
+- [x] Crossings: CLUMPY on WoE, lulcc and CLUinPy surfaces (`040`).
+- [x] Common metrics, ANOVA decomposition and timings (`050`); ensemble Brier scores (`051`);
+      paper Fig. 3 (`060`).
 
-## Build
+## Next
 
-- [ ] **`001-setup-db`** — a small `*.evolanddb` on the chosen extent.
-- [ ] **`010-`/`020-` ingestion** — LULC history and the agreed predictors, reusing the
-      `2026-05-ssp-ch/` steps.
-- [ ] **`030-`–`060-` evoland-plus reference run** — neighbours, viable transitions, covariate
-      selection, transition models. Written to be readable as an illustration, since that is
-      half the point of this sub-project.
-- [ ] **`070-alloc-evoland`** — calibrate → allocate → validate with CLUMPY.
-- [ ] **`071-alloc-dinamica`** — same models, Dinamica allocation via `alloc_dinamica()`.
-- [ ] **`072-dinamica-native`** — Dinamica's Weights-of-Evidence estimator plus its own
-      allocator, run standalone but headless.
-  - [ ] call via processx,
-  - [ ] data from evoland dumped to tifs,
-  - [ ] read back into dinamica, use .ego script. see also dump of dinamica functors at `2026-09-model-comparison/072-dinamica/dinamica-functors.txt`.
-  - [ ] read output like alloc-dinamica, write to evoland DB for validation.
-- [ ] **`073-lulcc`** — lulcc's suitability estimation and CLUE-S allocation. as with dinamica, read back into evoland DB for easy validation/comparison.
-- [ ] **`080-compare`** — common metrics across all runs: figure of merit against the
-      random-allocation null, masked fuzzy similarity, quantity vs. allocation disagreement,
-      per-transition AUC where available.
-- [ ] **`080d-report`** — comparison figures and tables.
+- [ ] **Render via quarto** (`execute-all.sh`) and commit the HTML reports. So far the steps
+      were only run with `Rscript` (which works because they are knitr-spin `.r` files). The
+      repo's `.Rprofile` activates rv; the steps were run with `R_PROFILE_USER=/dev/null`
+      against a system library.
+- [ ] **Bump the evoland pin** in `rproject.toml` once the stacked fix PRs are merged (see
+      below). The pipeline needs fixes 01 (square-cell tolerance) and 03 (external
+      potentials).
+- [x] **Ensemble-level metric next to FoM** (`051-ensemble-scores.r`): fair Brier skill against
+      random allocation; reverses the FoM ranking of Dinamica vs. CLUMPY (README finding 3).
+      Open: a reliability diagram per ensemble; whether to score only cells of anterior classes
+      with viable transitions; more realisations for the Dinamica ensembles.
+- [ ] **Multi-resolution agreement.** FoM and masked fuzzy similarity across window sizes
+      (1–15 cells).
+- [ ] **Nulls beyond random allocation.** A neighbourhood-only model (evoland with only the
+      neighbourhood predictors) is cheap; persistence is trivially 0.
+- [ ] **Dinamica's own patch parameters.** Native Dinamica practice tunes the Expander/Patcher
+      parameters by hand or by `eval_alloc_params_t`-style search. Here they are evoland's
+      estimates, to isolate the estimator. A variant with Dinamica's GUI defaults would show how
+      much a typical user gets.
+- [ ] **Dinamica annual steps.** `simulate.ego` allocates 1991 → 1999 in one step, like evoland.
+      Dinamica practice would iterate 8 annual steps with a multi-step matrix
+      (`DetermineTransitionMatrix`), recomputing the distance maps. Same for evoland
+      (`alloc_*` over yearly periods); decide whether that is worth a variant.
+- [ ] **CLUE-S configuration.** The lulcc demo parameters (elasticity 0.2 for all classes, all
+      conversions allowed) produce 3.8× the observed gross change, including 2.6 k cells of
+      built → forest. Add a variant with built elasticity 1 / no built conversions to see whether
+      CLUE-S is merely mis-parametrised by the demo or structurally different. Report the
+      default anyway, per the "best-documented configuration" guard rail.
+- [ ] **CLUinPy neighbourhood and resistance** values are taken from its tutorial's analogous
+      classes; document a sensitivity check or justify.
+- [ ] **Check against Moulds et al. (2015)**: what agreement do they report for PIE (their
+      runs allocate 1985 → 1999)? Our lulcc run could reproduce theirs as a sanity check.
+- [ ] **Scaling benchmark.** PIE does not separate the tools on cost (all allocations take
+      seconds). Options: (a) tile/upsample PIE synthetically; (b) return to a large real extent
+      (the earlier SSP-CH idea) only for timing and memory, without the full comparison.
+- [ ] **Reproducibility.** Fixed-seed replay check per tool: rerun one realisation and compare
+      maps bit for bit (Dinamica with `-predefined-seed`; CLUinPy seeded via `random`; evoland
+      via `set.seed`). Record versions in a table for the paper.
+- [ ] **TerrSet LCM**: still dropped (Windows, GUI, licence).
+- [ ] **Figures for the paper**: `figures/pie-figure-of-merit.pdf` and
+      `figures/pie-outcome-maps.pdf` are first drafts in base R. An estimator × allocator heatmap
+      of FoM with the ANOVA shares as an inset may be the more compact paper figure.
 
-## Publication: what the comparison should show
+## Upstream issues found while building this
 
-The comparison is meant to support a model-description paper on evoland-plus and the modelling
-framework (Geoscientific Model Development and Environmental Modelling & Software are the
-natural venues; GMD requires the code and data availability that this repo already aims for).
+evoland-plus, each on its own stacked branch off `claude/gifted-lamport-41q8gv` (= `develop` at
+`ecebf27`), in this order:
 
-The comparison is not supposed to go out of its way to compare correctness (that is already done by
-Mazy in his thesis, https://theses.hal.science/tel-04382012/document). Rather, it is supposed to
-show that the results hold up when compared to other modelling environments.
+1. `claude/gifted-lamport-41q8gv-01-square-cells`: `compute_alloc_params_single()` compared the
+   x and y resolution with `==`. Rasters rebuilt from `coords_t` on a non-integer origin (PIE)
+   have resolution `100.00000000000006`, and `create_alloc_params_t()` failed for every
+   transition.
+2. `…-02-trans-count-message`: `predict_trans_pot()` reported `length(viable_trans)` (the
+   column count, 7) as the number of transitions.
+3. `…-03-external-trans-pot`: `predict_trans_pot()` demanded fitted models even when every
+   potential was already in `trans_pot_t`, which blocked allocating potentials from external
+   estimators.
+4. `…-04-missing-models-message`: the "No fitted model" error printed a literal
+   `{toString(missing_models)}` (`glue_collapse` doesn't interpolate), and didn't name the
+   required `select_score`.
 
-The comparison tries to complete an **estimator x allocator** matrix:
+Other tools:
 
-- {mlr3 learner (GLM, ranger, GRRF), Dinamica Weights of Evidence (naive bayes), lulcc's suitability model}
-- {CLUMPY uSAM/uPAM, Dinamica, CLUE-S}
+- lulcc 1.0.4 lists `gsubfn` and `caret` under Suggests but needs them in
+  `ExpVarRasterList()` / `glmModels()`.
+- Dinamica: an `.Renviron` that sets `DINAMICA_EGO_8_TEMP_DIR` breaks the R bridge (see README,
+  Environment). Worth a note in evoland's `install-dinamica` vignette.
 
-wherever the tools allow the pairing. Decompose each outcome metric into estimator, allocator,
-interaction and stochastic (replicate) variance. If we manage this, this could be a nice figure: it
-says how much of the "tool difference" belongs to each stage.
+## Housekeeping (repo-wide)
 
-### How to validate
-
-- [ ] **Backcast skill against nulls.** Figure of merit against three nulls: persistence (no
-      change), random allocation within the anterior class, and a neighbourhood-only model. A tool
-      is only useful where it beats all three.
-- [ ] **Multi-resolution agreement.** FoM and masked fuzzy similarity across window sizes (1–15
-      cells). Runs that look different at cellular level converge at coarser resolutions; where they
-      converge lies a useful resolution (source?)
-
-### D. Practical utility
-
-- [ ] **Capability matrix.** Open source, language, estimator choice, stochastic allocation,
-      ensembles, scenario/run lineage, provenance of inputs, interventions, HPC/concurrency,
-      licence cost. Might work better in prose.
-- [ ] **Scaling benchmark.** Wall time and peak memory per stage (prediction, allocation) from
-      the 40×40 replica to the full 4.1 M-cell grid, on the same machine for all tools, plus
-      evoland's parallel writers on DuckLake. Ship the timing harness with the paper.
-- [ ] **Reproducibility.** Rebuild the study database from md5-pinned sources and show identical
-      outputs under fixed seeds; report what the other tools need to reach the same bar.
-
-### Protocol guard rails
-
-- [ ] Write the comparison protocol down (inputs, periods, metrics, nulls, seeds, what is held
-      fixed per tool) before the first run, and keep it in this directory.
-- [ ] Record tool versions, licences, settings and hardware from the first run, including the
-      Dinamica build (currently 8.11.2 from `ghcr.io/mmyrte/evoland`).
-- [ ] Report every tool at its best-documented configuration, not evoland at its tuned best
-      against the others' defaults.
-
-## Non-comparison sections: illustrate model use / goodies
-
-- [ ] **Ensembles vs. single maps.** The CLUMPY ensemble as a per-cell change-frequency map with its
-      FoM distribution, next to the deterministic tools' single values. This is not infeasible with
-      other models, just not built-in.
-- [ ] **Estimator quality on its own.** mlr3 makes swapping learners a one-line change; show that,
-      and show where learners disagree.
-- [ ] The LP solver (`trans_rates_lp`) versus linear extrapolation of observed rates or Markov
-      chain as in TerrSet/lulcc.
-- [ ] **Landscape pattern analysis.** Efficient patch statistics in `patch_stats.cpp`, like fragstats and patch elongation.
-- [ ] Emphasize easy export for ecosystem services / ecological value
+- [ ] Three files in the repo were committed as plain binaries although `.gitattributes` routes
+      them through LFS, so a fresh clone shows them as modified:
+      `2026-05-ssp-ch/091-change-intensity-2030.png`,
+      `2026-05-ssp-ch/graphs/fig-spm8a-ar6-wg1.png`,
+      `2026-09-paper-figures/html-reports/010-fig2-ensembles.html`. Fix with
+      `git add --renormalize <files>` and commit.
