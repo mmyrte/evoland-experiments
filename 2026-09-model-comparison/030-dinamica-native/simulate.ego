@@ -1,0 +1,43 @@
+@charset = UTF-8
+// Dinamica EGO allocation for the PIE benchmark (1991 -> 1999), one realisation.
+// Run from a work directory holding lu_1991.tif, ef_00{1,2,3}.tif, weights.dcf (from
+// calibrate.ego) and the tables trans_rates.csv, expansion_table.csv, patcher_table.csv;
+// writes probabilities.tif and posterior.tif there.
+@submodel.import = AllocateTransitions { { \"lanscape\" : CategoricalMap, \"probabilities\" : Map, \"transitionMatrix\" : TransitionMatrix, \"percentOfTransitionsByExpansion\" : PercentMatrix, \"patchExpansionParameters\" : TransitionFunctionParameterMatrix, \"patchGenerationParameters\" : TransitionFunctionParameterMatrix } { \"printTransitionInfo\" : BooleanValue } { \"resultingLanscape\" : CategoricalMap } }
+Script {{
+    anterior := LoadCategoricalMap { filename = "lu_1991.tif", nullValue = .none, storageMode = .default };
+    ef1 := LoadMap { filename = "ef_001.tif", nullValue = .none, storageMode = .default };
+    ef2 := LoadMap { filename = "ef_002.tif", nullValue = .none, storageMode = .default };
+    ef3 := LoadMap { filename = "ef_003.tif", nullValue = .none, storageMode = .default };
+    weights := LoadWeights { filename = "weights.dcf" };
+
+    // the tables' key columns are marked with a trailing * in their headers
+    transitionRates := LoadTable { filename = "trans_rates.csv", uniqueIdKeyColumnCreation = .ifNecessary };
+    expansion := LoadTable { filename = "expansion_table.csv", uniqueIdKeyColumnCreation = .ifNecessary };
+    patcher := LoadTable { filename = "patcher_table.csv", uniqueIdKeyColumnCreation = .ifNecessary };
+
+    staticVars := CreateCubeMap .float32 .default {{
+        NumberAndNameMap ef1 "ef_001" 1;
+        NumberAndNameMap ef2 "ef_002" 2;
+        NumberAndNameMap ef3 "ef_003" 3;
+    }};
+    distances := CalcDistanceMap anterior [1, 2, 3] .float32 .default .no;
+
+    probabilities := CalcWOfEProbabilityMap anterior weights [1->2, 1->3, 2->3, 3->1, 3->2] .float32 .default {{
+        NameMap staticVars "static_var";
+        NameMap distances "distance_to";
+    }};
+
+    posterior := AllocateTransitions {
+        lanscape = anterior,
+        probabilities = probabilities,
+        transitionMatrix = transitionRates,
+        percentOfTransitionsByExpansion = expansion,
+        patchExpansionParameters = patcher,
+        patchGenerationParameters = patcher,
+        printTransitionInfo = .yes
+    };
+
+    SaveMap { map = probabilities, filename = "probabilities.tif", useCompression = .yes };
+    SaveMap { map = posterior, filename = "posterior.tif", useCompression = .yes };
+}};
