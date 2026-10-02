@@ -112,19 +112,19 @@ Figure of merit (FoM) is the ratio of the ensemble-mean counts. The null is the 
 from placing the same quantities at random within the anterior class; persistence scores 0.
 There are 4 702 observed changed cells.
 
-| estimator × allocator | FoM | sd | FoM / null | allocation disagreement | gross change (cells) | fuzzy sim. forest→built |
-| --- | --- | --- | --- | --- | --- | --- |
-| random forest × Dinamica | 0.035 | 0.0025 | 1.74 | 0.077 | 4 743 | 0.222 |
-| GLM suitability × CLUE-S (lulcc) | 0.033 | 0 | 1.53 | **0.181** | **17 829** | 0.205 |
-| logistic regression × Dinamica | 0.033 | 0.0019 | 1.65 | 0.077 | 4 743 | 0.199 |
-| logistic suitability × CLUMondo (CLUinPy) | 0.033 | 0 | 1.86 | 0.065 | 3 248 | 0.151 |
-| random forest × CLUMPY | 0.030 | 0.0028 | 1.48 | 0.078 | 4 754 | 0.222 |
-| Weights of Evidence × Dinamica (native) | 0.029 | 0.0017 | 1.44 | 0.078 | 4 743 | 0.210 |
-| GLM suitability × Ordered (lulcc) | 0.029 | 0.0004 | 1.42 | 0.071 | 3 901 | 0.210 |
-| logistic regression × CLUMPY | 0.026 | 0.0017 | 1.31 | 0.078 | 4 752 | 0.208 |
-| Weights of Evidence × CLUMPY | 0.025 | 0.0019 | 1.25 | 0.079 | 4 752 | 0.207 |
-| GLM suitability × CLUMPY | 0.025 | 0.0018 | 1.25 | 0.079 | 4 754 | 0.208 |
-| logistic suitability × CLUMPY | 0.024 | 0.0024 | 1.22 | 0.079 | 4 755 | 0.212 |
+| estimator × allocator | FoM | sd | FoM / null | allocation disagreement | gross change (cells) | fuzzy sim. forest→built | fair Brier skill |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| random forest × Dinamica | 0.035 | 0.0024 | 1.75 | 0.077 | 4 743 | 0.218 | −0.078 |
+| logistic regression × Dinamica | 0.034 | 0.0021 | 1.69 | 0.077 | 4 743 | 0.199 | −0.097 |
+| GLM suitability (lulcc) × CLUE-S | 0.033 | 0.0000 | 1.53 | 0.181 | 17 829 | 0.205 | −3.568 |
+| logistic suitability (CLUinPy) × CLUMondo | 0.033 | 0.0000 | 1.86 | 0.065 | 3 248 | 0.151 | −0.637 |
+| Weights of Evidence × Dinamica | 0.029 | 0.0021 | 1.48 | 0.078 | 4 743 | 0.208 | −0.102 |
+| random forest × CLUMPY | 0.029 | 0.0022 | 1.47 | 0.078 | 4 753 | 0.221 | −0.005 |
+| GLM suitability (lulcc) × Ordered | 0.029 | 0.0004 | 1.42 | 0.071 | 3 901 | 0.210 | −0.720 |
+| logistic regression × CLUMPY | 0.026 | 0.0017 | 1.31 | 0.078 | 4 752 | 0.208 | 0.001 |
+| GLM suitability (lulcc) × CLUMPY | 0.025 | 0.0018 | 1.25 | 0.079 | 4 754 | 0.208 | −0.020 |
+| Weights of Evidence × CLUMPY | 0.025 | 0.0019 | 1.24 | 0.079 | 4 753 | 0.204 | 0.000 |
+| logistic suitability (CLUinPy) × CLUMPY | 0.024 | 0.0024 | 1.22 | 0.079 | 4 755 | 0.212 | −0.013 |
 
 Full tables are in [`figures/`](figures/) (`pie-*.csv`). The figures are
 `figures/pie-figure-of-merit.pdf` and `figures/pie-outcome-maps.pdf`.
@@ -137,11 +137,11 @@ What these numbers say, so far:
    graphically; see TODO.)
 2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
    regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
-   42 % of the variance to the allocator, 29 % to the estimator, 2 % to their interaction and
-   27 % to the replicates. The last share is the stochastic allocation that single-map tools
+   51 % of the variance to the allocator, 24 % to the estimator, 2 % to their interaction and
+   23 % to the replicates. The last share is the stochastic allocation that single-map tools
    hide.
-3. **Dinamica scores above CLUMPY on the same potentials, consistently.** The gain is +0.004
-   to +0.007 FoM for every estimator. This is expected rather than a defect of CLUMPY: Dinamica's
+3. **Dinamica scores above CLUMPY on the same potentials, consistently.** The gain is +0.005
+   to +0.008 FoM for every estimator. This is expected rather than a defect of CLUMPY: Dinamica's
    Expander/Patcher prune to the highest-probability cells (`pruneFactor`; thesis ch. 3.8),
    which approaches greedy allocation. A single-map FoM rewards the mode. CLUMPY samples in
    proportion to the potentials, which gives an unbiased ensemble at the cost of single-map FoM.
@@ -154,7 +154,7 @@ What these numbers say, so far:
    | pairing | fair Brier skill |
    | --- | --- |
    | CLUMPY ensembles | −0.020 to +0.001 |
-   | Dinamica ensembles | −0.080 to −0.105 |
+   | Dinamica ensembles | −0.078 to −0.102 |
    | CLUMondo (deterministic) | −0.64 |
    | Ordered (deterministic) | −0.72 |
    | CLUE-S (deterministic) | −3.6 |
@@ -187,15 +187,15 @@ What these numbers say, so far:
 
    | step | median time | note |
    | --- | --- | --- |
-   | Dinamica native allocation | 0.5 s | |
-   | Dinamica WoE calibration | 1.7 s | |
-   | CLUMPY allocation | 2.7 s | |
-   | CLUinPy allocation | 7 s | 8 annual steps |
-   | lulcc CLUE-S allocation | 4.8 s | 8 annual steps |
-   | lulcc Ordered allocation | 3.0 s | 8 annual steps |
-   | evoland → Dinamica allocation | 6.8 s | including writing the inputs and an R round trip inside Dinamica |
-   | random forest fit | 58 s | all 5 transitions |
-   | random forest prediction | 39 s | all 5 transitions |
+   | Dinamica native allocation | 0.8 s | single-threaded, see Replay check |
+   | Dinamica WoE calibration | 5.4 s | single-threaded |
+   | CLUMPY allocation | 2.5 s | |
+   | CLUinPy allocation | 5.7 s | 8 annual steps |
+   | lulcc CLUE-S allocation | 4.2 s | 8 annual steps |
+   | lulcc Ordered allocation | 2.6 s | 8 annual steps |
+   | evoland → Dinamica allocation | 5.6 s | including writing the inputs and an R round trip inside Dinamica |
+   | random forest fit | 45 s | all 5 transitions |
+   | random forest prediction | 35 s | all 5 transitions |
 
    Scaling to millions of cells is where the tools may separate; PIE does not test it.
 
