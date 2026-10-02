@@ -8,12 +8,14 @@
       and map-level quantities need an ensemble. A panel showing the distribution of a
       configuration metric or a non-linear downstream response would make the second point;
       the per-cell Brier score cannot.
-- [ ] **Estimation, not allocation, limits skill** (`030-skill-attribution.r`, README). Next:
-      swap the learner (e.g. a logistic regression on the true feature set, which matches the
-      generating process) and add calibration periods, to see which closes the estimation gap.
-      Only then scale the domain for Fig. 2 (with a 30 × 30 window for the map panels).
-- [ ] Replicate the attribution over several landscape seeds per domain size; size and landscape
-      are confounded with one seed each.
+- [ ] **Estimation, not allocation, limits skill** (`030-skill-attribution.r`, README). Run
+      `031-learner-comparison.r` (learners × feature sets × calibration periods × size × seed)
+      and record which factor closes the estimation gap. Then scale the domain for Fig. 2 with
+      the winning estimator (with a 30 × 30 window for the map panels).
+- [ ] `020-fig2-ensembles.r` still carries its own copy of the synthetic process; switch it to
+      `source("2026-09-paper-figures/000-synthetic-process.r")`.
+- [ ] Replicate `030` over several landscape seeds per domain size; size and landscape are
+      confounded with one seed each (`031` already uses three seeds).
 - [ ] **Strengthen the signal** so that skill scores mean something: a larger grid, more change
       per period, or more calibration periods. Currently the potentials reach a skill of 0.04
       over climatology.

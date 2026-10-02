@@ -9,7 +9,10 @@ Overleaf project on this repo would remove the copy step.
 
 | Step | Figure | What it shows |
 | --- | --- | --- |
-| [`020-fig2-ensembles.qmd`](020-fig2-ensembles.qmd) | Fig. 2, `figures/fig2-ensembles.{pdf,png}` | Ensembles vs. single maps on a backcast |
+| [`000-synthetic-process.r`](000-synthetic-process.r) | — | Synthetic process and scores, sourced by 030 and 031 |
+| [`020-fig2-ensembles.r`](020-fig2-ensembles.r) | Fig. 2, `figures/fig2-ensembles.pdf` | Ensembles vs. single maps on a backcast |
+| [`030-skill-attribution.r`](030-skill-attribution.r) | `figures/skill-attribution.csv` | Where the skill is lost: potentials or allocation |
+| [`031-learner-comparison.r`](031-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
 
 ## Figure 2: ensembles vs. single maps
 
@@ -140,3 +143,16 @@ What it shows:
    ceiling at 90 × 90 reflects that landscape, not the size.
 4. **FoM tells another story.** The FoM spread narrows with size (estimated, uSAM: 0.05–0.13 at
    30 × 30, 0.10–0.13 at 90 × 90), and uSAM scores higher than uPAM throughout.
+
+## Learner comparison (to run)
+
+[`031-learner-comparison.r`](031-learner-comparison.r) follows up on the estimation gap. It
+crosses seven learners (featureless, log_reg, cv_glmnet, naive_bayes, ranger as in Fig. 2,
+ranger with larger leaves, xgboost) with three feature sets: the rpart top 4 of what a modeller
+has, all of it, or the terms of the generating logits. With the last set, log_reg is
+correctly specified. It also crosses one vs. two calibration periods (paired: same target
+transition), 30 × 30 vs. 90 × 90, and three landscape seeds. It scores the adjusted potentials
+only, since `030` showed that uSAM passes them through unchanged. Learners whose package is
+missing are skipped; `rv add glmnet xgboost e1071` installs them.
+
+Run with `./execute-all.sh '2026-09-paper-figures/031-*'` (after `000`, which it sources).
