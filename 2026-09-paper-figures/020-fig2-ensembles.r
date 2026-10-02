@@ -107,17 +107,13 @@ y_grad <- terra::setValues(
   template_rast,
   (xy$y - min(xy$y)) / (max(xy$y) - min(xy$y))
 )
-# trailing `+`: inside `{}`, a line starting with `+` is a statement of its own and
-# only the last one would be returned
+# not `{}` with one term per line: there, a line starting with `+` is a statement of its
+# own and only the last one would be returned
 accessibility <- scale01(
-  0.55 * (1 - x_grad) +
-    0.25 * (1 - y_grad) +
-    0.20 * smooth_field(template_rast, w = 9)
+  0.55 * (1 - x_grad) + 0.25 * (1 - y_grad) + 0.20 * smooth_field(template_rast, w = 9)
 )
 site_quality <- scale01(
-  0.50 * y_grad +
-    0.35 * smooth_field(template_rast, w = 5) +
-    0.15 * x_grad
+  0.50 * y_grad + 0.35 * smooth_field(template_rast, w = 5) + 0.15 * x_grad
 )
 random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
 
@@ -154,7 +150,7 @@ initial <- terra::ifel(
     terra::ifel(
       forest_score > qntl(forest_score, 0.45),
       1, # forest
-      2  # arable
+      2 # arable
     )
   )
 )
@@ -267,11 +263,11 @@ db$pred_data_t <- extract_using_coords_t(
     id_run = 0L,
     id_period = 0L,
     id_pred = fcase(
-      layer == "accessibility",
-      1L,
-      layer == "site_quality",
-      2L,
-      layer == "random_nuisance",
+      layer == "accessibility"   ,
+      1L                         ,
+      layer == "site_quality"    ,
+      2L                         ,
+      layer == "random_nuisance" ,
       3L
     ),
     value
@@ -690,14 +686,14 @@ outcome <- function(anterior, observed, simulated) {
   obs_change <- anterior != observed
   sim_change <- anterior != simulated
   fcase(
-    obs_change & sim_change & simulated == observed,
-    "hit",
-    obs_change & sim_change,
-    "wrong hit",
-    obs_change,
-    "miss",
-    sim_change,
-    "false alarm",
+    obs_change & sim_change & simulated == observed ,
+    "hit"                                           ,
+    obs_change & sim_change                         ,
+    "wrong hit"                                     ,
+    obs_change                                      ,
+    "miss"                                          ,
+    sim_change                                      ,
+    "false alarm"                                   ,
     default = "persistence"
   )
 }
@@ -924,10 +920,8 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = 0)) +
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
-maps_row <- (p_a | p_b) + plot_layout(guides = "collect") &
-  theme(legend.position = "bottom")
-fig2 <- (maps_row | p_c) / p_d +
-  plot_layout(heights = c(1.3, 1), widths = c(2, 1))
+maps_row <- (p_a | p_b) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+fig2 <- (maps_row | p_c) / p_d + plot_layout(heights = c(1.3, 1), widths = c(2, 1))
 ggsave(
   file.path(out_dir, "fig2-ensembles.pdf"),
   fig2,
