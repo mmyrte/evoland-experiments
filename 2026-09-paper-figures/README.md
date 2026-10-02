@@ -144,15 +144,49 @@ What it shows:
 4. **FoM tells another story.** The FoM spread narrows with size (estimated, uSAM: 0.05–0.13 at
    30 × 30, 0.10–0.13 at 90 × 90), and uSAM scores higher than uPAM throughout.
 
-## Learner comparison (to run)
+## Learner comparison: the learner closes the gap
 
-[`031-learner-comparison.r`](031-learner-comparison.r) follows up on the estimation gap. It
-crosses seven learners (featureless, log_reg, cv_glmnet, naive_bayes, ranger as in Fig. 2,
-ranger with larger leaves, xgboost) with three feature sets: the rpart top 4 of what a modeller
-has, all of it, or the terms of the generating logits. With the last set, log_reg is
-correctly specified. It also crosses one vs. two calibration periods (paired: same target
-transition), 30 × 30 vs. 90 × 90, and three landscape seeds. It scores the adjusted potentials
-only, since `030` showed that uSAM passes them through unchanged. Learners whose package is
-missing are skipped; `rv add glmnet xgboost e1071` installs them.
+[`031-learner-comparison.r`](031-learner-comparison.r) crosses seven learners with three feature
+sets, one vs. two calibration periods (paired: same target transition), 30 × 30 vs. 90 × 90 and
+three landscape seeds. It scores the adjusted potentials only, since `030` showed that uSAM
+passes them through unchanged. Run: 11 min on 3 workers, no failed configurations. Output:
+`figures/learner-comparison.{csv,pdf}`.
 
-Run with `./execute-all.sh '2026-09-paper-figures/031-*'` (after `000`, which it sources).
+Share of attainable skill (1 = as good as the true probabilities, 0 = climatology), mean over
+three seeds, one calibration period:
+
+| learner | 30 × 30, rpart top 4 | 30 × 30, all available | 90 × 90, rpart top 4 | 90 × 90, all available | 90 × 90, process features |
+| --- | --- | --- | --- | --- | --- |
+| log_reg | 0.76 | 0.48 | 0.95 | 0.95 | 0.97 |
+| ranger_large_leaves | 0.61 | 0.69 | 0.75 | 0.83 | 0.84 |
+| xgboost | −0.02 | −0.07 | 0.76 | 0.77 | 0.79 |
+| cv_glmnet | 0.33 | 0.19 | 0.73 | 0.77 | 0.72 |
+| ranger (Fig. 2 setting) | 0.27 | 0.49 | 0.58 | 0.72 | 0.65 |
+| naive_bayes | 0.24 | 0.14 | 0.41 | 0.36 | 0.48 |
+| featureless | −0.01 | −0.01 | 0.00 | 0.00 | 0.00 |
+| oracle, viable transitions | 0.92 | | 0.99 | | |
+
+What it shows:
+
+1. **The learner is the main factor.** Logistic regression reaches 95–97 % of the attainable skill
+   at 90 × 90, even with only the predictors a modeller has. Ranger as configured for Fig. 2
+   reaches 58 %; the same forest with larger leaves (`min.node.size = 50`) reaches 75–84 %. The
+   gap is in calibration: small leaves give overconfident probabilities, and a proper score
+   punishes that.
+2. **More data helps the flexible learners, not the fixed one.** From 30 × 30 to 90 × 90, xgboost
+   goes from no skill to 0.76–0.79, and cv_glmnet and ranger roughly double. A second calibration
+   period helps at 30 × 30 (more data again) and little at 90 × 90. The seeds agree at 90 × 90
+   (ranger: 0.57–0.58; log_reg: 0.92–0.97). At 30 × 30 they do not (ranger: 0.07–0.46).
+3. **The feature set matters little** once the learner is right. Process features gain at most a
+   few points; rpart's top 4 hurt ranger at 90 × 90.
+4. **Naive Bayes, the closest to Dinamica's weights of evidence, stays poor** (0.36–0.49 at
+   90 × 90). Its raw probabilities are badly calibrated (distance to truth 0.10–0.35 before
+   adjustment, 0.016 after). The adjustment to demand rescues it only partly.
+5. **Caveat: log_reg has home advantage.** The synthetic process is logistic, so a logistic
+   regression is close to correctly specified. On real data, the flexible learners may win. The
+   general lesson is calibration and enough data, not "use a GLM".
+
+For Fig. 2, a 90 × 90 domain with log_reg (or ranger with larger leaves, to avoid the home
+advantage) puts the estimates within a few percent of the truth. Then the figure shows what
+allocation and ensembles do, rather than estimation error. The ceiling stays low (skill ~0.18
+over climatology), as the events are rare.

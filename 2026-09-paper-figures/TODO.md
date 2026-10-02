@@ -8,10 +8,15 @@
       and map-level quantities need an ensemble. A panel showing the distribution of a
       configuration metric or a non-linear downstream response would make the second point;
       the per-cell Brier score cannot.
-- [ ] **Estimation, not allocation, limits skill** (`030-skill-attribution.r`, README). Run
-      `031-learner-comparison.r` (learners × feature sets × calibration periods × size × seed)
-      and record which factor closes the estimation gap. Then scale the domain for Fig. 2 with
-      the winning estimator (with a 30 × 30 window for the map panels).
+- [x] **Estimation, not allocation, limits skill** (`030`), and the learner is the main factor
+      (`031`, README): log_reg reaches 95 % of the attainable skill at 90 × 90, ranger as in
+      Fig. 2 58 %, ranger with larger leaves 75–84 %.
+- [ ] **Rebuild Fig. 2** on 90 × 90 with a well-calibrated learner (log_reg, or
+      ranger with `min.node.size = 50` to avoid log_reg's home advantage), with 30 × 30 windows for
+      the map panels.
+- [ ] evoland: `commit_upsert()` builds an empty `update set` when all columns are keys
+      (e.g. `trans_preds_t`), which DuckDB rejects. Skip the `when matched` clause in that case.
+      `031` works around it with `method = "append"`.
 - [ ] `020-fig2-ensembles.r` still carries its own copy of the synthetic process; switch it to
       `source("2026-09-paper-figures/000-synthetic-process.r")`.
 - [ ] Replicate `030` over several landscape seeds per domain size; size and landscape are
