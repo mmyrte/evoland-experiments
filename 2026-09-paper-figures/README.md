@@ -87,11 +87,23 @@ What changed with the larger domain and the calibrated learner:
    probabilities, as the observed change does.
 
 So the figure's case for stochastic allocation has to be the bias of the deterministic map,
-not a score: point 4, made visible. Candidate panel: the distribution of the (true or adjusted)
-potential, or of a driver such as accessibility, at the changed cells, for the observed change,
-the realisations and the greedy map. If the realisations match the observed distribution and the
-greedy map is shifted to the top, that is Mazy's allocation-bias argument shown empirically. See
-[`TODO.md`](TODO.md).
+not a score: point 4, made visible in **panel (e)**. For every changed cell it takes the
+percentile of the cell's adjusted potential among all cells that could make the same transition,
+which lets the four transitions be pooled. It then compares the distribution of those percentiles
+for the observed change, the realisations and the greedy map:
+
+| changed cells | share in top 5 % of potential | median percentile | KS distance to observed |
+| --- | --- | --- | --- |
+| observed | 0.34 | 0.90 | — |
+| realisations (median) | 0.26 | 0.87 | 0.10 |
+| deterministic greedy | 0.74 | 0.97 | 0.57 |
+
+Observed change happens across the upper half of the potential range, not only at its top. The
+realisations reproduce that, the greedy map does not: three quarters of its change sits in the
+top 5 %. This is Mazy's allocation-bias argument, shown empirically, and it is the same mechanism
+that wins the greedy map its FoM. The realisations' residual distance (0.10: slightly too little
+change at both the bottom and the very top) reflects the estimated potentials, not the
+allocator; `030` showed that uSAM reproduces the potentials it is given.
 
 ## Skill attribution: potentials or allocation?
 

@@ -566,6 +566,79 @@ data.table(
   viable_transitions = nrow(viable)
 )
 
+#' # Where change is placed: the bias of a deterministic map
+#'
+#' The deterministic map wins on FoM by putting all change on the highest
+#' potentials. Observed change does not behave like that: it also happens on
+#' cells of moderate potential, in proportion to their probability. For every
+#' changed cell, take the percentile of its (adjusted) potential among all cells
+#' that could make the same transition, so that transitions with different
+#' potential scales can be pooled. Then compare the distribution of those
+#' percentiles for the observed change, each realisation and the greedy map.
+#' Random allocation would give a uniform distribution (the diagonal).
+#' Distances are Kolmogorov-Smirnov distances to the observed distribution.
+
+#| label: bias
+pot_rank <- adjusted[,
+  .(id_coord, rank = frank(value, ties.method = "average") / .N),
+  by = id_trans
+][viable, on = "id_trans", nomatch = NULL]
+
+rank_of_change <- function(changes) {
+  pot_rank[
+    changes,
+    on = .(id_coord, id_lulc_anterior = anterior, id_lulc_posterior = posterior),
+    nomatch = NULL
+  ]
+}
+rank_grid <- seq(0, 1, by = 0.005)
+ecdf_on_grid <- function(r) stats::ecdf(r)(rank_grid)
+
+ranks_observed <- rank_of_change(
+  maps[anterior != observed, .(id_coord, anterior, posterior = observed)]
+)
+ranks_deterministic <- rank_of_change(
+  maps[anterior != deterministic, .(id_coord, anterior, posterior = deterministic)]
+)
+ranks_draws <- rank_of_change(
+  simulated_all[maps[, .(id_coord, anterior)], on = "id_coord"][
+    anterior != simulated,
+    .(id_run, id_coord, anterior, posterior = simulated)
+  ]
+)
+
+cdf_observed <- ecdf_on_grid(ranks_observed$rank)
+cdf_deterministic <- ecdf_on_grid(ranks_deterministic$rank)
+cdf_draws <- ranks_draws[, .(x = rank_grid, cdf = ecdf_on_grid(rank)), by = id_run]
+cdf_band <- cdf_draws[,
+  .(lo = quantile(cdf, 0.05), med = median(cdf), hi = quantile(cdf, 0.95)),
+  by = x
+]
+
+ks_draws <- cdf_draws[,
+  .(ks = max(abs(cdf - cdf_observed))),
+  by = id_run
+]
+bias_tab <- data.table(
+  changed_cells = c("observed", "realisations (median)", "deterministic greedy"),
+  share_in_top_5_pct = c(
+    mean(ranks_observed$rank > 0.95),
+    median(ranks_draws[, mean(rank > 0.95), by = id_run]$V1),
+    mean(ranks_deterministic$rank > 0.95)
+  ),
+  median_percentile = c(
+    median(ranks_observed$rank),
+    median(ranks_draws[, median(rank), by = id_run]$V1),
+    median(ranks_deterministic$rank)
+  ),
+  ks_to_observed = c(
+    0,
+    median(ks_draws$ks),
+    max(abs(cdf_deterministic - cdf_observed))
+  )
+)
+knitr::kable(bias_tab, digits = 3)
+
 #' # Figure
 #'
 #' Map panels are coloured by the figure-of-merit outcome rather than land-use
@@ -635,7 +708,7 @@ observed_change_cells <- maps[anterior != observed, .(id_coord)]
 
 #| label: figure
 #| fig-width: 7.2
-#| fig-height: 5.6
+#| fig-height: 6.4
 col_surface <- "#f1f0ed"
 outcome_cols <- c(
   "persistence" = col_surface,
@@ -771,7 +844,7 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = 0)) +
   annotate(
     "text",
     x = fom_null,
-    y = 0.66,
+    y = 0.5,
     label = " random allocation",
     hjust = 0,
     size = 2.5,
@@ -837,13 +910,68 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = 0)) +
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
+cdf_lines <- rbind(
+  data.table(x = rank_grid, cdf = cdf_observed, what = "observed change"),
+  data.table(x = rank_grid, cdf = cdf_band$med, what = "realisations (median, 5-95 %)"),
+  data.table(x = rank_grid, cdf = cdf_deterministic, what = "deterministic allocation")
+)
+cdf_cols <- c(
+  "observed change" = "#1a1a1a",
+  "realisations (median, 5-95 %)" = "#2a78d6",
+  "deterministic allocation" = "#eb6834"
+)
+p_e <- ggplot() +
+  geom_abline(slope = 1, intercept = 0, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  annotate(
+    "text",
+    x = 0.62,
+    y = 0.55,
+    label = "random allocation",
+    angle = 37,
+    size = 2.4,
+    colour = "#555555"
+  ) +
+  geom_ribbon(
+    data = cdf_band,
+    aes(x = x, ymin = lo, ymax = hi),
+    fill = "#cde2fb"
+  ) +
+  geom_line(data = cdf_lines, aes(x, cdf, colour = what), linewidth = 0.6) +
+  scale_colour_manual(values = cdf_cols, breaks = names(cdf_cols)) +
+  scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_equal() +
+  labs(
+    title = "(e) Potential at changed cells",
+    subtitle = sprintf(
+      "KS distance to observed:\nrealisations %.2f, deterministic %.2f",
+      bias_tab[2, ks_to_observed],
+      bias_tab[3, ks_to_observed]
+    ),
+    x = "percentile of potential among candidate cells",
+    y = "cumulative share of change",
+    colour = NULL
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    plot.title = element_text(size = 9, face = "bold", margin = margin(b = 3)),
+    plot.subtitle = element_text(size = 8, colour = "#555555", margin = margin(b = 4)),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3),
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.key.height = unit(8, "pt"),
+    legend.text = element_text(size = 7.5)
+  )
+
 maps_row <- (p_a | p_b) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-fig2 <- (maps_row | p_c) / p_d + plot_layout(heights = c(1.3, 1), widths = c(2, 1))
+bottom_row <- (p_d | p_e) + plot_layout(widths = c(1.6, 1))
+fig2 <- (maps_row | p_c) / bottom_row + plot_layout(heights = c(1.15, 1))
 ggsave(
   file.path(out_dir, "fig2-ensembles.pdf"),
   fig2,
   width = 7.2,
-  height = 5.6,
+  height = 6.4,
   device = cairo_pdf
 )
 # ggsave(file.path(out_dir, "fig2-ensembles.png"), fig2, width = 7.2, height = 5.6, dpi = 200, bg = "white")
