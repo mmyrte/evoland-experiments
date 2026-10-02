@@ -4,7 +4,7 @@
 #' number-sections: true
 #' ---
 #'
-#' `030-skill-attribution.r` showed that allocation loses no skill (uSAM) and
+#' `010-skill-attribution.r` showed that allocation loses no skill (uSAM) and
 #' that the estimated transition potentials capture only 40-49 % of the skill
 #' the true probabilities attain, with no improvement at nine times the domain.
 #' This step looks for the cause in the estimator. It scores the potentials
@@ -27,7 +27,7 @@
 #'   both, the extra period is added before it, so the comparison is paired;
 #' - **domain size** and **landscape seed**, to separate the two.
 #'
-#' Scores are those of `030`: expected multiclass Brier score against the true
+#' Scores are those of `010-skill-attribution`: expected multiclass Brier score against the true
 #' probabilities, split into the distance to the truth and an irreducible term,
 #' over all forest and arable cells (the classes that can change in the true
 #' process), so that every configuration is scored on the same cells. Skill is

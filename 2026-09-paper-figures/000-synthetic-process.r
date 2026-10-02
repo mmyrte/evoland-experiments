@@ -4,9 +4,9 @@
 #' number-sections: true
 #' ---
 #'
-#' Sourced by `030-skill-attribution.r` and `031-learner-comparison.r`, so that
+#' Sourced by `010-skill-attribution.r` and `010-learner-comparison.r`, so that
 #' the process is defined in one place. Rendered on its own, it shows one
-#' synthetic landscape and its first two steps. `020-fig2-ensembles.r` still
+#' synthetic landscape and its first two steps. `010-fig2-ensembles.r` still
 #' carries its own copy of the same process; keep the two in step.
 
 #| label: shared-setup

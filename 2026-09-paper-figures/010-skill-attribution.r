@@ -29,7 +29,7 @@
 #'
 #' The experiment runs at two domain sizes with the same spatial scales, to see
 #' whether more training data shrinks the estimation loss. The synthetic
-#' process is the one in `020-fig2-ensembles.r`; keep the two in step.
+#' process is the one in `010-fig2-ensembles.r`; keep the two in step.
 
 #| label: setup
 #| output: false

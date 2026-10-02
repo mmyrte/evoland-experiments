@@ -9,10 +9,10 @@ Overleaf project on this repo would remove the copy step.
 
 | Step | Figure | What it shows |
 | --- | --- | --- |
-| [`000-synthetic-process.r`](000-synthetic-process.r) | — | Synthetic process and scores, sourced by 030 and 031 |
-| [`020-fig2-ensembles.r`](020-fig2-ensembles.r) | Fig. 2, `figures/fig2-ensembles.pdf` | Ensembles vs. single maps on a backcast |
-| [`030-skill-attribution.r`](030-skill-attribution.r) | `figures/skill-attribution.csv` | Where the skill is lost: potentials or allocation |
-| [`031-learner-comparison.r`](031-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
+| [`000-synthetic-process.r`](000-synthetic-process.r) | — | Synthetic process and scores, sourced by the skill-attribution and learner-comparison steps |
+| [`010-fig2-ensembles.r`](010-fig2-ensembles.r) | Fig. 2, `figures/fig2-ensembles.pdf` | Ensembles vs. single maps on a backcast |
+| [`010-skill-attribution.r`](010-skill-attribution.r) | `figures/skill-attribution.csv` | Where the skill is lost: potentials or allocation |
+| [`010-learner-comparison.r`](010-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
 
 ## Figure 2: ensembles vs. single maps
 
@@ -26,7 +26,7 @@ change), set up like the evoland-plus vignette
   (`000-synthetic-process.r`), so the model has a signal to learn. The vignette's noise
   increments have none.
 - **Estimator:** ranger with 500 trees and `min.node.size = 50` on all available predictors,
-  the best setting in `031` without logistic regression's home advantage.
+  the best setting in `010-learner-comparison` without logistic regression's home advantage.
 
 The backcast works as follows:
 
@@ -75,9 +75,9 @@ Multiclass Brier score over the cells that can change, and skill against climato
 What changed with the larger domain and the calibrated learner:
 
 1. **Estimation is no longer the bottleneck.** The potentials reach a skill of 0.16. The truth
-   reaches about 0.18 on this landscape (`030`), so the estimates capture almost 90 % of it.
+   reaches about 0.18 on this landscape (`010-skill-attribution`), so the estimates capture almost 90 % of it.
 2. **The ensemble frequency is slightly worse than its potentials** (Brier +0.004). That is the
-   uPAM patch loss measured in `030`: the synthetic process changes single cells, while the
+   uPAM patch loss measured in `010-skill-attribution`: the synthetic process changes single cells, while the
    estimated patches average 1.1–1.2 cells.
 3. **The "unreliable single-map score" argument largely disappears.** The FoM spread across draws
    is 0.093–0.118 at 90 × 90, against 0.029–0.105 at 30 × 30. It was a small-domain effect.
@@ -103,11 +103,11 @@ realisations reproduce that, the greedy map does not: three quarters of its chan
 top 5 %. This is Mazy's allocation-bias argument, shown empirically, and it is the same mechanism
 that wins the greedy map its FoM. The realisations' residual distance (0.10: slightly too little
 change at both the bottom and the very top) reflects the estimated potentials, not the
-allocator; `030` showed that uSAM reproduces the potentials it is given.
+allocator; `010-skill-attribution` showed that uSAM reproduces the potentials it is given.
 
 ## Skill attribution: potentials or allocation?
 
-[`030-skill-attribution.r`](030-skill-attribution.r) uses the known process to separate the
+[`010-skill-attribution.r`](010-skill-attribution.r) uses the known process to separate the
 two. It crosses **potentials** (estimated by ranger, as in Fig. 2, vs. the oracle true
 probabilities `q`, restricted to the viable transitions) with **allocation** (none, CLUMPY uSAM
 on single cells, CLUMPY uPAM with the estimated patches), at 30 × 30 and 90 × 90 cells, with 100
@@ -152,9 +152,9 @@ What it shows:
 
 ## Learner comparison: the learner closes the gap
 
-[`031-learner-comparison.r`](031-learner-comparison.r) crosses seven learners with three feature
+[`010-learner-comparison.r`](010-learner-comparison.r) crosses seven learners with three feature
 sets, one vs. two calibration periods (paired: same target transition), 30 × 30 vs. 90 × 90 and
-three landscape seeds. It scores the adjusted potentials only, since `030` showed that uSAM
+three landscape seeds. It scores the adjusted potentials only, since `010-skill-attribution` showed that uSAM
 passes them through unchanged. Run: 11 min on 3 workers, no failed configurations. Output:
 `figures/learner-comparison.{csv,pdf}`.
 
