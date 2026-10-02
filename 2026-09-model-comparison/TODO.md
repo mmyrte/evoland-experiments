@@ -56,9 +56,15 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
 - [ ] **Scaling benchmark.** PIE does not separate the tools on cost (all allocations take
       seconds). Options: (a) tile/upsample PIE synthetically; (b) return to a large real extent
       (the earlier SSP-CH idea) only for timing and memory, without the full comparison.
-- [ ] **Reproducibility.** Fixed-seed replay check per tool: rerun one realisation and compare
-      maps bit for bit (Dinamica with `-predefined-seed`; CLUinPy seeded via `random`; evoland
-      via `set.seed`). Record versions in a table for the paper.
+- [x] **Reproducibility.** The full pipeline was replayed from scratch (README, Replay check).
+      Found and fixed: unseeded random forest; corroded WoE probabilities in the crossing.
+      Found a Dinamica 8.11.2 parallel race in `CalcWOfEProbabilityMap`. Open:
+      - a minimal reproducer for the Dinamica team (`probabilities.ego` run three times with
+        default settings shows it);
+      - evoland's own `alloc_dinamica()` runs Dinamica with parallel functors; Expander/Patcher
+        are random anyway, but check whether `CreateCubeOfProbabilityMaps` or the allocation
+        have a similar race;
+      - record tool versions in a table for the paper.
 - [ ] **TerrSet LCM**: still dropped (Windows, GUI, licence).
 - [ ] **Figures for the paper**: `figures/pie-figure-of-merit.pdf` and
       `figures/pie-outcome-maps.pdf` are first drafts in base R. An estimator × allocator heatmap

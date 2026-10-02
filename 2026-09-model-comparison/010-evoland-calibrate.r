@@ -209,6 +209,7 @@ modeled_by <- list()
 for (i in seq_len(nrow(estimators))) {
   db$id_run <- estimators$id_run[i]
   learner_id <- estimators$learner[i]
+  set.seed(estimators$id_run[i]) # the random forest is stochastic
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),

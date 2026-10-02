@@ -16,6 +16,9 @@
 #'    on the 1991 map, then the observed 1991 → 1999 net rates allocated by Expander and
 #'    Patcher (the `AllocateTransitions` submodel shipped with Dinamica, the same one evoland's
 #'    `alloc_dinamica()` drives), in a single step.
+#'    [`probabilities.ego`](030-dinamica-native/probabilities.ego) writes the probability maps
+#'    alone, for the crossing in `040`: Expander and Patcher deplete the map in place, so a map
+#'    saved after allocation is not the Weights of Evidence probability.
 #'
 #' Held fixed with the evoland runs: the viable transitions, the demand, and the patch
 #' parameters and expander fractions, which are evoland's estimates on 1985 → 1991. Native
@@ -40,7 +43,19 @@ file.copy(
   file.path(data_dir, c(paste0("lu_", c(1985, 1991), ".tif"), paste0("ef_00", 1:3, ".tif"))),
   work_dir
 )
-file.copy(file.path(model_dir, c("calibrate.ego", "simulate.ego")), work_dir)
+file.copy(file.path(model_dir, c("calibrate.ego", "probabilities.ego", "simulate.ego")), work_dir)
+
+# Dinamica 8.11.2's CalcWOfEProbabilityMap is not deterministic when run in parallel: between
+# identical runs, the probabilities of the forest transitions differed in 300-1300 cells (some
+# turning NA), while calibration and distance maps were identical. Single-threaded runs are
+# bit-identical, so every script here runs single-threaded.
+run_dinamica_serial <- function(script) {
+  exec_dinamica(
+    file.path(work_dir, script),
+    disable_parallel = TRUE,
+    additional_args = c("-processors=1", "-disable-parallel-functors", "-disable-parallel-map-load")
+  )
+}
 
 #' # Tables: demand and patch parameters
 
@@ -88,7 +103,7 @@ patcher
 invisible(timed(
   "dinamica-native",
   "calibrate",
-  exec_dinamica(file.path(work_dir, "calibrate.ego"), disable_parallel = FALSE)
+  run_dinamica_serial("calibrate.ego")
 ))
 invisible(file.copy(
   file.path(work_dir, c("weights.dcf", "ranges.dcf", "weights_report.csv", "weights_correlation.csv")),
@@ -114,7 +129,7 @@ for (i in seq_len(n_realisations)) {
   timed(
     "dinamica-native",
     "allocate",
-    exec_dinamica(file.path(work_dir, "simulate.ego"), disable_parallel = FALSE),
+    run_dinamica_serial("simulate.ego"),
     note = paste0("realisation=", i)
   )
   file.copy(
@@ -123,6 +138,8 @@ for (i in seq_len(n_realisations)) {
     overwrite = TRUE
   )
 }
+# the probability maps on their own: AllocateTransitions depletes them in place
+invisible(run_dinamica_serial("probabilities.ego"))
 file.copy(file.path(work_dir, "probabilities.tif"), maps_dir, overwrite = TRUE)
 
 #| label: plot

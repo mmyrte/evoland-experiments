@@ -2,7 +2,7 @@
 // Dinamica EGO allocation for the PIE benchmark (1991 -> 1999), one realisation.
 // Run from a work directory holding lu_1991.tif, ef_00{1,2,3}.tif, weights.dcf (from
 // calibrate.ego) and the tables trans_rates.csv, expansion_table.csv, patcher_table.csv;
-// writes probabilities.tif and posterior.tif there.
+// writes posterior.tif there (probabilities.ego writes the probability maps).
 @submodel.import = AllocateTransitions { { \"lanscape\" : CategoricalMap, \"probabilities\" : Map, \"transitionMatrix\" : TransitionMatrix, \"percentOfTransitionsByExpansion\" : PercentMatrix, \"patchExpansionParameters\" : TransitionFunctionParameterMatrix, \"patchGenerationParameters\" : TransitionFunctionParameterMatrix } { \"printTransitionInfo\" : BooleanValue } { \"resultingLanscape\" : CategoricalMap } }
 Script {{
     anterior := LoadCategoricalMap { filename = "lu_1991.tif", nullValue = .none, storageMode = .default };
@@ -38,6 +38,5 @@ Script {{
         printTransitionInfo = .yes
     };
 
-    SaveMap { map = probabilities, filename = "probabilities.tif", useCompression = .yes };
     SaveMap { map = posterior, filename = "posterior.tif", useCompression = .yes };
 }};

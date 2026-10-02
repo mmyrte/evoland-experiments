@@ -229,8 +229,9 @@ actually took:
 
     The Dinamica virtual machine is a very advanced piece of technology, but it does not have
     the community effects of an R or Python package.
-  - **Exact replay.** Realistic with inputs, seed and version. Without `-predefined-seed`
-    every run draws a fresh seed.
+  - **Exact replay.** Only single-threaded and with `-predefined-seed` (see Replay check:
+    WoE probability maps differ between parallel runs, and without `-predefined-seed` every run
+    draws a fresh seed).
   - **Auditability.** Medium to high.
 - **IDRISI TerrSet liberaGIS LCM.** Not attempted. It is GUI-driven and Windows-only, and its
   licence forbids reverse engineering; Mazy et al. have reproduced the LCM logic. It is useful
@@ -240,6 +241,33 @@ actually took:
   allocator.
 - **R lulcc.** R scripting; exact replay is realistic with package lockfiles and seed control.
   It is the strongest statistical and validation workbench of the open tools, but unmaintained.
+
+## Replay check
+
+The whole pipeline was run twice from scratch (`execute-all.sh`, fresh database), and the
+per-run FoM of the two runs compared:
+
+- **Bit-identical:**
+  - evoland logistic regression × CLUMPY;
+  - lulcc CLUE-S and Ordered;
+  - CLUinPy (seeded through Python's `random`);
+  - CLUMPY on the lulcc and CLUinPy surfaces.
+- **Different, by design:** every Dinamica allocation. Dinamica draws a fresh seed per run
+  unless `-predefined-seed` is given, and that seeds every run identically, so an ensemble of
+  distinct but replayable realisations is not available from the console.
+- **Different, by mistake, now fixed:**
+  - **Random forest.** Its fit in `010` was not seeded; it now is.
+  - **Weights of Evidence × CLUMPY.** It differed for two reasons:
+    1. *Corroded probabilities.* The WoE probabilities were saved after `AllocateTransitions`,
+       which depletes ("corrodes") the probability map in place, so the crossing was fed one
+       realisation's leftover probabilities. They now come from `probabilities.ego`.
+    2. *A parallel race in Dinamica.* `CalcWOfEProbabilityMap` in Dinamica 8.11.2 is **not
+       deterministic when run in parallel**: between identical runs, the probabilities of the
+       forest transitions differed in 300–1 300 cells, some turning NA. Calibration and distance
+       maps were identical, and single-threaded runs (`-processors=1
+       -disable-parallel-functors -disable-parallel-map-load`) are bit-identical. The
+       standalone Dinamica steps now run single-threaded. (Worth reporting to the Dinamica team,
+       and worth a sentence in the paper: Dinamica's default settings do not replay.)
 
 ## Publication venue
 
