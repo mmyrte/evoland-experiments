@@ -95,3 +95,48 @@ integer number of hits H, so the dots stack on a few discrete values (H = 3, 4, 
 0.040, 0.050, …). New seeds only change which values are occupied.
 
 See [`TODO.md`](TODO.md).
+
+## Skill attribution: potentials or allocation?
+
+[`030-skill-attribution.r`](030-skill-attribution.r) uses the known process to separate the
+two. It crosses **potentials** (estimated by ranger, as in Fig. 2, vs. the oracle true
+probabilities `q`, restricted to the viable transitions) with **allocation** (none, CLUMPY uSAM
+on single cells, CLUMPY uPAM with the estimated patches), at 30 × 30 and 90 × 90 cells, with 100
+members per ensemble. Because `q` is known, the expected multiclass Brier score of a forecast `p`
+splits into a distance to the truth, mean of sum_k (p_k − q_k)^2, and an irreducible term,
+mean of sum_k q_k (1 − q_k). The distance no longer depends on the single observed period 3.
+
+| quantity (distance to truth, expected skill vs. climatology) | 30 × 30 | 90 × 90 |
+| --- | --- | --- |
+| climatology | 0.021, 0 | 0.027, 0 |
+| estimated potentials (adjusted) | 0.0125, 0.050 | 0.0137, 0.087 |
+| ensemble on estimated potentials, uSAM | 0.0124, 0.051 | 0.0138, 0.087 |
+| ensemble on estimated potentials, uPAM | 0.0148, 0.036 | 0.0140, 0.085 |
+| oracle potentials (adjusted) | 0.0040, 0.100 | 0.0004, 0.177 |
+| ensemble on oracle potentials, uSAM | 0.0040, 0.100 | 0.0003, 0.177 |
+| ensemble on oracle potentials, uPAM | 0.0063, 0.087 | 0.0030, 0.159 |
+| truth, all four transitions (ceiling) | 0, 0.124 | 0, 0.179 |
+
+Viable transitions: 2 at 30 × 30 (7 of 56 observed changes unmodelled), all 4 at 90 × 90 (573
+changes, none unmodelled).
+
+What it shows:
+
+1. **Allocation loses nothing with uSAM.** The ensemble frequency reproduces the potentials it
+   samples from, at both sizes and for both potential sources. This verifies that the C++ uSAM is
+   unbiased. uPAM adds a small, consistent loss (distance +0.002–0.003) because it places change
+   in patches while the synthetic process changes single cells.
+2. **The loss is in estimation.** The estimated potentials capture only 40 % (30 × 30) and 49 %
+   (90 × 90) of the attainable skill. Their distance to the truth does not shrink with nine times
+   the data (0.0125 → 0.0137), so a larger domain alone does not fix it. Suspects: a single
+   calibration period, ranger's poorly calibrated probabilities for rare events, and the
+   predictor set (top 4 by rpart importance; distance-band neighbourhood shares that only
+   approximate the process's 5 × 5 window).
+3. **The ceiling is low.** Even the true probabilities only reach a skill of 0.12–0.18 over
+   climatology, because the events are rare (per-cell probabilities of a few percent). A larger
+   domain does not raise the ceiling, but it makes realised scores track expected ones (90 × 90:
+   realised and expected skill agree to about 0.02; 30 × 30: up to 0.03 apart on 0.05).
+   Caveat: each size uses one landscape, so size and landscape are confounded; the higher
+   ceiling at 90 × 90 reflects that landscape, not the size.
+4. **FoM tells another story.** The FoM spread narrows with size (estimated, uSAM: 0.05–0.13 at
+   30 × 30, 0.10–0.13 at 90 × 90), and uSAM scores higher than uPAM throughout.
