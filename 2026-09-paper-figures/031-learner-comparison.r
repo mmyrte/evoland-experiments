@@ -293,8 +293,9 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     ]
   }
 
-  # feature sets; never committed, because lineage reads resolve trans_preds_t per
-  # (id_trans, id_pred) slice and would mix a run's subset with its parent's rows
+  # feature sets: committed per configuration run (prediction reads them through
+  # pred_data_wide_v), never for the base run. Lineage reads resolve trans_preds_t per
+  # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set.
   db$id_run <- 0L
   scored <- db$get_pred_filter_score(
     filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart")),
@@ -388,6 +389,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
+        db$commit(trans_preds, "trans_preds_t", method = "upsert")
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
           models <- db$fit_full_models(
@@ -459,6 +461,11 @@ results <- rbindlist(
   fill = TRUE
 )
 fwrite(results, file.path(out_dir, "learner-comparison.csv"))
+
+failed <- results[!is.na(feature_set) & status != "ok"]
+if (nrow(failed) == nrow(results[!is.na(feature_set)])) {
+  stop("all configurations failed; first error: ", failed$status[1])
+}
 
 #' # Results
 #'
