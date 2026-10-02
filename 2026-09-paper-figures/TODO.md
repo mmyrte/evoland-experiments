@@ -2,7 +2,7 @@
 
 ## Figure 2
 
-- [ ] **Decide what (d) argues.** FoM alone favours the deterministic map, and the multiclass
+- [ ] (superseded by the item above) **Decide what (d) argues.** FoM alone favours the deterministic map, and the multiclass
       Brier score gives the ensemble no meaningful edge over the adjusted potentials or
       climatology (see README). Candidate argument: single-map scores are unreliable (FoM spread),
       and map-level quantities need an ensemble. A panel showing the distribution of a
@@ -11,9 +11,13 @@
 - [x] **Estimation, not allocation, limits skill** (`030`), and the learner is the main factor
       (`031`, README): log_reg reaches 95 % of the attainable skill at 90 × 90, ranger as in
       Fig. 2 58 %, ranger with larger leaves 75–84 %.
-- [ ] **Rebuild Fig. 2** on 90 × 90 with a well-calibrated learner (log_reg, or
-      ranger with `min.node.size = 50` to avoid log_reg's home advantage), with 30 × 30 windows for
-      the map panels.
+- [x] **Rebuild Fig. 2** on 90 × 90 with ranger (`min.node.size = 50`, all predictors), map
+      panels on a 30 × 30 window (README: potentials reach ~90 % of the attainable skill).
+- [ ] **Panel (d) argument after the rebuild:** the FoM spread across draws is narrow at 90 × 90,
+      so "single-map scores are unreliable" no longer carries the figure. Candidate: show the
+      bias of the deterministic map. Plot the distribution of potential (or accessibility) at
+      changed cells for observed vs. realisations vs. greedy, next to or instead of the FoM
+      strip.
 - [ ] evoland: `commit_upsert()` builds an empty `update set` when all columns are keys
       (e.g. `trans_preds_t`), which DuckDB rejects. Skip the `when matched` clause in that case.
       `031` works around it with `method = "append"`.

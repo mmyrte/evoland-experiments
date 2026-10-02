@@ -16,13 +16,17 @@ Overleaf project on this repo would remove the copy step.
 
 ## Figure 2: ensembles vs. single maps
 
-The domain is a synthetic 30 × 30 grid, set up like the evoland-plus vignette
+The domain is a synthetic 90 × 90 grid (map panels: the 30 × 30 block with the most observed
+change), set up like the evoland-plus vignette
 `stochastic-allocation-sensitivity.qmd`. Two differences from the vignette:
 
 - **Structured initial map:** urban land clusters where accessibility is high, there is a
   small immutable lake, forest sits on the better sites and arable land takes the rest.
-- **Known change process:** land use changes through a stated logistic process (table in the
-  `.qmd`), so the model has a signal to learn. The vignette's noise increments have none.
+- **Known change process:** land use changes through a stated logistic process
+  (`000-synthetic-process.r`), so the model has a signal to learn. The vignette's noise
+  increments have none.
+- **Estimator:** ranger with 500 trees and `min.node.size = 50` on all available predictors,
+  the best setting in `031` without logistic regression's home advantage.
 
 The backcast works as follows:
 
@@ -47,57 +51,47 @@ Panels:
 
 ### What the numbers say (last render)
 
-Calibration leaves two viable transitions, forest → arable and arable → urban. Of the 56 observed
-changes on the 761 cells that can change, 7 come from transitions the model cannot produce.
+All four transitions are viable; none of the 573 observed changes on the 6687 forest and arable
+cells is unmodelled.
 
 | quantity | value |
 | --- | --- |
-| FoM, realisations: median (5–95 %) | 0.062 (0.029–0.105) |
-| FoM, ensemble expectation | 0.068 |
-| FoM, deterministic greedy | 0.129 |
-| FoM, random-allocation null | 0.032 |
+| FoM, realisations: median (5–95 %) | 0.105 (0.093–0.118) |
+| FoM, ensemble expectation | 0.105 |
+| FoM, deterministic greedy | 0.240 |
+| FoM, random-allocation null | 0.033 |
 
-Multiclass Brier score over the cells that can change (0–2, lower is better), and the skill
-score against climatology (each class's demand rates applied to all of its cells):
+Multiclass Brier score over the cells that can change, and skill against climatology:
 
 | forecast | Brier | skill vs. climatology |
 | --- | --- | --- |
-| adjusted potentials | 0.132 | 0.04 |
-| ensemble frequency (fair: 0.135) | 0.136 | 0.01 |
-| climatology | 0.138 | 0 |
-| persistence | 0.147 | −0.07 |
-| deterministic greedy | 0.213 | −0.55 |
-| single realisation, median (5–95 %) | 0.243 (0.223–0.260) | −0.77 |
+| adjusted potentials | 0.133 | 0.160 |
+| ensemble frequency (fair: 0.136) | 0.137 | 0.134 |
+| climatology | 0.159 | 0 |
+| persistence | 0.171 | −0.08 |
+| deterministic greedy | 0.209 | −0.31 |
+| single realisation, median | 0.275 | −0.74 |
 
-**Which Brier score.** The first version scored only *whether* a cell changes (binary), so a
-forest cell simulated as arable where it actually became urban counted as correct. The
-multiclass score sums the squared error over all posterior classes. Here each anterior class has
-only one viable transition, so the two scores order the forecasts identically (multiclass ≈ 2 ×
-binary). On real data with competing transitions they will not.
+What changed with the larger domain and the calibrated learner:
 
-**What the scores support.** On FoM, the deterministic map beats the median draw, as expected:
-FoM rewards putting change where the potential is highest, which is what a hard allocation does.
-On the Brier score, the ensemble beats every hard map by a wide margin, but that is close to
-guaranteed. The Brier score is a proper scoring rule, and a hard map pays the maximum penalty for
-every error. Against the forecasts that are also probabilities, the ensemble has almost no skill:
-it barely beats climatology and is slightly worse than the adjusted potentials it is sampled
-from.
+1. **Estimation is no longer the bottleneck.** The potentials reach a skill of 0.16. The truth
+   reaches about 0.18 on this landscape (`030`), so the estimates capture almost 90 % of it.
+2. **The ensemble frequency is slightly worse than its potentials** (Brier +0.004). That is the
+   uPAM patch loss measured in `030`: the synthetic process changes single cells, while the
+   estimated patches average 1.1–1.2 cells.
+3. **The "unreliable single-map score" argument largely disappears.** The FoM spread across draws
+   is 0.093–0.118 at 90 × 90, against 0.029–0.105 at 30 × 30. It was a small-domain effect.
+4. **The deterministic map still wins FoM by a factor of 2.3** (0.240 vs. 0.105), and it is the
+   worst probabilistic forecast after single draws (skill −0.31). Greedy allocation puts all
+   change on the highest potentials. The realisations spread it in proportion to the
+   probabilities, as the observed change does.
 
-So the case for ensembles cannot be "the ensemble is the better per-cell forecast": the potential
-surface gives that more cheaply. What remains, and what the figure should argue:
-
-1. **Single-map scores are unreliable.** A single map's FoM depends heavily on the draw: the
-   5–95 % range spans a factor of 3.6.
-2. **Quantities that depend on the whole map.** Patch structure, configuration metrics, or a
-   non-linear downstream response (habitat quality, connectivity) are not functions of per-cell
-   marginals, so only an ensemble of maps gives their distribution.
-
-Overall skill is low (potentials: 0.04 over climatology): 56 changes on 761 cells is a weak
-signal. **Banding** in (d) is intrinsic: with demand fixed, FoM = H / (Q_obs + Q_sim − H) for an
-integer number of hits H, so the dots stack on a few discrete values (H = 3, 4, 5, … gives 0.029,
-0.040, 0.050, …). New seeds only change which values are occupied.
-
-See [`TODO.md`](TODO.md).
+So the figure's case for stochastic allocation has to be the bias of the deterministic map,
+not a score: point 4, made visible. Candidate panel: the distribution of the (true or adjusted)
+potential, or of a driver such as accessibility, at the changed cells, for the observed change,
+the realisations and the greedy map. If the realisations match the observed distribution and the
+greedy map is shifted to the top, that is Mazy's allocation-bias argument shown empirically. See
+[`TODO.md`](TODO.md).
 
 ## Skill attribution: potentials or allocation?
 

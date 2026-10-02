@@ -4,7 +4,8 @@
 #' number-sections: true
 #' ---
 #'
-#' A backcast on a synthetic 30 × 30 landscape. Domain and classes follow the
+#' A backcast on a synthetic 90 × 90 landscape; the map panels show a 30 × 30
+#' window of it. Domain and classes follow the
 #' evoland-plus vignette `stochastic-allocation-sensitivity.qmd`; unlike the
 #' vignette, the initial map is structured (urban clustered where accessible,
 #' forest on better sites) and change between periods follows a known process
@@ -25,6 +26,14 @@
 #' comparison protocol: the figure is about *where* change is placed, not how
 #' much.
 #'
+#' Why 90 × 90 and this learner: `030-skill-attribution.r` showed that the
+#' allocator passes the potentials through unchanged, so a weak figure was weak
+#' estimation. `031-learner-comparison.r` found that ranger with default leaves
+#' on 30 × 30 reaches about a third of the skill the true probabilities attain.
+#' Ranger with larger leaves (`min.node.size = 50`) on all available predictors
+#' at 90 × 90 reaches about 83 %. Logistic regression does better still, but the
+#' synthetic process is logistic, which would give it home advantage.
+#'
 
 #| label: setup
 #| output: false
@@ -41,6 +50,8 @@ db_path <- "2026-09-paper-figures/fig2-ensembles.evolanddb"
 unlink(db_path, recursive = TRUE)
 
 n_realisations <- 100L
+n_grid <- 90L # domain, cells per side
+n_window <- 30L # map panels, cells per side
 id_run_observed <- 1000L
 
 #' # Database, domain and synthetic landscape
@@ -59,9 +70,9 @@ template_rast <- terra::rast(
   crs = "EPSG:2056",
   extent = terra::ext(c(
     xmin = 2697000,
-    xmax = 2697000 + 30 * 100,
+    xmax = 2697000 + n_grid * 100,
     ymin = 1252000,
-    ymax = 1252000 + 30 * 100
+    ymax = 1252000 + n_grid * 100
   )),
   resolution = 100
 )
@@ -81,45 +92,11 @@ db$periods_t <- create_periods_t(
 )
 db$periods_t
 
-#' ## Drivers
+#' ## Synthetic process
 #'
-#' The drivers are the underlying forces influencing both the synthetic
-#' landscape and the synthetic explanatory variables.
-
-#| label: drivers
-# normalize to 0-1
-scale01 <- function(x) {
-  rng <- terra::global(x, c("min", "max"), na.rm = TRUE)
-  (x - rng[1, 1]) / (rng[1, 2] - rng[1, 1])
-}
-smooth_field <- function(template, sd = 1, w = 7) {
-  terra::setValues(template, rnorm(terra::ncell(template), sd = sd)) |>
-    terra::focal(w = w, fun = mean, na.rm = TRUE) |>
-    scale01()
-}
-
-xy <- terra::crds(template_rast, df = TRUE)
-x_grad <- terra::setValues(
-  template_rast,
-  (xy$x - min(xy$x)) / (max(xy$x) - min(xy$x))
-)
-y_grad <- terra::setValues(
-  template_rast,
-  (xy$y - min(xy$y)) / (max(xy$y) - min(xy$y))
-)
-# not `{}` with one term per line: there, a line starting with `+` is a statement of its
-# own and only the last one would be returned
-accessibility <- scale01(
-  0.55 * (1 - x_grad) + 0.25 * (1 - y_grad) + 0.20 * smooth_field(template_rast, w = 9)
-)
-site_quality <- scale01(
-  0.50 * y_grad + 0.35 * smooth_field(template_rast, w = 5) + 0.15 * x_grad
-)
-random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
-
-#' The true process. Per period, each cell of an anterior class draws at most
-#' one transition with these probabilities, where `share_k` is the share of
-#' class k among the 5 × 5 neighbourhood:
+#' Two latent drivers, a nuisance field, and four transitions whose per-period
+#' probabilities depend on the drivers and the 5 × 5 neighbourhood; defined in
+#' `000-synthetic-process.r`, which `030` and `031` share.
 #'
 #' | transition | logit of the per-period probability |
 #' |---|---|
@@ -130,87 +107,17 @@ random_nuisance <- smooth_field(template_rast, sd = 1, w = 3)
 
 #| label: synthesize-lulc
 #| fig-asp: 0.3
-# initial landscape: urban clustered where accessible, a small immutable lake, forest on the
-# better sites, arable on the rest
-urban_score <- scale01(
-  0.7 * accessibility + 0.3 * smooth_field(template_rast, w = 3)
-)
-lake_score <- smooth_field(template_rast, w = 7)
-forest_score <- scale01(
-  0.6 * smooth_field(template_rast, w = 5) + 0.4 * site_quality
-)
-qntl <- function(r, p) stats::quantile(terra::values(r), p, na.rm = TRUE)
+options(synthetic_process.source_only = TRUE)
+source("2026-09-paper-figures/000-synthetic-process.r")
 
-initial <- terra::ifel(
-  urban_score > qntl(urban_score, 0.88),
-  3, # urban
-  terra::ifel(
-    lake_score > qntl(lake_score, 0.97),
-    4, # static
-    terra::ifel(
-      forest_score > qntl(forest_score, 0.45),
-      1, # forest
-      2 # arable
-    )
-  )
-)
+drivers <- make_drivers(template_rast)
+accessibility <- drivers$accessibility
+site_quality <- drivers$site_quality
+random_nuisance <- drivers$random_nuisance
 
-plogis_rast <- function(x) 1 / (1 + exp(-x))
-neighbour_share <- function(map, class) {
-  terra::focal(map == class, w = 5, fun = mean, na.rm = TRUE)
-}
-
-step_process <- function(map) {
-  share_urban <- neighbour_share(map, 3)
-  share_arable <- neighbour_share(map, 2)
-  share_forest <- neighbour_share(map, 1)
-  probs <- list(
-    # arable -> urban
-    list(
-      from = 2,
-      to = 3,
-      p = plogis_rast(-5.5 + 7 * share_urban + 3 * accessibility)
-    ),
-    # forest -> urban
-    list(
-      from = 1,
-      to = 3,
-      p = plogis_rast(-7 + 6 * share_urban + 3 * accessibility)
-    ),
-    # forest -> arable
-    list(
-      from = 1,
-      to = 2,
-      p = plogis_rast(-5 + 4 * (1 - site_quality) + 3 * share_arable)
-    ),
-    # arable -> forest
-    list(
-      from = 2,
-      to = 1,
-      p = plogis_rast(
-        -6 + 4 * site_quality * (1 - accessibility) + 3 * share_forest
-      )
-    )
-  )
-  anterior <- terra::values(map, mat = FALSE)
-  posterior <- anterior
-  draw <- runif(length(anterior))
-  cumulative <- numeric(length(anterior))
-  for (tr in probs) {
-    p <- terra::values(tr$p, mat = FALSE)
-    at_risk <- anterior == tr$from
-    flips <- at_risk &
-      draw >= cumulative &
-      draw < cumulative + p &
-      posterior == anterior
-    posterior[flips] <- tr$to
-    cumulative[at_risk] <- cumulative[at_risk] + p[at_risk]
-  }
-  terra::setValues(map, posterior)
-}
-
-lulc_2 <- step_process(initial)
-lulc_3 <- step_process(lulc_2)
+initial <- make_landscape(template_rast, drivers)
+lulc_2 <- step_process(initial, drivers)
+lulc_3 <- step_process(lulc_2, drivers)
 synthetic_lulc <- c(initial, lulc_2, lulc_3) |>
   setNames(paste0("id_period=", 1:3))
 
@@ -290,21 +197,12 @@ db$trans_meta_t <- create_trans_meta_t(
   min_cardinality_abs = 10,
   exclude_anterior = 4
 )
+# all available predictors: in 031, preselecting rpart's top 4 cost ranger skill
 db$set_full_trans_preds()
 
-trans_pred_scored <- db$get_pred_filter_score(
-  filter = mlr3filters::FilterImportance$new(
-    learner = mlr3::lrn("classif.rpart")
-  )
-)
-db$commit(
-  trans_pred_scored[order(-importance)][, head(.SD, 4), by = id_trans],
-  "trans_preds_t",
-  method = "overwrite"
-)
-
+# larger leaves give better-calibrated probabilities (031)
 trans_models <- db$fit_full_models(
-  learner = mlr3::lrn("classif.ranger", num.trees = 200)
+  learner = mlr3::lrn("classif.ranger", num.trees = 500, min.node.size = 50)
 )
 modeled_trans <- unique(trans_models$id_trans[
   !vapply(trans_models$learner_full, is.null, logical(1L))
@@ -682,6 +580,21 @@ simulated <- maps[, .(id_coord, anterior, observed)][
 
 coords_xy <- db$coords_t[, .(id_coord, x = lon, y = lat)]
 
+# map panels show one n_window x n_window block of the domain: the block with the
+# most observed change, so that the panels have something to show; every score
+# and panel (d) use the whole domain
+coords_xy[,
+  block := paste(
+    (x - min(x)) %/% (100 * n_window),
+    (y - min(y)) %/% (100 * n_window)
+  )
+]
+shown_block <- coords_xy[
+  maps[anterior != observed, .(id_coord)],
+  on = "id_coord"
+][, .N, by = block][order(-N)][1, block]
+coords_xy <- coords_xy[block == shown_block, .(id_coord, x, y)]
+
 outcome <- function(anterior, observed, simulated) {
   obs_change <- anterior != observed
   sim_change <- anterior != simulated
@@ -755,7 +668,7 @@ theme_map <- theme_void(base_size = 9) +
   )
 
 map_panel <- function(d, title, subtitle = NULL) {
-  ggplot(coords_xy[d, on = "id_coord"], aes(x, y, fill = status)) +
+  ggplot(coords_xy[d, on = "id_coord", nomatch = NULL], aes(x, y, fill = status)) +
     geom_tile(colour = "white", linewidth = 0.15) +
     scale_fill_manual(
       values = outcome_cols,
@@ -766,16 +679,20 @@ map_panel <- function(d, title, subtitle = NULL) {
     theme_map
 }
 
-p_a <- map_panel(panel_obs, "(a) Observed change", "period 2 to 3, held out")
+p_a <- map_panel(
+  panel_obs,
+  "(a) Observed change",
+  sprintf("period 2 to 3, held out; %d \u00d7 %d window", n_window, n_window)
+)
 p_b <- map_panel(
   panel_draw,
   "(b) One realisation",
-  sprintf("median draw, FoM = %.2f", fom[id_run == shown_run, figure_of_merit])
+  sprintf("median draw, FoM = %.2f (whole domain)", fom[id_run == shown_run, figure_of_merit])
 )
-p_c <- ggplot(coords_xy[panel_freq, on = "id_coord"], aes(x, y)) +
+p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y)) +
   geom_tile(aes(fill = p_change), colour = "white", linewidth = 0.15) +
   geom_tile(
-    data = coords_xy[observed_change_cells, on = "id_coord"],
+    data = coords_xy[observed_change_cells, on = "id_coord", nomatch = NULL],
     fill = NA,
     colour = "#1a1a1a",
     linewidth = 0.45,
