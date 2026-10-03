@@ -200,7 +200,8 @@ learner_by <- list(
     "classif.ranger",
     predict_type = "prob",
     num.trees = 500,
-    min.node.size = 50
+    min.node.size = 50,
+    seed = 2000L # set.seed() alone does not make the forest replay
   )
 )
 
@@ -209,7 +210,6 @@ modeled_by <- list()
 for (i in seq_len(nrow(estimators))) {
   db$id_run <- estimators$id_run[i]
   learner_id <- estimators$learner[i]
-  set.seed(estimators$id_run[i]) # the random forest is stochastic
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),

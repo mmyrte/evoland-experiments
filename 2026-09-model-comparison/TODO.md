@@ -57,7 +57,8 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       seconds). Options: (a) tile/upsample PIE synthetically; (b) return to a large real extent
       (the earlier SSP-CH idea) only for timing and memory, without the full comparison.
 - [x] **Reproducibility.** The full pipeline was replayed from scratch (README, Replay check).
-      Found and fixed: unseeded random forest; corroded WoE probabilities in the crossing.
+      Found and fixed: random forest not replaying (evoland fix 06 plus a learner seed); corroded
+      WoE probabilities in the crossing.
       Found a Dinamica 8.11.2 parallel race in `CalcWOfEProbabilityMap`. Open:
       - a minimal reproducer for the Dinamica team (`probabilities.ego` run three times with
         default settings shows it);
@@ -88,12 +89,22 @@ evoland-plus, each on its own stacked branch off `claude/gifted-lamport-41q8gv` 
    `{toString(missing_models)}` (`glue_collapse` doesn't interpolate), and didn't name the
    required `select_score`.
 
+5. `…-05-dinamica-temp-dir-docs`: `install-dinamica` vignette warns against setting
+   `DINAMICA_EGO_8_TEMP_DIR` in `.Renviron` (breaks Dinamica's R bridge).
+6. `…-06-deterministic-training-order`: `fit_full_models()` read training data in DuckDB's
+   arbitrary row order, so order-sensitive learners (ranger) did not replay even when seeded.
+
 Other tools:
 
 - lulcc 1.0.4 lists `gsubfn` and `caret` under Suggests but needs them in
   `ExpVarRasterList()` / `glmModels()`.
 - Dinamica: an `.Renviron` that sets `DINAMICA_EGO_8_TEMP_DIR` breaks the R bridge (see README,
-  Environment). Worth a note in evoland's `install-dinamica` vignette.
+  Environment); now noted in the vignette (fix 05).
+- Dinamica 8.11.2: `CalcWOfEProbabilityMap` is not deterministic in parallel (README, Replay
+  check).
+- The HTML reports in `html-reports/` were rendered but not committed: the LFS upload is refused
+  from the cloud container (403 from lfs.github.com). Render and commit them from a machine with
+  LFS push access.
 
 ## Housekeeping (repo-wide)
 

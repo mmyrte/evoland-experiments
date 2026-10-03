@@ -87,7 +87,8 @@ Steps sharing a number are independent.
 
 The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6.1, 4 cores,
 15 GiB) against evoland-plus at the tip of the stacked fix branches
-`claude/gifted-lamport-41q8gv-0{1..4}-*` (see TODO; the steps rely on fixes 01 and 03).
+`claude/gifted-lamport-41q8gv-0{1..6}-*` (see TODO; the steps rely on fixes 01 and 03, and on 06
+to replay).
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
@@ -114,12 +115,12 @@ There are 4 702 observed changed cells.
 
 | estimator × allocator | FoM | sd | FoM / null | allocation disagreement | gross change (cells) | fuzzy sim. forest→built | fair Brier skill |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| random forest × Dinamica | 0.035 | 0.0024 | 1.75 | 0.077 | 4 743 | 0.218 | −0.078 |
-| logistic regression × Dinamica | 0.034 | 0.0021 | 1.69 | 0.077 | 4 743 | 0.199 | −0.097 |
+| random forest × Dinamica | 0.034 | 0.0029 | 1.72 | 0.077 | 4 743 | 0.223 | −0.082 |
+| logistic regression × Dinamica | 0.034 | 0.0024 | 1.69 | 0.077 | 4 743 | 0.197 | −0.102 |
 | GLM suitability (lulcc) × CLUE-S | 0.033 | 0.0000 | 1.53 | 0.181 | 17 829 | 0.205 | −3.568 |
 | logistic suitability (CLUinPy) × CLUMondo | 0.033 | 0.0000 | 1.86 | 0.065 | 3 248 | 0.151 | −0.637 |
-| Weights of Evidence × Dinamica | 0.029 | 0.0021 | 1.48 | 0.078 | 4 743 | 0.208 | −0.102 |
-| random forest × CLUMPY | 0.029 | 0.0022 | 1.47 | 0.078 | 4 753 | 0.221 | −0.005 |
+| random forest × CLUMPY | 0.029 | 0.0023 | 1.47 | 0.078 | 4 754 | 0.220 | −0.005 |
+| Weights of Evidence × Dinamica | 0.029 | 0.0021 | 1.47 | 0.078 | 4 743 | 0.211 | −0.092 |
 | GLM suitability (lulcc) × Ordered | 0.029 | 0.0004 | 1.42 | 0.071 | 3 901 | 0.210 | −0.720 |
 | logistic regression × CLUMPY | 0.026 | 0.0017 | 1.31 | 0.078 | 4 752 | 0.208 | 0.001 |
 | GLM suitability (lulcc) × CLUMPY | 0.025 | 0.0018 | 1.25 | 0.079 | 4 754 | 0.208 | −0.020 |
@@ -137,8 +138,9 @@ What these numbers say, so far:
    graphically; see TODO.)
 2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
    regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
-   51 % of the variance to the allocator, 24 % to the estimator, 2 % to their interaction and
-   23 % to the replicates. The last share is the stochastic allocation that single-map tools
+   47 % of the variance to the allocator, 23 % to the estimator, 2.5 % to their interaction and
+   28 % to the replicates. (The shares move by a few points between replays, because the
+   Dinamica realisations are not seeded: 47–51 % allocator, 23–24 % estimator over three runs.) The last share is the stochastic allocation that single-map tools
    hide.
 3. **Dinamica scores above CLUMPY on the same potentials, consistently.** The gain is +0.005
    to +0.008 FoM for every estimator. This is expected rather than a defect of CLUMPY: Dinamica's
@@ -154,7 +156,7 @@ What these numbers say, so far:
    | pairing | fair Brier skill |
    | --- | --- |
    | CLUMPY ensembles | −0.020 to +0.001 |
-   | Dinamica ensembles | −0.078 to −0.102 |
+   | Dinamica ensembles | −0.082 to −0.102 |
    | CLUMondo (deterministic) | −0.64 |
    | Ordered (deterministic) | −0.72 |
    | CLUE-S (deterministic) | −3.6 |
@@ -187,15 +189,15 @@ What these numbers say, so far:
 
    | step | median time | note |
    | --- | --- | --- |
-   | Dinamica native allocation | 0.8 s | single-threaded, see Replay check |
-   | Dinamica WoE calibration | 5.4 s | single-threaded |
-   | CLUMPY allocation | 2.5 s | |
+   | Dinamica native allocation | 0.9 s | single-threaded, see Replay check |
+   | Dinamica WoE calibration | 4.8 s | single-threaded |
+   | CLUMPY allocation | 2.1 s | |
    | CLUinPy allocation | 5.7 s | 8 annual steps |
    | lulcc CLUE-S allocation | 4.2 s | 8 annual steps |
-   | lulcc Ordered allocation | 2.6 s | 8 annual steps |
-   | evoland → Dinamica allocation | 5.6 s | including writing the inputs and an R round trip inside Dinamica |
-   | random forest fit | 45 s | all 5 transitions |
-   | random forest prediction | 35 s | all 5 transitions |
+   | lulcc Ordered allocation | 2.3 s | 8 annual steps |
+   | evoland → Dinamica allocation | 5.2 s | including writing the inputs and an R round trip inside Dinamica |
+   | random forest fit | 41 s | all 5 transitions |
+   | random forest prediction | 27 s | all 5 transitions |
 
    Scaling to millions of cells is where the tools may separate; PIE does not test it.
 
@@ -256,7 +258,11 @@ per-run FoM of the two runs compared:
   unless `-predefined-seed` is given, and that seeds every run identically, so an ensemble of
   distinct but replayable realisations is not available from the console.
 - **Different, by mistake, now fixed:**
-  - **Random forest.** Its fit in `010` was not seeded; it now is.
+  - **Random forest.** `set.seed()` did not make it replay, and neither did ranger's own
+    `seed`. The cause was in evoland: `fit_full_models()` read its training rows in whatever
+    order DuckDB returned them, and a seeded random forest fits a different model on reordered
+    rows. Fixed upstream (stacked branch 06); with that and the learner seed, the potentials of
+    two runs of `010` are bit-identical.
   - **Weights of Evidence × CLUMPY.** It differed for two reasons:
     1. *Corroded probabilities.* The WoE probabilities were saved after `AllocateTransitions`,
        which depletes ("corrodes") the probability map in place, so the crossing was fed one
