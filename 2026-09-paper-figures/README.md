@@ -80,8 +80,16 @@ cells is unmodelled.
 | Brier skill, deterministic | −0.30 | −0.27 |
 | Brier skill, single realisation (median) | −0.62 | −0.58 |
 
-References: FoM of random allocation 0.033; Brier skill of the true probabilities 0.191 (skill is
-against climatology; multiclass Brier score over the cells that can change).
+References: FoM of random allocation 0.033; Brier skill of the true probabilities 0.191
+(multiclass Brier score over the cells that can change).
+
+**Skill reference.** Skill is measured against the *random-allocation forecast*, which knows the
+quantity of change but not its location. Every cell of a land-use class gets the same probability
+for each transition: the transition's demand divided by the class's area. It is the cell-wise
+expectation of the random-allocation null used for the FoM. The Brier skill score
+BSS = 1 − BS / BS_random is 0 for a forecast no better than placing the right quantity at random,
+1 for a perfect one, and negative for one worse than random placement. (Forecast verification
+calls this kind of reference "climatology".)
 
 Panel (e) ranks every changed cell by its true transition probability, as a percentile among
 the cells that could make the same transition:
@@ -104,7 +112,7 @@ What the figure argues:
    deterministic maps put two thirds to three quarters of their change there.
 2. **The ensemble loses nothing.** Its frequency is as good a probabilistic forecast as the
    potentials it samples from (skill 0.164 vs. 0.160, 0.184 vs. 0.183), and the hard maps are
-   worse than climatology.
+   worse than random allocation.
 3. **Why logistic regression fits so neatly.** The synthetic process is logistic in the drivers
    and neighbourhood shares, so a logistic regression is correctly specified: its potentials
    reach 96 % of the skill of the truth, and an unbiased sampler of near-true probabilities
@@ -126,9 +134,9 @@ members per ensemble. Because `q` is known, the expected multiclass Brier score 
 splits into a distance to the truth, mean of sum_k (p_k − q_k)^2, and an irreducible term,
 mean of sum_k q_k (1 − q_k). The distance no longer depends on the single observed period 3.
 
-| quantity (distance to truth, expected skill vs. climatology) | 30 × 30 | 90 × 90 |
+| quantity (distance to truth, expected skill vs. random allocation) | 30 × 30 | 90 × 90 |
 | --- | --- | --- |
-| climatology | 0.021, 0 | 0.027, 0 |
+| random allocation | 0.021, 0 | 0.027, 0 |
 | estimated potentials (adjusted) | 0.0125, 0.050 | 0.0137, 0.087 |
 | ensemble on estimated potentials, uSAM | 0.0124, 0.051 | 0.0138, 0.087 |
 | ensemble on estimated potentials, uPAM | 0.0148, 0.036 | 0.0140, 0.085 |
@@ -153,7 +161,7 @@ What it shows:
    predictor set (top 4 by rpart importance; distance-band neighbourhood shares that only
    approximate the process's 5 × 5 window).
 3. **The ceiling is low.** Even the true probabilities only reach a skill of 0.12–0.18 over
-   climatology, because the events are rare (per-cell probabilities of a few percent). A larger
+   random allocation, because the events are rare (per-cell probabilities of a few percent). A larger
    domain does not raise the ceiling, but it makes realised scores track expected ones (90 × 90:
    realised and expected skill agree to about 0.02; 30 × 30: up to 0.03 apart on 0.05).
    Caveat: each size uses one landscape, so size and landscape are confounded; the higher
@@ -169,7 +177,7 @@ three landscape seeds. It scores the adjusted potentials only, since `010-skill-
 passes them through unchanged. Run: 11 min on 3 workers, no failed configurations. Output:
 `figures/learner-comparison.{csv,pdf}`.
 
-Share of attainable skill (1 = as good as the true probabilities, 0 = climatology), mean over
+Share of attainable skill (1 = as good as the true probabilities, 0 = random allocation), mean over
 three seeds, one calibration period:
 
 | learner | 30 × 30, rpart top 4 | 30 × 30, all available | 90 × 90, rpart top 4 | 90 × 90, all available | 90 × 90, process features |
@@ -206,4 +214,4 @@ What it shows:
 For Fig. 2, a 90 × 90 domain with log_reg (or ranger with larger leaves, to avoid the home
 advantage) puts the estimates within a few percent of the truth. Then the figure shows what
 allocation and ensembles do, rather than estimation error. The ceiling stays low (skill ~0.18
-over climatology), as the events are rare.
+over random allocation), as the events are rare.

@@ -5,7 +5,8 @@
 #' ---
 #'
 #' Figure 2's ensemble has almost no probabilistic skill: its multiclass Brier
-#' score barely beats climatology. This step asks where the skill is lost. The
+#' score barely beats random allocation of the same quantity. This step asks where
+#' the skill is lost. The
 #' landscape is synthetic, so the true per-cell transition probabilities `q` for
 #' period 2 -> 3 are known. That allows a factorial experiment:
 #'
@@ -25,7 +26,8 @@
 #'
 #' - estimation loss = D(estimated potentials) - D(oracle potentials);
 #' - allocation loss = D(ensemble frequency) - D(the potentials it samples);
-#' - attainable skill = expected skill of `q` itself over climatology.
+#' - attainable skill = expected skill of `q` itself over the random-allocation
+#'   forecast (every cell of a class gets the class's demand rates).
 #'
 #' The experiment runs at two domain sizes with the same spatial scales, to see
 #' whether more training data shrinks the estimation loss. The synthetic
@@ -368,7 +370,7 @@ run_experiment <- function(n_grid, seed = 1337L) {
       ),
       cbind(
         potentials = "none",
-        stage = "climatology",
+        stage = "random allocation",
         score(
           persist(
             bt$anterior_of[
@@ -414,11 +416,11 @@ run_experiment <- function(n_grid, seed = 1337L) {
   ]
 
   scores <- rbind(potential_rows, ensemble_rows, use.names = TRUE)
-  clim <- scores[stage == "climatology"]
+  ref <- scores[stage == "random allocation"]
   scores[, `:=`(
     n_grid = n_grid,
-    skill_realised = 1 - brier_realised / clim$brier_realised,
-    skill_expected = 1 - brier_expected / clim$brier_expected
+    skill_realised = 1 - brier_realised / ref$brier_realised,
+    skill_expected = 1 - brier_expected / ref$brier_expected
   )]
   scores <- fom_rows[scores, on = .(potentials, stage)]
 
@@ -458,7 +460,7 @@ knitr::kable(context)
 #' Scores per domain size, over the cells that can change. Brier scores are
 #' multiclass (0 to 2, lower is better); ensemble scores carry the fair
 #' correction for a finite ensemble. `distance_to_truth` is what a forecast
-#' could still improve; `skill_*` is relative to climatology.
+#' could still improve; `skill_*` is relative to the random-allocation forecast.
 
 #| label: results
 knitr::kable(

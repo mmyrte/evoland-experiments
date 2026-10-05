@@ -460,9 +460,14 @@ knitr::kable(
 #' Forecasts compared, per learner: the ensemble frequency (with the fair
 #' correction for a finite ensemble, Ferro 2014), the adjusted potentials the
 #' allocator samples from, the deterministic map and single realisations.
-#' References: the true probabilities, climatology (every cell of an anterior
-#' class gets that class's demand rates; the reference for the skill score
-#' BSS = 1 - BS / BS_climatology) and persistence.
+#' References: the true probabilities, persistence, and the random-allocation
+#' forecast. The latter knows the quantity of change but not its location:
+#' every cell of an anterior class gets the same probability for each
+#' transition, the transition's demand divided by the class's area. That is the
+#' cell-wise expectation of the random-allocation null of the FoM panel, and the
+#' reference for the skill score BSS = 1 - BS / BS_random: 0 is no better than
+#' placing the right quantity at random, 1 is perfect. (Forecast verification
+#' calls this kind of reference "climatology".)
 
 #| label: truth
 cell_of <- data.table(
@@ -541,7 +546,7 @@ scores <- rbindlist(c(
   }),
   list(data.table(
     learner = "reference",
-    forecast = c("true probabilities", "climatology", "persistence"),
+    forecast = c("true probabilities", "random allocation", "persistence"),
     brier = c(
       brier(persist(truth[, .(id_coord, class, p = q)])),
       brier(persist(
@@ -556,7 +561,7 @@ scores <- rbindlist(c(
     )
   ))
 ))
-scores[, skill := 1 - brier / scores[forecast == "climatology", brier]]
+scores[, skill := 1 - brier / scores[forecast == "random allocation", brier]]
 knitr::kable(scores, digits = 4)
 
 #' # Where change is placed: the bias of a deterministic map

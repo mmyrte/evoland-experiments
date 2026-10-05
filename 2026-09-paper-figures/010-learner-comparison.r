@@ -31,7 +31,8 @@
 #' probabilities, split into the distance to the truth and an irreducible term,
 #' over all forest and arable cells (the classes that can change in the true
 #' process), so that every configuration is scored on the same cells. Skill is
-#' relative to climatology, the observed target rates of all four transitions;
+#' relative to the random-allocation forecast, which gives every cell of a class
+#' the observed target rates of all four transitions;
 #' `share_of_attainable` is a configuration's skill over the skill of the
 #' truth.
 #'
@@ -338,7 +339,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   )
 
   # references: the truth (ceiling), the oracle restricted to viable transitions,
-  # climatology over all four transitions, persistence
+  # the random-allocation forecast over all four transitions, persistence
   db$id_run <- id_run_oracle
   db$trans_pot_t <- as_trans_pot_t(
     truth_all[viable, on = .(id_lulc_anterior, class = id_lulc_posterior), nomatch = NULL][,
@@ -357,7 +358,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
       score(persist(long_of(db$adjusted_trans_pot_v(target))), bt)
     ),
     cbind(
-      learner = "climatology",
+      learner = "random allocation",
       stage = "reference",
       score(
         persist(anterior_of[
@@ -436,7 +437,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   }))
 
   out <- rbind(results, references, use.names = TRUE)
-  clim <- references[learner == "climatology"]
+  ref <- references[learner == "random allocation"]
   ceiling <- references[learner == "truth, all four transitions"]
   out[, `:=`(
     n_grid = n_grid,
@@ -446,10 +447,10 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
       viable[, paste(id_lulc_anterior, id_lulc_posterior, sep = "->")],
       collapse = ", "
     ),
-    skill_expected = 1 - brier_expected / clim$brier_expected,
-    skill_realised = 1 - brier_realised / clim$brier_realised
+    skill_expected = 1 - brier_expected / ref$brier_expected,
+    skill_realised = 1 - brier_realised / ref$brier_realised
   )]
-  out[, share_of_attainable := skill_expected / (1 - ceiling$brier_expected / clim$brier_expected)]
+  out[, share_of_attainable := skill_expected / (1 - ceiling$brier_expected / ref$brier_expected)]
   out[]
 }
 
@@ -532,7 +533,8 @@ knitr::kable(unique(results[
 
 #' Share of the attainable skill reached by the adjusted potentials (the
 #' allocation-ready ones), mean over landscape seeds. 1 means as good as the
-#' true probabilities; 0 means no better than climatology.
+#' true probabilities; 0 means no better than random allocation of the same
+#' quantity.
 
 #| label: summary
 summary_tab <- results[
@@ -554,7 +556,7 @@ knitr::kable(
 #| label: references
 knitr::kable(
   results[
-    is.na(feature_set) & learner != "climatology",
+    is.na(feature_set) & learner != "random allocation",
     .(share = mean(share_of_attainable), skill = mean(skill_expected)),
     by = .(n_grid, n_calib, learner)
   ],
