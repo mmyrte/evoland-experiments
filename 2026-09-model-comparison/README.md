@@ -81,6 +81,7 @@ Steps sharing a number are independent.
 | [`040-cross-clumpy.r`](040-cross-clumpy.r) | CLUMPY on the WoE, lulcc and CLUinPy surfaces |
 | [`050-compare.r`](050-compare.r) | Imports all maps as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement, gross change, fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
+| [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the matrix, ANOVA shares |
 
 ## Environment
@@ -134,8 +135,8 @@ What these numbers say, so far:
 
 1. **Every tool beats random allocation, none by much.** FoM is 0.024–0.035 against a null of
    ~0.020. PIE is a hard case for location: ~4 % of cells change, much of it scattered. Read
-   the results as relative statements, not as skill. (Moulds et al. 2015 show FoM for PIE only
-   graphically; see TODO.)
+   the results as relative statements, not as skill. (`070d-lulcc-moulds2015.r` reproduces the
+   multi-resolution FoM of Moulds et al. 2015, Fig. 8, within ~0.02; their run spans 1985 → 1999.)
 2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
    regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
    47 % of the variance to the allocator, 23 % to the estimator, 2.5 % to their interaction and

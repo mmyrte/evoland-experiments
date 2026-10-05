@@ -49,10 +49,12 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       default anyway, per the "best-documented configuration" guard rail.
 - [ ] **CLUinPy neighbourhood and resistance** values are taken from its tutorial's analogous
       classes; document a sensitivity check or justify.
-- [ ] **Check against Moulds et al. (2015)**: their paper reports FoM only graphically (Fig. 8:
-      forest → built, Ordered and CLUE-S, 1985 → 1999, across resolutions 1–256 cells; no
-      numbers in the text). To compare, run the lulcc demo as published (1985 → 1999) and read
-      off its `FigureOfMerit` at factor 1; that also checks our lulcc set-up.
+- [x] **Check against Moulds et al. (2015)** (`070d-lulcc-moulds2015.r`): lulcc's GMD demo as
+      published (1985 → 1999, 5 seeds) reproduces the paper's Fig. 8 (forest → built FoM over
+      resolutions 2–256) within ~0.02 for both CLUE-S and Ordered. Our lulcc installation and
+      set-up are sound. Their native-resolution forest → built FoM (0.078 CLUE-S, 0.066 Ordered)
+      is higher than our benchmark's overall FoM because it covers 14 years of change and a single
+      transition. Note for the paper: multi-resolution FoM is what lulcc reports.
 - [ ] **Scaling benchmark.** PIE does not separate the tools on cost (all allocations take
       seconds). Options: (a) tile/upsample PIE synthetically; (b) return to a large real extent
       (the earlier SSP-CH idea) only for timing and memory, without the full comparison.
