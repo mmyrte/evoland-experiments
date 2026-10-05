@@ -32,7 +32,8 @@
 #' on 30 × 30 reaches about a third of the skill the true probabilities attain.
 #' Ranger with larger leaves (`min.node.size = 50`) on all available predictors
 #' at 90 × 90 reaches about 83 %. Logistic regression does better still, but the
-#' synthetic process is logistic, which would give it home advantage.
+#' synthetic process is logistic, which would give it home advantage; an earlier
+#' version of this figure showed both learners and was harder to read.
 #'
 
 #| label: setup
@@ -217,8 +218,9 @@ alloc_params_estimated
 # The synthetic process changes cells independently, so single-cell allocation (uSAM) is the
 # allocator that matches it. The estimated "patches" (mean 1.1-1.2 cells) are clusters induced
 # by the neighbourhood terms of the process. Allocating with them (uPAM) moves change onto
-# less probable neighbours: the logistic-regression ensemble then puts 28 % of its change in
-# the top 5 % of true probabilities instead of the 36 % a sampler of the truth puts there.
+# less probable neighbours: a logistic-regression ensemble (nearly true potentials) then put
+# 28 % of its change in the top 5 % of true probabilities instead of the 36 % a sampler of the
+# truth puts there.
 db$alloc_params_t <- as_alloc_params_t(
   copy(alloc_params_estimated)[, `:=`(mean_patch_size = 1, patch_size_variance = 0)][]
 )
@@ -256,21 +258,18 @@ unmodelled_change <- observed_counts[, sum(count)] - rates_3[, sum(count)]
 rates_3
 unmodelled_change
 
-#' # Runs: the held-out observation and one ensemble per learner
+#' # Runs: the held-out observation and the ensemble
 #'
-#' Two estimators produce potentials for the same allocator. The random forest
-#' (calibrated above, run 0) is the general-purpose choice; the logistic
-#' regression is correctly specified for this synthetic process, whose
-#' transition probabilities are logistic in the drivers and neighbourhood
-#' shares. It therefore shows what the allocation does when the potentials are
-#' close to the truth. Each learner's ensemble sits below its own parent run, so
-#' its members inherit that learner's potentials and nothing else.
+#' The ensemble members sit below the calibration base (run 0), so they inherit
+#' its potentials and nothing else. The `learners` table drives everything
+#' downstream; a second learner would need its own parent run, models and
+#' potentials (predicted with `force = TRUE`, or the lineage read reuses run 0's).
 
 #| label: runs
 learners <- data.table(
-  learner = c("ranger", "log_reg"),
-  label = c("random forest", "logistic regression"),
-  id_run_parent = c(0L, 2000L)
+  learner = "ranger",
+  label = "random forest",
+  id_run_parent = 0L
 )
 members <- learners[,
   .(id_run = id_run_parent + seq_len(n_realisations), member = seq_len(n_realisations)),
@@ -279,12 +278,11 @@ members <- learners[,
 
 runs <- rbind(
   data.table(
-    id_run = c(0L, id_run_observed, 2000L),
-    parent_id_run = c(NA_integer_, 0L, 0L),
+    id_run = c(0L, id_run_observed),
+    parent_id_run = c(NA_integer_, 0L),
     description = c(
       "calibration base, random forest potentials",
-      "observed period 3 (validation only)",
-      "logistic regression potentials"
+      "observed period 3 (validation only)"
     ),
     seed = NA_integer_
   ),
@@ -301,24 +299,6 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
   id_period == 3L,
   .(id_run = id_run_observed, id_coord, id_period, id_lulc)
 ])
-
-#' The logistic regression is fitted on the same predictors, under its own run.
-#' Its potentials are predicted with `force = TRUE`: otherwise the lineage read
-#' would find run 0's potentials and reuse them.
-
-#| label: fit-log-reg
-db$id_run <- 2000L
-log_reg_models <- db$fit_full_models(
-  learner = mlr3::lrn("classif.log_reg"),
-  trans_preds = as_trans_preds_t(db$trans_preds_t[, .(id_run = 2000L, id_pred, id_trans)])
-)
-db$trans_models_t <- log_reg_models
-db$predict_trans_pot(
-  id_period_post = 3L,
-  select_score = "no.crossval",
-  select_maximize = TRUE,
-  force = TRUE
-)
 
 #| label: allocate
 #| output: false
@@ -460,12 +440,12 @@ knitr::kable(
 #' Forecasts compared, per learner: the ensemble frequency (with the fair
 #' correction for a finite ensemble, Ferro 2014), the adjusted potentials the
 #' allocator samples from, the deterministic map and single realisations.
-#' References: the true probabilities, persistence, and the random-allocation
-#' forecast. The latter knows the quantity of change but not its location:
-#' every cell of an anterior class gets the same probability for each
-#' transition, the transition's demand divided by the class's area. That is the
-#' cell-wise expectation of the random-allocation null of the FoM panel, and the
-#' reference for the skill score BSS = 1 - BS / BS_random: 0 is no better than
+#' References: the true probabilities, persistence, and the uniform forecast.
+#' The latter knows the quantity of change but not its location: every cell of
+#' an anterior class gets the same probability for each transition, the
+#' transition's demand divided by the class's area. It is a forecast, not a map:
+#' the cell-wise expectation of the random-allocation map behind the FoM null.
+#' It is the reference for the skill score BSS = 1 - BS / BS_uniform: 0 is no better than
 #' placing the right quantity at random, 1 is perfect. (Forecast verification
 #' calls this kind of reference "climatology".)
 
@@ -546,7 +526,7 @@ scores <- rbindlist(c(
   }),
   list(data.table(
     learner = "reference",
-    forecast = c("true probabilities", "random allocation", "persistence"),
+    forecast = c("true probabilities", "uniform forecast", "persistence"),
     brier = c(
       brier(persist(truth[, .(id_coord, class, p = q)])),
       brier(persist(
@@ -561,7 +541,7 @@ scores <- rbindlist(c(
     )
   ))
 ))
-scores[, skill := 1 - brier / scores[forecast == "random allocation", brier]]
+scores[, skill := 1 - brier / scores[forecast == "uniform forecast", brier]]
 knitr::kable(scores, digits = 4)
 
 #' # Where change is placed: the bias of a deterministic map
@@ -570,16 +550,15 @@ knitr::kable(scores, digits = 4)
 #' potentials. Observed change does not behave like that: it also happens on
 #' cells of moderate probability, in proportion to that probability. For every
 #' changed cell, take the percentile of its *true* transition probability among
-#' all cells that could make the same transition. The truth is the same for
-#' both learners, and percentiles let transitions with different probability
+#' all cells that could make the same transition. The truth does not depend
+#' on the learner, and percentiles let transitions with different probability
 #' scales be pooled. Then compare the distributions of those percentiles for
 #' the observed change, the realisations and the greedy maps. Random allocation
 #' would give a uniform distribution (the diagonal).
 #'
 #' An unbiased sampler of the true probabilities reproduces the observed curve
-#' in expectation. The logistic-regression ensemble comes close to that because
-#' its potentials are nearly the truth here (the model is correctly specified);
-#' the random forest's realisations deviate by as much as its potentials do.
+#' in expectation; the realisations deviate from it by as much as the
+#' learner's potentials deviate from the truth.
 
 #| label: bias
 truth_rank <- truth[,
@@ -740,7 +719,6 @@ outcome_cols <- c(
   "wrong hit" = "#3d3d3d"
 )
 seq_blue <- c("#fcfcfb", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b")
-learner_cols <- c("random forest" = "#2a78d6", "logistic regression" = "#7b3fbf")
 
 theme_panel_text <- theme(
   plot.title = element_text(size = 9, face = "bold", hjust = 0, margin = margin(b = 3)),
@@ -821,11 +799,10 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
     legend.key.height = unit(5, "pt")
   )
 
-# (d): one row per learner, realisations jittered within the row
-row_y <- setNames(c(1, 0), learners$label)
-fom[, y := row_y[label]]
-fom_ensemble[, y := row_y[label]]
-fom_deterministic[, y := row_y[label]]
+# (d): realisations jittered around one row
+fom[, y := 0]
+fom_ensemble[, y := 0]
+fom_deterministic[, y := 0]
 set.seed(7)
 p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   geom_vline(xintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
@@ -833,7 +810,7 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   annotate(
     "text",
     x = 0,
-    y = 1.55,
+    y = 0.62,
     label = " persistence",
     hjust = 0,
     size = 2.4,
@@ -842,17 +819,17 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   annotate(
     "text",
     x = fom_null,
-    y = 1.4,
+    y = 0.48,
     label = " random allocation",
     hjust = 0,
     size = 2.4,
     colour = "#555555"
   ) +
-  geom_jitter(aes(colour = label), height = 0.18, width = 0, size = 0.9, alpha = 0.6) +
+  geom_jitter(height = 0.22, width = 0, size = 1, alpha = 0.6, colour = "#2a78d6") +
   geom_point(
     data = fom_ensemble,
     aes(shape = "ensemble expectation"),
-    size = 2.6,
+    size = 2.8,
     fill = "#0d366b",
     colour = "white",
     stroke = 0.7
@@ -860,26 +837,20 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   geom_point(
     data = fom_deterministic,
     aes(shape = "deterministic allocation"),
-    size = 2.8,
+    size = 3,
     fill = "#eb6834",
     colour = "white",
     stroke = 0.7
   ) +
-  scale_colour_manual(values = learner_cols, guide = "none") +
   scale_shape_manual(
     values = c("ensemble expectation" = 21, "deterministic allocation" = 23),
     name = NULL
   ) +
-  scale_y_continuous(
-    breaks = row_y,
-    labels = names(row_y),
-    limits = c(-0.45, 1.7),
-    expand = c(0, 0)
-  ) +
+  scale_y_continuous(breaks = NULL, limits = c(-0.4, 0.75), expand = c(0, 0)) +
   scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.02, 0.06))) +
   labs(
     title = "(d) Figure of merit against the held-out observation",
-    subtitle = sprintf("one dot per realisation (n = %d per learner)", n_realisations),
+    subtitle = sprintf("random forest; one dot per realisation (n = %d)", n_realisations),
     x = "figure of merit",
     y = NULL
   ) +
@@ -888,20 +859,15 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   theme(
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3),
-    axis.text.y = element_text(size = 7.5)
+    panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
-# (e): colour = how change was placed, line type = learner
+# (e): colour = how change was placed
 cdf_lines <- rbind(
-  data.table(x = rank_grid, cdf = cdf_observed, what = "observed change", learner = "observed"),
-  cdf_band[, .(x, cdf = med, what = "realisations (median, 5-95 %)", learner)],
-  cdf_deterministic[, .(x, cdf, what = "deterministic allocation", learner)]
+  data.table(x = rank_grid, cdf = cdf_observed, what = "observed change"),
+  cdf_band[, .(x, cdf = med, what = "realisations (median, 5-95 %)")],
+  cdf_deterministic[, .(x, cdf, what = "deterministic allocation")]
 )
-cdf_lines[,
-  learner := factor(learner, c("observed", learners$learner), c("observed", learners$label))
-]
-cdf_band[, learner := factor(learner, learners$learner, learners$label)]
 what_cols <- c(
   "observed change" = "#1a1a1a",
   "realisations (median, 5-95 %)" = "#2a78d6",
@@ -918,18 +884,9 @@ p_e <- ggplot() +
     size = 2.3,
     colour = "#555555"
   ) +
-  geom_ribbon(
-    data = cdf_band,
-    aes(x = x, ymin = lo, ymax = hi, group = learner),
-    fill = "#cde2fb",
-    alpha = 0.8
-  ) +
-  geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = learner), linewidth = 0.55) +
+  geom_ribbon(data = cdf_band, aes(x = x, ymin = lo, ymax = hi), fill = "#cde2fb") +
+  geom_line(data = cdf_lines, aes(x, cdf, colour = what), linewidth = 0.6) +
   scale_colour_manual(values = what_cols, breaks = names(what_cols)) +
-  scale_linetype_manual(
-    values = c("observed" = "solid", "random forest" = "solid", "logistic regression" = "22"),
-    breaks = learners$label
-  ) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
@@ -942,15 +899,9 @@ p_e <- ggplot() +
   theme_panel_text +
   theme(
     panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3),
-    legend.box = "vertical",
-    legend.spacing.y = unit(0, "pt"),
-    legend.margin = margin(0, 0, 0, 0)
+    panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)
   ) +
-  guides(
-    colour = guide_legend(order = 1, ncol = 1),
-    linetype = guide_legend(order = 2, nrow = 1, override.aes = list(colour = "#555555"))
-  )
+  guides(colour = guide_legend(ncol = 1))
 
 fig2 <- p_a +
   p_b +

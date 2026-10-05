@@ -31,7 +31,7 @@
 #' probabilities, split into the distance to the truth and an irreducible term,
 #' over all forest and arable cells (the classes that can change in the true
 #' process), so that every configuration is scored on the same cells. Skill is
-#' relative to the random-allocation forecast, which gives every cell of a class
+#' relative to the uniform forecast, which gives every cell of a class
 #' the observed target rates of all four transitions;
 #' `share_of_attainable` is a configuration's skill over the skill of the
 #' truth.
@@ -339,7 +339,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   )
 
   # references: the truth (ceiling), the oracle restricted to viable transitions,
-  # the random-allocation forecast over all four transitions, persistence
+  # the uniform forecast over all four transitions, persistence
   db$id_run <- id_run_oracle
   db$trans_pot_t <- as_trans_pot_t(
     truth_all[viable, on = .(id_lulc_anterior, class = id_lulc_posterior), nomatch = NULL][,
@@ -358,7 +358,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
       score(persist(long_of(db$adjusted_trans_pot_v(target))), bt)
     ),
     cbind(
-      learner = "random allocation",
+      learner = "uniform forecast",
       stage = "reference",
       score(
         persist(anterior_of[
@@ -437,7 +437,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   }))
 
   out <- rbind(results, references, use.names = TRUE)
-  ref <- references[learner == "random allocation"]
+  ref <- references[learner == "uniform forecast"]
   ceiling <- references[learner == "truth, all four transitions"]
   out[, `:=`(
     n_grid = n_grid,
@@ -533,8 +533,8 @@ knitr::kable(unique(results[
 
 #' Share of the attainable skill reached by the adjusted potentials (the
 #' allocation-ready ones), mean over landscape seeds. 1 means as good as the
-#' true probabilities; 0 means no better than random allocation of the same
-#' quantity.
+#' true probabilities; 0 means no better than the uniform forecast, which
+#' knows the quantity of change but not its location.
 
 #| label: summary
 summary_tab <- results[
@@ -556,7 +556,7 @@ knitr::kable(
 #| label: references
 knitr::kable(
   results[
-    is.na(feature_set) & learner != "random allocation",
+    is.na(feature_set) & learner != "uniform forecast",
     .(share = mean(share_of_attainable), skill = mean(skill_expected)),
     by = .(n_grid, n_calib, learner)
   ],

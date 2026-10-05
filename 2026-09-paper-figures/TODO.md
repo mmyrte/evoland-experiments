@@ -14,8 +14,8 @@ Done (see README for the numbers):
       (`000-synthetic-process.r`).
 - [x] Panel (e): where change is placed, by true probability; KS distances computed but
       commented out.
-- [x] Logistic regression as a second learner in (d) and (e), each ensemble under its own parent
-      run.
+- [x] Logistic regression tried as a second learner in (d) and (e), then dropped: it overlapped
+      the random forest too much to read. Fig. 2 shows ranger only.
 - [x] Panel (a) shows observed land use in period 3 (Okabe-Ito palette) with the observed change
       outlined; panels on a 3 × 2 grid with a legend per panel.
 - [x] Single-cell allocation (uSAM): the synthetic process changes cells independently, and
