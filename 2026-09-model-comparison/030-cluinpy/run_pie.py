@@ -22,8 +22,11 @@ import pandas as pd
 import rasterio
 
 PIE_DIR = "2026-09-model-comparison"
-DATA_DIR = os.path.join(PIE_DIR, "data")
-OUT_DIR = os.path.join(PIE_DIR, "outputs")
+# PIE_SCALE = k > 1: the tiled grids of 080-scaling, see common.r
+_SCALE = os.environ.get("PIE_SCALE", "")
+_SUFFIX = f"-k{_SCALE}" if _SCALE else ""
+DATA_DIR = os.path.join(PIE_DIR, "data" + _SUFFIX)
+OUT_DIR = os.path.join(PIE_DIR, "outputs" + _SUFFIX)
 WORK_DIR = os.path.abspath(os.path.join(OUT_DIR, "cluinpy-work"))
 MAPS_DIR = os.path.join(OUT_DIR, "maps", "cluinpy")
 TIMINGS = os.path.join(OUT_DIR, "timings-cluinpy.csv")

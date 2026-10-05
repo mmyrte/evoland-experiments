@@ -60,9 +60,16 @@ run_dinamica_serial <- function(script) {
 #' # Tables: demand and patch parameters
 
 #| label: tables
-db <- evoland_db$new(path = db_path)
-db$id_run <- 0L
-viable <- db$trans_meta_t[is_viable == TRUE][order(id_lulc_anterior, id_lulc_posterior)]
+# viable transitions and patch parameters as estimated by 010. In the scaling runs (080), a
+# scale where evoland's calibration failed falls back to the k = 1 estimates: tiling leaves the
+# patch statistics unchanged
+alloc_params_path <- file.path(outputs_dir, "alloc_params_viable.csv")
+if (!file.exists(alloc_params_path) && pie_scale > 1L) {
+  alloc_params_path <- file.path(pie_dir, "outputs-k1", "alloc_params_viable.csv")
+  message("No evoland calibration at this scale; using ", alloc_params_path)
+}
+alloc_params <- fread(alloc_params_path)
+viable <- alloc_params[, .(id_lulc_anterior, id_lulc_posterior)]
 demand <- fread(file.path(outputs_dir, "demand_transitions_1991_1999.csv"))
 n_anterior <- fread(file.path(outputs_dir, "demand_class_totals.csv"))[year == 1991]
 
@@ -74,10 +81,6 @@ trans_rates <- viable[, .(id_lulc_anterior, id_lulc_posterior)][
   order(id_lulc_anterior, id_lulc_posterior),
   .(`From*` = id_lulc_anterior, `To*` = id_lulc_posterior, Rate = count / N)
 ]
-alloc_params <- db$alloc_params_t[viable, on = "id_trans"][order(
-  id_lulc_anterior,
-  id_lulc_posterior
-)]
 expansion <- alloc_params[, .(
   `From*` = id_lulc_anterior,
   `To*` = id_lulc_posterior,

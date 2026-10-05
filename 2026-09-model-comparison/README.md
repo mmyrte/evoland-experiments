@@ -81,8 +81,9 @@ Steps sharing a number are independent.
 | [`040-cross-clumpy.r`](040-cross-clumpy.r) | CLUMPY on the WoE, lulcc and CLUinPy surfaces |
 | [`050-compare.r`](050-compare.r) | Imports all maps as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement, gross change, fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
-| [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the matrix, ANOVA shares |
+| [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
+| [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each tool's step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
 
 ## Environment
 
@@ -186,7 +187,7 @@ What these numbers say, so far:
      seed only changes the convergence speed. This is why "estimator × allocator" is a cleaner
      framing than tool-vs-tool: the CLUE family answers a different question (class totals) than
      the transition-based tools.
-6. **Cost is not a differentiator on this case.**
+6. **Cost is not a differentiator on this case** (but see Scaling below for larger domains).
 
    | step | median time | note |
    | --- | --- | --- |
@@ -201,6 +202,74 @@ What these numbers say, so far:
    | random forest prediction | 27 s | all 5 transitions |
 
    Scaling to millions of cells is where the tools may separate; PIE does not test it.
+
+## Scaling (080-scaling)
+
+**Set-up.**
+- **Domain.** PIE tiled k × k with mirroring (k = 1, 2, 3, 4, 6): 0.11, 0.45, 1.0, 1.8 and
+  4.1 M cells. k = 6 is about the size of the Swiss 100 m grid; tiling keeps class shares and
+  patch statistics.
+- **What runs.** One realisation per tool and the logistic regression only, each step its own
+  process.
+- **Machine.** 4 cores, 16 GiB, R's vector heap capped at 12 GiB (`R_MAX_VSIZE`).
+- **Outputs.** `figures/scaling-steps.csv`, `figures/scaling-stages.csv`, `figures/scaling.pdf`.
+
+| step | 0.11 M | 0.45 M | 1.0 M | 1.8 M | 4.1 M cells |
+| --- | --- | --- | --- | --- | --- |
+| evoland calibration (set-up, neighbours, fit, predict) | 45 s, 2.0 GB | 106 s, 6.7 GB | 204 s, 10.1 GB | **out of memory** (R heap 12 GB) | **OOM-killed** (14 GB) |
+| evoland CLUMPY allocation | 10 s, 0.6 GB | 13 s, 0.9 GB | 24 s, 1.5 GB | — | — |
+| evoland Dinamica allocation | 25 s, 0.9 GB | 17 s, 1.4 GB | 30 s, 2.7 GB | — | — |
+| Dinamica standalone (WoE calibration + allocation) | 11 s | 18 s | 34 s | 44 s | 88 s, **0.28 GB** |
+| lulcc (GLM, CLUE-S, Ordered) | 30 s, 0.8 GB | 60 s, 1.2 GB | 103 s, 1.9 GB | 658 s, 3.4 GB | 1 572 s, 6.6 GB |
+| CLUinPy (suitability, CLUMondo, 8 years) | 81 s, 0.4 GB | 66 s, 0.5 GB | 85 s, 0.6 GB | 172 s, 0.7 GB | 396 s, 1.3 GB |
+
+Memory is the peak of the largest process. For standalone Dinamica that is the R driver up to
+1 M cells; `DinamicaConsole` itself, measured directly at 4.1 M cells, peaks at 150 MB
+(calibration) and 280 MB (allocation).
+
+**Where the time goes.** Per-stage timings, in `scaling-stages.csv`:
+
+- **evoland.** Roughly linear in time. At 1 M cells: neighbours 80 s, logistic fit 36 s,
+  prediction 36 s, CLUMPY allocation 10 s, patch statistics 3.5 s.
+- **Dinamica.** Weights-of-Evidence calibration dominates (64 s of 76 s at 4.1 M, run
+  single-threaded because of the race in the probability map). In parallel, the calibration
+  takes 23 s instead of 70 s. Calibration is deterministic, so only `probabilities.ego` and
+  `simulate.ego` need to run single-threaded.
+- **CLUinPy.** Linear; the 8 annual allocation steps dominate.
+- **lulcc.** The Ordered model is linear (24 s at 1.8 M). CLUE-S jumps from 14 s (1.0 M) to
+  514 s (1.8 M), and at 1.8 M every one of the 8 annual steps hit `max.iter` without converging.
+  Its tolerance (`max.diff = 50` cells) and update step (`diff × scale.f`) are absolute cell
+  counts. The demo's values therefore get stricter and more oscillatory as the domain grows.
+  (Its "average difference" criterion also sums *signed* differences, so it is nearly always
+  met.) lulcc's GLM fit is cheap; its memory grows to 6.6 GB at 4.1 M (raster package, in RAM).
+
+**evoland: what limits it.**
+
+1. **The neighbourhood table, not DuckLake.** `set_neighbors()` materialises every (cell,
+   neighbour) pair within `max_distance` as an R data.table (`distance_neighbors_cpp()`), then
+   keys it, adds a `cut()` factor and commits it.
+   - **Size.** At 500 m and 100 m cells there are 79 neighbours per cell: 17 M rows at k = 1,
+     about 270 M at k = 4 and 615 M at k = 6. With the default `max_distance = 1000`, roughly 4×
+     more.
+   - **Where it fails.** The memory sampler puts evoland's peak in this step (9.7 GB at 1 M
+     cells), and both failures (k = 4, 6) happen before the first stage completes.
+   - **The fix.** On a regular grid the neighbour counts are a ring convolution of the class
+     indicator rasters. That is O(cells) memory, with no stored edge list, and also cheaper for
+     `upsert_new_neighbors()`, which currently re-joins the edge list against `lulc_data_t` every
+     period. An edge list is only needed for irregular `coords_t`.
+2. **`coords_t` covers the whole rectangle.** PIE's study area is 53 % of its bounding box, so
+   neighbours, predictors and rasters are carried for 1.9× the cells that matter. Restricting
+   `coords_t` to cells with data is possible today; evoland's docs or `create_coords_t_square()`
+   could make it the default.
+3. **DuckLake.** Every catalog-resolving call costs a fixed 20–70 ms: `get_read_expr()`, the
+   table bindings, `.has_predictions()`. A plain DuckDB query costs 1 ms. On PIE that is 75 % of a
+   prediction (11 s, of which the model's `predict()` takes 1.7 s), but the cost does not grow with
+   the domain. The data-bound work in DuckDB (the `pred_data_wide_v()` PIVOT, the joins) scales
+   linearly here. Two side effects:
+   - every realisation stores a full map (`lulc_data_t` held 25 M rows after the benchmark);
+   - every commit makes a snapshot (283 after the benchmark).
+4. Rasterising tables (`tabular_to_raster()`) is not a bottleneck: 0.17 s per call at 113 k
+   cells once terra is loaded. (A cell-index rewrite was tried and was slower, so it was dropped.)
 
 ## Reproducibility in different environments
 
@@ -220,6 +289,20 @@ actually took:
     (2 %) left ~700 built cells unallocated here, so this benchmark uses 0.1 %. Its only
     randomness is unseeded `random.random()`, so exact replay requires seeding from the
     outside, as `run_pie.py` does.
+  - **lulcc's Ordered model** (Fuchs et al. 2013, `lulcc:::.ordered`) is greedy rank-and-fill
+    with competition settled by a fixed class priority (`order = c(2, 1, 3)`: built, forest,
+    other). Each class in turn:
+    - **if its demand rises**, it ranks every cell not yet in the class by the class's
+      suitability and takes the top n;
+    - **if its demand falls**, it releases its n least suitable cells.
+
+    Claimed cells are removed from later classes, which settles the competition. There are no
+    transitions: built land is taken from forest or other alike, purely by built suitability.
+    `stochastic = TRUE` thins the ranked candidates by a Bernoulli(suitability) draw before taking
+    the top n. High-suitability cells survive almost always, so it stays nearly deterministic
+    (FoM sd 0.0004 here). evoland has no such allocator; the closest is the greedy stand-in in
+    `2026-09-paper-figures/010-fig2-ensembles.r`, which ranks all transitions jointly by adjusted
+    potential instead of class by class.
   - DynaCLUE: C++ code that is hard to compile; not attempted.
 - **Dinamica EGO.**
   - **Running it.** It runs fully headless from the console. The `.ego` scripts are

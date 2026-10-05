@@ -115,7 +115,7 @@ estimators <- data.table(
   id_run = c(1000L, 2000L),
   learner = c("log_reg", "ranger"),
   description = c("logistic regression potentials", "random forest potentials")
-)
+)[learner %in% pie_learners]
 runs <- rbind(
   data.table(
     id_run = c(0L, id_run_observed),
@@ -179,16 +179,21 @@ rates_3
 #' 1985 → 1991:
 observed_counts[, sum(count)] - rates_3[, sum(count)]
 
-# demand handed to every external tool: transition counts and class totals in 1999
+# the demand every external tool gets is written by 000-pie-data.r from the rasters; the patch
+# parameters estimated here are exported for the standalone Dinamica run
 fwrite(
-  observed_counts[order(id_lulc_anterior, id_lulc_posterior)],
-  file.path(outputs_dir, "demand_transitions_1991_1999.csv")
-)
-fwrite(
-  lulc_long[, .N, by = .(year = names(id_period_by_year)[id_period], id_lulc)][
-    order(year, id_lulc)
+  db$alloc_params_t[db$trans_meta_t[is_viable == TRUE], on = "id_trans"][
+    order(id_lulc_anterior, id_lulc_posterior),
+    .(
+      id_lulc_anterior,
+      id_lulc_posterior,
+      frac_expander,
+      mean_patch_size,
+      patch_size_variance,
+      patch_isometry
+    )
   ],
-  file.path(outputs_dir, "demand_class_totals.csv")
+  file.path(outputs_dir, "alloc_params_viable.csv")
 )
 
 #' # Transition models

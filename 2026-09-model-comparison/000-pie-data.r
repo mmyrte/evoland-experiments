@@ -29,7 +29,8 @@
 library(terra)
 data("pie", package = "lulcc")
 
-out_dir <- "2026-09-model-comparison/data"
+source("2026-09-model-comparison/common.r")
+out_dir <- data_dir
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 #| label: write
@@ -50,6 +51,25 @@ years <- c(1985, 1991, 1999)
 lu <- terra::rast(lapply(paste0("lu_pie_", years), \(n) to_terra_100m(pie[[n]])))
 names(lu) <- paste0("lu_", years)
 ef <- terra::rast(lapply(paste0("ef_00", 1:3), \(n) to_terra_100m(pie[[n]])))
+names(ef) <- paste0("ef_00", 1:3)
+
+# 080-scaling: tile the grid k x k, mirroring every other copy so that the edges join up
+tile_mirrored <- function(x, k) {
+  if (k == 1L) {
+    return(x)
+  }
+  row_of_tiles <- do.call(terra::merge, lapply(seq_len(k), function(j) {
+    tile <- if (j %% 2 == 0) terra::flip(x, "horizontal") else x
+    terra::shift(tile, dx = (j - 1) * terra::xmax(x) - (j - 1) * terra::xmin(x))
+  }))
+  do.call(terra::merge, lapply(seq_len(k), function(i) {
+    tile <- if (i %% 2 == 0) terra::flip(row_of_tiles, "vertical") else row_of_tiles
+    terra::shift(tile, dy = (i - 1) * (terra::ymax(x) - terra::ymin(x)))
+  }))
+}
+lu <- tile_mirrored(lu, pie_scale)
+ef <- tile_mirrored(ef, pie_scale)
+names(lu) <- paste0("lu_", years)
 names(ef) <- paste0("ef_00", 1:3)
 
 # the study area: cells with land use in all years; predictors are masked to it too
@@ -74,6 +94,29 @@ for (n in names(ef)) {
     overwrite = TRUE
   )
 }
+
+#' # Demand handed to every tool
+#'
+#' Observed 1991 → 1999 transition counts and the class totals per year, written here (not by
+#' an evoland step) so that every tool can run on its own.
+
+#| label: demand
+dir.create(outputs_dir, showWarnings = FALSE, recursive = TRUE)
+lu_values <- data.table::as.data.table(terra::values(lu))
+data.table::setnames(lu_values, as.character(years))
+lu_values <- lu_values[!is.na(`1985`) & !is.na(`1991`) & !is.na(`1999`)]
+data.table::fwrite(
+  lu_values[`1991` != `1999`, .(count = .N), by = .(id_lulc_anterior = `1991`, id_lulc_posterior = `1999`)][
+    order(id_lulc_anterior, id_lulc_posterior)
+  ],
+  file.path(outputs_dir, "demand_transitions_1991_1999.csv")
+)
+data.table::fwrite(
+  data.table::rbindlist(lapply(as.character(years), function(y) {
+    lu_values[, .N, by = .(id_lulc = get(y))][, year := as.integer(y)]
+  }))[order(year, id_lulc), .(year, id_lulc, N)],
+  file.path(outputs_dir, "demand_class_totals.csv")
+)
 
 #' # Observed change
 

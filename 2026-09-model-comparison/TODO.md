@@ -55,9 +55,18 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       set-up are sound. Their native-resolution forest → built FoM (0.078 CLUE-S, 0.066 Ordered)
       is higher than our benchmark's overall FoM because it covers 14 years of change and a single
       transition. Note for the paper: multi-resolution FoM is what lulcc reports.
-- [ ] **Scaling benchmark.** PIE does not separate the tools on cost (all allocations take
-      seconds). Options: (a) tile/upsample PIE synthetically; (b) return to a large real extent
-      (the earlier SSP-CH idea) only for timing and memory, without the full comparison.
+- [x] **Scaling benchmark** (`080-scaling/`, README "Scaling"): evoland's calibration runs out of
+      memory above ~1 M cells because of the neighbour edge list; Dinamica streams (0.3 GB at
+      4.1 M); lulcc's CLUE-S stops converging at 1.8 M (absolute tolerances); CLUinPy is linear.
+      Open:
+      - evoland: grid-native neighbour counts (ring convolution) instead of `neighbors_t`, then
+        rerun k = 4, 6 — the main architectural fix for the paper's scaling claim;
+      - evoland: restrict `coords_t` to cells with data by default;
+      - Dinamica: run `calibrate.ego` in parallel (deterministic), only the probability map and
+        allocation single-threaded;
+      - lulcc: CLUE-S with tolerances scaled to the domain, to separate parametrisation from
+        algorithm;
+      - repeat on a bigger machine to see where lulcc and CLUinPy stop.
 - [x] **Reproducibility.** The full pipeline was replayed from scratch (README, Replay check).
       Found and fixed: random forest not replaying (evoland fix 06 plus a learner seed); corroded
       WoE probabilities in the crossing.

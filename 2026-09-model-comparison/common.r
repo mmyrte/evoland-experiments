@@ -1,9 +1,16 @@
 # Shared by the numbered steps of the PIE benchmark; sourced, not rendered.
 
 pie_dir <- "2026-09-model-comparison"
-data_dir <- file.path(pie_dir, "data")
-outputs_dir <- file.path(pie_dir, "outputs")
-db_path <- file.path(pie_dir, "pie.evolanddb")
+# PIE_SCALE = k > 1 tiles the PIE grid k x k (080-scaling); each scale has its own data, outputs
+# and database, so the benchmark proper (k = 1) is never touched
+# (an explicit PIE_SCALE=1 also gets its own directories)
+pie_scale <- as.integer(Sys.getenv("PIE_SCALE", "1"))
+scale_suffix <- if (nzchar(Sys.getenv("PIE_SCALE"))) paste0("-k", pie_scale) else ""
+data_dir <- file.path(pie_dir, paste0("data", scale_suffix))
+outputs_dir <- file.path(pie_dir, paste0("outputs", scale_suffix))
+db_path <- file.path(pie_dir, paste0("pie", scale_suffix, ".evolanddb"))
+# PIE_LEARNERS restricts the evoland estimators, e.g. to "log_reg" for the scaling runs
+pie_learners <- strsplit(Sys.getenv("PIE_LEARNERS", "log_reg,ranger"), ",")[[1]]
 dir.create(outputs_dir, showWarnings = FALSE, recursive = TRUE)
 
 lulc_classes <- c(forest = 1L, built = 2L, other = 3L)
