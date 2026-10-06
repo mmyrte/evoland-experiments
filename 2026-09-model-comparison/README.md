@@ -226,9 +226,9 @@ What these numbers say, so far:
 | step | 0.11 M | 0.45 M | 1.0 M | 1.8 M | 4.1 M cells |
 | --- | --- | --- | --- | --- | --- |
 | evoland calibration (set-up, neighbours, fit, predict) | 45 s, 2.0 GB | 106 s, 6.7 GB | 204 s, 10.1 GB | **out of memory** (R heap 12 GB) | **OOM-killed** (14 GB) |
-| ↳ with streamed neighbours (ethzplus/evoland-plus#66) | | | 198 s, 3.7 GB | 290 s, 5.6 GB | 599 s, 9.8 GB |
-| evoland CLUMPY allocation | 10 s, 0.6 GB | 13 s, 0.9 GB | 24 s, 1.5 GB | 34 s, 2.4 GB | 61 s, 4.0 GB |
-| evoland Dinamica allocation | 25 s, 0.9 GB | 17 s, 1.4 GB | 30 s, 2.7 GB | 43 s, 4.4 GB | 79 s, 9.5 GB |
+| ↳ streamed neighbours (ethzplus/evoland-plus#66) + `coords_t` pruned | 37 s, 1.5 GB | 92 s, 2.6 GB | 141 s, 3.4 GB | 226 s, 5.3 GB | 424 s, 9.3 GB |
+| evoland CLUMPY allocation (same) | 10 s, 0.6 GB | 17 s, 1.1 GB | 22 s, 1.4 GB | 36 s, 2.3 GB | 49 s, 3.3 GB |
+| evoland Dinamica allocation (same) | 13 s, 0.7 GB | 22 s, 1.2 GB | 27 s, 2.2 GB | 41 s, 2.8 GB | 56 s, 5.8 GB |
 | Dinamica standalone (WoE calibration + allocation) | 11 s | 18 s | 34 s | 44 s | 88 s, **0.28 GB** |
 | lulcc (GLM, CLUE-S, Ordered) | 30 s, 0.8 GB | 60 s, 1.2 GB | 103 s, 1.9 GB | 658 s, 3.4 GB | 1 572 s, 6.6 GB |
 | CLUinPy (suitability, CLUMondo, 8 years) | 81 s, 0.4 GB | 66 s, 0.5 GB | 85 s, 0.6 GB | 172 s, 0.7 GB | 396 s, 1.3 GB |
@@ -261,14 +261,15 @@ Memory is the peak of the largest process. For standalone Dinamica that is the R
    (ethzplus/evoland-plus#66) the C++ hash-index search hands chunks of complete neighbourhoods
    to a callback that commits them into DuckLake as it goes, so memory is bounded by the chunk.
    At 1 M cells the calibration peak fell from 10.1 to 3.7 GB, and 1.8 M and 4.1 M cells now run
-   on 16 GB (4.1 M: 10 min calibration, 1 min CLUMPY allocation). The relational table stays,
+   on 16 GB (4.1 M unpruned: 10 min calibration, 1 min CLUMPY allocation). The relational table stays,
    with it the independence from a regular tiling (hexagons, irregular tracts), which a ring
-   convolution would have given up. At 4.1 M the remaining peak (9.8 GB) is before the
-   neighbour step, in this pipeline's own ingestion of the full rectangle into R, which the
-   pruning below addresses.
+   convolution would have given up.
 2. **`coords_t` covers the whole rectangle.** PIE's study area is 53 % of its bounding box.
    `010` now restricts `coords_t` to cells with land use after ingestion, as
-   `2026-05-ssp-ch/010-ingest-lulc-data.qmd` does (the scaling numbers above predate that).
+   `2026-05-ssp-ch/010-ingest-lulc-data.qmd` does. Together with the streaming this brings 4.1 M
+   cells to 7 min and 9.3 GB (neighbours 96 s instead of 177 s unpruned). The remaining peak is
+   this pipeline's ingestion of the full rectangle into R before the pruning, i.e. the script,
+   not evoland; the results of the benchmark itself are bit-identical with and without pruning.
 3. **DuckLake.** Every catalog-resolving call costs a fixed 20–70 ms: `get_read_expr()`, the
    table bindings, `.has_predictions()`. A plain DuckDB query costs 1 ms. On PIE that is 75 % of a
    prediction (11 s, of which the model's `predict()` takes 1.7 s), but the cost does not grow with
