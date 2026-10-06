@@ -36,8 +36,15 @@ estimator_labels <- c(
   "GLM suitability\n(lulcc)",
   "logistic suitability\n(CLUinPy)"
 )
-allocators <- c("CLUMPY", "Dinamica", "CLUE-S", "Ordered", "CLUMondo")
-allocator_labels <- c("CLUMPY\n(evoland)", "Expander/\nPatcher\n(Dinamica)", "CLUE-S\n(lulcc)", "Ordered\n(lulcc)", "CLUMondo\n(CLUinPy)")
+allocators <- c("CLUMPY", "Dinamica", "greedy", "CLUE-S", "Ordered", "CLUMondo")
+allocator_labels <- c(
+  "CLUMPY\n(evoland)",
+  "Dinamica\n(EGO)",
+  "greedy\n(evoland)",
+  "CLUE-S\n(lulcc)",
+  "Ordered\n(lulcc)",
+  "CLUMondo\n(CLUinPy)"
+)
 native <- data.table(
   estimator = c("random forest", "logistic regression", "Weights of Evidence", "GLM suitability (lulcc)", "GLM suitability (lulcc)", "logistic suitability (CLUinPy)"),
   allocator = c("CLUMPY", "CLUMPY", "Dinamica", "CLUE-S", "Ordered", "CLUMondo")
@@ -64,7 +71,8 @@ draw_fig3 <- function() {
     xlab = "",
     ylab = ""
   )
-  axis(3, at = seq_along(allocators), labels = allocator_labels, tick = FALSE, padj = 0, line = -0.5)
+  # mtext, not axis(): axis() silently drops labels that would overlap
+  mtext(allocator_labels, side = 3, at = seq_along(allocators), line = 0.3, padj = 0, cex = 0.68)
   axis(2, at = seq_along(estimators), labels = estimator_labels, tick = FALSE, las = 1)
   mtext("(a) figure of merit / random-allocation null", side = 3, line = 4.5, adj = 0, cex = 0.8)
   for (i in seq_along(estimators)) {
@@ -109,6 +117,6 @@ draw_fig3 <- function() {
   mtext("(b) variance of FoM", side = 3, line = 4.5, adj = 0, cex = 0.8)
 }
 draw_fig3()
-cairo_pdf(file.path(figures_dir, "fig3-pie-matrix.pdf"), width = 8, height = 4.2)
+cairo_pdf(file.path(figures_dir, "fig3-pie-matrix.pdf"), width = 8.6, height = 4.2)
 draw_fig3()
 invisible(dev.off())

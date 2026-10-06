@@ -7,7 +7,8 @@
 #' The figure of merit scores one map at a time and rewards allocators that concentrate change
 #' on the most probable cells (`050-compare.r`, finding 3 in the README). Here each ensemble is
 #' scored as a probabilistic forecast instead. Per cell, the forecast probability of ending in
-#' class k is the share of the 20 realisations that put the cell in k. The **Brier score** is
+#' class k is the share of the ensemble's realisations (20, or 1 for the deterministic greedy
+#' allocator) that put the cell in k. The **Brier score** is
 #' multi-category (summed over the three classes) and averaged over all cells. With 20 members
 #' the forecast probabilities are coarse, which penalises an ensemble for its finite size; the
 #' **fair Brier score** (Ferro 2014) subtracts that expected penalty, p (1 - p) / (m - 1) per
@@ -43,7 +44,11 @@ cells <- anterior[observed, on = "id_coord"]
 
 #| label: brier
 # forecast probabilities per ensemble, cell and class
-forecast <- simulated[, .(p = .N / n_realisations), by = .(ensemble, id_coord, class = simulated)]
+ensemble_size <- members[, .(m = .N), by = ensemble]
+forecast <- simulated[, .(n = .N), by = .(ensemble, id_coord, class = simulated)][
+  ensemble_size,
+  on = "ensemble"
+][, .(ensemble, id_coord, class, p = n / m)]
 grid <- CJ(ensemble = unique(members$ensemble), id_coord = cells$id_coord, class = 1:3)
 forecast <- forecast[grid, on = .(ensemble, id_coord, class)][is.na(p), p := 0]
 forecast <- forecast[cells, on = "id_coord"][, o := as.numeric(observed == class)]
@@ -56,11 +61,12 @@ reference <- CJ(id_coord = cells$id_coord, class = 1:3)[cells, on = "id_coord"][
 ][is.na(p), p := 0][, o := as.numeric(observed == class)]
 brier_reference <- reference[, sum((p - o)^2) / uniqueN(id_coord)]
 
-m <- n_realisations
-brier <- forecast[,
+# a single deterministic map (m = 1) has p in {0, 1}, so its finite-size correction is 0
+brier <- forecast[ensemble_size, on = "ensemble"][,
   .(
     brier = sum((p - o)^2) / uniqueN(id_coord),
-    brier_fair = sum((p - o)^2 - p * (1 - p) / (m - 1)) / uniqueN(id_coord)
+    brier_fair = sum((p - o)^2 - data.table::fifelse(m > 1, p * (1 - p) / (m - 1), 0)) /
+      uniqueN(id_coord)
   ),
   by = ensemble
 ][, `:=`(

@@ -59,9 +59,9 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       memory above ~1 M cells because of the neighbour edge list; Dinamica streams (0.3 GB at
       4.1 M); lulcc's CLUE-S stops converging at 1.8 M (absolute tolerances); CLUinPy is linear.
       Open:
-      - evoland: grid-native neighbour counts (ring convolution) instead of `neighbors_t`, then
-        rerun k = 4, 6 — the main architectural fix for the paper's scaling claim;
-      - evoland: restrict `coords_t` to cells with data by default;
+      - [x] evoland: stream `neighbors_t` (ethzplus/evoland-plus#66); k = 4, 6 now run;
+      - [x] evoland: `coords_t` pruned to cells with data in `010` (as SSP-CH does); rerun the
+        scaling with it;
       - Dinamica: run `calibrate.ego` in parallel (deterministic), only the probability map and
         allocation single-threaded;
       - lulcc: CLUE-S with tolerances scaled to the domain, to separate parametrisation from
@@ -104,6 +104,13 @@ evoland-plus, each on its own stacked branch off `claude/gifted-lamport-41q8gv` 
    `DINAMICA_EGO_8_TEMP_DIR` in `.Renviron` (breaks Dinamica's R bridge).
 6. `…-06-deterministic-training-order`: `fit_full_models()` read training data in DuckDB's
    arbitrary row order, so order-sensitive learners (ranger) did not replay even when seeded.
+
+7. `…-07-alloc-greedy`: new deterministic rank-and-fill allocator `alloc_greedy()` (joint or
+   ordered arbitration), ethzplus/evoland-plus#65.
+8. `…-08-streamed-neighbors`: `set_neighbors()` streams complete neighbourhoods into DuckLake
+   instead of materialising the edge list, ethzplus/evoland-plus#66.
+
+PRs: ethzplus/evoland-plus#59 … #66, stacked in this order.
 
 Other tools:
 

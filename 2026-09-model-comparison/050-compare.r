@@ -36,8 +36,10 @@ ensembles <- rowwiseDT(
   tool=, estimator=, allocator=, id_run_parent=, offset=, maps=,
   "evoland", "logistic regression", "CLUMPY", 1000L, 0L, NA,
   "evoland", "logistic regression", "Dinamica", 1000L, 500L, NA,
+  "evoland", "logistic regression", "greedy", 1000L, 600L, NA,
   "evoland", "random forest", "CLUMPY", 2000L, 0L, NA,
   "evoland", "random forest", "Dinamica", 2000L, 500L, NA,
+  "evoland", "random forest", "greedy", 2000L, 600L, NA,
   "Dinamica", "Weights of Evidence", "Dinamica", 3000L, 0L, "dinamica-native",
   "crossing", "Weights of Evidence", "CLUMPY", 3000L, 500L, NA,
   "lulcc", "GLM suitability (lulcc)", "CLUE-S", 4000L, 0L, "lulcc-clues",
@@ -47,8 +49,10 @@ ensembles <- rowwiseDT(
   "crossing", "logistic suitability (CLUinPy)", "CLUMPY", 5000L, 500L, NA
 )
 ensembles[, ensemble := paste(estimator, "×", allocator)]
+# the greedy allocator is deterministic: one map per estimator
+ensembles[, n_members := fifelse(allocator == "greedy", 1L, n_realisations)]
 members <- ensembles[,
-  .(member = seq_len(n_realisations), id_run = id_run_parent + offset + seq_len(n_realisations)),
+  .(member = seq_len(n_members), id_run = id_run_parent + offset + seq_len(n_members)),
   by = names(ensembles)
 ]
 ensembles
@@ -279,12 +283,12 @@ timings_summary
 #| label: fig-fom
 #| fig-width: 7
 #| fig-height: 4.5
-allocator_levels <- c("CLUMPY", "Dinamica", "CLUE-S", "Ordered", "CLUMondo")
+allocator_levels <- c("CLUMPY", "Dinamica", "greedy", "CLUE-S", "Ordered", "CLUMondo")
 allocator_colours <- setNames(
-  c("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"),
+  c("#2a78d6", "#eb6834", "#4a3aa7", "#1baf7a", "#eda100", "#e87ba4"),
   allocator_levels
 )
-allocator_pch <- setNames(c(16, 17, 15, 18, 25), allocator_levels)
+allocator_pch <- setNames(c(16, 17, 8, 15, 18, 25), allocator_levels)
 estimator_levels <- c(
   "logistic regression",
   "random forest",
@@ -294,10 +298,10 @@ estimator_levels <- c(
 )
 
 plot_fom <- function() {
-  op <- par(mar = c(6.5, 13, 1, 1), las = 1, cex = 0.8)
+  op <- par(mar = c(7.5, 13, 1, 1), las = 1, cex = 0.8)
   on.exit(par(op))
   fom[, y := match(estimator, estimator_levels) +
-    (match(allocator, allocator_levels) - 3) * 0.13]
+    (match(allocator, allocator_levels) - 3.5) * 0.12]
   plot(
     NA,
     xlim = c(0, max(fom$figure_of_merit) * 1.05),
@@ -320,9 +324,9 @@ plot_fom <- function() {
   )
   legend(
     "bottom",
-    inset = c(0, -0.32),
+    inset = c(0, -0.36),
     xpd = TRUE,
-    horiz = TRUE,
+    ncol = 3,
     legend = allocator_levels,
     col = allocator_colours,
     pt.bg = allocator_colours,
@@ -332,7 +336,7 @@ plot_fom <- function() {
   )
 }
 plot_fom()
-cairo_pdf(file.path(figures_dir, "pie-figure-of-merit.pdf"), width = 7, height = 4.8)
+cairo_pdf(file.path(figures_dir, "pie-figure-of-merit.pdf"), width = 7, height = 5)
 plot_fom()
 invisible(dev.off())
 

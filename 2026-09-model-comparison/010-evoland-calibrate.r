@@ -73,6 +73,18 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
   .(id_run = 0L, id_coord, id_period, id_lulc)
 ])
 
+#' As in `2026-05-ssp-ch/010-ingest-lulc-data.qmd`, `coords_t` is restricted to the coordinates
+#' that carry land use: the PIE study area covers 53 % of its bounding rectangle, and the rest
+#' would only carry empty neighbourhoods and predictors along.
+
+#| label: prune-coords
+db$commit(
+  x = db$coords_t[id_coord %in% lulc_long[, unique(id_coord)]],
+  table_name = "coords_t",
+  method = "overwrite"
+)
+nrow(db$coords_t)
+
 #' The three explanatory factors of the lulcc case are static (period 0). evoland adds its
 #' neighbourhood predictors on top: the number of cells of each class within 150 m (the eight
 #' adjacent cells) and between 150 and 500 m.

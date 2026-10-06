@@ -51,13 +51,13 @@ What is held fixed across tools:
 
 ### Estimator × allocator matrix
 
-| estimator ↓ / allocator → | CLUMPY (evoland) | Dinamica Expander/Patcher | CLUE-S (lulcc) | Ordered (lulcc) | CLUMondo (CLUinPy) |
-| --- | --- | --- | --- | --- | --- |
-| logistic regression (evoland, mlr3) | 020 | 020 | | | |
-| random forest (evoland, ranger) | 020 | 020 | | | |
-| Weights of Evidence (Dinamica) | 040 | 030 | | | |
-| GLM class suitability (lulcc) | 040 | | 030 | 030 | |
-| logistic class suitability (CLUinPy) | 040 | | | | 030 |
+| estimator ↓ / allocator → | CLUMPY (evoland) | Dinamica Expander/Patcher | greedy (evoland) | CLUE-S (lulcc) | Ordered (lulcc) | CLUMondo (CLUinPy) |
+| --- | --- | --- | --- | --- | --- | --- |
+| logistic regression (evoland, mlr3) | 020 | 020 | 020 | | | |
+| random forest (evoland, ranger) | 020 | 020 | 020 | | | |
+| Weights of Evidence (Dinamica) | 040 | 030 | | | | |
+| GLM class suitability (lulcc) | 040 | | | 030 | 030 | |
+| logistic class suitability (CLUinPy) | 040 | | | | | 030 |
 
 The numbers in the matrix are the pipeline steps that produce each pairing. The diagonal
 pairings are each tool's own; the rest are crossings. The crossings with CLUMPY feed the other
@@ -75,6 +75,7 @@ Steps sharing a number are independent.
 | [`010-evoland-calibrate.r`](010-evoland-calibrate.r) | Builds the evoland DB: domain, predictors (factors plus neighbourhood counts within 150 m and 150–500 m), held-out run, demand, allocation parameters, logistic regression and random forest; exports the potentials |
 | [`020-alloc-evoland-clumpy.r`](020-alloc-evoland-clumpy.r) | CLUMPY (uPAM) on both estimators' potentials |
 | [`020-alloc-evoland-dinamica.r`](020-alloc-evoland-dinamica.r) | Dinamica via `alloc_dinamica()` on the same potentials |
+| [`020-alloc-evoland-greedy.r`](020-alloc-evoland-greedy.r) | evoland's deterministic rank-and-fill allocator (`alloc_greedy()`, ethzplus/evoland-plus#65) on the same potentials, one map per estimator |
 | [`030-dinamica-native.r`](030-dinamica-native.r) | Standalone Dinamica: [`calibrate.ego`](030-dinamica-native/calibrate.ego) (Weights of Evidence ranges, coefficients and correlations for the three factors plus distances to classes) and [`simulate.ego`](030-dinamica-native/simulate.ego) (WoE probability maps and the `AllocateTransitions` submodel) |
 | [`030-lulcc.r`](030-lulcc.r) | lulcc 1.0.4 as in its GMD demo: GLMs on the 1991 map, CLUE-S and Ordered allocation in annual steps |
 | [`030-cluinpy.r`](030-cluinpy.r) | Calls [`030-cluinpy/run_pie.py`](030-cluinpy/run_pie.py): CLUinPy's logistic suitability module and CLUMondo allocation with one area service per class |
@@ -89,8 +90,8 @@ Steps sharing a number are independent.
 
 The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6.1, 4 cores,
 15 GiB) against evoland-plus at the tip of the stacked fix branches
-`claude/gifted-lamport-41q8gv-0{1..6}-*` (see TODO; the steps rely on fixes 01 and 03, and on 06
-to replay).
+`claude/gifted-lamport-41q8gv-0{1..8}-*` (see TODO; the steps rely on 01, 03 and 07, on 06 to
+replay, and on 08 for the larger scales).
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
@@ -117,12 +118,14 @@ There are 4 702 observed changed cells.
 
 | estimator × allocator | FoM | sd | FoM / null | allocation disagreement | gross change (cells) | fuzzy sim. forest→built | fair Brier skill |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| random forest × Dinamica | 0.034 | 0.0029 | 1.72 | 0.077 | 4 743 | 0.223 | −0.082 |
-| logistic regression × Dinamica | 0.034 | 0.0024 | 1.69 | 0.077 | 4 743 | 0.197 | −0.102 |
+| random forest × greedy | 0.043 | — | 2.14 | 0.075 | 4 748 | 0.231 | −0.899 |
+| logistic regression × greedy | 0.038 | — | 1.92 | 0.076 | 4 748 | 0.151 | −0.915 |
+| random forest × Dinamica | 0.036 | 0.0026 | 1.80 | 0.077 | 4 743 | 0.227 | −0.077 |
+| logistic regression × Dinamica | 0.034 | 0.0028 | 1.70 | 0.077 | 4 743 | 0.200 | −0.099 |
 | GLM suitability (lulcc) × CLUE-S | 0.033 | 0.0000 | 1.53 | 0.181 | 17 829 | 0.205 | −3.568 |
 | logistic suitability (CLUinPy) × CLUMondo | 0.033 | 0.0000 | 1.86 | 0.065 | 3 248 | 0.151 | −0.637 |
+| Weights of Evidence × Dinamica | 0.029 | 0.0024 | 1.49 | 0.078 | 4 743 | 0.210 | −0.089 |
 | random forest × CLUMPY | 0.029 | 0.0023 | 1.47 | 0.078 | 4 754 | 0.220 | −0.005 |
-| Weights of Evidence × Dinamica | 0.029 | 0.0021 | 1.47 | 0.078 | 4 743 | 0.211 | −0.092 |
 | GLM suitability (lulcc) × Ordered | 0.029 | 0.0004 | 1.42 | 0.071 | 3 901 | 0.210 | −0.720 |
 | logistic regression × CLUMPY | 0.026 | 0.0017 | 1.31 | 0.078 | 4 752 | 0.208 | 0.001 |
 | GLM suitability (lulcc) × CLUMPY | 0.025 | 0.0018 | 1.25 | 0.079 | 4 754 | 0.208 | −0.020 |
@@ -140,9 +143,9 @@ What these numbers say, so far:
    multi-resolution FoM of Moulds et al. 2015, Fig. 8, within ~0.02; their run spans 1985 → 1999.)
 2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
    regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
-   47 % of the variance to the allocator, 23 % to the estimator, 2.5 % to their interaction and
-   28 % to the replicates. (The shares move by a few points between replays, because the
-   Dinamica realisations are not seeded: 47–51 % allocator, 23–24 % estimator over three runs.) The last share is the stochastic allocation that single-map tools
+   49 % of the variance to the allocator, 24 % to the estimator, 2 % to their interaction and
+   25 % to the replicates. (The shares move by a few points between replays, because the
+   Dinamica realisations are not seeded: 47–51 % allocator, 23–24 % estimator over four runs.) The last share is the stochastic allocation that single-map tools
    hide.
 3. **Dinamica scores above CLUMPY on the same potentials, consistently.** The gain is +0.005
    to +0.008 FoM for every estimator. This is expected rather than a defect of CLUMPY: Dinamica's
@@ -158,7 +161,8 @@ What these numbers say, so far:
    | pairing | fair Brier skill |
    | --- | --- |
    | CLUMPY ensembles | −0.020 to +0.001 |
-   | Dinamica ensembles | −0.082 to −0.102 |
+   | Dinamica ensembles | −0.077 to −0.099 |
+   | greedy (deterministic, evoland) | −0.90, −0.92 |
    | CLUMondo (deterministic) | −0.64 |
    | Ordered (deterministic) | −0.72 |
    | CLUE-S (deterministic) | −3.6 |
@@ -171,6 +175,11 @@ What these numbers say, so far:
 
    The random forest has the highest FoM but a slightly worse Brier score than the logistic
    regression: calibration matters for an unbiased sampler.
+   **The greedy allocator completes the picture** (`020-alloc-evoland-greedy.r`). On the same
+   potentials, evoland's deterministic rank-and-fill reaches the highest FoM of all pairings
+   (0.038 and 0.043; 1.9 and 2.1 × random), and nearly the worst ensemble score (fair Brier
+   skill −0.90): FoM rises with greediness (CLUMPY < Dinamica < greedy) while the probabilistic
+   score falls in the same order.
 4. **Estimators.** The random forest is best under both allocators. evoland's logistic
    regression beats Dinamica's Weights of Evidence under both allocators. The two models get
    the same information except that evoland uses neighbourhood counts where WoE uses distance
@@ -217,8 +226,9 @@ What these numbers say, so far:
 | step | 0.11 M | 0.45 M | 1.0 M | 1.8 M | 4.1 M cells |
 | --- | --- | --- | --- | --- | --- |
 | evoland calibration (set-up, neighbours, fit, predict) | 45 s, 2.0 GB | 106 s, 6.7 GB | 204 s, 10.1 GB | **out of memory** (R heap 12 GB) | **OOM-killed** (14 GB) |
-| evoland CLUMPY allocation | 10 s, 0.6 GB | 13 s, 0.9 GB | 24 s, 1.5 GB | — | — |
-| evoland Dinamica allocation | 25 s, 0.9 GB | 17 s, 1.4 GB | 30 s, 2.7 GB | — | — |
+| ↳ with streamed neighbours (ethzplus/evoland-plus#66) | | | 198 s, 3.7 GB | 290 s, 5.6 GB | 599 s, 9.8 GB |
+| evoland CLUMPY allocation | 10 s, 0.6 GB | 13 s, 0.9 GB | 24 s, 1.5 GB | 34 s, 2.4 GB | 61 s, 4.0 GB |
+| evoland Dinamica allocation | 25 s, 0.9 GB | 17 s, 1.4 GB | 30 s, 2.7 GB | 43 s, 4.4 GB | 79 s, 9.5 GB |
 | Dinamica standalone (WoE calibration + allocation) | 11 s | 18 s | 34 s | 44 s | 88 s, **0.28 GB** |
 | lulcc (GLM, CLUE-S, Ordered) | 30 s, 0.8 GB | 60 s, 1.2 GB | 103 s, 1.9 GB | 658 s, 3.4 GB | 1 572 s, 6.6 GB |
 | CLUinPy (suitability, CLUMondo, 8 years) | 81 s, 0.4 GB | 66 s, 0.5 GB | 85 s, 0.6 GB | 172 s, 0.7 GB | 396 s, 1.3 GB |
@@ -245,22 +255,20 @@ Memory is the peak of the largest process. For standalone Dinamica that is the R
 
 **evoland: what limits it.**
 
-1. **The neighbourhood table, not DuckLake.** `set_neighbors()` materialises every (cell,
-   neighbour) pair within `max_distance` as an R data.table (`distance_neighbors_cpp()`), then
-   keys it, adds a `cut()` factor and commits it.
-   - **Size.** At 500 m and 100 m cells there are 79 neighbours per cell: 17 M rows at k = 1,
-     about 270 M at k = 4 and 615 M at k = 6. With the default `max_distance = 1000`, roughly 4×
-     more.
-   - **Where it fails.** The memory sampler puts evoland's peak in this step (9.7 GB at 1 M
-     cells), and both failures (k = 4, 6) happen before the first stage completes.
-   - **The fix.** On a regular grid the neighbour counts are a ring convolution of the class
-     indicator rasters. That is O(cells) memory, with no stored edge list, and also cheaper for
-     `upsert_new_neighbors()`, which currently re-joins the edge list against `lulc_data_t` every
-     period. An edge list is only needed for irregular `coords_t`.
-2. **`coords_t` covers the whole rectangle.** PIE's study area is 53 % of its bounding box, so
-   neighbours, predictors and rasters are carried for 1.9× the cells that matter. Restricting
-   `coords_t` to cells with data is possible today; evoland's docs or `create_coords_t_square()`
-   could make it the default.
+1. **The neighbourhood table, not DuckLake — fixed.** `set_neighbors()` used to build every
+   (cell, neighbour) pair within `max_distance` as one R data.table (79 pairs per cell at 500 m:
+   17 M rows at k = 1, ~615 M at k = 6), then key, `cut()` and commit it. Now
+   (ethzplus/evoland-plus#66) the C++ hash-index search hands chunks of complete neighbourhoods
+   to a callback that commits them into DuckLake as it goes, so memory is bounded by the chunk.
+   At 1 M cells the calibration peak fell from 10.1 to 3.7 GB, and 1.8 M and 4.1 M cells now run
+   on 16 GB (4.1 M: 10 min calibration, 1 min CLUMPY allocation). The relational table stays,
+   with it the independence from a regular tiling (hexagons, irregular tracts), which a ring
+   convolution would have given up. At 4.1 M the remaining peak (9.8 GB) is before the
+   neighbour step, in this pipeline's own ingestion of the full rectangle into R, which the
+   pruning below addresses.
+2. **`coords_t` covers the whole rectangle.** PIE's study area is 53 % of its bounding box.
+   `010` now restricts `coords_t` to cells with land use after ingestion, as
+   `2026-05-ssp-ch/010-ingest-lulc-data.qmd` does (the scaling numbers above predate that).
 3. **DuckLake.** Every catalog-resolving call costs a fixed 20–70 ms: `get_read_expr()`, the
    table bindings, `.has_predictions()`. A plain DuckDB query costs 1 ms. On PIE that is 75 % of a
    prediction (11 s, of which the model's `predict()` takes 1.7 s), but the cost does not grow with
@@ -300,9 +308,9 @@ actually took:
     transitions: built land is taken from forest or other alike, purely by built suitability.
     `stochastic = TRUE` thins the ranked candidates by a Bernoulli(suitability) draw before taking
     the top n. High-suitability cells survive almost always, so it stays nearly deterministic
-    (FoM sd 0.0004 here). evoland has no such allocator; the closest is the greedy stand-in in
-    `2026-09-paper-figures/010-fig2-ensembles.r`, which ranks all transitions jointly by adjusted
-    potential instead of class by class.
+    (FoM sd 0.0004 here). evoland now has the same allocator, on transitions instead of classes:
+    `alloc_greedy(arbitration = "ordered", order = ...)`, next to a `"joint"` mode that ranks all
+    transitions together by adjusted potential (ethzplus/evoland-plus#65).
   - DynaCLUE: C++ code that is hard to compile; not attempted.
 - **Dinamica EGO.**
   - **Running it.** It runs fully headless from the console. The `.ego` scripts are
