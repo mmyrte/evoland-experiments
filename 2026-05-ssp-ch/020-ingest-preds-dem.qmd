@@ -21,8 +21,9 @@ ASCII-grid ZIP directly from the geo.admin.ch OGD topology server.
 library(data.table)
 library(evoland)
 
+source(file.path("2026-05-ssp-ch", "R", "fill.R"))
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-coords_minimal <- db$coords_minimal
+domain <- domain_coords(db) # needs 010
 extent_wide <- db$extent |> terra::extend(1000)
 
 sources_dhm25 <-
@@ -61,6 +62,19 @@ dem_100m <-
   terra::crop(extent_wide)
 ```
 
+## Fill the gaps before deriving terrain
+
+DHM25 stops at the border and leaves a rim of model cells without elevation. Those are filled
+from their surroundings (`fill_gaps()` in `R/fill.R`, a multi-scale pyramid fill) *before*
+slope and aspect are derived, so the derivatives are computed on a continuous surface rather
+than filled separately — aspect is circular and cannot be averaged — and the border cells do
+not lose their slope to the edge of the DEM.
+
+```{r}
+#| label: ingest-dem-fill
+dem_100m <- fill_gaps(dem_100m)
+```
+
 ## Terrain derivatives
 
 Slope and aspect are computed on the 100 m DEM.
@@ -79,8 +93,8 @@ aspect_100m <- terra::terrain(dem_100m, v = "aspect", unit = "deg")
 
 ## Register predictors
 
-Each raster is sampled at the model coordinates and written to `pred_data_t` at
-`id_period = 0` (static terrain). Full provenance is carried in each predictor's
+Each raster is sampled at the model domain (every cell with observed land use) and written to
+`pred_data_t` at `id_period = 0` (static terrain); every domain cell has a value. Full provenance is carried in each predictor's
 `description`.
 
 ```{r}
@@ -121,7 +135,8 @@ for (pred_name in names(pred_specs)) {
   r <- spec[["rast"]]
   terra::set.names(r, pred_name)
 
-  pred_data <- extract_using_coords_t(r, coords_minimal)
+  pred_data <- extract_filled(r, domain)
+  report_fill(pred_data, pred_name)
 
   db$add_predictor(
     pred_data_raw = pred_data[, .(id_coord, id_period = 0L, value)],

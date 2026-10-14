@@ -90,6 +90,7 @@ that will actually be allocated. `runs_to_fill` below defaults to that.
 library(data.table)
 library(evoland)
 
+source(file.path("2026-05-ssp-ch", "R", "fill.R"))
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
 
@@ -178,7 +179,10 @@ cantons <-
     ),
     layer = "tlm_kantonsgebiet"
   ) |> 
-  terra::rasterize(template_rast, "kantonsnummer")
+  terra::rasterize(template_rast, "kantonsnummer") |>
+  # a cell centre on the border or in a cross-border lake falls in no canton polygon; give it
+  # the canton of its surroundings (R/fill.R)
+  fill_gaps(categorical = TRUE)
 
 # BFS canton numbering 1..26; the FTE table's abbreviations in that same order
 canton_abbr_by_number <- data.table::data.table(
@@ -191,13 +195,13 @@ canton_abbr_by_number <- data.table::data.table(
 
 stopifnot(
   "unexpected canton count in swissBOUNDARIES3D" = 
-    length(unique(as.vector(cantons))) == 27L, # +1 for NA
+    length(unique(stats::na.omit(as.vector(cantons)))) == 26L,
   "canton abbreviations do not cover the FTE table" =
     setequal(canton_abbr_by_number$canton_abbr, unique(fte_long$canton_abbr))
 )
 
 coord_canton <-
-  extract_using_coords_t(cantons, coords_minimal)[,
+  extract_using_coords_t(cantons, domain_coords(db))[,
     .(id_coord, kantonsnummer = as.integer(value))
   ][
     canton_abbr_by_number,

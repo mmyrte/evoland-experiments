@@ -5,14 +5,15 @@ completed tasks are in git history. Refs point at the relevant `.qmd`.
 
 ## State
 
-`001`–`080` have run using the `parquet_db` database; the `ducklake_db` replacement is
-being implemented because `090` backcast and extrapolation need to be able to run in
-parallel (have only run part-way through until now). `091` has run on the full grid.
+`001`–`080` have run using the `parquet_db` database; the `ducklake_db` replacement is in place,
+and `060`, `080`, `090` and `091` have been reworked for it and smoke-tested end to end on a
+synthetic database (not on the real grid). `091` has run on the full grid before the rework.
 `090d`, reporting on backcast and extrapolation, is not written.
 
-**Next up:** fix ingestion scripts w.r.t. NAs introduced at borders etc. Once that is
-accomplished, ensure that parallel writers also work for allocation. Then run backcast
-and extrapolation for real.
+**Next up:** re-run the gap-filled ingestion steps (`020-…-dem`, `020-…-soil`,
+`021-…-statent-ssp`, `022`, and `051` once run) and everything downstream of them (`030`
+onward: the predictors changed under `050` and `060`). Run `052` (both), then `060` → `080` →
+`091` / `090` for real.
 
 **Environment for claude code web:**
 R 4.6.1 on Ubuntu 24.04 with r2u. Working toolchain: data.table 1.18.4
@@ -26,15 +27,12 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 ## Blocking
 
-- [ ] 🔴 **Replace the emergency NA fill with real interpolation.**
-      `029-emergency-change-fill.qmd` overwrites `pred_meta_t$fill_value` with each predictor's
-      mean (and 0 for `soil_*`). The NAs it papers over come from the ingestion steps producing
-      no value at `coords_t` cells outside the source coverage, mostly along the national
-      border. The fix belongs in ingestion: interpolate or extrapolate to the full grid at
-      ingest time, per source. A mean fill stays defensible for genuinely sparse scenario
-      predictors, so keep `fill_value` as a mechanism and stop using it as a mask for missing
-      coverage. Retire `029` once ingestion covers the grid.
-      (`022-ingest-preds-ch2025-etl.qmd`, `020-ingest-preds-*.qmd`)
+- [ ] 🔴 **Re-run ingestion with the spatial gap fill.** `029` (national-mean `fill_value`) is
+      retired; the ingestion steps now fill gaps from their surroundings (`R/fill.R`) and write
+      values for every domain cell. The database still carries 029's `fill_value`s until the
+      steps are re-run (`add_predictor()` resets them). STATENT keeps `fill_value = 0`, which
+      is the true value of a hectare without workplaces; bioregions keep their nearest-polygon
+      assignment. Check the per-predictor filled shares the steps report.
 - [ ] **Lower `min_cardinality_abs`.** At 10000 the viable-transition set is too thin
       for a clean and realistic rate solve. Settle it both against the `040d`
       observed-transitions plot and the `070` reachability output.
@@ -159,9 +157,15 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 ## Validation via backcasting
 
-- [ ] **Size the run.** `n_perturbations = 3`, `n_replicates = 3`, `fuzzy_window = 11` were
-      chosen for legibility. Measure one member run first; start at 1 × 2 and grow.
+- [ ] **Size the run.** `n_perturbations = 3`, `n_replicates = 5`, `n_workers = 8`. Members
+      are now independent daemons, so the cost is one prediction plus `members / n_workers`
+      allocations; size `n_workers` against memory (one set of adjusted potentials per daemon).
       (`080-validate-backcasting.qmd`)
+- [x] **Backcast only the last observed transition, out of sample.** `060` fits a hold-out run
+      (`2000`) without the 2009 → 2018 transition, `080` estimates its allocation parameters
+      without it, and every member allocates 2018 from the observed 2009 map.
+  - [ ] `050`'s covariate selection still sees every period. Pass `id_period_anterior` through
+        the filter step upstream if the leak matters.
 - [ ] **Only `frac_expander` is perturbed.** `080`'s `perturb_alloc_params()` jitters that one
       column, so the sweep says nothing about sensitivity to `mean_patch_size` or
       `patch_elongation`. Widening it is now a local change to that function.
@@ -180,6 +184,9 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 - [ ] **Widen the `090` subset.** Ships at SSP1 + SSP3 under `current`, via `ssp_subset` /
       `climate_subset`. Depends on the pairing decision above.
+- [ ] **Share the first period's potentials in `090`.** Every realisation of a scenario starts
+      from the same observed map, so its first-period potentials could be predicted once on the
+      scenario run, as `091` does; they are currently predicted per realisation.
 - [ ] **Write `090d-report.qmd`.** Human-facing figures, tables and maps; mutates no state. At
       minimum the change-frequency map over the replicate ensemble and the realised-vs-demanded
       trajectory per class.
@@ -191,8 +198,9 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 ## Interventions
 
-Not implemented at any stage. The three intervention stages in
-`NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` are the reference for what is wanted.
+Allocation-stage and post-allocation (glacier) interventions are implemented in ssp-ch
+(`R/interventions.R`, `R/allocation.R`, `052`); pre-allocation and conservation expansion are
+not. `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml` remain the reference.
 
 **Direction (settled).** No intervention infrastructure upstream: `intrv_meta_t` /
 `intrv_masks_t` are to be removed from evoland-plus, and interventions are built here, per
@@ -246,25 +254,28 @@ for rare transitions and diverge only where potentials are high.
       so the scenario contrast is small. If it must be kept, express it at the allocation stage:
       scale urban-transition potentials in cells with no urban neighbour in the nearest distance
       class by k (k = 0 ≡ patcher 0); the 0.15 / 0.5 settings would need calibrating.
-- [ ] **Allocation-stage interventions** per the recipe above. Masks filtered by current land use
-      (`From_lulc_filter`), per-time-step masks, the `Agri_*` marginality quartile and
-      `Intervention_ranking` all live here and need only the anterior `lulc_data_t`.
-- [ ] **Post-allocation: deterministic glacier transitions.** No YAML defines a
-      `Post-allocation` intervention; the one post-allocation step the original ran is
-      `Scripts/Dinamica_integration/Dinamica_deterministic_trans.R`, which overwrites
-      glacier / non-glacier cells from a per-scenario glacier index after allocation. Model it
-      as a map edit in step 4, and keep the area it moves out of the demand the rate solver
-      allocates (`070` currently marks deglaciation viable for the bounds only).
-  - [x] Backcast (`080`): every cell that turned into or out of glacier between two surveys
-        takes its observed class after each period is allocated
-        (`apply_deterministic_change()`); glacier cells are left out of the figure of merit.
-  - [ ] Extrapolation (`090`): the same step with assignments from GloGEM glacier model
-        output, per scenario and period; needs an ingestion step for GloGEM.
-- [ ] **Masks have no reproducible source.** The YAML's ValPar-local paths
-      (`Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd`, municipality typology, …)
-      need the treatment the `020-` steps gave the predictors.
-- [ ] **SSP0 interventions and demand curves.** `NCCS-SSP-scenarios/Tools/SSP0_interventions.yml`
-      is not wired in.
+- [x] **Allocation-stage interventions** per the recipe above: `R/interventions.R`, specified in
+      `interventions/allocation-interventions.csv` (all five SSPs, translated from the YAMLs),
+      applied in `090` and `091`. The original `Relative` percentile rule *is* reproduced, as
+      per-cell multipliers; the departures from the original code are listed in `052`.
+  - [ ] Decide whether to keep the percentile rule or switch to plain multiplicative factors
+        (the direction argued above). The CSV makes that a change of `adjust_type`.
+  - [ ] **Pin the mask sources.** `052-ingest-intrv-masks` discovers the building-zone asset via
+        STAC and the typology via the BFS commune API; neither was reachable when it was
+        written. Pin both md5 sums after the first run, and check the column names it asserts.
+- [ ] **Post-allocation: deterministic glacier transitions.** Modelled as `det_change_t`, imposed
+      by `R/allocation.R` after every allocation (backcast: observed change; extrapolation:
+      GloGEM indices, `052-ingest-glacier-projections`).
+  - [x] Backcast (`080`), with the glacier transitions' demand set to zero.
+  - [x] Extrapolation: ingestion step written; reads the GloGEM index files of the NCCS data
+        deposit (`SSPCH_GLACIER_INDEX_DIR`). RCP per climate run is provisional
+        (`current` → RCP2.6).
+  - [ ] **Take the deterministic glacier area out of `070`'s demand**, or the allocator converts
+        glacier a second time in the extrapolation.
+- [ ] **Protected-area masks have no reproducible source** (the original's `PA_SWISS.shp` is
+      hand-assembled). `052` reads GeoTIFFs from the NCCS deposit if pointed at them; until
+      then the conservation interventions are skipped with a warning.
+- [ ] **SSP0 demand curves.** Its interventions are in the CSV; check its demand in `070`.
 - [ ] **Conservation interventions need reimplementing.** SSP1's
       `Conservation_expansion_and_preservation` is a spatial optimisation over
       `Ca_expansion_target` / `Ca_prioritization` / `Ca_patch_preference` / `Ca_expansion_rate`,
@@ -275,30 +286,22 @@ for rare transitions and diverge only where potentials are high.
 
 ## Upstream asks (evoland-plus)
 
-ethzplus/evoland-plus#49 (per-run `trans_pot_t`, run-lineage reads, exported single-period
-allocators), #50 (`update_neighbors`) and #53 (`create_alloc_params_t()` returns the best
-estimate only) and #55 (validation metrics) are merged into `develop`. The `evoland` pin in
-`rproject.toml` / `rv.lock` is on the head of #57 (d1ee3cf: `lulc_crosstab_v()` and
-`figure_of_merit_v(exclude_id_lulc = )`, which `080` uses); bump it to `develop` once #57 is
-merged.
+The `evoland` pin in `rproject.toml` / `rv.lock` is on the head of the evoland-plus branch
+`claude/gallant-dijkstra-93w9qx`: `develop` plus #57 (`lulc_crosstab_v()`,
+`figure_of_merit_v(exclude_id_lulc = )`), the `id_period_anterior` / `id_period_post` filters on
+`fit_partial_models()`, `fit_full_models()` and `create_alloc_params_t()` that `060` / `080` use,
+and a fix for upserting tables whose columns are all keys (`trans_preds_t`). Bump it to `develop`
+once those are merged.
 
-- [ ] 🔴 **Re-run `080` and `091` on the new pin** (on the group's infrastructure, as
-      part of running the pipeline end to end). The pin is bumped; neither step has run on it
-      yet, and `080`'s rewritten evaluation has only been checked on a synthetic database.
-      Before #49, run-lineage reads of tables without
-      `id_period` returned every ancestor's rows. In `091`, members' lineage runs through their
-      scenario run to run 0, and both carry `alloc_params_t` (from `091` and `090`), so
-      `alloc_clumpy_one_period()` passed misaligned patch parameters to C++. Also check `080`
-      if run 0 already held parameters from an earlier execution when it ran.
+- [ ] 🔴 **Merge the evoland-plus branch above** (#57 and the two follow-ups), then re-pin.
 - [x] **Fuzzy similarity of differences** — ethzplus/evoland-plus#55, merged. The old
       `calc_transition_similarity()` compared kernel-weighted category shares over the whole
       raster, so the unchanged background dominated and everything scored near 1; `080`'s
       masked `similarity_change` did not fix that. #55 reimplements it after Hagen (2003) /
       Dinamica, and adds `db$figure_of_merit_v()`. `080` now reads `similarity` directly and
       takes its figure of merit, null and per-transition FoM from `figure_of_merit_v()`.
-- [ ] **Cross-tabulation** — ethzplus/evoland-plus#57 adds `db$lulc_crosstab_v()` (two periods,
-      each from its own run). Not used in `080` yet; the observed-vs-simulated table of the
-      final period is the obvious place.
+- [x] **Cross-tabulation** — `080` uses `db$lulc_crosstab_v()` for the realised quantities and
+      the observed-vs-simulated table of the backcast period.
 - [ ] The upstream `eval_alloc_params_t()` is an initial approach for running all
       id_runs in that table and to validate the results. Since running multiple id_runs
       across one or more id_periods is going to be a common analytic scenario, that eval
@@ -306,6 +309,8 @@ merged.
       id_period subset to evaluate with either clumpy or dinamica.
 - [ ] **Remove `intrv_meta_t` / `intrv_masks_t`** — #54, with a vignette on representing
       policy mechanisms (settlement form, spatial steering, exogenous change). Awaiting review.
+- [ ] **`trans_preds_t`'s table binding overwrites the whole table**, unlike every other
+      per-run table; `060` commits with `method = "upsert"` explicitly. Worth making it upsert.
 - [ ] **`terra::panel()` / `plot()` need `type = "continuous"`** for an ensemble-share layer.
       With `n_members + 1` distinct values terra falls back to a categorical legend, printing
       full-precision fractions as class labels and, at small member counts, failing to shade the

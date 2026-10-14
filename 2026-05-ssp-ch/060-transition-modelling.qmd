@@ -13,6 +13,19 @@ Two passes, following the evoland-plus workflow:
 2. **Full models** — the best partial model per transition is refitted on all available data.
    `predict_trans_pot()` uses these.
 
+Both passes are run twice, onto two runs:
+
+- **Run `0`**, trained on every observed transition (1985→1997, 1997→2009, 2009→2018). This is
+  the model set the extrapolation (`090`, `091`) inherits.
+- **The hold-out run** (`id_run_holdout`, a child of `0`), trained on every observed transition
+  *except the last*. The backcast in `080` allocates exactly that last transition and inherits
+  these models through the run lineage, so it is scored on change the models never saw. The
+  allocation parameters it uses are estimated with the same hold-out (`080`).
+
+The covariate selection in `050` still sees every period; the hold-out run reuses its
+`trans_preds_t`. That leaks the last transition into the *choice* of predictors, though not into
+any fitted coefficient.
+
 ## Learner and selection criterion
 
 A plain **random forest** (`classif.ranger`), selected on **AUC**. Deliberately unambitious for
@@ -32,9 +45,11 @@ therefore the *ranking* of cells by transition propensity, not the calibration o
 probabilities, and AUC scores exactly that ranking. It is also insensitive to class imbalance,
 which matters when a rare transition has a positive rate below 1 %.
 
-We also fit a **featureless baseline** first. It costs nothing and makes the forest's AUC
-interpretable: a transition where the forest barely beats 0.5 has no usable spatial signal, and
-is better caught here than after allocation produces noise.
+We also fit a **featureless baseline**, plus naive Bayes and a logistic regression as cheap
+comparators. The baseline costs nothing and makes the forest's AUC interpretable: a transition
+where the forest barely beats 0.5 has no usable spatial signal, and is better caught here than
+after allocation produces noise. Whichever learner scores best per transition is refitted in the
+full pass, so the comparators can win where the forest overfits.
 
 > **Open (see `TODO.md`):** `sample_frac = 0.7` is evoland's default and what both package
 > vignettes use, so it is a convention rather than a justified choice. A learning-curve check —
@@ -52,12 +67,83 @@ seed <- 42L
 num_trees <- 100L
 max_depth <- 20L
 n_workers <- 21L
+id_run_holdout <- 2000L # calibration hold-out for the backcast; 080 hangs its runs below it
+holdout_kind <- "calibration hold-out"
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db$id_run <- 0L
 
 stopifnot(
   "trans_preds_t is empty - run 050-covariate-selection.qmd first" =
     nrow(db$trans_preds_t) > 0L
+)
+
+learners <- list(
+  mlr3::lrn("classif.featureless", predict_type = "prob"),
+  mlr3::lrn("classif.naive_bayes", predict_type = "prob"),
+  mlr3::lrn("classif.log_reg", predict_type = "prob"),
+  mlr3::lrn(
+    "classif.ranger",
+    predict_type = "prob",
+    num.trees = num_trees,
+    max.depth = max_depth
+  )
+)
+measures <- c("classif.auc", "classif.acc")
+
+# anterior periods of the observed transitions; the last one is held out of the backcast models
+obs_periods <- sort(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+id_period_anterior_all <- head(obs_periods, -1L)
+id_period_anterior_holdout <- head(id_period_anterior_all, -1L)
+stopifnot(
+  "need at least three observed periods to hold one transition out" =
+    length(id_period_anterior_holdout) >= 1L
+)
+message(
+  "Run 0 trains on anterior periods ", toString(id_period_anterior_all),
+  "; hold-out run ", id_run_holdout, " on ", toString(id_period_anterior_holdout)
+)
+```
+
+## The hold-out run
+
+Registered here, not in `001`, because it exists only to carry these models. It shares run `0`'s
+predictor selection: `fit_partial_models()` labels its output with the `id_run` of the
+`trans_preds_t` rows it reads, so the selection is copied onto the hold-out run.
+
+```{r}
+#| label: transition-modelling-holdout-run
+existing_runs <- db$runs_t
+clash <- existing_runs[id_run == id_run_holdout]
+stopifnot(
+  "id_run_holdout is taken by a run that is not the calibration hold-out" =
+    nrow(clash) == 0L || identical(clash[["kind"]], holdout_kind)
+)
+if (nrow(clash) == 0L) {
+  db$commit(
+    as_runs_t(rbind(
+      existing_runs,
+      data.table(
+        id_run = id_run_holdout,
+        parent_id_run = 0L,
+        description = paste0(
+          "Calibration hold-out: models and allocation parameters without the transition ",
+          "from period ", max(id_period_anterior_all)
+        ),
+        kind = holdout_kind
+      ),
+      fill = TRUE
+    )),
+    "runs_t",
+    "overwrite" # may add the `kind` column
+  )
+}
+
+# upsert explicitly: the trans_preds_t binding overwrites the whole table, run 0 included
+db$commit(
+  as_trans_preds_t(copy(db$trans_preds_t)[, id_run := id_run_holdout]),
+  "trans_preds_t",
+  method = "upsert"
 )
 ```
 
@@ -69,49 +155,25 @@ transition, which is what makes `060d` possible.
 
 ```{r}
 #| label: transition-modelling-partial
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
-
-# too naive
-# db$trans_models_t <- db$fit_partial_models(
-#   learner = mlr3::lrn("classif.rpart", predict_type = "prob"),
-#   measures = c("classif.auc", "classif.acc"),
-#   sample_frac = sample_frac,
-#   seed = seed,
-#   cluster = cluster
-# )
-
-db$trans_models_t <- db$fit_partial_models(
-  learner = mlr3::lrn("classif.naive_bayes", predict_type = "prob"),
-  measures = c("classif.auc", "classif.acc"),
-  sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
-)
-
-db$trans_models_t <- db$fit_partial_models(
-  learner = mlr3::lrn("classif.log_reg", predict_type = "prob"),
-  measures = c("classif.auc", "classif.acc"),
-  sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
-)
-
-db$trans_models_t <- db$fit_partial_models(
-  learner = mlr3::lrn(
-    "classif.ranger",
-    predict_type = "prob",
-    num.trees = num_trees,
-    max.depth = max_depth
-  ),
-  measures = c("classif.auc", "classif.acc"),
-  sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
-)
-
-if (!is.null(cluster)) {
-  mirai::stop_cluster(cluster)
+fit_partial_all_learners <- function(id_run, id_period_anterior) {
+  db$id_run <- id_run
+  cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+  on.exit(if (!is.null(cluster)) mirai::stop_cluster(cluster), add = TRUE)
+  for (learner in learners) {
+    db$trans_models_t <- db$fit_partial_models(
+      learner = learner,
+      measures = measures,
+      sample_frac = sample_frac,
+      seed = seed,
+      cluster = cluster,
+      id_period_anterior = id_period_anterior
+    )
+  }
+  db$id_run <- 0L
 }
+
+fit_partial_all_learners(0L, id_period_anterior_all)
+fit_partial_all_learners(id_run_holdout, id_period_anterior_holdout)
 ```
 
 ## Does the forest beat the baseline?
@@ -176,18 +238,23 @@ partial model per transition and refits it on all available data.
 
 ```{r}
 #| label: transition-modelling-full
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
-trans_models_full <- db$fit_full_models(
-  select_score = "classif.auc",
-  select_maximize = TRUE,
-  cluster = cluster
-)
-
-if (!is.null(cluster)) {
-  mirai::stop_cluster(cluster)
+fit_full_best <- function(id_run, id_period_anterior) {
+  db$id_run <- id_run
+  cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+  on.exit(if (!is.null(cluster)) mirai::stop_cluster(cluster), add = TRUE)
+  trans_models_full <- db$fit_full_models(
+    select_score = "classif.auc",
+    select_maximize = TRUE,
+    cluster = cluster,
+    id_period_anterior = id_period_anterior
+  )
+  db$trans_models_t <- trans_models_full
+  db$id_run <- 0L
+  trans_models_full
 }
 
-db$trans_models_t <- trans_models_full
+trans_models_full <- fit_full_best(0L, id_period_anterior_all)
+trans_models_holdout <- fit_full_best(id_run_holdout, id_period_anterior_holdout)
 ```
 
 ## Reconcile viability with what actually trained
@@ -226,6 +293,32 @@ message(
 )
 ```
 
+`trans_meta_t` is shared by all runs, so the hold-out run cannot demote a transition on its own.
+A viable transition whose hold-out model did not train — typically one that is too rare in the
+earlier periods alone — falls back to run `0`'s full model. That transition is then scored in
+`080` with the last transition in its training data, so the fallbacks are listed.
+
+```{r}
+#| label: transition-modelling-reconcile-holdout
+has_full_model <- function(models) {
+  unique(models$id_trans[!vapply(models$learner_full, is.null, logical(1L))])
+}
+holdout_fallback <- setdiff(
+  db$trans_meta_t[is_viable == TRUE, id_trans],
+  has_full_model(trans_models_holdout)
+)
+if (length(holdout_fallback) > 0L) {
+  warning(
+    "Hold-out run falls back to run 0's full model for transition(s): ",
+    paste(holdout_fallback, collapse = ", ")
+  )
+  db$trans_models_t <- as_trans_models_t(
+    copy(trans_models_full[id_trans %in% holdout_fallback])[, id_run := id_run_holdout]
+  )
+}
+holdout_fallback
+```
+
 ```{r}
 #| label: transition-modelling-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
@@ -235,6 +328,8 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   "model_sample_frac", as.character(sample_frac),
   "model_num_trees", as.character(num_trees),
   "model_max_depth", as.character(max_depth),
-  "model_seed", as.character(seed)
+  "model_seed", as.character(seed),
+  "model_holdout_id_run", as.character(id_run_holdout),
+  "model_holdout_fallback", paste(holdout_fallback, collapse = ",")
 ))
 ```

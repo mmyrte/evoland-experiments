@@ -17,9 +17,11 @@ couple of SSPs under one climate framing. The full cross registered in `001` is
 backcast replicate, so the subset is a deliberate first pass rather than a limitation of the
 code — widening it is a parameter change.
 
-**No interventions.** The SSP narratives in `NCCS-SSP-scenarios` are realised not only by the
-demand curves (which `070` carries) but also by spatial interventions per SSP. None of them are
-applied here; the comments in the allocation section say what each kind would take.
+**Interventions.** The SSP narratives in `NCCS-SSP-scenarios` are realised not only by the
+demand curves (which `070` carries) but also by spatial interventions per SSP. The
+allocation-stage ones are applied to each period's potentials (`R/interventions.R`, masks from
+`052`); deterministic glacier change is imposed on each allocated map (`det_change_t`, `052-ingest-glacier-projections`).
+See the allocation section for what is left out.
 
 ## Parameters
 
@@ -32,10 +34,19 @@ ssp_subset <- c("SSP1", "SSP3") # widen once the runtime per leaf is known
 climate_subset <- "current" # "current" | "gwl"; see 001-setup-db.qmd
 n_replicates <- 3L # stochastic realisations per scenario run
 seed <- 42L
-select_score <- "classif.auc" # must match 06 and 08
+select_score <- "classif.auc" # must match 060 and 080
 select_maximize <- TRUE
+n_workers <- 6L # mirai daemons, one realisation each; size against memory, not cores
+apply_interventions <- TRUE # the SSP's allocation-stage interventions; needs 052
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+# relative, as the catalog was created: DuckLake rejects the same data path spelled
+# differently, so the daemons open it from the same working directory (see `everywhere()`)
+db_path <- "ssp-ch.evolanddb"
+helpers <- normalizePath(file.path("2026-05-ssp-ch", "R", c("allocation.R", "interventions.R")))
+intervention_spec_path <- file.path("2026-05-ssp-ch", "interventions", "allocation-interventions.csv")
+
+for (h in helpers) source(h)
+db <- evoland_db$new(path = db_path)
 db$id_run <- 0L
 
 # Summaries derived from an evoland table inherit its class and print with the wrong header
@@ -47,16 +58,10 @@ plain <- function(x) {
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 lulc_anchor <- db$lulc_data_t[id_period == anchor_period]
 
-# proof of concept - run extrapolation at the same time as backcast
-db$id_run <- 2100
-d <- db$alloc_params_t
-d[, id_run := 0]
-db$id_run <- 0
-db$alloc_params_t <- d
 stopifnot(
   "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
     nrow(db$alloc_params_t) > 0L,
-  "no viable transitions - run 040 and 06" =
+  "no viable transitions - run 040 and 060" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
   "no fitted models - run 060-transition-modelling.qmd first" =
     nrow(db$trans_models_t) > 0L
@@ -195,77 +200,94 @@ realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
 
 ## Allocate
 
+Each realisation is one task on a mirai daemon running `allocate_member()` (in
+`R/allocation.R`), which opens its own DuckLake connection and walks the periods: predict the
+realisation's potentials from its own previous map, apply the SSP's allocation-stage
+interventions active in that period (`interventions/allocation-interventions.csv`, masks from
+`052`), allocate, impose `det_change_t` (glacier change from `052-ingest-glacier-projections`, inherited from the climate
+run), commit, and update the neighbour predictors before the next period. Prediction inside a
+daemon is sequential: the parallelism is across realisations.
+
+```{r}
+#| label: extrapolate-interventions
+intervention_spec <- read_intervention_spec(intervention_spec_path)
+if (apply_interventions) {
+  stopifnot(
+    "intervention masks missing - run 052-ingest-intrv-masks.qmd or set apply_interventions" =
+      intrv_mask_table %in% db$list_tables()
+  )
+}
+realisation_runs <- db$runs_t[kind == "extrapolation realisation"]
+period_rows <- db$periods_t[id_period %in% alloc_periods]
+ssp_interventions <- lapply(setNames(nm = unique(realisation_runs$ssp)), function(scenario) {
+  if (!apply_interventions) {
+    return(NULL)
+  }
+  setNames(
+    lapply(seq_len(nrow(period_rows)), function(i) {
+      interventions_for_period(intervention_spec, scenario, period_rows[i])
+    }),
+    period_rows$id_period
+  )
+})
+rbindlist(lapply(ssp_interventions, rbindlist, idcol = "id_period"), idcol = "ssp")[
+  , .(periods = paste(unique(id_period), collapse = ",")), by = .(ssp, intervention)
+]
+```
+
 ```{r}
 #| label: extrapolate-allocate
 #| output: false
-realisation_runs <- db$runs_t[kind == "extrapolation realisation"]
-options("evoland.use_prefetch_predict" = TRUE)
-future::plan(future.mirai::mirai_multisession, workers = 10)
-for (i in seq_len(nrow(realisation_runs))) {
-  db$id_run <- realisation_runs$id_run[i]
-
-  set.seed(realisation_runs$seed[i])
-
-  db$alloc_clumpy(
-    id_periods = alloc_periods,
+mirai::daemons(n_workers)
+mirai::everywhere({
+  setwd(wd)
+  for (h in helpers) source(h)
+}, wd = getwd(), helpers = helpers)
+realisation_tasks <- mirai::mirai_map(
+  realisation_runs[, .(id_run, seed, ssp)],
+  function(id_run, seed, ssp, db_path, alloc_periods, select_score, select_maximize,
+           ssp_interventions) {
+    allocate_member(
+      db_path = db_path,
+      id_run = id_run,
+      id_periods = alloc_periods,
+      seed = seed,
+      select_score = select_score,
+      select_maximize = select_maximize,
+      predict = TRUE,
+      interventions = ssp_interventions[[ssp]]
+    )
+  },
+  .args = list(
+    db_path = db_path,
+    alloc_periods = alloc_periods,
     select_score = select_score,
-    select_maximize = select_maximize
+    select_maximize = select_maximize,
+    ssp_interventions = ssp_interventions
   )
-}
-future::plan("sequential")
-db$id_run <- 0L
+)
+allocation_log <- rbindlist(realisation_tasks[.stop])
+mirai::daemons(0)
 ```
 
-<!--
---- interventions (not implemented) -------------------------------------------------------
-The SSP interventions come in three stages (see the header of any
-NCCS-SSP-scenarios/Tools/SSP*_interventions.yml). Where each would attach:
+```{r}
+#| label: extrapolate-allocation-log
+skipped <- setdiff(unlist(strsplit(allocation_log$interventions_skipped, ",")), "")
+if (length(skipped) > 0L) {
+  warning("Interventions skipped for a missing mask: ", paste(unique(skipped), collapse = ", "))
+}
+allocation_log[, .(
+  realisations = .N,
+  median_seconds = median(seconds),
+  n_det_change = max(n_det_change),
+  n_cells_intervened = max(n_cells_intervened)
+), by = id_period]
+```
 
-* Pre-allocation -- patch-geometry adjustments. Already reachable: write a modified
-  alloc_params_t row set onto the scenario run instead of inheriting run 0's. Recipe and the
-  two conversion traps (Relative vs Absolute; isometry -> elongation) are in 080, next to where
-  the parameters are estimated.
-
-* Allocation -- per-cell transition-probability adjustment inside a mask. The evoland analogue
-  is trans_pot_t: predict potentials, rewrite the masked cells, then allocate without
-  re-predicting. The per-SSP rules are all of the form
-
-      Prob_adjust_type: Absolute   -> set the potential inside/outside the mask to a value
-      Prob_adjust_type: Relative   -> raise cells above the Prob_adjust_intervention_percentile
-                                      of the in-mask potential distribution and/or lower those
-                                      below the non-intervention percentile outside it,
-                                      subject to Prob_adjust_threshold and Prob_adjust_valency
-
-  and would run per period, ordered by Intervention_ranking, restricted to
-  Transition_target_classes (Urban in every file we have) and optionally From_lulc_filter.
-
-  **This is currently not possible without an upstream change.** alloc_clumpy_one_period()
-  calls predict_trans_pot() unconditionally as its first act and that write upserts
-  trans_pot_t, so any hand-edited potentials are overwritten before they are read -- including
-  under use_parent_trans_pot, which only redirects *which* run is predicted for. What is needed
-  is either a `skip_prediction` flag or a hook applied between prediction and
-  adjusted_trans_pot_v(). Note also that the adjustment interacts with the column scaling in
-  adjusted_trans_pot_v(): that view rescales every transition's potentials so their mean matches
-  the target rate, so an intervention that raises potentials inside a mask does not raise the
-  amount of change, it only moves it -- which is the intended semantics, but means "Absolute
-  100" cannot be read as "these cells convert".
-
-* Post-allocation -- direct edit of the simulated map. Trivial here: rewrite lulc_data_t for the
-  run and period after allocation, before the next period is allocated (so the edit propagates
-  through the chain). No upstream change needed.
-
-Masks. intrv_meta_t / intrv_masks_t exist upstream to hold exactly this (metadata + the
-id_coord set per intervention), and nothing in the allocator reads them yet. Before they can be
-filled, the mask sources need reproducible replacements: the YAML points at ValPar-local paths
-(Data/Spat_prob_perturb_layers/Bulding_zones/BZ_raster.grd, .../Municipality_typology/...),
-which is the same provenance problem the 02x ingestion steps solved for the predictors.
-
-Conservation interventions are a further step again: SSP1's Conservation_expansion_and_
-preservation is not a static mask but a spatial optimisation (Ca_expansion_target,
-Ca_prioritization, Ca_patch_preference, Ca_expansion_rate), implemented in the original as
-Scripts/Functions/identify_CAs_by_target_and_configuration.R and friends. That is a port, not a
-translation, and should be scoped separately.
--->
+The **pre-allocation** `Spatial_zoning` interventions (patcher share of urban transitions) are
+not applied; see `TODO.md` § Interventions for why they are proposed for dropping. SSP1's
+`Conservation_expansion_and_preservation` is a spatial optimisation rather than a mask and is
+also out; `052` lists what is and is not translated.
 
 ## Did the allocation deliver the scenario?
 
@@ -403,7 +425,8 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   "extrapolate_n_replicates", as.character(n_replicates),
   "extrapolate_seed", as.character(seed),
   "extrapolate_alloc_params_from", "run 0 (selected in 080-validate-backcasting.qmd)",
-  "extrapolate_interventions", "none applied",
+  "extrapolate_interventions",
+  if (apply_interventions) "allocation-interventions.csv" else "none applied",
   "extrapolate_max_area_drift_pct",
   as.character(signif(max(drift_summary$max_abs_drift_pct), 4))
 ))

@@ -73,31 +73,45 @@ marked "written" may have been executed without leaving a trace. Rendered report
 | --- | --- | --- |
 | `001-setup-db.qmd` | `ssp-ch.evolanddb`, coords grid, periods, scenario `runs_t` | run |
 | `010-ingest-lulc-data.qmd` | Arealstatistik NOAS04 LULC (1985/97/09/18) | run |
-| `020-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect | run |
+| `020-ingest-preds-dem.qmd` | DHM25 → elevation/slope/aspect; gap-filled | run; re-run for gap filling |
 | `020-ingest-preds-swisstlm3d.qmd` | Distance to lakes/rivers/roads | run |
 | `020-ingest-preds-bioregions.qmd` | BAFU biogeographic regions/subregions (categorical) | run |
-| `020-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths | run |
+| `020-ingest-preds-soil.qmd` | Swiss Soil Property Map sand/clay/OC × 4 depths; gap-filled | run; re-run for gap filling |
 | `020-ingest-preds-statent.qmd` | STATENT employment (FTE by sector), historical levels | run |
 | `020d-ingest-preds-ch20205-check.qmd` | _diag:_ precip-raster sanity check | written |
 | `021-ingest-preds-ch2025-download.qmd` | Probe + download CH2025 climate netCDFs | run |
-| `021-ingest-preds-statent-ssp.qmd` | SSP employment projection; **source provenance unknown** | run |
-| `022-ingest-preds-ch2025-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0` | run |
-| `029-emergency-change-fill.qmd` | Stopgap: overwrite `fill_value` with per-predictor means | run — to be replaced, see TODO |
+| `021-ingest-preds-statent-ssp.qmd` | SSP employment projection; **source provenance unknown** | run; re-run for gap filling |
+| `022-ingest-preds-ch2025-etl.qmd` | CH2025 `-obs` → predictors at `id_period 0`; gap-filled | run; re-run for gap filling |
 | `030-neighbors.qmd` | Neighbourhood predictors (land-use categories only) | run |
 | `040-viable-transition-identification.qmd` | Commit viable transitions; `min_cardinality_abs = 10000`, provisional | run |
 | `040d-viable-transition-identification.qmd` | _diag:_ observed-transitions plot | run |
 | `050-covariate-selection.qmd` | GRRF importance selection; `importance_rel_cut = 0.2` | run |
 | `051-ingest-preds-ch2025-3-gwl.qmd` | CH2025 `-gwl` projections as per-run/period overrides | written |
-| `060-transition-modelling.qmd` | Transition models, selected on AUC | run |
+| `052-ingest-intrv-masks.qmd` | Intervention masks (building zones, municipality types, marginality, PAs) → `intervention_mask_t` | written; sources unpinned |
+| `052-ingest-glacier-projections.qmd` | GloGEM glacier indices → `det_change_t` on the climate runs | written; needs the NCCS data deposit |
+| `060-transition-modelling.qmd` | Transition models, selected on AUC; run `0` and a calibration hold-out run | written (hold-out new) |
 | `060d-transition-modelling.qmd` | _diag:_ held-out ROC + AUC ranking per transition | run |
 | `070-transition-rates-solver.qmd` | SSP demand → LP solver → `trans_rates_t` | written |
-| `080-validate-backcasting.qmd` | Allocation params → backcast → fuzzy similarity + figure of merit | written |
-| `090-extrapolate.qmd` | Stochastic extrapolation per SSP × climate | written |
-| `091-stochastic-alloc-2030.qmd` | One period × 20 members × 5 SSPs → change-intensity maps | run, full CH grid |
+| `080-validate-backcasting.qmd` | Hold-out allocation params → parallel backcast of the last observed period → fuzzy similarity + figure of merit → promote params to run `0` | written; smoke-tested |
+| `090-extrapolate.qmd` | Stochastic extrapolation per SSP × climate, parallel realisations, interventions | written; smoke-tested |
+| `091-stochastic-alloc-2030.qmd` | One period × 20 members × 5 SSPs, one worker per SSP, interventions → change-intensity maps, one map per transition | run (before rework); smoke-tested |
 | `090d-report.qmd` | _diag:_ reporting — figures, tables, maps | not written |
 
-Interventions are not yet implemented at any stage; see [`TODO.md`](TODO.md) § Interventions for
-where that is going.
+**Shared helpers** live in [`R/`](R/), sourced by the steps (and by the mirai daemons):
+`allocation.R` (member workers, deterministic change), `interventions.R` (allocation-stage
+interventions) and `fill.R` (spatial gap filling for the ingestion steps).
+
+**Parallelism.** DuckLake takes concurrent writers, so `080`, `090` and `091` run their members as
+independent mirai daemons, each with its own connection, instead of parallelising prediction
+with `future`. The daemons open the database by the same relative path from the same working
+directory, because DuckLake rejects a data path spelled differently from the one it was created
+with.
+
+**Interventions.** The allocation-stage interventions of `NCCS-SSP-scenarios` are specified in
+[`interventions/allocation-interventions.csv`](interventions/allocation-interventions.csv) and
+applied to each scenario's potentials before allocation; glacier change is imposed after
+allocation from `det_change_t`. What was translated, and where the translation departs from the
+original code, is in `052-ingest-intrv-masks.qmd`.
 
 > **Reference implementations.** Check out the package vignettes — `evoland.qmd` for the
   calibrate → rates → allocate chain, and

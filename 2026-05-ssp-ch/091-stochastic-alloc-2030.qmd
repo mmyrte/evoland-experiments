@@ -4,7 +4,8 @@ title: "091 — Stochastic allocation to 2030"
 
 One extrapolated period, allocated **20 times per SSP**, gathered into a per-cell **change
 intensity**: the share of the ensemble in which a cell leaves its last observed class. Five
-scenarios, five maps.
+scenarios, five maps — plus one five-panel map per transition, the share of members in which a
+cell makes that particular transition.
 
 This is deliberately the smallest useful forward experiment. `090` walks the whole trajectory to
 2060 and is dominated by compounding; here the anterior state is the same observed map for every
@@ -12,17 +13,20 @@ member of every scenario, so the only things that differ are the SSP's demand (f
 the allocator's RNG. What the maps show is therefore *where each scenario's demand insists on
 change*, with the allocator's arbitrariness averaged out rather than hidden inside one draw.
 
-Two properties of the design are worth stating up front, because they are what make 100
+Three properties of the design are worth stating up front, because they are what make 100
 allocations affordable:
 
+- **One worker per SSP.** Each scenario is an independent mirai daemon with its own DuckLake
+  connection: it predicts its scenario's potentials, applies the scenario's allocation
+  interventions to them, and then allocates its members one after another. The five run in
+  parallel; prediction inside a worker is sequential, so there is no nested `future` plan.
 - **The transition potentials are computed once per scenario, not once per member.** The
-  anterior state is identical across an SSP's members, so the potential surface is too.
-  `use_parent_trans_pot = TRUE` (exposed upstream in `ca4d681`) points every member at its
-  parent scenario run's `trans_pot_t`, so the 20 members share one prediction — the pattern the
-  `stochastic-allocation-sensitivity` vignette now uses.
+  anterior state is identical across an SSP's members, so the potential surface is too. The
+  worker predicts onto the scenario run and the members find the potentials through the run
+  lineage.
 - **The single-period allocator is called directly**, bypassing the multi-period
-  `alloc_clumpy()` wrapper. See the allocation section for why; it is the difference between
-  this step being cheap and it being unrunnable.
+  `alloc_clumpy()` wrapper, which predicts inside the same call and offers no hook for the
+  interventions.
 
 ```{r}
 #| label: alloc2030-params
@@ -34,11 +38,20 @@ n_members <- 20L # stochastic allocations per SSP
 seed_base <- 2030L
 select_score <- "classif.auc" # must match what 060 stored in crossval_score
 select_maximize <- TRUE
-n_workers <- 20L # future workers for the prediction phase
 member_id_factor <- 1000L # id_run = scenario * factor + member
 member_kind <- "stochastic single-period member"
+apply_interventions <- TRUE # the SSP's allocation-stage interventions; needs 052
+map_threshold <- 0.1 # per-transition maps: cells below this share are left blank
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+# relative, as the catalog was created: DuckLake rejects the same data path spelled
+# differently, so the daemons open it from the same working directory (see `everywhere()`)
+db_path <- "ssp-ch.evolanddb"
+helpers <- normalizePath(file.path("2026-05-ssp-ch", "R", c("allocation.R", "interventions.R")))
+intervention_spec_path <- file.path("2026-05-ssp-ch", "interventions", "allocation-interventions.csv")
+map_dir <- file.path("2026-05-ssp-ch", "091-maps")
+
+for (h in helpers) source(h)
+db <- evoland_db$new(path = db_path)
 db$id_run <- 0L
 
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
@@ -97,42 +110,27 @@ stopifnot(
 scenario_runs[, .(id_run, parent_id_run, ssp, climate_framing, description)]
 ```
 
-## Allocation parameters: the unperturbed estimate from `080`
+## Allocation parameters: the estimate `080` promoted
 
-`080` registers one run per parameter set, the lowest-numbered of which is the unperturbed
-estimate straight out of `create_alloc_params_t()` — the perturbed siblings exist only to be
-compared against it. We take that set and write it onto each scenario run, so the members
-inherit it through the lineage.
-
-Writing to the scenario runs rather than to run `0` is deliberate: it leaves whatever `080`
-selected on run `0` alone, and it keeps this step's parameter choice visible in the run tree
-instead of implicit in a shared ancestor.
+`080` re-estimates the allocation parameters from every observed transition and writes them, with
+the winning parameter set's perturbation, to run `0`. We copy them onto each scenario run, so
+this step's parameter choice is visible in the run tree rather than implicit in a shared
+ancestor, and a later re-run of `080` does not silently change what these members used.
 
 ```{r}
 #| label: alloc2030-alloc-params
+promoted_params <- db$alloc_params_t # run 0
 stopifnot(
-  "no backcast parameter runs - run 080-validate-backcasting.qmd first" =
-    "kind" %in% names(runs) && nrow(runs[kind == "backcast parameters"]) > 0L
-)
-
-alloc_param_run <- min(runs[kind == "backcast parameters", id_run])
-db$id_run <- alloc_param_run
-unperturbed_params <- db$alloc_params_t
-db$id_run <- 0L
-
-stopifnot(
-  "the unperturbed parameter run carries no rows" = nrow(unperturbed_params) > 0L,
+  "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
+    nrow(promoted_params) > 0L,
   "allocation parameters are missing for some viable transition" =
-    all(db$trans_meta_t[is_viable == TRUE, id_trans] %in% unperturbed_params$id_trans)
+    all(db$trans_meta_t[is_viable == TRUE, id_trans] %in% promoted_params$id_trans)
 )
 
 for (r in scenario_runs$id_run) {
-  db$alloc_params_t <- as_alloc_params_t(copy(unperturbed_params)[, id_run := r])
+  db$alloc_params_t <- as_alloc_params_t(copy(promoted_params)[, id_run := r])
 }
-db$id_run <- 0L
-
-message("Using allocation parameters from run ", alloc_param_run)
-unperturbed_params[, .(id_trans, mean_patch_size, patch_elongation, frac_expander)]
+promoted_params[, .(id_trans, mean_patch_size, patch_elongation, frac_expander)]
 ```
 
 ## Rates for the single step
@@ -239,38 +237,95 @@ members[, .N, by = .(ssp, parent_id_run)]
 ```
 
 
+## Interventions
+
+The allocation-stage interventions of each SSP that are active in the target period, from
+`interventions/allocation-interventions.csv` (see `052-ingest-intrv-masks.qmd`). They edit the
+scenario's potentials once, before any member allocates, so every member sees the same edited
+surface. Glacier change, the post-allocation intervention, needs no switch: `det_change_t`
+(`052-ingest-glacier-projections`) reaches the members through the lineage whenever it holds rows for the target period.
+
+```{r}
+#| label: alloc2030-interventions
+intervention_spec <- read_intervention_spec(intervention_spec_path)
+target_period_row <- db$periods_t[id_period == target_period]
+scenario_interventions <- setNames(
+  lapply(scenario_runs$ssp, function(scenario) {
+    if (apply_interventions) interventions_for_period(intervention_spec, scenario, target_period_row)
+  }),
+  scenario_runs$ssp
+)
+if (apply_interventions) {
+  stopifnot(
+    "intervention masks missing - run 052-ingest-intrv-masks.qmd or set apply_interventions" =
+      intrv_mask_table %in% db$list_tables()
+  )
+}
+rbindlist(scenario_interventions, idcol = "scenario")[
+  , .(scenario, intervention, ranking, adjust_type, valency, zone, mask)
+]
+```
+
 ## Allocate
 
-`use_parent_trans_pot = TRUE` makes each member read its scenario's potentials; the call to
-`predict_trans_pot()` inside the allocator then finds them present and returns without work after the first iteration.
-
-`alloc_clumpy_one_period()` returns the allocated map without committing it or recomputing the
-neighbour predictors, which nothing consumes after a single period. It is exported upstream since
-ethzplus/evoland-plus#49; `alloc_clumpy(update_neighbors = FALSE)` from #50 would do the same
-once merged.
+One daemon per SSP runs `allocate_scenario_members()` (in `R/allocation.R`): predict the
+scenario's potentials (forced, so that a re-run never edits already-edited potentials), apply its
+interventions, then allocate each member with its registered seed — CLUMPY draws through R's RNG,
+so every member is reproducible regardless of scheduling — impose `det_change_t` and commit.
 
 ```{r}
 #| label: alloc2030-allocate
 #| output: false
-options("evoland.use_prefetch_predict" = TRUE)
-for (i in seq_len(nrow(members))) {
-  db$id_run <- members$id_run[i]
-
-  # The `seed` argument was removed upstream in abc8bca; CLUMPY draws through R's RNG
-  # (src/alloc_clumpy.cpp), so seeding here is exact and per-member reproducible.
-  set.seed(members$seed[i])
-
-  lulc_member <- alloc_clumpy_one_period(
-    db = db,
-    id_period_post = target_period,
+mirai::daemons(nrow(scenario_runs))
+mirai::everywhere({
+  setwd(wd)
+  for (h in helpers) source(h)
+}, wd = getwd(), helpers = helpers)
+scenario_tasks <- mirai::mirai_map(
+  scenario_runs$id_run,
+  function(id_run_scenario, db_path, members, interventions, target_period, select_score,
+           select_maximize) {
+    allocate_scenario_members(
+      db_path = db_path,
+      id_run_scenario = id_run_scenario,
+      members = members[parent_id_run == id_run_scenario, .(id_run, seed)],
+      id_period_post = target_period,
+      select_score = select_score,
+      select_maximize = select_maximize,
+      interventions = interventions[[as.character(id_run_scenario)]]
+    )
+  },
+  .args = list(
+    db_path = db_path,
+    members = members,
+    interventions = setNames(scenario_interventions, scenario_runs$id_run),
+    target_period = target_period,
     select_score = select_score,
-    select_maximize = select_maximize,
-    use_parent_trans_pot = TRUE
+    select_maximize = select_maximize
   )
+)
+scenario_results <- scenario_tasks[.stop]
+mirai::daemons(0)
 
-  db$commit(lulc_member, "lulc_data_t", method = "upsert")
+allocation_log <- rbindlist(lapply(scenario_results, `[[`, "allocated"))
+intervention_log <- rbindlist(lapply(scenario_results, `[[`, "interventions"), fill = TRUE)
+```
+
+```{r}
+#| label: alloc2030-allocation-log
+allocation_log[members, on = "id_run", ssp := i.ssp][
+  , .(members = .N, median_seconds = median(seconds), n_det_change = max(n_det_change)), by = ssp
+]
+if (nrow(intervention_log) > 0L) {
+  # warnings raised inside the daemons do not reach this session; re-raise the skipped masks
+  skipped <- intervention_log[is.na(n_trans), unique(intervention)]
+  if (length(skipped) > 0L) {
+    warning("Interventions skipped for a missing mask: ", paste(skipped, collapse = ", "))
+  }
+  intervention_log[scenario_runs, on = "id_run", ssp := i.ssp][
+    , .(ssp, intervention, target_class, n_trans, perc_diff = round(perc_diff, 1), n_cells_edited)
+  ]
 }
-db$id_run <- 0L
 ```
 
 ## Gather the ensemble into change intensity
@@ -385,7 +440,7 @@ intensity_rast <- tabular_to_raster(
 # should just be the scenario.
 names(intensity_rast) <- sub("^ssp_", "", names(intensity_rast))
 
-# workaround: write out so i can fetch it from HPC node to do plotting locally for now
+# written out so the figures can be reworked without re-running the ensemble
 terra::writeRaster(
   intensity_rast,
   "2026-05-ssp-ch/091-change-intensity-2030.tif",
@@ -402,9 +457,9 @@ five of them fit side by side at a scale where individual patches are still reso
 from the plateau down across the Alps so the panels cover the full range of landscapes rather
 than one of them.
 
-The colour scale is white-to-black, everything above `intensity_clip` clipping to black. White
-does double duty as the background, as `NA` outside Switzerland, and as "no member changed this
-cell", which is what makes the changed cells read as ink on paper.
+The colour scale is viridis from `0.1` to `intensity_clip`, everything above clipping to the top
+colour; cells below `0.1` (at most one member in ten) are grey, so the colour marks the cells
+where the ensemble agrees at least a little.
 
 **Where the clip comes from.** The ensemble is diffuse: the median non-zero cell sits at `0.05`,
 i.e. one member out of twenty, and the 95th percentile of non-zero cells is `0.25`–`0.40`
@@ -422,16 +477,12 @@ between renders cannot be compared across them.
 library(ggplot2)
 
 # Chosen in QGIS against the written GeoTIFF; see the note above on why it is this shape.
-zoom_ext <- terra::ext(2659160, 2755026, 1077643, 1301204)
-zoom_ext <- terra::ext(2660000, 2710000, 1160000, 1280000)
 zoom_ext <- terra::ext(2660000, 2750000, 1060000, 1310000)
-# zoom_ext <- terra::ext(2690000, 2700000, 1240000, 1260000)
 intensity_clip <- 0.25 # everything at or above this shares the darkest colour
 
 intensity_df <-
   intensity_rast |>
   terra::crop(zoom_ext) |>
-  # terra::aggregate(2) |>
   terra::as.data.frame(xy = TRUE, na.rm = TRUE) |>
   data.table::as.data.table() |>
   data.table::melt(
@@ -461,22 +512,13 @@ p_intensity <-
   geom_raster() +
   facet_wrap(vars(ssp), nrow = 1) +
   viridis::scale_fill_viridis(
-    # scale_fill_gradient(
-    #   low = "white",
-    #   high = "black",
     limits = c(0.1, intensity_clip),
-    oob = scales::squish, # clip rather than drop: >= intensity_clip is black, not blank
+    oob = scales::squish, # clip rather than drop: >= intensity_clip is the top colour
     na.value = "#ddd",
-    # na.value = "white",
     breaks = c(0.1, intensity_clip),
     # ASCII only: the default PNG device font has no glyph for the >= sign and silently
     # substitutes an ellipsis.
-    labels = c(
-      # seq(from = 0, to = intensity_clip, by = 0.1),
-      "0.1",
-      # sprintf("%.2f+", intensity_clip)
-      sprintf("%.2f ≤", intensity_clip)
-    ),
+    labels = c("0.1", sprintf("%.2f+", intensity_clip)),
     name = "share of members\nallocating any change\ngrey = no change"
   ) +
   # One scale bar, on the first panel only -- five would be clutter at this size.
@@ -493,7 +535,7 @@ p_intensity <-
   coord_sf(crs = 2056, expand = FALSE, datum = NA) +
   map_theme
 
-# p_intensity
+p_intensity
 
 ggsave(
   "2026-05-ssp-ch/091-change-intensity-2030.png",
@@ -506,7 +548,8 @@ ggsave(
 )
 ```
 
-A cell reads white where no member changed it and black where at least 4 of the 20 did. Because
+A cell is coloured where at least 2 of the 20 members changed it, and takes the top colour where
+at least 5 did. Because
 the anterior map is the same everywhere, the differences between panels are attributable to the
 SSP demand alone — `070`'s rate vectors are the only scenario-varying input at this horizon.
 
@@ -561,7 +604,6 @@ p_disagreement <-
   scale_fill_viridis_c(
     option = "inferno",
     direction = -1,
-    # limits = c(0, 1),
     na.value = "white",
     name = "range across\nscenarios"
   ) +
@@ -592,6 +634,126 @@ ggsave(
 terra::global(disagreement, c("mean", "max"), na.rm = TRUE)
 ```
 
+## One map per transition
+
+The change intensity above lumps every transition together. Split by transition, the share of
+members in which a cell makes *that* transition shows where each scenario puts each kind of
+change — urban growth, forest regrowth, agricultural abandonment — and is what the intervention
+masks act on. Only changed cells are gathered, so the table stays small.
+
+Each transition gets one five-panel figure of the whole country (`091-maps/`) and one GeoTIFF with
+a layer per SSP. Cells below `map_threshold` are left blank: at single-member level the maps are
+noise. Transitions `080` flagged as at chance should be read as such.
+
+```{r}
+#| label: alloc2030-transition-intensity
+db$id_run <- NULL # read across runs
+trans_intensity <- db$get_query(glue::glue(
+  r"{
+  with sim as (
+    select id_run, id_coord, id_lulc
+    from {db$get_read_expr('lulc_data_t')}
+    where id_period = {target_period}
+      and id_run in ({toString(members$id_run)})
+  ),
+  anchor as (
+    select id_coord, id_lulc
+    from {db$get_read_expr('lulc_data_t')}
+    where id_period = {anchor_period} and id_run = 0
+  ),
+  member_ssp as (
+    select id_run, ssp
+    from {db$get_read_expr('runs_t')}
+    where id_run in ({toString(members$id_run)})
+  )
+  select
+    m.ssp,
+    a.id_lulc as id_lulc_anterior,
+    s.id_lulc as id_lulc_posterior,
+    s.id_coord,
+    count(*) / {n_members} as p_trans
+  from sim s
+  join anchor a on a.id_coord = s.id_coord
+  join member_ssp m on m.id_run = s.id_run
+  where s.id_lulc <> a.id_lulc
+  group by all
+  }"
+))
+db$id_run <- 0L
+
+lulc_names <- db$lulc_meta_t[, .(id_lulc, name)]
+trans_intensity[
+  lulc_names, on = c(id_lulc_anterior = "id_lulc"), name_anterior := i.name
+][
+  lulc_names, on = c(id_lulc_posterior = "id_lulc"), name_posterior := i.name
+][, transition := paste0(name_anterior, "_to_", name_posterior)]
+
+trans_summary <- trans_intensity[, .(
+  expected_cells = sum(p_trans),
+  cells_ever = .N,
+  cells_majority = sum(p_trans >= 0.5)
+), by = .(transition, ssp)]
+trans_summary[, total := sum(expected_cells), by = transition] |>
+  dcast(total + transition ~ ssp, value.var = "expected_cells", fill = 0) |>
+  setorder(-total)
+```
+
+```{r}
+#| label: alloc2030-transition-maps
+#| output: false
+dir.create(map_dir, showWarnings = FALSE)
+coords_minimal <- db$coords_minimal
+cell_size <- attr(coords_minimal, "resolution")
+# the outline of the domain, drawn under every panel so the scattered cells have a frame
+domain_outline <- terra::rast(intensity_rast[[1]]) |>
+  terra::init(0) |>
+  terra::mask(intensity_rast[[1]]) |>
+  terra::as.polygons() |>
+  sf::st_as_sf()
+
+for (trans in sort(unique(trans_intensity$transition))) {
+  trans_dt <- trans_intensity[transition == trans, .(id_coord, ssp, p_trans)]
+  trans_rast <- tabular_to_raster(trans_dt, coords = coords_minimal, value_col = "p_trans")
+  names(trans_rast) <- sub("^ssp_", "", names(trans_rast))
+  terra::writeRaster(
+    trans_rast,
+    file.path(map_dir, paste0("091-", trans, "-2030.tif")),
+    gdal = c("COMPRESS=DEFLATE"),
+    overwrite = TRUE
+  )
+
+  plot_dt <- trans_dt[p_trans >= map_threshold][
+    coords_minimal, on = "id_coord", `:=`(x = i.lon, y = i.lat)
+  ][, ssp := factor(ssp, levels = scenario_runs$ssp)]
+  p_trans <-
+    ggplot(plot_dt, aes(x = x, y = y, fill = p_trans)) +
+    # tiles, not geom_raster: only the cells above the threshold are drawn, and a raster over
+    # scattered cells cannot infer the grid spacing
+    geom_sf(data = domain_outline, inherit.aes = FALSE, fill = "grey95", colour = "grey60",
+            linewidth = 0.2) +
+    geom_tile(width = cell_size, height = cell_size) +
+    facet_wrap(vars(ssp), nrow = 2, drop = FALSE) +
+    viridis::scale_fill_viridis(
+      limits = c(map_threshold, 1),
+      name = "share of
+members"
+    ) +
+    labs(title = gsub("_", " ", trans)) +
+    coord_sf(crs = 2056, expand = FALSE, datum = NA) +
+    map_theme +
+    theme(plot.title = element_text(size = 8))
+  ggsave(
+    file.path(map_dir, paste0("091-", trans, "-2030.png")),
+    p_trans,
+    width = 18,
+    height = 10,
+    units = "cm",
+    dpi = 300,
+    bg = "white"
+  )
+}
+```
+
 ```{r}
 #| label: alloc2030-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
@@ -603,8 +765,9 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   "alloc2030_scenarios", paste(scenario_runs$ssp, collapse = ","),
   "alloc2030_n_members", as.character(n_members),
   "alloc2030_seed_base", as.character(seed_base),
-  "alloc2030_alloc_param_run", as.character(alloc_param_run),
+  "alloc2030_alloc_param_run", "0 (promoted by 080)",
   "alloc2030_max_shortfall_pct", as.character(max(abs(delivered$shortfall_pct))),
-  "alloc2030_interventions", "none applied"
+  "alloc2030_interventions",
+  if (apply_interventions) "allocation-interventions.csv" else "none applied"
 ))
 ```

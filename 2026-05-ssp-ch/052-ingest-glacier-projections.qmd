@@ -1,0 +1,197 @@
+---
+title: "052 — Glacier projections (deterministic change)"
+---
+
+Glacier extent follows the climate, not the land-use drivers, so it is not modelled (`040`
+excludes glacier as an anterior class) but imposed: after each extrapolated period is
+allocated, the cells a glacier model projects as glacier become `glacier`, and the cells it
+projects as newly ice-free become `static`. This step writes those assignments to
+`det_change_t`, which `R/allocation.R` imposes on every allocated map (`090`, `091`); the
+backcast (`080`) writes the *observed* glacier change to the same table instead.
+
+**Source.** The per-cell glacier indices from the GloGEM runs of Farinotti et al. that
+NCCS-SSP-scenarios uses (`Scripts/Preparation/Deterministic_trans_prep.R`,
+`Data/Glacial_change/median_scenarios/`), one file per RCP: a whitespace table with 10 header
+lines, an `ID_loc` column and one 0/1 column per 5-year step from 2005 to 2100. `ID_loc` is the
+cell number (row-major from the top-left) in the original's 100 m reference grid, which has the
+same extent as `coords_t` (`001`). The files are part of the NCCS-SSP-scenarios data deposit
+(<https://doi.org/10.5281/zenodo.8263509>); set `glacier_index_dir` to where they are unpacked.
+
+**Deviation from the original.** `Dinamica_deterministic_trans.R` overwrites *every* indexed
+cell each step — `1` to glacier, `0` to static — which also turns vegetation that had grown on
+long-deglaciated ground back into `static`. Here a cell is set to `static` only in the step in
+which it becomes ice-free (or at the first step, if the index already has it ice-free where the
+2018 survey still shows glacier). Note that the NCCS-SSP-scenarios simulations themselves ran
+with `Deterministic_trans = N` (`Tools/Simulation_control.csv`), so this is a step beyond the
+published runs.
+
+**Climate runs.** Assignments are written to the *climate* runs, so every SSP leaf inherits the
+glacier trajectory of its climate. The GWL trajectories map to RCPs by their end-of-period
+warming; `current` (no further warming) takes RCP2.6, the lowest available, which still loses
+the ice committed by present-day warming.
+
+> **Open.** The area moved by these assignments is still also part of the demand `070` solves
+> for; it should be taken out of the LP so the allocator does not convert glacier a second time.
+> See `TODO.md`.
+
+```{r}
+#| label: glacier-params
+library(data.table)
+library(evoland)
+
+source(file.path("2026-05-ssp-ch", "R", "allocation.R"))
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db$id_run <- 0L
+
+glacier_index_dir <- Sys.getenv(
+  "SSPCH_GLACIER_INDEX_DIR",
+  file.path(getOption("evoland.cachedir"), "nccs-glacial-change", "median_scenarios")
+)
+
+rcp_by_climate <- data.table::rowwiseDT(
+  climate_framing = , gwl_trajectory = , rcp = ,
+  "current", NA_character_, "rcp26",
+  "gwl", "stab15", "rcp26",
+  "gwl", "stab20", "rcp26",
+  "gwl", "rise30", "rcp45",
+  "gwl", "fast30", "rcp85"
+)
+
+id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
+id_lulc_static <- db$lulc_meta_t[name == "static", id_lulc]
+anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+extrap_periods <- db$periods_t[is_extrapolated == TRUE][order(id_period)]
+```
+
+## Read the indices
+
+```{r}
+#| label: glacier-read
+index_files <- list.files(glacier_index_dir, full.names = TRUE)
+stopifnot("no glacier index files - set SSPCH_GLACIER_INDEX_DIR" = length(index_files) > 0L)
+
+read_glacier_index <- function(path) {
+  idx <- fread(path, skip = 10L, header = TRUE)
+  setnames(idx, c("ID_loc", seq(2005L, 2100L, by = 5L)))
+  melt(idx, id.vars = "ID_loc", variable.name = "year", value.name = "is_glacier",
+       variable.factor = FALSE)[, `:=`(year = as.integer(year), is_glacier = is_glacier == 1L)][]
+}
+glacier_index <- rbindlist(
+  setNames(lapply(index_files, read_glacier_index), tolower(
+    regmatches(basename(index_files), regexpr("(?i)rcp[0-9]+", basename(index_files), perl = TRUE))
+  )),
+  idcol = "rcp"
+)
+glacier_index[, .(cells = uniqueN(ID_loc), glacier_2020 = sum(is_glacier[year == 2020L])), by = rcp]
+```
+
+## Map `ID_loc` onto `id_coord`
+
+The cell number is resolved against a raster of `coords_t`'s extent and resolution. The
+mapping is checked rather than assumed: the indexed glacier of the year closest to the last
+survey must largely coincide with the surveyed glacier.
+
+```{r}
+#| label: glacier-coords
+coords_minimal <- db$coords_minimal
+cell_size <- attr(coords_minimal, "resolution")
+grid <- terra::rast(
+  terra::extend(db$extent, cell_size / 2), # db$extent spans the cell centres
+  resolution = cell_size,
+  crs = paste0("EPSG:", attr(coords_minimal, "epsg"))
+)
+stopifnot(
+  "coords_t does not sit on the cell centres of its extent" =
+    terra::ncell(grid) == nrow(coords_minimal) &&
+      !anyDuplicated(terra::cellFromXY(grid, as.matrix(coords_minimal[, .(lon, lat)])))
+)
+coord_cells <- data.table(
+  id_coord = coords_minimal$id_coord,
+  ID_loc = terra::cellFromXY(grid, as.matrix(coords_minimal[, .(lon, lat)]))
+)
+glacier_index <- glacier_index[coord_cells, on = "ID_loc", nomatch = NULL]
+
+anchor_year <- as.integer(format(as.Date(db$periods_t[id_period == anchor_period, end_date]), "%Y"))
+check_year <- glacier_index[, unique(year)][which.min(abs(glacier_index[, unique(year)] - anchor_year))]
+observed_glacier <- db$get_query(
+  "select id_coord from {lulc_read_expr} where id_period = {anchor_period} and id_lulc = {id_lulc_glacier}",
+  lulc_read_expr = db$get_read_expr("lulc_data_t"),
+  as_atomic = TRUE
+)
+indexed_glacier <- glacier_index[rcp == rcp[1L] & year == check_year & is_glacier, id_coord]
+jaccard <- length(intersect(observed_glacier, indexed_glacier)) /
+  length(union(observed_glacier, indexed_glacier))
+message("Glacier overlap (Jaccard) of index ", check_year, " against survey: ", round(jaccard, 3))
+stopifnot("ID_loc does not line up with coords_t - check the reference grid" = jaccard > 0.5)
+```
+
+## Assignments per period
+
+The state at a period is the index year closest to the period's end. A cell is assigned
+`glacier` while indexed as glacier, and `static` in the period it stops being glacier — relative
+to the previous period's index, or, in the first extrapolated period, to the survey.
+
+```{r}
+#| label: glacier-assign
+period_years <- extrap_periods[, .(
+  id_period,
+  year = vapply(as.integer(format(as.Date(end_date), "%Y")), \(y) {
+    years <- unique(glacier_index$year)
+    years[which.min(abs(years - y))]
+  }, integer(1))
+)]
+
+assignments <- rbindlist(lapply(unique(glacier_index$rcp), function(r) {
+  state <- glacier_index[rcp == r][period_years, on = "year", nomatch = NULL, allow.cartesian = TRUE][
+    , .(id_coord, id_period, is_glacier)
+  ]
+  setorder(state, id_coord, id_period)
+  state[, was_glacier := shift(is_glacier), by = id_coord]
+  first_period <- min(period_years$id_period)
+  state[id_period == first_period, was_glacier := id_coord %in% observed_glacier]
+  state[
+    is_glacier | (was_glacier & !is_glacier),
+    .(rcp = r, id_period, id_coord, id_lulc = fifelse(is_glacier, id_lulc_glacier, id_lulc_static))
+  ]
+}))
+assignments[, .(glacier = sum(id_lulc == id_lulc_glacier), deglaciated = sum(id_lulc == id_lulc_static)),
+            by = .(rcp, id_period)][order(rcp, id_period)]
+```
+
+## Write onto the climate runs
+
+```{r}
+#| label: glacier-commit
+climate_runs <- db$runs_t[is.na(ssp) & !is.na(climate_framing)][
+  rcp_by_climate,
+  on = c("climate_framing", "gwl_trajectory"),
+  nomatch = NULL
+][, .(id_run, climate_framing, gwl_trajectory, rcp)]
+stopifnot(
+  "an RCP named in rcp_by_climate has no index file" =
+    all(climate_runs$rcp %in% assignments$rcp)
+)
+
+for (i in seq_len(nrow(climate_runs))) {
+  db$commit(
+    as_det_change_t(assignments[rcp == climate_runs$rcp[i]][, id_run := climate_runs$id_run[i]]),
+    det_change_table,
+    method = "upsert"
+  )
+}
+climate_runs
+```
+
+```{r}
+#| label: glacier-report
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key = , value = ,
+  "glacier_index_source", "NCCS-SSP-scenarios Data/Glacial_change/median_scenarios (GloGEM)",
+  "glacier_index_files", paste(basename(index_files), collapse = ","),
+  "glacier_index_jaccard_vs_survey", as.character(round(jaccard, 3)),
+  "glacier_rcp_by_climate", paste(
+    climate_runs[, paste0(fifelse(is.na(gwl_trajectory), climate_framing, gwl_trajectory), "=", rcp)],
+    collapse = ","
+  )
+))
+```

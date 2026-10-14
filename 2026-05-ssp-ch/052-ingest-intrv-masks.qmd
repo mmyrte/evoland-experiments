@@ -1,0 +1,268 @@
+---
+title: "052 — Intervention masks"
+---
+
+Build the spatial masks the SSP allocation-stage interventions act on, and write them to the
+`intervention_mask_t` table that `R/interventions.R` reads in `090` and `091`.
+
+## From the NCCS YAMLs to `allocation-interventions.csv`
+
+The interventions themselves are specified in `interventions/allocation-interventions.csv`, a
+one-off translation of `NCCS-SSP-scenarios/Tools/SSP*_interventions.yml`: one row per SSP and
+`Allocation`-stage intervention, with the original's keys renamed and its classes mapped onto
+ssp-ch's (`Urban` → `urban`, `Int_AG` → `arable`, `Alp_Past` → `alp_past`, …). The
+implementation years become a `year_start`–`year_end` span (every YAML lists contiguous 5-year
+steps), and an intervention is active in a decadal period if any of its years falls inside it.
+
+Not translated:
+
+- **`Pre-allocation` `Spatial_zoning`** (patcher share of urban transitions) — Dinamica-only;
+  see `TODO.md` § Interventions.
+- **SSP1 `Conservation_expansion_and_preservation`** — a spatial optimisation producing a
+  dynamic mask per time step, not a static mask; to be scoped separately.
+
+Deliberate departures from the original code, each because the original as written did nothing
+or the opposite of what its comments say:
+
+- **Marginality masks are thresholded at their upper quartile** for every intervention that uses
+  them (`mask_upper_quartile`). The original thresholds only for `Agri_maintenance` /
+  `Agri_abandonment` — and there it sets the cells *above* the quartile to `NA`, keeping the
+  lower three quarters, the opposite of its own comment. Everywhere else it compares the
+  continuous marginality to `== 1`, which no cell meets, so those interventions were no-ops.
+- **`Absolute` 0 excludes the zone.** The original sets the in-zone values to 0 and then selects
+  the cells to overwrite by `> 0`, which selects none.
+- The relative rule's percentile statistics are computed per *target class* over the potentials
+  of every transition into it, which is what Dinamica's one-layer-per-class probability maps
+  amounted to.
+
+## The masks
+
+| Mask | Used by | Source | Here |
+| --- | --- | --- | --- |
+| `building_zones` | urban densification / sprawl | ARE *Bauzonen Schweiz (harmonisiert)*, `ch.are.bauzonen` | cells whose centre lies in a building zone |
+| `muni_rural` | urban / rural migration | BFS municipality typology 2012 (25 types), codes 325, 326, 327, 335, 338 | cells in those municipalities |
+| `muni_mountain` | mountain development | same, codes 314, 334 | cells in those municipalities |
+| `marginality` | agricultural expansion / abandonment / maintenance | mean of min–max rescaled distance to roads, slope, elevation and (inverted) distance to building zones, after Gellrich et al. 2007 | continuous, from this pipeline's own predictors |
+| `marginality_rural` | SSP5 agricultural expansion | `marginality` within `muni_rural` | continuous |
+| `pa_*` | conservation (in)effectiveness | NCCS-SSP-scenarios data deposit | read from GeoTIFFs if supplied |
+
+The protected-area masks have no reproducible source: the original builds them from a
+hand-assembled `PA_SWISS.shp` that is not public. Point `pa_mask_files` at the GeoTIFFs from the
+NCCS-SSP-scenarios data deposit (<https://doi.org/10.5281/zenodo.8263509>) to use them; masks
+left out are skipped by the interventions with a warning.
+
+> **Unpinned sources.** The building zones and the typology table were not reachable from the
+> environment this step was written in, so their URLs are discovered at run time (STAC for the
+> building zones, the BFS commune API for the typology) and their md5 sums are recorded in
+> `reporting_t` rather than pinned. Pin them with the recorded sums after the first run.
+
+```{r}
+#| label: masks-params
+library(data.table)
+library(evoland)
+
+source(file.path("2026-05-ssp-ch", "R", "interventions.R"))
+db <- evoland_db$new(path = "ssp-ch.evolanddb")
+db$id_run <- 0L
+coords_minimal <- db$coords_minimal
+template <- db$lulc_data_as_rast(id_period = max(db$periods_t[is_extrapolated == FALSE, id_period]))
+
+typology_date <- "01-01-2026" # matches the swissBOUNDARIES3D vintage below
+rural_types <- c(325L, 326L, 327L, 335L, 338L)
+mountain_types <- c(314L, 334L)
+
+# named list mask name -> GeoTIFF path; empty leaves the conservation interventions skipped
+pa_mask_files <- list(
+  # pa_ssp0_conservation_preservation = ".../SSP0_Conservation_preservation_mask.tif",
+  # pa_ssp3_ineffective_conservation = ".../SSP3_ineffective_conservation_mask.tif",
+  # pa_ssp4_conservation_preservation = ".../SSP4_Conservation_preservation_mask.tif",
+  # pa_ssp5_ineffective_conservation = ".../SSP5_ineffective_conservation_mask.tif"
+)
+
+spec <- read_intervention_spec(
+  file.path("2026-05-ssp-ch", "interventions", "allocation-interventions.csv")
+)
+needed_masks <- sort(unique(spec$mask))
+needed_masks
+```
+
+```{r}
+#| label: masks-helpers
+# latest item of a geo.admin STAC collection, asset chosen by a regex on its key
+stac_asset_url <- function(collection, asset_pattern) {
+  items <- jsonlite::fromJSON(paste0(
+    "https://data.geo.admin.ch/api/stac/v1/collections/", collection, "/items?limit=100"
+  ), simplifyVector = FALSE)[["features"]]
+  stopifnot("STAC collection has no items" = length(items) > 0L)
+  latest <- items[[order(vapply(items, \(x) x[["id"]], ""), decreasing = TRUE)[1L]]]
+  keys <- grep(asset_pattern, names(latest[["assets"]]), value = TRUE)
+  stopifnot("no matching STAC asset" = length(keys) >= 1L)
+  latest[["assets"]][[keys[1L]]][["href"]]
+}
+
+# the cells of the template whose centre falls in a polygon, as (id_coord, value = 1)
+cells_in <- function(polygons) {
+  r <- terra::rasterize(polygons, template, field = 1)
+  extract_using_coords_t(r, coords_minimal)[, .(id_coord, value)]
+}
+
+write_mask <- function(name, cells) {
+  db$commit(as_intrv_mask_t(cells[, .(mask = name, id_coord, value)]), intrv_mask_table, "upsert")
+  message(name, ": ", nrow(cells), " cells")
+}
+```
+
+## Building zones
+
+```{r}
+#| label: masks-building-zones
+sources_bz <- data.table(
+  url = stac_asset_url("ch.are.bauzonen", "2056.*gpkg"),
+  md5sum = NA_character_
+) |>
+  download_and_verify()
+
+bz_path <- sources_bz[["local_path"]]
+if (grepl("zip$", bz_path)) {
+  bz_path <- paste0("/vsizip/", bz_path, "/", grep(
+    "\\.gpkg$", unzip(sources_bz[["local_path"]], list = TRUE)[["Name"]], value = TRUE
+  )[1L])
+}
+bz_layers <- terra::vector_layers(bz_path)
+stopifnot("expected a single polygon layer" = length(bz_layers) == 1L)
+building_zones <- terra::vect(bz_path, layer = bz_layers)
+
+bz_cells <- cells_in(building_zones)
+write_mask("building_zones", bz_cells)
+```
+
+## Municipality typology
+
+```{r}
+#| label: masks-municipalities
+sources_boundaries <- data.frame(
+  url = paste0(
+    "https://data.geo.admin.ch/ch.swisstopo.swissboundaries3d/",
+    "swissboundaries3d_2026-01/swissboundaries3d_2026-01_2056_5728.gpkg.zip"
+  ),
+  md5sum = "a8f2e3b9bc1d5f5b9a90c768ad99a6ec" # as in 021-ingest-preds-statent-ssp
+) |>
+  download_and_verify()
+
+municipalities <- terra::vect(
+  paste0(
+    "/vsizip/", sources_boundaries[["local_path"]],
+    "/swissBOUNDARIES3D_1_5_LV95_LN02.gpkg"
+  ),
+  layer = "tlm_hoheitsgebiet"
+)
+municipalities <- municipalities[municipalities$objektart == "Gemeindegebiet"]
+
+typology_url <- paste0(
+  "https://www.agvchapp.bfs.admin.ch/api/communes/levels?date=", typology_date
+)
+typology <- fread(typology_url, encoding = "UTF-8")
+typology_col <- grep("GDETYP2012", names(typology), value = TRUE)
+bfs_col <- grep("^(BfsCode|BFS|bfs)", names(typology), value = TRUE)[1L]
+stopifnot(
+  "typology table lacks the 2012 25-type column" = length(typology_col) >= 1L,
+  "typology table lacks the BFS commune number" = !is.na(bfs_col)
+)
+# the 25-type level carries three-digit codes
+typology_25 <- typology_col[vapply(
+  typology_col, \(col) all(nchar(na.omit(as.character(typology[[col]]))) == 3L), logical(1)
+)][1L]
+muni_type <- typology[, .(bfs_nummer = as.integer(get(bfs_col)), type = as.integer(get(typology_25)))]
+
+municipalities$type <- muni_type$type[match(as.integer(municipalities$bfs_nummer), muni_type$bfs_nummer)]
+stopifnot(
+  "some municipalities have no typology - check typology_date against the boundaries" =
+    mean(is.na(municipalities$type)) < 0.01
+)
+
+muni_rural_cells <- cells_in(municipalities[municipalities$type %in% rural_types])
+muni_mountain_cells <- cells_in(municipalities[municipalities$type %in% mountain_types])
+write_mask("muni_rural", muni_rural_cells)
+write_mask("muni_mountain", muni_mountain_cells)
+```
+
+## Land marginality
+
+After Gellrich et al. (2007), as in the original: the mean of four layers rescaled to [0, 1] —
+distance to roads, slope, elevation, and distance to building zones *inverted*, since land far
+from a building zone is cheap and so less likely to be given up. The first three are this
+pipeline's own predictors (`020`, gap-filled); the last is computed from the building zones
+above. Rescaling uses the range over the domain.
+
+```{r}
+#| label: masks-marginality
+pred_ids <- db$pred_meta_t[
+  name %in% c("distance_to_roads_mean_100m", "slope_mean_100m", "elevation_mean_100m"),
+  .(id_pred, name)
+]
+stopifnot("marginality needs the 020 DEM and swissTLM3D predictors" = nrow(pred_ids) == 3L)
+layers <- db$get_query(
+  "select id_coord, id_pred, value from {pred_read_expr}
+   where id_period = 0 and id_pred in ({pred_ids$id_pred*})",
+  pred_read_expr = db$get_read_expr("pred_data_t")
+)[pred_ids, on = "id_pred"] |>
+  dcast(id_coord ~ name, value.var = "value")
+
+bz_rast <- terra::rasterize(building_zones, template, field = 1)
+dist_bz <- extract_using_coords_t(terra::distance(bz_rast), coords_minimal)[
+  , .(id_coord, distance_to_bz = value)
+]
+layers <- layers[dist_bz, on = "id_coord", nomatch = NULL]
+
+rescale <- function(x, invert = FALSE) {
+  r <- (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+  if (invert) 1 - r else r
+}
+marginality <- layers[, .(
+  id_coord,
+  value = (rescale(distance_to_roads_mean_100m) + rescale(slope_mean_100m) +
+    rescale(elevation_mean_100m) + rescale(distance_to_bz, invert = TRUE)) / 4
+)][!is.na(value)]
+
+write_mask("marginality", marginality)
+write_mask("marginality_rural", marginality[muni_rural_cells[, .(id_coord)], on = "id_coord", nomatch = NULL])
+```
+
+## Protected areas
+
+```{r}
+#| label: masks-protected-areas
+for (name in names(pa_mask_files)) {
+  r <- terra::rast(pa_mask_files[[name]])
+  if (terra::crs(r) == "") terra::crs(r) <- "EPSG:2056"
+  r <- terra::resample(r, template, method = "near")
+  write_mask(name, extract_using_coords_t(r, coords_minimal)[value == 1, .(id_coord, value)])
+}
+missing_masks <- setdiff(needed_masks, db$get_query(
+  "select distinct mask from {mask_read_expr}",
+  mask_read_expr = db$get_read_expr(intrv_mask_table),
+  as_atomic = TRUE
+))
+if (length(missing_masks) > 0L) {
+  warning(
+    "Masks not ingested, their interventions will be skipped: ",
+    paste(missing_masks, collapse = ", ")
+  )
+}
+```
+
+```{r}
+#| label: masks-report
+db$get_query(
+  "select mask, count(*) as n_cells, round(avg(value), 3) as mean_value
+   from {mask_read_expr} group by mask order by mask",
+  mask_read_expr = db$get_read_expr(intrv_mask_table)
+)
+db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
+  key = , value = ,
+  "intrv_mask_bz_url", sources_bz[["url"]],
+  "intrv_mask_bz_md5sum", sources_bz[["md5sum_actual"]],
+  "intrv_mask_typology_url", typology_url,
+  "intrv_mask_missing", paste(missing_masks, collapse = ",")
+))
+```

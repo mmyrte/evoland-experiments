@@ -17,7 +17,8 @@ Note the precedence is decided **per slice**, not per coordinate: if a predictor
 at the target period, that whole `(id_pred, id_period)` slice is used and its period-0 rows are
 ignored. So a projection must be written for *every* coordinate it should apply to — a
 partially-populated slice yields `NA` (then `pred_meta_t$fill_value`) at the missing cells
-rather than quietly falling back to the baseline there.
+rather than quietly falling back to the baseline there. The GWL grids are therefore gap-filled on their native
+grid before extraction (`fill_gaps()` in `R/fill.R`), exactly as the baseline in `022`.
 
 > **Ordering — this step is not a plain stage-02 step.** It is numbered `02-…-3-` because it
 > belongs to the CH2025 family, but it should be run **after `050-covariate-selection.qmd`**,
@@ -124,8 +125,9 @@ quantiles_to_ingest <- "q50"
 # Set explicitly to override, e.g. c("tas_yearly", "pr_yearly").
 pred_names_override <- NULL
 
+source(file.path("2026-05-ssp-ch", "R", "fill.R"))
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-coords_minimal <- db$coords_minimal
+domain <- domain_coords(db)
 extent_wide <- db$extent |> terra::extend(1000)
 ```
 
@@ -273,7 +275,8 @@ for (i in seq_len(nrow(sources))) {
 
   r <- terra::rast(file.path(cache_dir, src$file)) |> terra::crop(extent_wide)
   terra::set.names(r, src$pred_name)
-  extracted <- extract_using_coords_t(r, coords_minimal)[, .(id_coord, value)]
+  # gaps filled on the native grid, as in 022, so every domain cell carries the projection
+  extracted <- extract_filled(r, domain)[, .(id_coord, value)]
 
   # every (run, period) this raster supplies; one commit per raster, not per slice
   slices <- unique(work[file == src$file, .(id_run, id_period)])

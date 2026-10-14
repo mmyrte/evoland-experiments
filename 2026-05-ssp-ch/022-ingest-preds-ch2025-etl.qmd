@@ -286,15 +286,17 @@ message(
 
 ## Read → transform → write (one file at a time)
 
-Each netCDF is cropped to the analysis extent and point-extracted at the 100 m model
-coordinates (nearest 1 km cell, no bilinear interpolation), then upserted via
-`db$add_predictor`. Indicators without a metadata spec (e.g. the skipped degree-day ones)
+Each netCDF is cropped to the analysis extent, its gaps filled on the native 1 km grid
+(`fill_gaps()` in `R/fill.R`: the grid ends at or near the border and leaves the outermost model
+cells uncovered), and point-extracted at the 100 m model domain (nearest 1 km cell, no bilinear
+interpolation), then upserted via `db$add_predictor`. Indicators without a metadata spec (e.g. the skipped degree-day ones)
 are warned and skipped.
 
 ```{r}
 #| label: ch2025-etl-load
+source(file.path("2026-05-ssp-ch", "R", "fill.R"))
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-coords_minimal <- db$coords_minimal
+domain <- domain_coords(db) # needs 010
 extent_wide <- db$extent |> terra::extend(1000)
 
 orig_format <- paste0(
@@ -315,7 +317,8 @@ for (i in seq_len(nrow(inventory))) {
 
   r <- terra::rast(file.path(cache_dir, row[["file"]])) |> terra::crop(extent_wide)
   terra::set.names(r, row[["pred_name"]])
-  pred_data <- extract_using_coords_t(r, coords_minimal)
+  pred_data <- extract_filled(r, domain)
+  report_fill(pred_data, row[["pred_name"]])
 
   db$add_predictor(
     pred_data_raw = pred_data[, .(id_coord, id_period = 0L, value)],

@@ -75,8 +75,9 @@ Two further aggregations are worth considering, and one is implemented as an opt
 library(data.table)
 library(evoland)
 
+source(file.path("2026-05-ssp-ch", "R", "fill.R"))
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-coords_minimal <- db$coords_minimal
+domain <- domain_coords(db) # needs 010
 
 # Set TRUE to additionally derive within-cell sd predictors (see above).
 derive_heterogeneity <- FALSE
@@ -183,10 +184,13 @@ for (i in seq_len(nrow(sspm))) {
   mean_2056 <- terra::project(r, template, method = "average")
   terra::set.names(mean_2056, row[["pred_name"]])
 
+  # no soil is mapped on water, rock, glaciers and much sealed ground; fill from the
+  # surrounding soils (R/fill.R) rather than with a constant
+  pred_data <- extract_filled(mean_2056, domain)
+  report_fill(pred_data, row[["pred_name"]])
+
   db$add_predictor(
-    pred_data_raw = extract_using_coords_t(mean_2056, coords_minimal)[,
-      .(id_coord, id_period = 0L, value)
-    ],
+    pred_data_raw = pred_data[, .(id_coord, id_period = 0L, value)],
     name = row[["pred_name"]],
     fill_value = NA,
     unit = spec[["unit"]],
@@ -203,9 +207,7 @@ for (i in seq_len(nrow(sspm))) {
     terra::set.names(sd_2056, paste0(row[["pred_name"]], "_sd"))
 
     db$add_predictor(
-      pred_data_raw = extract_using_coords_t(sd_2056, coords_minimal)[,
-        .(id_coord, id_period = 0L, value)
-      ],
+      pred_data_raw = extract_filled(sd_2056, domain)[, .(id_coord, id_period = 0L, value)],
       name = paste0(row[["pred_name"]], "_sd"),
       fill_value = NA,
       unit = spec[["unit"]],

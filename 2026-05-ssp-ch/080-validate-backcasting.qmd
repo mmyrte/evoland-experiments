@@ -2,80 +2,99 @@
 title: "080 — Backcasting validation"
 ---
 
-Validate the calibrated model against the past: replay the **observed** transition rates
-through the fitted transition-potential models and the estimated allocation parameters, then
-compare the resulting maps against the Arealstatistik surveys we actually observed, substeps:
+Validate the calibrated model against the past: replay the **observed** transition rates of the
+**last observed transition** (2009 → 2018) through transition-potential models and allocation
+parameters that were estimated *without* that transition, then compare the resulting maps against
+the survey we actually observed. Substeps:
 
-(a) **estimate patch / allocation parameters** from the observed periods
-(b) **run the backcast** over a set of parameter choices, several stochastic replicates each;
-(c) **validate** the backcast against the observed periods, and define acceptance criteria.
+(a) **estimate patch / allocation parameters** from the earlier observed transitions;
+(b) **run the backcast**: many stochastic allocations of the last period, over a set of parameter
+    choices, in parallel;
+(c) **validate** them against the observed map, and select the parameter set to promote.
 
 ## What this does and does not test
 
+Every member starts from the **observed** 2009 map and allocates one period, so this measures
+one-step allocation skill. The models (`060`'s hold-out run) and the allocation parameters (a)
+have not seen the 2009 → 2018 change; the predictor *selection* in `050` has, which is the one
+remaining leak.
+
 The rates fed to the backcast are the **observed** ones (`get_obs_trans_rates()`), so the
-*quantity* of change per transition and period is prescribed, not predicted. What is on trial
-is therefore only the **allocation** — whether the model puts the right changes in the
-right places — plus the allocator's ability to deliver the prescribed quantity at all.
+*quantity* of change per transition is prescribed, not predicted. What is on trial is therefore
+only the **allocation** — whether the model puts the right changes in the right places — plus the
+allocator's ability to deliver the prescribed quantity at all.
 
 Two consequences worth stating before any number is read:
 
 - **Non-viable transitions bound the score from above.** Observed change belonging to a
   transition that `040`/`060` dropped can never be reproduced, because `predict_trans_pot()` only
   predicts for viable transitions and `adjusted_trans_pot_v()` inner-joins potentials to rates.
-  Rows for non-viable transitions in `trans_rates_t` are inert. The `unmodellable` share below
-  quantifies that ceiling.
+  The `unmodellable` share below quantifies that ceiling.
 - **Persistence is not skill.** The great majority of Swiss hectares keep their class across a
-  survey interval — `040d`'s observed-transition plot has the exact figure — so any whole-map
-  agreement statistic is dominated by cells nobody had to get right. Every metric here is
-  therefore computed on **change**, not on the map.
+  survey interval, so any whole-map agreement statistic is dominated by cells nobody had to get
+  right. Every metric here is therefore computed on **change**, not on the map.
+
+## Parallelism
+
+DuckLake takes concurrent writers, so the members are independent processes: each mirai daemon
+opens its own connection, allocates one member run and commits its map. The potentials are the
+same for every member — same observed anterior map, same models, same predictors — so they are
+predicted **once**, onto the hold-out run, before any member starts; the members find them
+through the run lineage and do not predict. That prediction is the only step that uses `future`
+workers. The scoring in (c) is parallelised the same way, one daemon per member.
+
+Memory per daemon is roughly one copy of the adjusted potentials plus two maps; size
+`n_workers` against that, not against the core count.
 
 ## Parameters
-
-`n_perturbations` × `n_replicates` chained backcasts, each covering three period steps, is the
-cost driver: every allocated period re-runs `predict_trans_pot()` over the full 4.1 M-cell grid
-for every viable transition, because `alloc_clumpy()` predicts inside the same call that
-allocates. Start small and grow the grid once the runtime is known.
 
 ```{r}
 #| label: backcast-params
 library(data.table)
 library(evoland)
 
+# relative, as the catalog was created: DuckLake rejects the same data path spelled
+# differently, so the daemons open it from the same working directory (see `everywhere()`)
+db_path <- "ssp-ch.evolanddb"
+helpers <- normalizePath(file.path("2026-05-ssp-ch", "R", "allocation.R"))
+
 n_perturbations <- 3L # perturbed parameter sets *in addition to* the best estimate
-perturb_sd <- 0.05 # sd of the frac_expander perturbation (evoland default)
-n_replicates <- 3L # stochastic allocations per parameter set
+perturb_sd <- 0.05 # sd of the frac_expander perturbation
+n_replicates <- 5L # stochastic allocations per parameter set
 seed <- 42L
 fuzzy_window <- 11L # odd; evoland's default, ~1 km at 100 m resolution
-select_score <- "classif.auc" # must match 06
+select_score <- "classif.auc" # must match 060
 select_maximize <- TRUE
-id_run_backcast_base <- 2000L # 2000-2999 is free: 001 uses 0/100/1xxx, 071 uses max+n
+n_workers <- 8L # mirai daemons for allocation and scoring
+n_predict_workers <- 16L # future workers for the one prediction
+repredict <- TRUE # re-predict the shared potentials, e.g. after 060 was re-run
 
-db <- evoland_db$new(path = "ssp-ch.evolanddb")
+# the calibration hold-out registered by 060; this step hangs its runs below it
+id_run_holdout <- 2000L
+param_run_id <- function(p) id_run_holdout + 100L * as.integer(p)
+member_run_id <- function(p, r) param_run_id(p) + as.integer(r)
+backcast_kinds <- c("backcast parameters", "backcast replicate")
+
+source(helpers)
+db <- evoland_db$new(path = db_path)
 db$id_run <- 0L
 
-# evoland's table classes carry print methods that assume their own columns; a summary derived
-# from one inherits the class and prints nonsense ("Rate range: [Inf, -Inf]"). Strip it.
-plain <- function(x) {
-  data.table::setattr(data.table::copy(x), "class", c("data.table", "data.frame"))[]
-}
-
-obs_periods <- db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period]
-id_period_initial <- min(obs_periods) # the backcast's starting state, never simulated
-backcast_periods <- sort(setdiff(obs_periods, id_period_initial))
-id_period_final <- max(backcast_periods)
+obs_periods <- sort(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
+id_period_final <- max(obs_periods) # the backcast period
+id_period_initial <- id_period_final - 1L # observed anterior state of every member
+calibration_periods <- setdiff(obs_periods[obs_periods > min(obs_periods)], id_period_final)
 
 stopifnot(
-  "need at least two observed periods" = length(backcast_periods) >= 1L,
-  "backcast periods must be contiguous" = all(diff(backcast_periods) == 1L),
+  "need at least three observed periods" = length(calibration_periods) >= 1L,
   "no viable transitions - run 040 (and 060, which reconciles viability)" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
-  "no fitted models - run 060-transition-modelling.qmd first" =
-    db$row_count("trans_models_t") > 0L
+  "no hold-out run - run 060-transition-modelling.qmd first" =
+    nrow(db$runs_t[id_run == id_run_holdout & kind == "calibration hold-out"]) == 1L
 )
 
 message(
-  "Backcasting periods ", paste(backcast_periods, collapse = " -> "),
-  " from observed period ", id_period_initial
+  "Backcasting period ", id_period_final, " from observed period ", id_period_initial,
+  "; calibration from transitions ending in ", toString(calibration_periods)
 )
 ```
 
@@ -86,115 +105,120 @@ backcast run inherits them through the run lineage. The scenario rates `070` wro
 leaf runs at the *extrapolated* periods, so the two never resolve to the same
 `(id_period, id_trans)` slice.
 
-The unmodellable cells are from deglaciation and relatively rare transitions, respectively. We will be deterministically overwriting the glacier transitions, because that's also how the extrapolation is done.
+The unmodellable cells are from deglaciation and relatively rare transitions, respectively.
+Glacier change is imposed deterministically below, as in the extrapolation, so the transitions
+into and out of glacier are given a zero rate here: allocating them as well would move the same
+area twice.
 
 ```{r}
 #| label: backcast-obs-rates
-obs_rates <- db$get_obs_trans_rates()[id_period %in% backcast_periods]
-db$trans_rates_t <- obs_rates
+id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
+glacier_trans <- db$trans_meta_t[
+  id_lulc_anterior %in% id_lulc_glacier | id_lulc_posterior %in% id_lulc_glacier,
+  id_trans
+]
+obs_rates <- db$get_obs_trans_rates()[id_period == id_period_final]
+db$trans_rates_t <- as_trans_rates_t(
+  copy(obs_rates)[id_trans %in% glacier_trans, `:=`(rate = 0, count = 0L)]
+)
 
-# How much observed change is out of reach because its transition is not viable?
 viable_trans <- db$trans_meta_t[is_viable == TRUE]
-unmodellable <- plain(obs_rates)[
-  db$trans_meta_t[
-    db$lulc_meta_t[, .(id_lulc, name_anterior = name)],
-    on = c(id_lulc_anterior = "id_lulc")
-  ][
-    db$lulc_meta_t[, .(id_lulc, name_posterior = name)],
-    on = c(id_lulc_posterior = "id_lulc")
-  ],
-  on = "id_trans",
-  nomatch = NULL
+lulc_names <- db$lulc_meta_t[, .(id_lulc, name)]
+trans_names <- db$trans_meta_t[
+  lulc_names, on = c(id_lulc_anterior = "id_lulc"), name_anterior := i.name
 ][
+  lulc_names, on = c(id_lulc_posterior = "id_lulc"), name_posterior := i.name
+][, .(id_trans, id_lulc_anterior, id_lulc_posterior, name_anterior, name_posterior, is_viable)]
+
+unmodellable <- as.data.table(obs_rates)[trans_names, on = "id_trans", nomatch = NULL][
   ,
-  .(
-    name_anterior,
-    name_posterior,
-    cells = sum(count),
-    cells_viable = sum(count[is_viable == TRUE]),
-    is_viable
-  ),
-  by = .(id_period, id_trans)
-][, `:=`(
-  unmodellable_pct = round(100 * (1 - cells_viable / cells), 2)
-)][]
-unmodellable[is_viable == FALSE & cells > 1000]
+  .(cells = sum(count), cells_viable = sum(count[is_viable])),
+  by = .(id_trans, name_anterior, name_posterior, is_viable)
+][, unmodellable_pct := round(100 * (1 - cells_viable / cells), 2)][]
+unmodellable[is_viable == FALSE & cells > 1000][order(-cells)]
 ```
 
 ## (a) Allocation parameters
 
-`create_alloc_params_t()` measures, per viable transition and per observed period pair, the mean
-and variance of new-patch area, patch elongation, and the split between cells that **expand** an
-existing patch of the target class and cells that start a **new** patch; it then averages over
-the period pairs and returns that best estimate. The `n_perturbations` further sets are built
-here: each jitters `frac_expander` by a normal draw with sd `perturb_sd`, clamped to [0, 1], with
-`frac_patcher` following as `1 - frac_expander`.
+`create_alloc_params_t(id_period_post = )` measures, per viable transition and per observed
+period pair ending in `calibration_periods`, the mean and variance of new-patch area, patch
+elongation, and the split between cells that **expand** an existing patch of the target class and
+cells that start a **new** patch; it averages over the pairs and returns that best estimate. The
+`n_perturbations` further sets each jitter `frac_expander` by a normal draw with sd `perturb_sd`,
+clamped to [0, 1], with `frac_patcher` following as `1 - frac_expander`.
 
-Only `frac_expander` is perturbed, so this sweep explores the expander/patcher split and
-nothing else. That is the parameter the SSP interventions also target, which makes it the
-defensible one to sweep first, but it means a poor `mean_patch_size` estimate will not show up
-as parameter sensitivity here. Widening the sweep is a change to `perturb_alloc_params()` only.
+Only `frac_expander` is perturbed, so this sweep explores the expander/patcher split and nothing
+else. A poor `mean_patch_size` estimate will not show up as parameter sensitivity here; widening
+the sweep is a change to `perturb_alloc_params()` only.
 
 ```{r}
 #| label: backcast-alloc-params
+db$id_run <- id_run_holdout
+best_estimate <- db$create_alloc_params_t(id_period_post = calibration_periods)
 db$id_run <- 0L
-best_estimate <- db$create_alloc_params_t()
 
 perturb_alloc_params <- function(params, sd) {
   jittered <- pmin(1, pmax(0, params$frac_expander + rnorm(nrow(params), sd = sd)))
   copy(params)[, `:=`(frac_expander = jittered, frac_patcher = 1 - jittered)]
 }
 
-# id_run here is a 1-based parameter-set index, not a real run; set 1 is the best estimate.
+# `param_set` 1 is the best estimate
 set.seed(seed)
 alloc_params <- rbindlist(c(
-  list(copy(best_estimate)[, id_run := 1L]),
+  list(copy(best_estimate)[, param_set := 1L]),
   lapply(seq_len(n_perturbations), function(i) {
-    perturb_alloc_params(best_estimate, perturb_sd)[, id_run := 1L + i]
+    perturb_alloc_params(best_estimate, perturb_sd)[, param_set := 1L + i]
   })
 ))
-param_sets <- sort(unique(alloc_params$id_run))
-plain(alloc_params)[, .(
+param_sets <- sort(unique(alloc_params$param_set))
+alloc_params[, .(
   n_trans = .N,
   mean_patch_size = round(mean(mean_patch_size, na.rm = TRUE), 2),
   frac_expander = round(mean(frac_expander, na.rm = TRUE), 3)
-), by = id_run]
+), by = param_set]
 ```
 
 A transition that never produced a new patch (all conversions expanded existing ones) comes back
-with `patch_elongation = NA`; `alloc_clumpy()` substitutes `0.5`, and `mean_patch_size = 0` is
-handled as a mono-pixel draw in the C++ patcher. Both are safe, but a transition in that state
-has no estimated patch geometry at all — worth knowing before reading its similarity.
+with `patch_elongation = NA`; `alloc_clumpy_one_period()` substitutes `0.5`, and
+`mean_patch_size = 0` is handled as a mono-pixel draw in the C++ patcher. Both are safe, but a
+transition in that state has no estimated patch geometry at all — worth knowing before reading
+its similarity.
 
 ```{r}
 #| label: backcast-alloc-params-gaps
-plain(alloc_params)[id_run == min(param_sets) & (is.na(patch_elongation) | mean_patch_size <= 1)][
-  db$trans_meta_t,
+alloc_params[param_set == 1L & (is.na(patch_elongation) | mean_patch_size <= 1)][
+  trans_names,
   on = "id_trans",
   nomatch = NULL
-][, .(id_trans, id_lulc_anterior, id_lulc_posterior, mean_patch_size, patch_elongation)]
+][, .(id_trans, name_anterior, name_posterior, mean_patch_size, patch_elongation)]
 ```
 
 ## Run registration
 
-One parent run per parameter set holding the `alloc_params_t` rows, and one child run per
-stochastic replicate holding only the simulated `lulc_data_t`. The replicates inherit the
-parameters through the lineage, so — as in the evoland stochastic-allocation vignette — the only
-thing that differs between replicates of a set is the RNG state.
+```
+0 (observed record, observed rates)
+└── 2000  calibration hold-out: models (060), shared potentials, glacier change
+    ├── 2100  parameter set 1 (best estimate)
+    │   ├── 2101 … replicates: only the simulated map
+    ├── 2200  parameter set 2 (perturbed)
+    …
+```
+
+One run per parameter set holding its `alloc_params_t`, and one child run per stochastic
+replicate holding only its simulated `lulc_data_t`. The only thing that differs between replicates
+of a set is the RNG state.
 
 ```{r}
 #| label: backcast-register-runs
-param_run_id <- function(p) id_run_backcast_base + 100L * as.integer(p)
-member_run_id <- function(p, r) param_run_id(p) + as.integer(r)
-
 param_runs <- data.table(
   id_run = param_run_id(param_sets),
-  parent_id_run = 0L,
+  parent_id_run = id_run_holdout,
   description = paste0(
-    "Backcasting allocation parameter set ", param_sets,
-    fifelse(param_sets == min(param_sets), " (unperturbed estimate)", " (perturbed)")
+    "Backcast allocation parameter set ", param_sets,
+    fifelse(param_sets == 1L, " (best estimate)", " (perturbed)")
   ),
-  kind = "backcast parameters"
+  kind = "backcast parameters",
+  param_set = param_sets
 )
 
 member_runs <- CJ(param_set = param_sets, replicate = seq_len(n_replicates))[, .(
@@ -207,185 +231,139 @@ member_runs <- CJ(param_set = param_sets, replicate = seq_len(n_replicates))[, .
   seed = seed + 1000L * param_set + replicate
 )]
 
-# Re-running this step must replace its own runs, not collide with them; anything else in the
-# 2000-block is somebody else's and is a hard error.
-backcast_kinds <- c("backcast parameters", "backcast replicate")
+# Re-running replaces this step's own runs; anything else in the block is a hard error.
 existing_runs <- db$runs_t
-mine <- if ("kind" %in% names(existing_runs)) {
-  existing_runs[kind %in% backcast_kinds, id_run]
-} else {
-  integer(0)
-}
+mine <- existing_runs[kind %in% backcast_kinds, id_run]
 clash <- setdiff(
   intersect(c(param_runs$id_run, member_runs$id_run), existing_runs$id_run),
   mine
 )
-stopifnot("backcast run ids collide with runs registered by 001/071" = length(clash) == 0L)
-
+stopifnot("backcast run ids collide with runs registered elsewhere" = length(clash) == 0L)
 if (length(mine) > 0L) {
-  message(
-    "Replacing ", length(mine), " backcast runs from an earlier execution; ",
-    "their lulc_data_t / trans_pot_t rows are overwritten in place."
-  )
+  message("Replacing ", length(mine), " backcast runs from an earlier execution.")
 }
 
 db$commit(
   as_runs_t(rbind(
-    existing_runs[!id_run %in% c(param_runs$id_run, member_runs$id_run)],
+    existing_runs[!id_run %in% mine],
     param_runs,
     member_runs,
     fill = TRUE
   )),
   "runs_t",
-  "overwrite" # adding columns
+  "overwrite" # may add columns
 )
 
-for (p in param_sets) {
-  db$alloc_params_t <- as_alloc_params_t(
-    copy(alloc_params[id_run == p])[, id_run := param_run_id(p)]
-  )
-}
-
-# --- interventions (not implemented here) ----------------------------------------------
-# The SSP `Pre-allocation` interventions are perturbations of exactly this table. Each
-# NCCS-SSP-scenarios/Tools/SSP*_interventions.yml opens with a `Spatial_zoning` block whose
-# `Param_adjust_name` is one of Mean_Patch_Size / Patch_Size_Variance / Patch_Isometry /
-# Perc_expander / Perc_patcher -- i.e. the alloc_params_t columns estimated above -- applied to
-# the transitions targeting one class (`Transition_target_classes: Urban` in all five files).
-# To realise them, write a modified copy of the winning parameter rows onto the SSP run instead
-# of letting it inherit run 0's:
-#
-#   mod <- copy(alloc_params[id_run == best_param])[
-#     id_trans %in% urban_trans, frac_patcher := 0.15][      # SSP1 Absolute 0.15
-#     id_trans %in% urban_trans, frac_expander := 1 - frac_patcher]
-#   db$alloc_params_t <- as_alloc_params_t(mod[, id_run := ssp_run_id])
-#
-# Two conversions are needed and are not free:
-#   * `Absolute` replaces the estimated value (SSP0/3/5 set Perc_patcher to 0, SSP1 to 0.15);
-#     `Relative` (only SSP4, 0.5) scales it, but the YAML header does not say what it scales.
-#     Whatever it is, the numbers were tuned against the *original's* parameter estimates:
-#     Spatial_intervention_updates.txt records SSP1's 0.20 target being cut to 0.15 "because
-#     some of the transitions were already close". They do not transfer unexamined to ours.
-#   * `Patch_Isometry` is a Dinamica parameter. alloc_clumpy consumes `patch_elongation`
-#     (alloc_params_clumpy_v maps it straight through), so an isometry intervention has to be
-#     inverted back through isometry_from_elongation(). That mapping is a 1-D interpolation of
-#     Mazy fig. 3.10 and is not injective over its flat segments.
+db$alloc_params_t <- as_alloc_params_t(
+  copy(alloc_params)[, id_run := param_run_id(param_set)][, -"param_set"]
+)
 ```
 
 ## (b) Run the backcast
 
-Each replicate starts from the observed `id_period_initial` map — which the run lineage resolves
-to run `0`, since the replicate writes nothing for that period — and then chains: the simulated
-period 2 map is the anterior state for period 3, and so on. The error therefore **compounds**,
-which is the point: a backcast across three decades of surveys tests the trajectory, not one
-step.
-
-> An alternative design, noted in the handover, is to branch *N* members per allocation step from
-> the observed anterior state instead of from the previous simulation. That isolates one-step
-> allocation skill and is strictly cheaper to interpret. It needs no new machinery here: register
-> the members under the same parent and allocate a **single** period each
-> (`id_periods = k`), writing only period `k`; the lineage then resolves `k - 1` to run `0`'s
-> observed map. Both designs are worth having; the chained one is the one a backcast is usually
-> asked for, so it is the one implemented.
-
 ### Deterministic glacier change
 
-Glacier transitions are not modelled (`040` excludes glacier as an anterior class): their
-extent follows the climate, not the land use drivers, so they are imposed on the simulated map
-after each period is allocated, before the next period is allocated from it. In the backcast
-the imposed change is the **observed** one: every cell that turned into or out of glacier
-between two surveys takes its observed class. In the extrapolation (`090`) the same step will
-take its assignments from GloGEM glacier model output instead; `apply_deterministic_change()`
-only needs a table of `id_coord` and the class to impose.
+Glacier transitions are not modelled (`040` excludes glacier as an anterior class): their extent
+follows the climate, not the land use drivers, so they are imposed on each simulated map after it
+is allocated. In the backcast the imposed change is the **observed** one: every cell that turned
+into or out of glacier between the two surveys takes its observed class. It is written to
+`det_change_t` on the hold-out run, so every member inherits it; in the extrapolation the same
+table carries GloGEM projections instead (`052-ingest-glacier-projections`).
 
 ```{r}
 #| label: backcast-glacier
-id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
-
-db$id_run <- 0L
 glacier_change <- db$get_query(
-  "select post.id_period, post.id_coord, post.id_lulc
+  "select post.id_coord, post.id_lulc
   from {lulc_read_expr} ant
   inner join {lulc_read_expr} post
     on post.id_coord = ant.id_coord and post.id_period = ant.id_period + 1
-  where post.id_period in ({backcast_periods*})
+  where post.id_period = {id_period_final}
     and ant.id_lulc != post.id_lulc
     and (ant.id_lulc in ({id_lulc_glacier*}) or post.id_lulc in ({id_lulc_glacier*}))",
   lulc_read_expr = db$get_read_expr("lulc_data_t")
 )
-
-# impose `assignments` (id_coord, id_lulc) on an allocated lulc_data_t, by reference
-apply_deterministic_change <- function(lulc, assignments) {
-  lulc[assignments, on = "id_coord", id_lulc := i.id_lulc]
+if (nrow(glacier_change) > 0L) {
+  db$commit(
+    as_det_change_t(glacier_change[, .(
+      id_run = id_run_holdout, id_period = id_period_final, id_coord, id_lulc
+    )]),
+    det_change_table,
+    method = "upsert"
+  )
 }
+glacier_change[, .N, by = id_lulc][lulc_names, on = "id_lulc", nomatch = NULL]
+```
 
-glacier_change[, .N, by = id_period]
+### Shared transition potentials
+
+```{r}
+#| label: backcast-predict
+#| output: false
+options("evoland.use_prefetch_predict" = TRUE)
+future::plan(future.mirai::mirai_multisession, workers = n_predict_workers)
+db$id_run <- id_run_holdout
+db$predict_trans_pot(
+  id_period_post = id_period_final,
+  select_score = select_score,
+  select_maximize = select_maximize,
+  force = repredict
+)
+db$id_run <- 0L
+future::plan("sequential")
 ```
 
 ### Allocation
 
-Every replicate is allocated one period at a time with `alloc_clumpy_one_period()`, so the
-glacier change can be imposed between periods; the multi-period `alloc_clumpy()` has no such
-hook. Each replicate is seeded with its own registered seed: CLUMPY draws through R's RNG, so
-`set.seed()` makes each replicate reproducible and the replicates independent of each other.
-
-The transition potentials for the *first* backcast period are identical across every replicate
-of a parameter set (same observed anterior state, same models, same predictors), so the first
-period reads them from the parameter-set run with `use_parent_trans_pot = TRUE`: the first
-replicate predicts them onto the parent and its siblings reuse them. Later periods start from
-each replicate's own simulated map and are predicted per replicate.
+One task per member, dispatched to `n_workers` daemons. `allocate_member()` (in
+`R/allocation.R`) opens its own connection under the member run, seeds R's RNG with the member's
+registered seed — CLUMPY draws through it, so each member is reproducible and independent of the
+others and of the scheduling order — allocates, imposes `det_change_t` and commits.
 
 ```{r}
 #| label: backcast-allocate
 #| output: false
-replicate_runs <- db$runs_t[kind == "backcast replicate", .(id_run, seed)]
-options("evoland.use_prefetch_predict" = TRUE)
-future::plan(future.mirai::mirai_multisession, workers = 20)
-for (i in seq_len(nrow(replicate_runs))) {
-  db$id_run <- replicate_runs$id_run[i]
-  set.seed(replicate_runs$seed[i])
-
-  for (id_period_post in backcast_periods) {
-    lulc_simulated <- alloc_clumpy_one_period(
-      db = db,
-      id_period_post = id_period_post,
+mirai::daemons(n_workers)
+mirai::everywhere({
+  setwd(wd)
+  source(helpers)
+}, wd = getwd(), helpers = helpers)
+allocation_tasks <- mirai::mirai_map(
+  member_runs[, .(id_run, seed)],
+  function(id_run, seed, db_path, id_period_final, select_score, select_maximize) {
+    allocate_member(
+      db_path = db_path,
+      id_run = id_run,
+      id_periods = id_period_final,
+      seed = seed,
       select_score = select_score,
-      select_maximize = select_maximize,
-      use_parent_trans_pot = id_period_post == min(backcast_periods)
+      select_maximize = select_maximize
     )
-    apply_deterministic_change(
-      lulc_simulated,
-      glacier_change[id_period == id_period_post, .(id_coord, id_lulc)]
-    )
-    db$commit(lulc_simulated, "lulc_data_t", method = "upsert")
-    # the next period's prediction reads the neighbour predictors of this one
-    if (id_period_post != max(backcast_periods)) {
-      db$upsert_new_neighbors(id_period_post)
-    }
-  }
-}
-future::plan("sequential")
-db$id_run <- 0L
+  },
+  .args = list(
+    db_path = db_path,
+    id_period_final = id_period_final,
+    select_score = select_score,
+    select_maximize = select_maximize
+  )
+)
+allocation_log <- rbindlist(allocation_tasks[.stop])
 ```
 
-Each replicate still writes its own `trans_pot_t` slice for every period after the first (one
-value per cell, viable transition and period), which is by far the largest thing the backcast
-stores.
+```{r}
+#| label: backcast-allocation-log
+allocation_log[, .(members = .N, median_seconds = median(seconds), n_det_change = max(n_det_change))]
+```
 
 ## Simulated end states
 
-The backcast writes each allocated run's maps to `lulc_data_t`; the validation below reads them
-from there. Here we only check that every allocated run covers the observed grid.
+Every member must cover the observed grid.
 
 ```{r}
 #| label: backcast-maps
-allocated_runs <- db$runs_t[kind == "backcast replicate", .(id_run)]
-run_param_set <- member_runs[, .(id_run, param_set)] # parameter set of each replicate
-
 db$id_run <- NULL # the lineage-free read expression spans all runs
 simulated_cells <- db$get_query(
   "select id_run, count(*)::integer as n_cells from {lulc_read_expr}
-  where id_run in ({allocated_runs$id_run*}) and id_period = {id_period_final}
+  where id_run in ({member_runs$id_run*}) and id_period = {id_period_final}
   group by id_run",
   lulc_read_expr = db$get_read_expr("lulc_data_t")
 )
@@ -397,59 +375,60 @@ n_observed_cells <- db$get_query(
 )
 
 stopifnot(
-  "no simulated cells - did allocation write anything?" = nrow(simulated_cells) > 0L,
   "an allocated run is missing cells" =
-    nrow(simulated_cells) == nrow(allocated_runs) &&
+    nrow(simulated_cells) == nrow(member_runs) &&
       all(simulated_cells$n_cells == n_observed_cells)
 )
-simulated_cells
+simulated_cells[, .N, by = n_cells]
 ```
 
 ## Quantity check: did the allocator deliver the prescribed change?
 
 The first thing to establish is that the allocator hit the demand it was given. uPAM draws
 patches without replacement from the source pool; when the prescribed rate is large relative to
-the pool, or `avoid_aggregation` rejects many candidate patches, the pool empties before the
-quota is met and the run silently under-delivers. `070` flags the same failure mode for the
-scenario rates, where it is worse because the LP pushes rates above the historic envelope.
+the pool, or `avoid_aggregation` rejects many candidate patches, the pool empties before the quota
+is met and the run silently under-delivers. `070` flags the same failure mode for the scenario
+rates, where it is worse because the LP pushes rates above the historic envelope.
+
+The realised counts come from `lulc_crosstab_v()`: the member's simulated map against the observed
+anterior map it inherits. Glacier transitions are left out: their quantity is imposed, not allocated.
 
 ```{r}
 #| label: backcast-quantity
-realised_counts <- rbindlist(lapply(allocated_runs$id_run, function(r) {
-  db$id_run <- r
-  db$get_obs_trans_rates()[
-    id_period %in% backcast_periods,
-    .(id_run = r, id_period, id_trans, count_realised = count)
-  ]
-}))
-db$id_run <- 0L
+realised_counts <- rbindlist(lapply(member_runs$id_run, function(r) {
+  db$lulc_crosstab_v(
+    id_period_anterior = id_period_initial,
+    id_period_post = id_period_final,
+    id_run_anterior = r
+  )[, id_run := r]
+}))[trans_names, on = c("id_lulc_anterior", "id_lulc_posterior"), id_trans := i.id_trans][
+  !is.na(id_trans), .(id_run, id_trans, count_realised = n_cells)
+]
 
 quantity <- merge(
-  CJ(
-    id_run = allocated_runs$id_run,
-    id_trans = viable_trans$id_trans,
-    id_period = backcast_periods
-  )[
-    obs_rates[, .(id_period, id_trans, count_prescribed = count)],
-    on = c("id_period", "id_trans"),
+  CJ(id_run = member_runs$id_run, id_trans = setdiff(viable_trans$id_trans, glacier_trans))[
+    as.data.table(obs_rates)[, .(id_trans, count_prescribed = count)],
+    on = "id_trans",
     nomatch = NULL
   ],
   realised_counts,
-  by = c("id_run", "id_period", "id_trans"),
+  by = c("id_run", "id_trans"),
   all.x = TRUE
 )
 quantity[is.na(count_realised), count_realised := 0L]
 quantity[, shortfall_pct := 100 * (count_prescribed - count_realised) / count_prescribed]
 
-quantity[order(-shortfall_pct)][1:15][
-  db$trans_meta_t,
-  on = "id_trans",
-  nomatch = NULL
-][, .(
-  id_run, id_period, id_lulc_anterior, id_lulc_posterior,
-  count_prescribed, count_realised,
-  shortfall_pct = round(shortfall_pct, 1)
-)]
+quantity[
+  ,
+  .(
+    count_prescribed = count_prescribed[1],
+    count_realised = mean(count_realised),
+    shortfall_pct = round(mean(shortfall_pct), 1)
+  ),
+  by = id_trans
+][trans_names, on = "id_trans", nomatch = NULL][order(-shortfall_pct)][
+  , .(name_anterior, name_posterior, count_prescribed, count_realised, shortfall_pct)
+]
 ```
 
 ## (c1) Fuzzy similarity of differences
@@ -458,36 +437,37 @@ quantity[order(-shortfall_pct)][1:15][
 (Hagen 2003): for one transition it builds the observed and simulated **change** maps, and gives
 each changed cell a membership in the other map's change that decays with the distance to the
 nearest change there (`exp(-d / 2)` within the window, 1 in the same cell), so a patch placed one
-cell off still scores. Each direction is averaged over that map's own changed cells only, so the
-unchanged background does not enter; `similarity` is the minimum of the two directions, so a
-simulation cannot score well by placing much more or much less change than was observed.
+cell off still scores. Each direction is averaged over that map's own changed cells only;
+`similarity` is the minimum of the two directions, so a simulation cannot score well by placing
+much more or much less change than was observed.
+
+The focal operations dominate this step, so it runs on the daemons too, one member per task.
 
 ```{r}
 #| label: backcast-fuzzy
-db$id_run <- 0L
-rast_initial <- db$lulc_data_as_rast(id_period = id_period_initial)
-rast_obs_final <- db$lulc_data_as_rast(id_period = id_period_final)
-
-fuzzy_one_run <- function(id_run_member) {
+fuzzy_one_run <- function(id_run_member, db_path, viable_trans, id_period_initial,
+                          id_period_final, fuzzy_window) {
+  db <- evoland::evoland_db$new(path = db_path, id_run = 0L, read_only = TRUE)
+  rast_initial <- db$lulc_data_as_rast(id_period = id_period_initial)
+  rast_observed <- db$lulc_data_as_rast(id_period = id_period_final)
   db$id_run <- id_run_member
-  rast_sim <- db$lulc_data_as_rast(id_period = id_period_final)
+  rast_simulated <- db$lulc_data_as_rast(id_period = id_period_final)
 
   res <- mapply(
-    FUN = calc_transition_similarity,
+    FUN = evoland::calc_transition_similarity,
     from_class = viable_trans$id_lulc_anterior,
     to_class = viable_trans$id_lulc_posterior,
     MoreArgs = list(
       initial_map = rast_initial,
-      observed_map = rast_obs_final,
-      simulated_map = rast_sim,
+      observed_map = rast_observed,
+      simulated_map = rast_simulated,
       window_size = fuzzy_window,
       use_exp_decay = TRUE,
       decay_divisor = 2.0
     ),
     SIMPLIFY = FALSE
   )
-
-  data.table(
+  data.table::data.table(
     id_run = id_run_member,
     id_trans = viable_trans$id_trans,
     similarity = vapply(res, \(x) as.numeric(x$similarity), numeric(1L)),
@@ -496,10 +476,21 @@ fuzzy_one_run <- function(id_run_member) {
   )
 }
 
-fuzzy_dt <- rbindlist(lapply(allocated_runs$id_run, fuzzy_one_run))
+fuzzy_dt <- mirai::mirai_map(
+  member_runs$id_run,
+  fuzzy_one_run,
+  .args = list(
+    db_path = db_path,
+    viable_trans = viable_trans[, .(id_trans, id_lulc_anterior, id_lulc_posterior)],
+    id_period_initial = id_period_initial,
+    id_period_final = id_period_final,
+    fuzzy_window = fuzzy_window
+  )
+)[.stop] |>
+  rbindlist()
+mirai::daemons(0)
 
-db$id_run <- 0L
-
+run_param_set <- member_runs[, .(id_run, param_set)]
 fuzzy_by_param <- run_param_set[fuzzy_dt, on = "id_run"][, .(
   similarity_sd = sd(similarity, na.rm = TRUE),
   similarity = mean(similarity, na.rm = TRUE),
@@ -507,10 +498,8 @@ fuzzy_by_param <- run_param_set[fuzzy_dt, on = "id_run"][, .(
   n_simulated = mean(n_simulated)
 ), by = .(param_set, id_trans)]
 
-fuzzy_by_param[db$trans_meta_t, on = "id_trans", nomatch = NULL][
-  order(param_set, similarity)
-][, .(
-  param_set, id_lulc_anterior, id_lulc_posterior,
+fuzzy_by_param[trans_names, on = "id_trans", nomatch = NULL][order(param_set, similarity)][, .(
+  param_set, name_anterior, name_posterior,
   similarity = round(similarity, 3),
   n_observed, n_simulated = round(n_simulated)
 )]
@@ -529,13 +518,8 @@ The cross-tabulation of observed against simulated end class, restricted to the 
 $\mathrm{FoM} = B / (A + B + C + D)$ — the intersection of observed and simulated change over
 their union. It ignores the correct-null cell, which is why it is the right statistic here.
 
-`db$figure_of_merit_v()` computes it in the database: the initial and observed maps from run
-`0`, each allocated run's simulated map through its own lineage, one row per run, and with
-`by_transition = TRUE` one row per run and transition.
-
-**Glacier cells are excluded.** Their change is imposed from the record (see (b)), so a cell
-that starts or ends as glacier is a hit by construction and says nothing about the model;
-`exclude_id_lulc` leaves out every cell whose initial or observed class is glacier.
+**Glacier cells are excluded.** Their change is imposed from the record (see (b)), so a cell that
+starts or ends as glacier is a hit by construction and says nothing about the model.
 
 ```{r}
 #| label: backcast-fom
@@ -543,7 +527,7 @@ fom_args <- list(
   id_period_anterior = id_period_initial,
   id_period_post = id_period_final,
   id_run_reference = 0L,
-  id_run_simulated = allocated_runs$id_run,
+  id_run_simulated = member_runs$id_run,
   exclude_id_lulc = id_lulc_glacier
 )
 fom_by_run <- do.call(db$figure_of_merit_v, fom_args)
@@ -558,16 +542,31 @@ fom_by_run[order(-figure_of_merit), .(
 )]
 ```
 
+The observed-against-simulated cross-tabulation of the backcast period, pooled over the members of
+the best-estimate set, shows where the misses go:
+
+```{r}
+#| label: backcast-crosstab
+crosstab_obs_sim <- rbindlist(lapply(member_runs[param_set == 1L, id_run], function(r) {
+  db$lulc_crosstab_v(
+    id_period_anterior = id_period_final,
+    id_period_post = id_period_final,
+    id_run_anterior = 0L,
+    id_run_post = r
+  )
+}))[, .(n_cells = sum(n_cells) / sum(member_runs$param_set == 1L)), by = .(id_lulc_anterior, id_lulc_posterior)][
+  lulc_names, on = c(id_lulc_anterior = "id_lulc"), observed := i.name
+][
+  lulc_names, on = c(id_lulc_posterior = "id_lulc"), simulated := i.name
+]
+dcast(crosstab_obs_sim, observed ~ simulated, value.var = "n_cells", fill = 0, fun.aggregate = sum)
+```
+
 The null — the FoM of a model that gets the quantity right but the location purely by chance —
-is available in closed form, which is cheaper and less arbitrary than running a
-scrambled-potential control. Within an anterior class $u$ of $N_u$ cells, of which the model
+is available in closed form. Within an anterior class $u$ of $N_u$ cells, of which the model
 converts $S_{uv}$ to $v$ and the record converts $O_{uv}$, random placement gives
 $\mathbb{E}[B_{uv}] = S_{uv} O_{uv} / N_u$, and the expected union of change over the class is
 $S_u + O_u - S_u O_u / N_u$; `figure_of_merit_v()` returns it as `figure_of_merit_null`.
-
-Per-transition FoM uses the same decomposition, so it is directly comparable with its null:
-hits are cells the record and the model both moved from `u` to `v`, and the denominator is the
-union of the two flows.
 
 ```{r}
 #| label: backcast-fom-by-trans
@@ -580,11 +579,15 @@ fom_by_trans <- run_param_set[fom_by_trans_run, on = "id_run"][
     figure_of_merit_null = mean(figure_of_merit_null)
   ),
   by = .(param_set, id_lulc_anterior, id_lulc_posterior)
-][, figure_of_merit := hits / (observed + simulated - hits)][, at_chance := is.finite(figure_of_merit) & is.finite(figure_of_merit_null) &
-  figure_of_merit <= figure_of_merit_null]
+][, figure_of_merit := hits / (observed + simulated - hits)][
+  , at_chance := is.finite(figure_of_merit) & is.finite(figure_of_merit_null) &
+    figure_of_merit <= figure_of_merit_null
+]
 
-fom_by_trans[order(param_set, figure_of_merit)][, .(
-  param_set, id_lulc_anterior, id_lulc_posterior,
+fom_by_trans[
+  trans_names, on = c("id_lulc_anterior", "id_lulc_posterior"), nomatch = NULL
+][order(param_set, figure_of_merit)][, .(
+  param_set, name_anterior, name_posterior,
   observed = round(observed), simulated = round(simulated),
   figure_of_merit = round(figure_of_merit, 3),
   figure_of_merit_null = round(figure_of_merit_null, 3),
@@ -594,12 +597,9 @@ fom_by_trans[order(param_set, figure_of_merit)][, .(
 
 ## (c3) Expected figure of merit over the replicate ensemble
 
-A single realisation is one draw from the allocator. Averaging the counts over the
-`n_replicates` replicates of a parameter set gives the expected hits, misses, wrong hits and
-false alarms, and the FoM computed from those is the ensemble expectation rather than one
-sample of it (the mean of the per-run ratios would not be). The null is averaged over the
-replicates as it is: it depends on the simulated quantities only, which barely differ between
-replicates of one parameter set.
+Averaging the counts over the replicates of a parameter set gives the expected hits, misses, wrong
+hits and false alarms, and the FoM computed from those is the ensemble expectation rather than
+one sample of it (the mean of the per-run ratios would not be).
 
 ```{r}
 #| label: backcast-ensemble-fom
@@ -626,10 +626,10 @@ is the substantive one; the third governs how the results may be reported.
    least of all `090`, where the LP pushes rates *above* that record — can be trusted until it is
    understood.
 2. **Allocation skill.** The ensemble FoM must beat the random-within-class null by a factor of
-   two. This is a deliberately modest bar: published land-change models mostly land between a
-   few per cent and ~15 % absolute FoM (Pontius et al. 2008, *Ann. Reg. Sci.* 42, comparing 13
-   applications), and absolute FoM scales with how much change there is to get right, so the
-   only meaningful comparison is against a null on this same landscape and period.
+   two. Published land-change models mostly land between a few per cent and ~15 % absolute FoM
+   (Pontius et al. 2008, *Ann. Reg. Sci.* 42), and absolute FoM scales with how much change
+   there is to get right, so the only meaningful comparison is against a null on this same
+   landscape and period.
 3. **Per-transition honesty.** Transitions flagged `at_chance` above must be reported as
    spatially uninformative. Their quantity is still prescribed and still lands, but their
    *pattern* is noise, and `090d` must not present maps of them as model output.
@@ -639,16 +639,13 @@ is the substantive one; the third governs how the results may be reported.
 quantity_gate <- quantity[
   count_prescribed > 1000,
   .(mean_shortfall_pct = mean(shortfall_pct)),
-  by = .(id_trans, id_period)
+  by = id_trans
 ][mean_shortfall_pct > 5]
 
 skill_gate <- ensemble_fom[, .(param_set, fom_expected, fom_null, ratio = fom_expected / fom_null)]
 
 if (nrow(quantity_gate) > 0L) {
-  warning(
-    "Quantity gate failed for ", nrow(quantity_gate),
-    " (transition, period) pairs - see quantity_gate"
-  )
+  warning("Quantity gate failed for ", nrow(quantity_gate), " transitions - see quantity_gate")
 }
 if (all(skill_gate$ratio < 2)) {
   warning(
@@ -663,11 +660,12 @@ list(quantity_gate = quantity_gate, skill_gate = skill_gate)
 ## Select the parameter set and promote it
 
 The winner is chosen on the ensemble FoM, with the mean `similarity` as the tie-break: FoM answers
-"are the right cells changing", the fuzzy similarity answers "is the change the right shape",
-and only the first is comparable against a null.
+"are the right cells changing", the fuzzy similarity answers "is the change the right shape", and
+only the first is comparable against a null.
 
-The chosen set is written to run `0` so that every SSP run in `090` inherits it through the
-lineage without further plumbing.
+What is promoted to run `0` — where every SSP run inherits it — is **re-estimated from every
+observed transition**, now including the last one; the winning set contributes only its
+perturbation, i.e. its per-transition `frac_expander` offset from the hold-out best estimate.
 
 ```{r}
 #| label: backcast-select
@@ -684,20 +682,28 @@ param_score
 
 ```{r}
 #| label: backcast-commit-params
-# Record each set's measured similarity alongside its parameters (the `similarity` column
-# exists for exactly this and is what eval_alloc_params_t() would have filled).
-for (p in param_sets) {
-  db$alloc_params_t <- as_alloc_params_t(merge(
-    copy(alloc_params[id_run == p])[, id_run := param_run_id(p)][, -"similarity"],
-    fuzzy_by_param[param_set == p, .(id_trans, similarity)],
-    by = "id_trans",
-    all.x = TRUE
-  ))
-}
+# Record each set's measured similarity alongside its parameters
+db$alloc_params_t <- as_alloc_params_t(merge(
+  copy(alloc_params)[, id_run := param_run_id(param_set)][, -"similarity"],
+  fuzzy_by_param[, .(param_set, id_trans, similarity)],
+  by = c("param_set", "id_trans"),
+  all.x = TRUE
+)[, -"param_set"])
+
+expander_offset <- merge(
+  alloc_params[param_set == best_param, .(id_trans, frac_expander)],
+  best_estimate[, .(id_trans, frac_expander_best = frac_expander)],
+  by = "id_trans"
+)[, .(id_trans, offset = frac_expander - frac_expander_best)]
 
 db$id_run <- 0L
+promoted <- db$create_alloc_params_t()[expander_offset, on = "id_trans", offset := i.offset][
+  is.na(offset), offset := 0
+][, frac_expander := pmin(1, pmax(0, frac_expander + offset))][
+  , frac_patcher := 1 - frac_expander
+][, -"offset"]
 db$alloc_params_t <- as_alloc_params_t(merge(
-  copy(alloc_params[id_run == best_param])[, id_run := 0L][, -"similarity"],
+  promoted[, -"similarity"],
   fuzzy_by_param[param_set == best_param, .(id_trans, similarity)],
   by = "id_trans",
   all.x = TRUE
@@ -705,20 +711,18 @@ db$alloc_params_t <- as_alloc_params_t(merge(
 db$alloc_params_t
 ```
 
-> **Why not `eval_alloc_params_t()`?** The upstream helper does exactly this loop —
-> allocate the observed periods per parameter set, then score with
-> `calc_transition_similarity()` — but it calls `alloc_dinamica()`, so it needs a
-> DinamicaConsole installation, it does not use the `runs_t` hierarchy for the parameter
-> sets, it runs one realisation per set (no ensemble), and it reports no figure of merit.
-> Folding the CLUMPY backend and an `n_replicates` argument into it would let this step
-> collapse back to one call.
+> **Why not `eval_alloc_params_t()`?** The upstream helper does this loop — allocate the
+> observed periods per parameter set, then score with `calc_transition_similarity()` — but it
+> calls `alloc_dinamica()`, does not use the `runs_t` hierarchy, runs one realisation per set and
+> reports no figure of merit. See `TODO.md`, upstream asks.
 
 ```{r}
 #| label: backcast-report
 db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   key = , value = ,
-  "backcast_periods", paste(backcast_periods, collapse = ","),
+  "backcast_period", as.character(id_period_final),
   "backcast_initial_period", as.character(id_period_initial),
+  "backcast_calibration_periods", paste(calibration_periods, collapse = ","),
   "backcast_n_param_sets", as.character(length(param_sets)),
   "backcast_n_replicates", as.character(n_replicates),
   "backcast_perturb_sd", as.character(perturb_sd),
