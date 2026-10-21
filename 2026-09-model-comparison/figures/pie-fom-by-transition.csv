@@ -29,12 +29,12 @@ logistic regression × Ordered,2,1,8,0,0,0,0
 logistic regression × Ordered,2,3,134,0,0,0,0
 logistic regression × Ordered,3,1,944,70,3,0.0029673590504451,0.00249523571594611
 logistic regression × Ordered,3,2,1064,1381,144,0.0625814863102999,0.0234930012509592
-logistic regression × CLUMondo,1,2,2183,1702,144,0.0384923817161187,0.0207567968908419
+logistic regression × CLUMondo,1,2,2183,1690.6,142,0.0380533819273234,0.0206767377809833
 logistic regression × CLUMondo,1,3,423,0,0,0,0
 logistic regression × CLUMondo,2,1,8,0,0,0,0
 logistic regression × CLUMondo,2,3,134,0,0,0,0
 logistic regression × CLUMondo,3,1,944,0,0,0,0
-logistic regression × CLUMondo,3,2,1064,1336,138,0.0610079575596817,0.0231457648596206
+logistic regression × CLUMondo,3,2,1064,1333.5,138,0.0610754591723833,0.0231258808665282
 random forest × CLUMPY,1,2,2183,2185.3,140.75,0.0332935151565327,0.0237723011520129
 random forest × CLUMPY,1,3,423,424.3,4.15,0.00492201862064876,0.0045242875789383
 random forest × CLUMPY,2,1,8,0,0,0,0
@@ -65,12 +65,12 @@ random forest × Ordered,2,1,8,0,0,0,0
 random forest × Ordered,2,3,134,0,0,0,0
 random forest × Ordered,3,1,944,29,0,0,0.00107577459818585
 random forest × Ordered,3,2,1064,1422,206,0.0903508771929825,0.0237986226254275
-random forest × CLUMondo,1,2,2183,1602,113,0.0307734204793028,0.0200393239168797
+random forest × CLUMondo,1,2,2183,1598.25,112.4,0.0306363029287106,0.0200115669220201
 random forest × CLUMondo,1,3,423,0,0,0,0
 random forest × CLUMondo,2,1,8,0,0,0,0
 random forest × CLUMondo,2,3,134,0,0,0,0
 random forest × CLUMondo,3,1,944,0,0,0,0
-random forest × CLUMondo,3,2,1064,1331,177,0.0798016230838593,0.0231063924503081
+random forest × CLUMondo,3,2,1064,1331.7,177.75,0.0801415721725017,0.0231118732960308
 Weights of Evidence × CLUMPY,1,2,2183,2183.8,126.65,0.0298692263245404,0.0237639642904417
 Weights of Evidence × CLUMPY,1,3,423,424.3,4.4,0.00522007355558192,0.00452430194740109
 Weights of Evidence × CLUMPY,2,1,8,0,0,0,0
@@ -101,12 +101,12 @@ Weights of Evidence × Ordered,2,1,8,0,0,0,0
 Weights of Evidence × Ordered,2,3,134,0,0,0,0
 Weights of Evidence × Ordered,3,1,944,0,0,0,0
 Weights of Evidence × Ordered,3,2,1064,1526,129,0.0524177163754571,0.0245311985081945
-Weights of Evidence × CLUMondo,1,2,2183,1646,84,0.0224299065420561,0.0203595043690132
+Weights of Evidence × CLUMondo,1,2,2183,1591.7,82.8,0.0224274763671822,0.0199497252798034
 Weights of Evidence × CLUMondo,1,3,423,0,0,0,0
 Weights of Evidence × CLUMondo,2,1,8,0,0,0,0
 Weights of Evidence × CLUMondo,2,3,134,0,0,0,0
 Weights of Evidence × CLUMondo,3,1,944,0,0,0,0
-Weights of Evidence × CLUMondo,3,2,1064,1386,110,0.047008547008547,0.0235308099114624
+Weights of Evidence × CLUMondo,3,2,1064,1412.8,112,0.047361299052774,0.0237303257716303
 naive Bayes × CLUMPY,1,2,2183,2184.45,145.8,0.0345362595193822,0.0237675813033192
 naive Bayes × CLUMPY,1,3,423,424.35,4.45,0.00527939257325899,0.00452456481386747
 naive Bayes × CLUMPY,2,1,8,0,0,0,0
@@ -137,33 +137,33 @@ naive Bayes × Ordered,2,1,8,0,0,0,0
 naive Bayes × Ordered,2,3,134,0,0,0,0
 naive Bayes × Ordered,3,1,944,905,50,0.0277932184546971,0.0179644302094966
 naive Bayes × Ordered,3,2,1064,546,43,0.0274409700063816,0.0139743803027782
-naive Bayes × CLUMondo,1,2,2183,1484,101,0.0283230510375771,0.0191437924508004
+naive Bayes × CLUMondo,1,2,2183,1472.75,101.85,0.0286586566870199,0.0190553360882139
 naive Bayes × CLUMondo,1,3,423,0,0,0,0
 naive Bayes × CLUMondo,2,1,8,0,0,0,0
 naive Bayes × CLUMondo,2,3,134,0,0,0,0
 naive Bayes × CLUMondo,3,1,944,2,0,0,7.62326718049426e-05
-naive Bayes × CLUMondo,3,2,1064,1438,140,0.0592718035563082,0.023915220472151
-GLM (lulcc) × CLUE-S (as shipped),1,2,2183,4052.05,259.85,0.0434880840808676,0.0311033041392751
-GLM (lulcc) × CLUE-S (as shipped),1,3,423,3683.9,51,0.0125742745136714,0.00813331927459038
-GLM (lulcc) × CLUE-S (as shipped),2,1,8,2613.9,0,0,0.000197699305741656
-GLM (lulcc) × CLUE-S (as shipped),2,3,134,1196,1,0.000752445447705041,0.00299529563798205
-GLM (lulcc) × CLUE-S (as shipped),3,1,944,3468.2,151.2,0.0354846280215912,0.0291678433781104
-GLM (lulcc) × CLUE-S (as shipped),3,2,1064,2814.95,238,0.0653675551710405,0.0303875653970803
-GLM (lulcc) × Ordered (as shipped),1,2,2183,2455.55,134.45,0.0298505805821363,0.0251906724987644
-GLM (lulcc) × Ordered (as shipped),1,3,423,0,0,0,0
-GLM (lulcc) × Ordered (as shipped),2,1,8,0,0,0,0
-GLM (lulcc) × Ordered (as shipped),2,3,134,0,0,0,0
-GLM (lulcc) × Ordered (as shipped),3,1,944,801.55,22.1,0.012823116423453,0.0168348418422225
-GLM (lulcc) × Ordered (as shipped),3,2,1064,649.45,80.65,0.0493936795688388,0.015643782630692
-logistic regression (CLUinPy) × CLUMondo (as shipped),1,2,2183,1615,95,0.025654874426141,0.0201346738055715
-logistic regression (CLUinPy) × CLUMondo (as shipped),1,3,423,103,3,0.00573613766730402,0.001764303057773
-logistic regression (CLUinPy) × CLUMondo (as shipped),2,1,8,0,0,0,0
-logistic regression (CLUinPy) × CLUMondo (as shipped),2,3,134,0,0,0,0
-logistic regression (CLUinPy) × CLUMondo (as shipped),3,1,944,45,0,0,0.00164323038979761
-logistic regression (CLUinPy) × CLUMondo (as shipped),3,2,1064,1485.1,153,0.0638537623638413,0.0242501063771021
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),1,2,2183,2182,131.7,0.0311104811848912,0.0237539373062708
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),1,3,423,422,7.1,0.00847356486454231,0.00451197844514563
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),2,1,8,0,0,0,0
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),2,3,134,133,0.3,0.00112485939257593,0.00165699297149362
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),3,1,944,943,44.3,0.0240408096814457,0.0183487078143401
-Weights of Evidence × Dinamica (simulate.ego) (as shipped),3,2,1064,1063,77.6,0.0378647408997755,0.0207307874202763
+naive Bayes × CLUMondo,3,2,1064,1430.5,139.15,0.0590782686224977,0.0238605348727407
+lulcc GLM × CLUE-S (as shipped),1,2,2183,4052.05,259.85,0.0434880840808676,0.0311033041392751
+lulcc GLM × CLUE-S (as shipped),1,3,423,3683.9,51,0.0125742745136714,0.00813331927459038
+lulcc GLM × CLUE-S (as shipped),2,1,8,2613.9,0,0,0.000197699305741656
+lulcc GLM × CLUE-S (as shipped),2,3,134,1196,1,0.000752445447705041,0.00299529563798205
+lulcc GLM × CLUE-S (as shipped),3,1,944,3468.2,151.2,0.0354846280215912,0.0291678433781104
+lulcc GLM × CLUE-S (as shipped),3,2,1064,2814.95,238,0.0653675551710405,0.0303875653970803
+lulcc GLM × Ordered (as shipped),1,2,2183,2455.55,134.45,0.0298505805821363,0.0251906724987644
+lulcc GLM × Ordered (as shipped),1,3,423,0,0,0,0
+lulcc GLM × Ordered (as shipped),2,1,8,0,0,0,0
+lulcc GLM × Ordered (as shipped),2,3,134,0,0,0,0
+lulcc GLM × Ordered (as shipped),3,1,944,801.55,22.1,0.012823116423453,0.0168348418422225
+lulcc GLM × Ordered (as shipped),3,2,1064,649.45,80.65,0.0493936795688388,0.015643782630692
+CLUinPy logistic × CLUMondo (as shipped),1,2,2183,1615,95,0.025654874426141,0.0201346738055715
+CLUinPy logistic × CLUMondo (as shipped),1,3,423,103,3,0.00573613766730402,0.001764303057773
+CLUinPy logistic × CLUMondo (as shipped),2,1,8,0,0,0,0
+CLUinPy logistic × CLUMondo (as shipped),2,3,134,0,0,0,0
+CLUinPy logistic × CLUMondo (as shipped),3,1,944,45,0,0,0.00164323038979761
+CLUinPy logistic × CLUMondo (as shipped),3,2,1064,1485.1,153,0.0638537623638413,0.0242501063771021
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),1,2,2183,2182,131.7,0.0311104811848912,0.0237539373062708
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),1,3,423,422,7.1,0.00847356486454231,0.00451197844514563
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),2,1,8,0,0,0,0
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),2,3,134,133,0.3,0.00112485939257593,0.00165699297149362
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),3,1,944,943,44.3,0.0240408096814457,0.0183487078143401
+Dinamica WoE × Dinamica (simulate.ego) (as shipped),3,2,1064,1063,77.6,0.0378647408997755,0.0207307874202763
