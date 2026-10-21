@@ -257,7 +257,8 @@ allocate_both(
 
 #| label: result
 crosstab_last <- function(dir) {
-  sim <- raster::raster(file.path(dir, sprintf("r%02d.tif", n_realisations)))
+  last <- tail(sort(list.files(dir, pattern = "^r[0-9]+\\.tif$")), 1)
+  sim <- raster::raster(file.path(dir, last))
   table(anterior = raster::values(lu[[1]]), simulated = raster::values(sim))
 }
 for (est in estimators$estimator) {
