@@ -9,8 +9,16 @@
 #'
 #' - **Allocation**: 8 annual steps from 1991, with CLUE-S (Verburg et al. 2002; elasticity
 #'   0.2 for every class, the demo's iteration parameters) and the Ordered procedure (Fuchs et
-#'   al. 2013; order built, forest, other). The Ordered model is stochastic; CLUE-S jitters
-#'   suitabilities by a random amount, so both are repeated with seeds.
+#'   al. 2013; order built, forest, other). CLUE-S jitters suitabilities by a random amount, so
+#'   it is repeated with seeds.
+#' - **Ordered, deterministic in the crossing.** lulcc's stochastic mode thins each class's
+#'   ranked candidates by a Bernoulli(suitability) draw and then takes the first n, retrying up
+#'   to 1000 times. That suits presence probabilities (lulcc's GLMs). With the crossing's class
+#'   probabilities, a few per cent for any change, the draws often cannot supply n cells; the
+#'   missing picks become `NA` indices, cells stay unassigned (-1), and in the next annual step
+#'   lulcc's C code reads out of range: the maps came out with class codes in the billions. The
+#'   crossing therefore runs Ordered with `stochastic = FALSE`, one map per estimator; the
+#'   as-shipped run keeps the demo's stochastic mode.
 #' - **Demand**: lulcc's `approxExtrapDemand()` interpolates the class totals linearly between
 #'   1991 and 1999 in annual steps; the end point is the observed 1999 total of every class,
 #'   the same quantities the transition allocators get as transition counts.
@@ -83,6 +91,9 @@ viable_rules
 write_final <- function(model, dir, i) {
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   final <- model@output[[raster::nlayers(model@output)]]
+  stopifnot(
+    "allocation left cells without a class" = all(raster::values(final) %in% c(1, 2, 3, NA))
+  )
   raster::writeRaster(
     final,
     file.path(dir, sprintf("r%02d.tif", i)),
@@ -92,8 +103,8 @@ write_final <- function(model, dir, i) {
   )
 }
 
-# One CLUE-S and one Ordered realisation each, seeded; `tag` names the timing notes
-allocate_both <- function(ef, models, rules, seeds, dirs, tag) {
+# CLUE-S and Ordered realisations, seeded; `tag` names the timing notes
+allocate_both <- function(ef, models, rules, seeds, dirs, tag, ordered_stochastic) {
   for (i in seq_along(seeds$clues)) {
     set.seed(seeds$clues[i])
     clues_model <- CluesModel(
@@ -113,7 +124,8 @@ allocate_both <- function(ef, models, rules, seeds, dirs, tag) {
       note = paste0(tag, " realisation=", i)
     )
     write_final(clues_model, dirs$clues, i)
-
+  }
+  for (i in seq_along(seeds$ordered)) {
     set.seed(seeds$ordered[i])
     ordered_model <- OrderedModel(
       obs = obs,
@@ -121,12 +133,13 @@ allocate_both <- function(ef, models, rules, seeds, dirs, tag) {
       models = models,
       time = 0:8,
       demand = dmd,
+      rules = rules,
       order = ordered_order
     )
     ordered_model <- timed(
       "lulcc",
       "allocate_ordered",
-      allocate(ordered_model, stochastic = TRUE),
+      allocate(ordered_model, stochastic = ordered_stochastic),
       note = paste0(tag, " realisation=", i)
     )
     write_final(ordered_model, dirs$ordered, i)
@@ -157,7 +170,9 @@ sample_cells <- study_cells[seq(1, length(study_cells), by = 50)]
 for (est in estimators$estimator) {
   prob <- raster::stack(file.path(outputs_dir, "suitability", paste0(est, ".tif")))
   # logit, bounded away from 0 and 1 so that it stays finite
-  suit <- raster::stack(raster::calc(prob, function(p) stats::qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))))
+  suit <- raster::stack(raster::calc(prob, function(p) {
+    stats::qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
+  }))
   names(suit) <- paste0("suit_", 1:3)
   ef <- ExpVarRasterList(x = suit, pattern = "suit")
   models <- fixed_models(ef, sample_cells)
@@ -177,7 +192,8 @@ for (est in estimators$estimator) {
       clues = external_maps_dir("clue-s", est),
       ordered = external_maps_dir("ordered", est)
     ),
-    tag = paste0("estimator=", est)
+    tag = paste0("estimator=", est),
+    ordered_stochastic = FALSE
   )
 }
 
@@ -233,7 +249,8 @@ allocate_both(
     clues = file.path(outputs_dir, "maps", "lulcc-clues"),
     ordered = file.path(outputs_dir, "maps", "lulcc-ordered")
   ),
-  tag = "as shipped"
+  tag = "as shipped",
+  ordered_stochastic = TRUE
 )
 
 #' # Result: the transitions of the last realisations

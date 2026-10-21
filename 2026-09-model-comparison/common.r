@@ -49,8 +49,8 @@ allocators <- data.table::data.table(
   offset = c(100L, 200L, 300L, 400L, 500L, 600L),
   label = c("CLUMPY", "Dinamica", "greedy", "CLUE-S", "Ordered", "CLUMondo"),
   source = c("evoland", "Dinamica EGO via evoland", "evoland", "lulcc", "lulcc", "CLUinPy"),
-  # the greedy allocator is deterministic: one map per estimator
-  n_members = c(n_realisations, n_realisations, 1L, n_realisations, n_realisations, n_realisations)
+  # the greedy allocator is deterministic, and so is Ordered in the crossing (040): one map each
+  n_members = c(n_realisations, n_realisations, 1L, n_realisations, 1L, n_realisations)
 )
 
 # Each tool as shipped, with its own estimator, for reference only (not part of the crossing):

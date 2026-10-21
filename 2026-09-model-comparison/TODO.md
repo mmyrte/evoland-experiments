@@ -10,10 +10,10 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
 - [x] evoland reference run: logistic regression and random forest; CLUMPY and Dinamica
       allocation (`010`, `020`).
 - [x] Dinamica standalone, headless: Weights of Evidence calibration and Expander/Patcher
-      allocation in two `.ego` scripts (`030-dinamica-native/`).
-- [x] lulcc: GLM suitability, CLUE-S and Ordered (`030-lulcc.r`).
-- [x] CLUinPy: logistic suitability, CLUMondo allocation (`030-cluinpy*`).
-- [x] Crossings: CLUMPY on WoE, lulcc and CLUinPy surfaces (`040`).
+      allocation in two `.ego` scripts (`015-dinamica-woe/`).
+- [x] lulcc: GLM suitability, CLUE-S and Ordered (now `040-alloc-lulcc.r`).
+- [x] CLUinPy: logistic suitability, CLUMondo allocation (now `040-alloc-cluinpy*`).
+- [x] Crossings: CLUMPY on WoE, lulcc and CLUinPy surfaces (superseded by the full crossing below).
 - [x] Common metrics, ANOVA decomposition and timings (`050`); ensemble Brier scores (`051`);
       paper Fig. 3 (`060`).
 
@@ -23,9 +23,20 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       were only run with `Rscript` (which works because they are knitr-spin `.r` files). The
       repo's `.Rprofile` activates rv; the steps were run with `R_PROFILE_USER=/dev/null`
       against a system library.
-- [ ] **Bump the evoland pin** in `rproject.toml` once the stacked fix PRs are merged (see
-      below). The pipeline needs fixes 01 (square-cell tolerance) and 03 (external
-      potentials).
+- [x] **Bump the evoland pin**: `develop` at `08aa38e` (2026-10-21), with the stacked fixes
+      merged; `050` uses the new `lulc_crosstab_v()`.
+- [x] **Decouple estimators from allocators** (2026-10-21): every estimator (logistic
+      regression, random forest, naive Bayes, Weights of Evidence) through every allocator
+      (CLUMPY, Dinamica, greedy, CLUE-S, Ordered, CLUMondo), 4 × 6. lulcc's and CLUinPy's own
+      logistic suitability models are kept as "as shipped" references outside the crossing.
+      Open:
+      - Ordered runs deterministic in the crossing (see Upstream issues); a fixed stochastic
+        variant would need lulcc patched or a rescaled suitability;
+      - the class-total allocators get the class probability *after* one 8-year period, but
+        allocate it in 8 annual steps; an annualised probability would be the stricter input;
+      - Weights of Evidence uses Dinamica's distance maps, the evoland learners neighbourhood
+        counts; feeding WoE evoland's predictors (as rasters) would make the WoE – naive Bayes
+        pair a pure test of binning vs. Gaussian densities.
 - [x] **Ensemble-level metric next to FoM** (`051-ensemble-scores.r`): fair Brier skill against
       random allocation; reverses the FoM ranking of Dinamica vs. CLUMPY (README finding 3).
       Open: a reliability diagram per ensemble; whether to score only cells of anterior classes
@@ -116,6 +127,12 @@ Other tools:
 
 - lulcc 1.0.4 lists `gsubfn` and `caret` under Suggests but needs them in
   `ExpVarRasterList()` / `glmModels()`.
+- lulcc 1.0.4, `OrderedModel` with `stochastic = TRUE`: `.ordered()` thins each class's ranked
+  candidates by Bernoulli(suitability) and takes the first n; when the draws cannot supply n
+  cells in 1000 tries (small suitabilities), the missing picks become `NA` indices, cells stay
+  at -1, and the next annual step's C code (`total`/`allow`) reads out of range: the output map
+  holds class codes in the billions. Reproducer: `040-alloc-lulcc.r` with `ordered_stochastic =
+  TRUE` in the crossing (seed 11501). Worth an upstream issue (simonmoulds/lulcc).
 - Dinamica: an `.Renviron` that sets `DINAMICA_EGO_8_TEMP_DIR` breaks the R bridge (see README,
   Environment); now noted in the vignette (fix 05).
 - Dinamica 8.11.2: `CalcWOfEProbabilityMap` is not deterministic in parallel (README, Replay
