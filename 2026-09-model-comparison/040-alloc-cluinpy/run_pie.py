@@ -152,7 +152,7 @@ def external_suitability(path, land_path):
     return out
 
 
-def write_config(path, land_path, suit_path, region_path, out_dir):
+def write_config(path, land_path, suit_path, region_path, out_dir, tolerance):
     lines = {
         "land_array": land_path,
         "suit_array": suit_path,
@@ -167,9 +167,10 @@ def write_config(path, land_path, suit_path, region_path, out_dir):
         "lus_conv": os.path.join(WORK_DIR, "lus_conv.xlsx"),
         "lus_matrix_path": os.path.join(WORK_DIR, "lus_matrix.xlsx"),
         "allow": os.path.join(WORK_DIR, "allow.xlsx"),
-        "max_diff_allow": 0.1,  # the tutorial uses 2 (%), which leaves ~700 built cells unallocated here
-        "totdiff_allow": 0.1,
-        "max_iter": 3000,
+        # % of demand; the tutorial uses 2, which leaves ~700 built cells unallocated here
+        "max_diff_allow": tolerance,
+        "totdiff_allow": tolerance,
+        "max_iter": 30000,  # the crossing's class probabilities need far more iterations, see 040-alloc-cluinpy.r
         "out_dir": out_dir,
         "crs": "EPSG:26986",
         "dtype": "int16",
@@ -214,7 +215,9 @@ def main():
         out_dir = os.path.join(WORK_DIR, f"run_{i:02d}")
         os.makedirs(out_dir)
         config = os.path.join(out_dir, "config.txt")
-        write_config(config, land_path, suit_path, region_path, out_dir)
+        # 0.1 % as shipped; 0.5 % in the crossing, where the binned Weights of Evidence surface
+        # (many cells tied) oscillates around 0.25 % in 1996 and never reaches 0.1 %
+        write_config(config, land_path, suit_path, region_path, out_dir, 0.1 if native else 0.5)
         # the allocation draws its demand-adjustment "speed" from Python's random module
         random.seed(args.seed_base + i)
         sys.argv = ["run_CLUinPy", "--config", config]
