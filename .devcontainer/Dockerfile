@@ -12,6 +12,7 @@ FROM --platform=linux/amd64 rocker/r-ver:4.6.1
 ARG DINAMICA_DIR=/opt/dinamica
 ARG CLUINPY_COMMIT=7d18dfe
 ARG QUARTO_VERSION=1.10.18
+ARG RV_VERSION=0.23.2
 
 # System libraries for the R packages rv builds (sf and terra from source, tidyverse), git,
 # Python with GDAL bindings for CLUinPy, and tools for working in the container
@@ -52,8 +53,8 @@ RUN apt-get update -qq \
 RUN /rocker_scripts/install_quarto.sh "${QUARTO_VERSION}"
 
 # rv (https://github.com/A2-ai/rv), which the repo's .Rprofile activates
-RUN curl -sSL https://raw.githubusercontent.com/A2-ai/rv/refs/heads/main/scripts/install.sh | bash \
-  && mv /root/.local/bin/rv /usr/local/bin/rv \
+RUN curl -fsSL "https://github.com/A2-ai/rv/releases/download/v${RV_VERSION}/rv-v${RV_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+    | tar -xz -C /usr/local/bin rv \
   && rv --version
 
 # Dinamica EGO, set up as in the ghcr.io/mmyrte/evoland image. Its R bridge
