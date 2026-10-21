@@ -30,7 +30,7 @@ dependencies = [
     "rmarkdown",
     "writexl",
     "svglite",
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "d1ee3cf65d1e30055638d29104fddc6526868b87", install_suggestions = true },
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "08aa38ec0de5ccfb48faacc2ff0a958fccaeedd7", install_suggestions = true },
     "mapview",
     "stars",
     "methods",

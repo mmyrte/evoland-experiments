@@ -7,23 +7,30 @@
 #' Dinamica EGO used the way its own documentation calibrates a land use change model,
 #' headless through `DinamicaConsole`:
 #'
-#' 1. [`calibrate.ego`](030-dinamica-native/calibrate.ego): Weights of Evidence ranges and
+#' 1. [`calibrate.ego`](015-dinamica-woe/calibrate.ego): Weights of Evidence ranges and
 #'    coefficients for each transition on 1985 → 1991. The variables are the three lulcc
 #'    explanatory factors and the distance to each other class, which Dinamica recomputes from
 #'    the anterior map in every step. Weights of Evidence is a naive Bayes model: each variable
 #'    contributes an additive log-odds term per range, assuming conditional independence.
-#' 2. [`simulate.ego`](030-dinamica-native/simulate.ego): probability maps from the weights
-#'    on the 1991 map, then the observed 1991 → 1999 net rates allocated by Expander and
-#'    Patcher (the `AllocateTransitions` submodel shipped with Dinamica, the same one evoland's
-#'    `alloc_dinamica()` drives), in a single step.
-#'    [`probabilities.ego`](030-dinamica-native/probabilities.ego) writes the probability maps
-#'    alone, for the crossing in `040`: Expander and Patcher deplete the map in place, so a map
-#'    saved after allocation is not the Weights of Evidence probability.
+#' 2. [`probabilities.ego`](015-dinamica-woe/probabilities.ego): the transition probability
+#'    maps from the weights on the 1991 map. These are the Weights of Evidence *estimator*:
+#'    `020-potentials.r` writes them into run 3000, from where every allocator of the crossing
+#'    reads them like the potentials of evoland's learners.
+#' 3. [`simulate.ego`](015-dinamica-woe/simulate.ego): the same probability maps, then the
+#'    observed 1991 → 1999 net rates allocated by Expander and Patcher (the
+#'    `AllocateTransitions` submodel shipped with Dinamica, the same one evoland's
+#'    `alloc_dinamica()` drives), in a single step. This is Dinamica as shipped, a reference
+#'    outside the crossing (runs 3701 ...). `probabilities.ego` is separate because Expander and
+#'    Patcher deplete the probability maps in place, so a map saved after allocation is not the
+#'    Weights of Evidence probability.
+#'
+#' The variables differ from evoland's: Dinamica's own distance-to-class maps stand in for
+#' evoland's neighbourhood counts. That difference belongs to the estimator, as each tool
+#' engineers its predictors.
 #'
 #' Held fixed with the evoland runs: the viable transitions, the demand, and the patch
 #' parameters and expander fractions, which are evoland's estimates on 1985 → 1991. Native
-#' Dinamica practice sets these by hand, so taking the estimates isolates the estimator (Weights
-#' of Evidence vs. evoland's learners) from the allocator (Dinamica, in both cases).
+#' Dinamica practice sets these by hand.
 
 #| label: setup
 #| output: false
@@ -32,7 +39,7 @@ library(data.table)
 source("2026-09-model-comparison/common.r")
 reset_timings("dinamica-native")
 
-model_dir <- normalizePath(file.path(pie_dir, "030-dinamica-native"))
+model_dir <- normalizePath(file.path(pie_dir, "015-dinamica-woe"))
 work_dir <- file.path(normalizePath(outputs_dir), "dinamica-native-work")
 maps_dir <- file.path(outputs_dir, "maps", "dinamica-native")
 unlink(work_dir, recursive = TRUE)
@@ -109,19 +116,25 @@ invisible(timed(
   run_dinamica_serial("calibrate.ego")
 ))
 invisible(file.copy(
-  file.path(work_dir, c("weights.dcf", "ranges.dcf", "weights_report.csv", "weights_correlation.csv")),
+  file.path(
+    work_dir,
+    c("weights.dcf", "ranges.dcf", "weights_report.csv", "weights_correlation.csv")
+  ),
   maps_dir,
   overwrite = TRUE
 ))
 weights_report <- fread(file.path(work_dir, "weights_report.csv"))
 setnames(weights_report, gsub("[* ]", "", names(weights_report)))
-weights_report[, .(
-  n_ranges = .N,
-  n_significant = sum(Significant),
-  max_abs_weight = max(abs(Weight_Coefficient))
-), by = .(Transition_From, Transition_To, Variable)]
+weights_report[,
+  .(
+    n_ranges = .N,
+    n_significant = sum(Significant),
+    max_abs_weight = max(abs(Weight_Coefficient))
+  ),
+  by = .(Transition_From, Transition_To, Variable)
+]
 
-#' # Allocation, one realisation per run
+#' # Dinamica as shipped: allocation, one realisation per run
 #'
 #' Dinamica draws a fresh random seed in every run unless `-predefined-seed` is given, which
 #' would make all realisations identical.

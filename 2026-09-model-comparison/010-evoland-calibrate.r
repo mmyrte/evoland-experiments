@@ -119,35 +119,38 @@ db$set_full_trans_preds()
 
 #' # Runs
 #'
-#' Two estimators, each a parent run below run 0: a logistic regression (the estimator of the
-#' lulcc and CLUinPy runs) and a random forest. Both see the same predictors.
+#' Four estimators, each a parent run below run 0 (see `common.r`): a logistic regression, a
+#' random forest and a naive Bayes classifier fitted here on the same predictors, and Dinamica's
+#' Weights of Evidence, whose probability maps `020-potentials.r` writes into run 3000. Every allocator gets every
+#' estimator's potentials; the realisations are registered here, each with its seed, so that the
+#' allocation steps can run in parallel.
 
 #| label: runs
-estimators <- data.table(
-  id_run = c(1000L, 2000L),
-  learner = c("log_reg", "ranger"),
-  description = c("logistic regression potentials", "random forest potentials")
-)[learner %in% pie_learners]
+members <- crossing_members()
 runs <- rbind(
   data.table(
     id_run = c(0L, id_run_observed),
     parent_id_run = c(NA_integer_, 0L),
-    description = c("calibration base: observed 1985, 1991", "observed 1999 (validation only)")
+    description = c("calibration base: observed 1985, 1991", "observed 1999 (validation only)"),
+    seed = NA_integer_
   ),
-  estimators[, .(id_run, parent_id_run = 0L, description)],
-  # the allocation realisations, registered here so that every 020- step can run in parallel
-  estimators[,
-    .(
-      id_run = c(id_run + seq_len(n_realisations), id_run + 500L + seq_len(n_realisations)),
-      allocator = rep(c("clumpy", "dinamica"), each = n_realisations),
-      member = rep(seq_len(n_realisations), 2)
-    ),
-    by = .(parent_id_run = id_run, learner)
-  ][, .(id_run, parent_id_run, description = paste(learner, allocator, "realisation", member))]
+  estimators[, .(
+    id_run,
+    parent_id_run = 0L,
+    description = paste(label, "potentials"),
+    seed = NA_integer_
+  )],
+  members[, .(
+    id_run,
+    parent_id_run = id_run_parent,
+    description = paste(estimator_label, "x", allocator_label, "realisation", member),
+    seed
+  )]
 )
-runs[, seed := fifelse(id_run > 1000L, 10000L + id_run, NA_integer_)]
 db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
+members[, .N, by = .(estimator, allocator)]
 
+# the held-out observation, in its own run
 db$lulc_data_t <- as_lulc_data_t(lulc_long[
   id_period == 3L,
   .(id_run = id_run_observed, id_coord, id_period, id_lulc)
@@ -219,14 +222,20 @@ learner_by <- list(
     num.trees = 500,
     min.node.size = 50,
     seed = 2000L # set.seed() alone does not make the forest replay
-  )
+  ),
+  # Gaussian naive Bayes: the model family of Weights of Evidence (additive log-odds per
+  # predictor, assuming conditional independence), with a normal density per class in place of
+  # Dinamica's binned ranges, and on evoland's predictors in place of Dinamica's
+  naive_bayes = mlr3::lrn("classif.naive_bayes", predict_type = "prob")
 )
 
+# the estimators fitted in evoland; Weights of Evidence comes from Dinamica (015, 020)
+evoland_estimators <- estimators[estimator %in% names(learner_by)]
 trans_preds_base <- db$trans_preds_t
 modeled_by <- list()
-for (i in seq_len(nrow(estimators))) {
-  db$id_run <- estimators$id_run[i]
-  learner_id <- estimators$learner[i]
+for (i in seq_len(nrow(evoland_estimators))) {
+  db$id_run <- evoland_estimators$id_run[i]
+  learner_id <- evoland_estimators$estimator[i]
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),
@@ -251,30 +260,3 @@ for (i in seq_len(nrow(estimators))) {
   )
 }
 modeled_by
-
-#' # Transition potentials, exported for the allocator crossing
-#'
-#' The adjusted potentials of each estimator, written as one GeoTIFF per transition, so that
-#' allocators outside evoland can be fed the same surfaces.
-
-#| label: export-potentials
-#| fig-asp: 0.6
-for (i in seq_len(nrow(estimators))) {
-  db$id_run <- estimators$id_run[i]
-  adjusted <- db$adjusted_trans_pot_v(3L)
-  out <- file.path(outputs_dir, "potentials", estimators$learner[i])
-  dir.create(out, recursive = TRUE, showWarnings = FALSE)
-  trans_labels <- db$trans_meta_t[, .(id_trans, label = paste0(id_lulc_anterior, "_", id_lulc_posterior))]
-  pot_rast <- terra::rast(lapply(seq_len(nrow(trans_labels)), function(j) {
-    tabular_to_raster(
-      adjusted[id_trans == trans_labels$id_trans[j], .(id_coord, value)],
-      coords = db$coords_minimal,
-      value_col = "value"
-    )
-  }))
-  names(pot_rast) <- trans_labels$label
-  for (n in names(pot_rast)) {
-    terra::writeRaster(pot_rast[[n]], file.path(out, paste0(n, ".tif")), overwrite = TRUE)
-  }
-  plot(pot_rast, main = paste(estimators$learner[i], names(pot_rast)))
-}

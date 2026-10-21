@@ -1,13 +1,21 @@
-"""CLUinPy on the PIE benchmark: logistic suitability on the 1991 map, CLUMondo-style
-allocation of 1992..1999 with the observed 1999 class totals as demand.
+"""CLUinPy on the PIE benchmark: CLUMondo-style allocation of 1992..1999 with the observed
+1999 class totals as demand, on one of two suitability surfaces.
 
 Usage (from the repository root, with CLUinPy's src/ and src/suitability/ on PYTHONPATH):
 
-    python 2026-09-model-comparison/030-cluinpy/run_pie.py <cluinpy_repo> <n_realisations>
+    # as shipped: CLUinPy's own logistic suitability on the 1991 map, all conversions allowed
+    python 2026-09-model-comparison/040-alloc-cluinpy/run_pie.py <cluinpy_repo> <n> native
 
-Writes outputs/maps/cluinpy/rNN.tif and outputs/timings-cluinpy.csv.
+    # the crossing: an estimator's class probability map (band k = class k), only the viable
+    # conversions allowed
+    python 2026-09-model-comparison/040-alloc-cluinpy/run_pie.py <cluinpy_repo> <n> crossing \
+        <suitability.tif> <maps_dir> <seed_base>
+
+Realisation i draws Python's random module from seed_base + i. Writes <maps_dir>/rNN.tif and
+appends to outputs/timings-cluinpy.csv.
 """
 
+import argparse
 import csv
 import glob
 import os
@@ -27,9 +35,10 @@ _SCALE = os.environ.get("PIE_SCALE", "")
 _SUFFIX = f"-k{_SCALE}" if _SCALE else ""
 DATA_DIR = os.path.join(PIE_DIR, "data" + _SUFFIX)
 OUT_DIR = os.path.join(PIE_DIR, "outputs" + _SUFFIX)
-WORK_DIR = os.path.abspath(os.path.join(OUT_DIR, "cluinpy-work"))
-MAPS_DIR = os.path.join(OUT_DIR, "maps", "cluinpy")
+WORK_ROOT = os.path.abspath(os.path.join(OUT_DIR, "cluinpy-work"))
+WORK_DIR = WORK_ROOT  # per invocation, set in main()
 TIMINGS = os.path.join(OUT_DIR, "timings-cluinpy.csv")
+VIABLE_ONLY = False  # set in main()
 NO_DATA = -9999
 CLASSES = ["Forest", "Built", "Other"]  # PIE codes 1, 2, 3 -> CLUinPy 0, 1, 2
 START_YEAR, END_YEAR = 1992, 1999
@@ -92,7 +101,14 @@ def prepare_inputs():
     identity.to_excel(os.path.join(WORK_DIR, "lus_matrix.xlsx"), index=False)
     identity.to_excel(os.path.join(WORK_DIR, "lus_conv.xlsx"), index=False)
 
-    allow = pd.DataFrame(np.ones((3, 3), dtype=int), columns=CLASSES)
+    # conversions allowed: all, or the transitions viable in 1985 -> 1991 (and persistence)
+    allow_matrix = np.ones((3, 3), dtype=int)
+    if VIABLE_ONLY:
+        viable = pd.read_csv(os.path.join(OUT_DIR, "alloc_params_viable.csv"))
+        allow_matrix = np.eye(3, dtype=int)
+        for a, p in zip(viable.id_lulc_anterior, viable.id_lulc_posterior):
+            allow_matrix[a - 1, p - 1] = 1
+    allow = pd.DataFrame(allow_matrix, columns=CLASSES)
     allow.insert(0, "class", CLASSES)
     allow.to_excel(os.path.join(WORK_DIR, "allow.xlsx"), index=False)
     return land_path, region_path, env_dir
@@ -121,6 +137,19 @@ def fit_suitability(land_path, env_dir):
                 predict_outputs=True)
     stacks = sorted(glob.glob(os.path.join(out, "*", "suitability_stack.tif")))
     return stacks[-1]
+
+
+def external_suitability(path, land_path):
+    """An estimator's class probabilities as CLUinPy's suitability stack: band k = class k,
+    no-data where the land map has none."""
+    land = rasterio.open(land_path).read(1)
+    with rasterio.open(path) as src:
+        suit = src.read(masked=True).filled(np.nan).astype("float32")
+    suit[:, land == NO_DATA] = NO_DATA
+    suit[np.isnan(suit)] = 0.0
+    out = os.path.join(WORK_DIR, "suitability_stack.tif")
+    write_like(land_path, out, suit, "float32", NO_DATA, count=suit.shape[0])
+    return out
 
 
 def write_config(path, land_path, suit_path, region_path, out_dir):
@@ -154,37 +183,51 @@ def write_config(path, land_path, suit_path, region_path, out_dir):
 
 
 def main():
-    cluinpy_repo, n_realisations = sys.argv[1], int(sys.argv[2])
+    global WORK_DIR, VIABLE_ONLY
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluinpy_repo")
+    parser.add_argument("n_realisations", type=int)
+    parser.add_argument("mode", choices=["native", "crossing"])
+    parser.add_argument("suitability", nargs="?")
+    parser.add_argument("maps_dir", nargs="?", default=os.path.join(OUT_DIR, "maps", "cluinpy"))
+    parser.add_argument("seed_base", nargs="?", type=int, default=10000 + 8000 + 600)
+    args = parser.parse_args()
+    native = args.mode == "native"
+    VIABLE_ONLY = not native
+    tag = "as shipped" if native else os.path.basename(args.maps_dir)
+
+    WORK_DIR = os.path.join(WORK_ROOT, tag.replace(" ", "-"))
     shutil.rmtree(WORK_DIR, ignore_errors=True)
     os.makedirs(WORK_DIR)
-    os.makedirs(MAPS_DIR, exist_ok=True)
-    if os.path.exists(TIMINGS):
-        os.remove(TIMINGS)
+    os.makedirs(args.maps_dir, exist_ok=True)
 
     land_path, region_path, env_dir = prepare_inputs()
-    t0 = time.time()
-    suit_path = fit_suitability(land_path, env_dir)
-    record_timing("fit_suitability", time.time() - t0)
-    shutil.copy(suit_path, os.path.join(OUT_DIR, "maps", "cluinpy-suitability.tif"))
+    if native:
+        t0 = time.time()
+        suit_path = fit_suitability(land_path, env_dir)
+        record_timing("fit_suitability", time.time() - t0)
+        shutil.copy(suit_path, os.path.join(OUT_DIR, "maps", "cluinpy-suitability.tif"))
+    else:
+        suit_path = external_suitability(args.suitability, land_path)
 
-    for i in range(1, n_realisations + 1):
+    for i in range(1, args.n_realisations + 1):
         out_dir = os.path.join(WORK_DIR, f"run_{i:02d}")
         os.makedirs(out_dir)
         config = os.path.join(out_dir, "config.txt")
         write_config(config, land_path, suit_path, region_path, out_dir)
         # the allocation draws its demand-adjustment "speed" from Python's random module
-        random.seed(40000 + i)
+        random.seed(args.seed_base + i)
         sys.argv = ["run_CLUinPy", "--config", config]
         t0 = time.time()
         runpy.run_module("scripts.run_CLUinPy", run_name="__main__")
-        record_timing("allocate", time.time() - t0, f"realisation={i}")
+        record_timing("allocate", time.time() - t0, f"{tag} realisation={i}")
         result = glob.glob(os.path.join(out_dir, "**", f"cov{END_YEAR}*.tif"), recursive=True)
         if not result or "error" in os.path.basename(result[0]):
-            raise RuntimeError(f"CLUinPy did not converge for realisation {i}: {result}")
+            raise RuntimeError(f"CLUinPy did not converge for {tag} realisation {i}: {result}")
         with rasterio.open(result[0]) as src:
             cov = src.read(1)
         lu = np.where(cov == NO_DATA, 255, cov + 1).astype("uint8")
-        write_like(os.path.join(DATA_DIR, "lu_1991.tif"), os.path.join(MAPS_DIR, f"r{i:02d}.tif"),
+        write_like(os.path.join(DATA_DIR, "lu_1991.tif"), os.path.join(args.maps_dir, f"r{i:02d}.tif"),
                    lu, "uint8", 255)
 
 

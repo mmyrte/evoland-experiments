@@ -70,6 +70,16 @@ fwrite(stages, file.path(figures_dir, "scaling-stages.csv"))
 #| label: fig
 #| fig-width: 9
 #| fig-height: 4
+# the scaling results so far were run before the steps were renumbered (estimator x allocator
+# crossing); the new names map onto the same labels
+step_aliases <- c(
+  `030-alloc-evoland-clumpy.r` = "020-alloc-evoland-clumpy.r",
+  `030-alloc-evoland-dinamica.r` = "020-alloc-evoland-dinamica.r",
+  `015-dinamica-woe.r` = "030-dinamica-native.r",
+  `040-alloc-lulcc.r` = "030-lulcc.r",
+  `040-alloc-cluinpy.r` = "030-cluinpy.r"
+)
+steps[step %in% names(step_aliases), step := step_aliases[step]]
 step_labels <- c(
   `010-evoland-calibrate.r` = "evoland: set-up, neighbours, fit, predict",
   `020-alloc-evoland-clumpy.r` = "evoland: CLUMPY allocation",

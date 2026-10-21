@@ -49,20 +49,62 @@ What is held fixed across tools:
 - **Replicates.** 20 realisations per estimator × allocator pairing. The seeds are registered
   in `runs_t`, or set in the drivers.
 
-### Estimator × allocator matrix
+### Estimator × allocator crossing
 
-| estimator ↓ / allocator → | CLUMPY (evoland) | Dinamica Expander/Patcher | greedy (evoland) | CLUE-S (lulcc) | Ordered (lulcc) | CLUMondo (CLUinPy) |
-| --- | --- | --- | --- | --- | --- | --- |
-| logistic regression (evoland, mlr3) | 020 | 020 | 020 | | | |
-| random forest (evoland, ranger) | 020 | 020 | 020 | | | |
-| Weights of Evidence (Dinamica) | 040 | 030 | | | | |
-| GLM class suitability (lulcc) | 040 | | | 030 | 030 | |
-| logistic class suitability (CLUinPy) | 040 | | | | | 030 |
+Every estimator is paired with every allocator: 4 × 6 pairings, 20 realisations each (one for
+the deterministic greedy allocator).
 
-The numbers in the matrix are the pipeline steps that produce each pairing. The diagonal
-pairings are each tool's own; the rest are crossings. The crossings with CLUMPY feed the other
-tools' surfaces into evoland's `trans_pot_t`. For the class-suitability models (CLUE paradigm),
-the potential of a transition i → k is the suitability of class k at a cell of class i.
+| | estimator | from |
+| --- | --- | --- |
+| rows | logistic regression | evoland, `mlr3::lrn("classif.log_reg")` |
+| | random forest | evoland, `classif.ranger` (500 trees, min node 50) |
+| | naive Bayes | evoland, `classif.naive_bayes` (e1071, Gaussian) |
+| | Weights of Evidence | Dinamica EGO, `015-dinamica-woe/` |
+
+| | allocator | from | allocates |
+| --- | --- | --- | --- |
+| columns | CLUMPY (uPAM) | evoland | transitions, patches, one step |
+| | Dinamica Expander/Patcher | Dinamica EGO, driven by evoland's `alloc_dinamica()` | transitions, patches, one step |
+| | greedy rank-and-fill | evoland `alloc_greedy()` | transitions, cells, one step |
+| | CLUE-S | lulcc | class totals, 8 annual steps |
+| | Ordered | lulcc | class totals, 8 annual steps |
+| | CLUMondo | CLUinPy | class totals, 8 annual steps |
+
+How the decoupling works:
+
+- **One surface per estimator.** evoland's learners write transition potentials into their run
+  (`010`). Dinamica's Weights of Evidence probability maps are written into run 3000 the same
+  way (`020`). The three evoland allocators read every estimator alike.
+- **Class-total allocators** (CLUE-S, Ordered, CLUMondo) take a suitability per class and
+  cell. They get each estimator's *class probability map*: from a cell of class i, the
+  adjusted potential of i → k for k ≠ i (scaled to the demanded rate and row-closed by
+  `adjusted_trans_pot_v()`), and one minus their sum for staying in i (`020`). lulcc gets
+  these through its own model interface: the explanatory variable of class k is the logit of
+  its probability, and its model a binomial GLM fixed at coefficients (0, 1), so lulcc's
+  `predict()` returns the estimator's probabilities exactly. CLUinPy reads them as its
+  suitability stack.
+- **Conversions.** In the crossing, only the transitions viable in 1985 → 1991 are allowed
+  for every allocator (lulcc's rules matrix, CLUinPy's allow matrix).
+- **Each tool as shipped** stays as a reference outside the crossing: lulcc's GLMs and
+  CLUinPy's logistic regression are class-presence models on the three factors (the CLUE
+  paradigm, and the same model family as evoland's logistic regression), with all conversions
+  allowed; standalone Dinamica allocates its WoE probabilities with its own `simulate.ego`.
+  Earlier versions of this benchmark had these as separate estimator rows; under different
+  names they are the same logistic regression, which says nothing about the estimator.
+- **What stays with the estimator.** Weights of Evidence uses Dinamica's distance-to-class maps
+  where evoland's learners use neighbourhood counts; naive Bayes is the same model family as
+  Weights of Evidence (additive log-odds per predictor, conditional independence), with a
+  Gaussian density in place of binned ranges, on evoland's predictors. The naive Bayes – WoE
+  pair separates the model from Dinamica's feature engineering.
+- **What stays with the allocator.** Time stepping (one step vs. 8 annual), the allocators' own
+  parameters (patch parameters for CLUMPY and Dinamica, evoland's estimates; elasticities and
+  iteration settings for CLUE-S; resistance and neighbourhood weights for CLUMondo), and
+  demand as transition counts or class totals (the same observed 1999 quantities).
+
+Run ids (`common.r`): estimator 1000 (logistic regression), 2000 (random forest), 3000 (WoE),
+4000 (naive Bayes); realisation `estimator + allocator offset + member`, with offsets CLUMPY 100,
+Dinamica 200, greedy 300, CLUE-S 400, Ordered 500, CLUMondo 600. As shipped: lulcc 7401…/7501…,
+CLUinPy 8601…, standalone Dinamica 3701….
 
 ## Pipeline
 
@@ -71,27 +113,26 @@ Steps sharing a number are independent.
 
 | Step | What it does |
 | --- | --- |
-| [`000-pie-data.r`](000-pie-data.r) | Writes `data/` (git-ignored) from `lulcc::pie` |
-| [`010-evoland-calibrate.r`](010-evoland-calibrate.r) | Builds the evoland DB: domain, predictors (factors plus neighbourhood counts within 150 m and 150–500 m), held-out run, demand, allocation parameters, logistic regression and random forest; exports the potentials |
-| [`020-alloc-evoland-clumpy.r`](020-alloc-evoland-clumpy.r) | CLUMPY (uPAM) on both estimators' potentials |
-| [`020-alloc-evoland-dinamica.r`](020-alloc-evoland-dinamica.r) | Dinamica via `alloc_dinamica()` on the same potentials |
-| [`020-alloc-evoland-greedy.r`](020-alloc-evoland-greedy.r) | evoland's deterministic rank-and-fill allocator (`alloc_greedy()`, ethzplus/evoland-plus#65) on the same potentials, one map per estimator |
-| [`030-dinamica-native.r`](030-dinamica-native.r) | Standalone Dinamica: [`calibrate.ego`](030-dinamica-native/calibrate.ego) (Weights of Evidence ranges, coefficients and correlations for the three factors plus distances to classes) and [`simulate.ego`](030-dinamica-native/simulate.ego) (WoE probability maps and the `AllocateTransitions` submodel) |
-| [`030-lulcc.r`](030-lulcc.r) | lulcc 1.0.4 as in its GMD demo: GLMs on the 1991 map, CLUE-S and Ordered allocation in annual steps |
-| [`030-cluinpy.r`](030-cluinpy.r) | Calls [`030-cluinpy/run_pie.py`](030-cluinpy/run_pie.py): CLUinPy's logistic suitability module and CLUMondo allocation with one area service per class |
-| [`040-cross-clumpy.r`](040-cross-clumpy.r) | CLUMPY on the WoE, lulcc and CLUinPy surfaces |
-| [`050-compare.r`](050-compare.r) | Imports all maps as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement, gross change, fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
+| [`000-pie-data.r`](000-pie-data.r) | Writes `data/` (git-ignored) from `lulcc::pie`, and the demand tables |
+| [`010-evoland-calibrate.r`](010-evoland-calibrate.r) | Builds the evoland DB: domain, predictors (factors plus neighbourhood counts within 150 m and 150–500 m), held-out run, demand, allocation parameters, every run of the crossing; fits the logistic regression, random forest and naive Bayes and predicts their potentials |
+| [`015-dinamica-woe.r`](015-dinamica-woe.r) | Standalone Dinamica: [`calibrate.ego`](015-dinamica-woe/calibrate.ego) (Weights of Evidence on the three factors plus distances to classes), [`probabilities.ego`](015-dinamica-woe/probabilities.ego) (the WoE estimator's probability maps) and, as shipped, [`simulate.ego`](015-dinamica-woe/simulate.ego) (`AllocateTransitions`) |
+| [`020-potentials.r`](020-potentials.r) | WoE probabilities into run 3000's `trans_pot_t`; every estimator's class probability map for the class-total allocators |
+| [`030-alloc-evoland-clumpy.r`](030-alloc-evoland-clumpy.r) | CLUMPY (uPAM) on every estimator |
+| [`030-alloc-evoland-dinamica.r`](030-alloc-evoland-dinamica.r) | Dinamica via `alloc_dinamica()` on every estimator |
+| [`030-alloc-evoland-greedy.r`](030-alloc-evoland-greedy.r) | evoland's deterministic rank-and-fill (`alloc_greedy()`, joint ranking) on every estimator |
+| [`040-alloc-lulcc.r`](040-alloc-lulcc.r) | lulcc 1.0.4: CLUE-S and Ordered on every estimator's class probabilities; as shipped, its GLMs on the 1991 map |
+| [`040-alloc-cluinpy.r`](040-alloc-cluinpy.r) | Calls [`040-alloc-cluinpy/run_pie.py`](040-alloc-cluinpy/run_pie.py): CLUMondo on every estimator's class probabilities; as shipped, CLUinPy's logistic suitability module |
+| [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
-| [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the matrix, ANOVA shares |
+| [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the crossing and the tools as shipped, ANOVA shares |
 | [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
-| [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each tool's step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
+| [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
 
 ## Environment
 
 The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6.1, 4 cores,
-15 GiB) against evoland-plus at the tip of the stacked fix branches
-`claude/gifted-lamport-41q8gv-0{1..8}-*` (see TODO; the steps rely on 01, 03 and 07, on 06 to
-replay, and on 08 for the larger scales).
+15 GiB) against evoland-plus `develop` at `08aa38e`, as pinned in `rproject.toml` (it carries
+the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`).
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
@@ -108,7 +149,9 @@ replay, and on 08 for the larger scales).
   `uv venv --python /usr/bin/python3.12 --system-site-packages`, then
   `uv pip install numpy pandas scikit-learn statsmodels scipy rasterio geopandas xgboost joblib numba openpyxl`.
   Point `CLUINPY_REPO` and `CLUINPY_PYTHON` at the clone and the venv's python.
-- `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests.
+- **naive Bayes** needs `e1071` (an mlr3learners suggestion).
+- `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
+  `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes`) restricts the estimators.
 
 ## First results (20 realisations each)
 
@@ -315,7 +358,7 @@ actually took:
   - DynaCLUE: C++ code that is hard to compile; not attempted.
 - **Dinamica EGO.**
   - **Running it.** It runs fully headless from the console. The `.ego` scripts are
-    plain-text, diffable artifacts (see `030-dinamica-native/`). However:
+    plain-text, diffable artifacts (see `015-dinamica-woe/`). However:
     - the script syntax is documented only on dinamicaego.com/csr.ufmg.br (unreachable from
       the cloud container, so the WoE skeleton syntax was found by probing the parser);
     - R integration relies on a file-queue IPC that is sensitive to environment variables;
