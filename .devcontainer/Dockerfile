@@ -1,83 +1,65 @@
-# Dev container for evoland-experiments: R 4.6 (as rproject.toml asks for) with rv, Dinamica EGO,
-# quarto, and the Python environment of CLUinPy (2026-09-model-comparison).
+# Dev container for evoland-experiments: Ubuntu 24.04 with R 4.6 and every CRAN package as an
+# apt binary from r2u (https://eddelbuettel.github.io/r2u/), Dinamica EGO, quarto, and the Python
+# environment of CLUinPy (2026-09-model-comparison).
 #
 # Dinamica comes from your own ghcr.io/mmyrte/evoland image (its licence forbids redistribution,
-# so it is not downloaded here); that image runs R 4.5, so the R itself comes from rocker/r-ver.
-# Dinamica is distributed for amd64 only: on Apple silicon this runs under Rosetta.
+# so it is not downloaded here). Dinamica is distributed for amd64 only: on Apple silicon this
+# runs under Rosetta.
 
 ARG DINAMICA_IMAGE=ghcr.io/mmyrte/evoland:latest
 FROM --platform=linux/amd64 ${DINAMICA_IMAGE} AS dinamica
 
-FROM --platform=linux/amd64 rocker/r-ver:4.6.1
+FROM --platform=linux/amd64 rocker/r2u:24.04
 ARG DINAMICA_DIR=/opt/dinamica
 ARG CLUINPY_COMMIT=7d18dfe
 ARG QUARTO_VERSION=1.10.18
-ARG RV_VERSION=0.23.2
 
-# System libraries for the R packages rv builds (sf and terra from source, tidyverse), git,
-# Python with GDAL bindings for CLUinPy, and tools for working in the container
+# Tools, Python with GDAL bindings for CLUinPy. The system libraries of the R packages come
+# with their r2u binaries.
 RUN apt-get update -qq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    cmake \
     curl \
     gdal-bin \
     git \
     git-lfs \
     htop \
-    libabsl-dev \
-    libcurl4-openssl-dev \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    libfribidi-dev \
-    libgdal-dev \
-    libgeos-dev \
-    libgit2-dev \
-    libharfbuzz-dev \
-    libjpeg-dev \
-    libnetcdf-dev \
-    libpng-dev \
-    libproj-dev \
-    libsqlite3-dev \
-    libssl-dev \
-    libtiff-dev \
-    libudunits2-dev \
-    libxml2-dev \
-    pkg-config \
     python3-gdal \
     python3-venv \
     shellcheck \
-    sqlite3 \
     time \
   && rm -rf /var/lib/apt/lists/*
 
-RUN /rocker_scripts/install_quarto.sh "${QUARTO_VERSION}"
+RUN curl -fsSL -o /tmp/quarto.deb \
+    "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
+  && apt-get install -y /tmp/quarto.deb \
+  && rm /tmp/quarto.deb
 
-# rv (https://github.com/A2-ai/rv), which the repo's .Rprofile activates
-RUN curl -fsSL "https://github.com/A2-ai/rv/releases/download/v${RV_VERSION}/rv-v${RV_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-    | tar -xz -C /usr/local/bin rv \
-  && rv --version
+# The R packages of rproject.toml, evoland-plus at its pinned commit included. The repo's rv
+# setup is not used in here: without the rv binary, the .Rprofile's activation warns once and
+# leaves the library paths alone, so R finds these system-wide packages.
+COPY rproject.toml /tmp/rproject.toml
+COPY .devcontainer/install_r_deps.py /tmp/install_r_deps.py
+RUN python3 /tmp/install_r_deps.py /tmp/rproject.toml \
+  && rm -rf /tmp/rproject.toml /tmp/install_r_deps.py /var/lib/apt/lists/*
 
-# Dinamica EGO, set up as in the ghcr.io/mmyrte/evoland image. Its R bridge
-# (CalculateRExpression) runs Rscript outside the repo, i.e. without rv, on the site library:
-# the bundled Dinamica package goes there.
+# Dinamica EGO, set up as in the ghcr.io/mmyrte/evoland image, with its bundled R package for the
+# R bridge (CalculateRExpression)
 COPY --from=dinamica ${DINAMICA_DIR} ${DINAMICA_DIR}
-RUN install2.r --error --skipinstalled Rcpp RcppProgress \
+RUN Rscript -e 'install.packages(c("Rcpp", "RcppProgress"))' \
   && R CMD INSTALL ${DINAMICA_DIR}/usr/bin/Data/R/Dinamica_*.tar.gz \
   && printf '%s\n' \
-    'AlternativePathForR = "/usr/local/bin/Rscript"' \
+    'AlternativePathForR = "/usr/bin/Rscript"' \
     'ClConfig = "0"' \
     'MemoryAllocationPolicy = "1"' \
-    "RCranMirror = \"${CRAN}\"" \
+    'RCranMirror = "https://cloud.r-project.org"' \
     > /root/.dinamica_ego_8.conf
+# DINAMICA_EGO_8_TEMP_DIR is left unset on purpose: set for R sessions, it breaks the R bridge
+# (evoland-plus, install-dinamica vignette)
 ENV LD_LIBRARY_PATH="${DINAMICA_DIR}/usr/lib/" \
   PATH="${PATH}:${DINAMICA_DIR}/usr/bin" \
   DINAMICA_EGO_8_HOME=${DINAMICA_DIR} \
   DINAMICA_EGO_8_INSTALLATION_DIRECTORY=${DINAMICA_DIR}/usr/bin \
   DINAMICA_EGO_CLI=${DINAMICA_DIR}/usr/bin/DinamicaConsole
-# rocker sets its own PATH for R sessions; keep Dinamica on it. DINAMICA_EGO_8_TEMP_DIR is left
-# unset on purpose: set for R sessions it breaks the R bridge (evoland-plus, install-dinamica
-# vignette).
-RUN echo "PATH=${PATH}" >> "${R_HOME}/etc/Renviron.site"
 
 # CLUinPy (2026-09-model-comparison/040-alloc-cluinpy.r), at the commit the benchmark used, in
 # a venv that sees the system GDAL bindings

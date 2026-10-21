@@ -1,19 +1,26 @@
 # Dev container
 
-R 4.6 with [rv](https://github.com/A2-ai/rv), Dinamica EGO, quarto, and CLUinPy's Python
+Ubuntu 24.04 with R 4.6 and the packages of `rproject.toml` as apt binaries from
+[r2u](https://eddelbuettel.github.io/r2u/), Dinamica EGO, quarto, and CLUinPy's Python
 environment: everything the sub-projects need, `2026-09-model-comparison/` included.
 
 ## What it is built from
 
-- **R**: `rocker/r-ver:4.6.1`, matching `r_version` in `rproject.toml`. The R packages come from
-  `rv sync` (run once the container is created) into `rv/library`, not from the image.
+- **R and its packages**: `rocker/r2u:24.04`. `install_r_deps.py` reads `rproject.toml` and
+  installs every CRAN package listed there as an r2u binary (bspm turns `install.packages()` into
+  apt), and evoland-plus at its pinned commit with `remotes`, its dependencies again from r2u.
+  Rebuild the container after changing `rproject.toml`.
+- **rv is not used in the container.** r2u has current CRAN versions, not those of `rv.lock`, and
+  builds against the system libraries it installs alongside (so `force_source` does not apply).
+  Without the `rv` binary, the repo's `.Rprofile` warns "rv is not installed" once per session and
+  leaves the library paths alone.
 - **Dinamica EGO**: copied from your own `ghcr.io/mmyrte/evoland` image, which extracts it from
-  the AppImage (its licence forbids redistribution, so it is never downloaded here). That image
-  runs R 4.5, hence the separate R. The bundled `Dinamica` R package goes into the site library,
-  where Dinamica's R bridge finds it (it runs `Rscript` outside the repo, without rv).
+  the AppImage (its licence forbids redistribution, so it is never downloaded here). The bundled
+  `Dinamica` R package goes into the system library, where Dinamica's R bridge finds it.
   `DINAMICA_EGO_8_TEMP_DIR` is deliberately left unset: set for R sessions, it breaks the bridge.
 - **CLUinPy** at commit `7d18dfe` in `/opt/CLUinPy`, with a venv at `/opt/cluinpy-venv` that sees
   the system GDAL bindings; `CLUINPY_REPO` and `CLUINPY_PYTHON` point there.
+- **quarto** 1.10.18.
 
 To build against another tag of the Dinamica image, set the build arg `DINAMICA_IMAGE`.
 
@@ -32,17 +39,17 @@ emulation.
 
 ## Volumes
 
-Many small files on a macOS bind mount are slow, so three directories live in named Docker
-volumes instead of the repo checkout:
+Many small files on a macOS bind mount are slow, so the PIE benchmark's database and outputs
+live in named Docker volumes instead of the repo checkout:
 
 | volume | mounted at |
 | --- | --- |
-| `evoland-experiments-rv-library` | `rv/library` |
 | `evoland-experiments-pie-outputs` | `2026-09-model-comparison/outputs` |
 | `evoland-experiments-pie-db` | `2026-09-model-comparison/pie.evolanddb` |
 
-They survive a rebuild of the container; `docker volume rm <name>` starts over. The tables and
-figures the steps write into `figures/` stay in the checkout.
+They survive a rebuild of the container; `docker volume rm <name>` starts over. (`010` empties
+the database directory rather than removing it, which the mount point would not allow.) The
+tables and figures the steps write into `figures/` stay in the checkout.
 
 ## Replaying the PIE benchmark
 
