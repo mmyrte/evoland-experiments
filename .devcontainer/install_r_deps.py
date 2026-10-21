@@ -31,11 +31,11 @@ def r(code):
 
 
 r(f"install.packages(c({', '.join(repr(p) for p in cran + ['remotes'])}))")
+# install_git clones with git; install_github would go through the GitHub API and its rate limit
 for dep in git:
-    repo = dep["git"].rstrip("/").removeprefix("https://github.com/")
     ref = dep.get("commit") or dep.get("tag") or dep.get("branch") or "HEAD"
     r(
-        f"remotes::install_github({repo!r}, ref = {ref!r}, "
+        f"remotes::install_git({dep['git']!r}, ref = {ref!r}, "
         f"dependencies = {'TRUE' if dep.get('install_suggestions') else 'NA'}, upgrade = 'never')"
     )
 # fail the build if anything is missing
