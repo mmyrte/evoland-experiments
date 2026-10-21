@@ -37,6 +37,13 @@ Open work. Design rationale and first results are in [`README.md`](README.md).
       - Weights of Evidence uses Dinamica's distance maps, the evoland learners neighbourhood
         counts; feeding WoE evoland's predictors (as rasters) would make the WoE – naive Bayes
         pair a pure test of binning vs. Gaussian densities.
+      - check the reading of the naive Bayes × CLUMPY interaction (sharp probabilities) with a
+        reliability diagram per estimator;
+      - replay the restructured pipeline from scratch and compare per-run FoM (the earlier
+        replay check predates the crossing);
+      - CLUE-S on the crossing takes 34 s per realisation (4 s as shipped), most of the
+        pipeline's two hours; its realisations are near-identical (FoM sd < 0.001), so fewer
+        would do.
 - [x] **Ensemble-level metric next to FoM** (`051-ensemble-scores.r`): fair Brier skill against
       random allocation; reverses the FoM ranking of Dinamica vs. CLUMPY (README finding 3).
       Open: a reliability diagram per ensemble; whether to score only cells of anterior classes
@@ -143,8 +150,8 @@ Other tools:
 
 ## Housekeeping (repo-wide)
 
-- [ ] Three files in the repo were committed as plain binaries although `.gitattributes` routes
-      them through LFS, so a fresh clone shows them as modified:
+- [x] Three files in the repo were committed as plain binaries although `.gitattributes` routes
+      them through LFS, so a fresh clone showed them as modified (fixed on main, e85fdba):
       `2026-05-ssp-ch/091-change-intensity-2030.png`,
       `2026-05-ssp-ch/graphs/fig-spm8a-ar6-wg1.png`,
       `2026-09-paper-figures/html-reports/010-fig2-ensembles.html`. Fix with

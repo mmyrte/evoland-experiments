@@ -1,6 +1,7 @@
 # Model comparison (2026-09) — the Plum Island Ecosystems benchmark
 
-**Status:** active. The pipeline runs end to end in about 30 minutes on 4 cores. The first
+**Status:** active. The pipeline runs end to end in about two hours on 4 cores (lulcc's
+CLUE-S on the crossing takes most of it). The first
 results are below; [`TODO.md`](TODO.md) holds the open work.
 
 Two purposes, served by one worked example:
@@ -153,107 +154,109 @@ the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_r
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes`) restricts the estimators.
 
-## First results (20 realisations each)
+## Results: the 4 × 6 crossing (2026-10-21)
 
 Figure of merit (FoM) is the ratio of the ensemble-mean counts. The null is the FoM expected
-from placing the same quantities at random within the anterior class; persistence scores 0.
-There are 4 702 observed changed cells.
+from placing the same quantities at random within the anterior class (about 0.020);
+persistence scores 0. There are 4 702 observed changed cells. Greedy and Ordered (in the
+crossing) are deterministic, one map each; all other ensembles have 20 realisations.
 
-| estimator × allocator | FoM | sd | FoM / null | allocation disagreement | gross change (cells) | fuzzy sim. forest→built | fair Brier skill |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| random forest × greedy | 0.043 | — | 2.14 | 0.075 | 4 748 | 0.231 | −0.899 |
-| logistic regression × greedy | 0.038 | — | 1.92 | 0.076 | 4 748 | 0.151 | −0.915 |
-| random forest × Dinamica | 0.036 | 0.0026 | 1.80 | 0.077 | 4 743 | 0.227 | −0.077 |
-| logistic regression × Dinamica | 0.034 | 0.0028 | 1.70 | 0.077 | 4 743 | 0.200 | −0.099 |
-| GLM suitability (lulcc) × CLUE-S | 0.033 | 0.0000 | 1.53 | 0.181 | 17 829 | 0.205 | −3.568 |
-| logistic suitability (CLUinPy) × CLUMondo | 0.033 | 0.0000 | 1.86 | 0.065 | 3 248 | 0.151 | −0.637 |
-| Weights of Evidence × Dinamica | 0.029 | 0.0024 | 1.49 | 0.078 | 4 743 | 0.210 | −0.089 |
-| random forest × CLUMPY | 0.029 | 0.0023 | 1.47 | 0.078 | 4 754 | 0.220 | −0.005 |
-| GLM suitability (lulcc) × Ordered | 0.029 | 0.0004 | 1.42 | 0.071 | 3 901 | 0.210 | −0.720 |
-| logistic regression × CLUMPY | 0.026 | 0.0017 | 1.31 | 0.078 | 4 752 | 0.208 | 0.001 |
-| GLM suitability (lulcc) × CLUMPY | 0.025 | 0.0018 | 1.25 | 0.079 | 4 754 | 0.208 | −0.020 |
-| Weights of Evidence × CLUMPY | 0.025 | 0.0019 | 1.24 | 0.079 | 4 753 | 0.204 | 0.000 |
-| logistic suitability (CLUinPy) × CLUMPY | 0.024 | 0.0024 | 1.22 | 0.079 | 4 755 | 0.212 | −0.013 |
+**FoM by pairing** (`figures/pie-fom-per-run.csv`, Fig. 3):
 
-Full tables are in [`figures/`](figures/) (`pie-*.csv`). The figures are
-`figures/pie-figure-of-merit.pdf` and `figures/pie-outcome-maps.pdf`.
+| estimator ↓ / allocator → | CLUMPY | Dinamica | greedy | CLUE-S | Ordered | CLUMondo |
+| --- | --- | --- | --- | --- | --- | --- |
+| random forest | 0.029 | 0.036 | 0.043 | 0.043 | **0.045** | 0.040 |
+| logistic regression | 0.026 | 0.034 | 0.038 | 0.040 | 0.039 | 0.038 |
+| naive Bayes | **0.031** | 0.032 | 0.034 | 0.036 | 0.033 | 0.033 |
+| Weights of Evidence | 0.025 | 0.029 | 0.030 | 0.029 | 0.030 | 0.026 |
 
-What these numbers say, so far:
+**Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.033, lulcc GLM × Ordered 0.029,
+CLUinPy logistic × CLUMondo 0.033, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
 
-1. **Every tool beats random allocation, none by much.** FoM is 0.024–0.035 against a null of
-   ~0.020. PIE is a hard case for location: ~4 % of cells change, much of it scattered. Read
-   the results as relative statements, not as skill. (`070d-lulcc-moulds2015.r` reproduces the
-   multi-resolution FoM of Moulds et al. 2015, Fig. 8, within ~0.02; their run spans 1985 → 1999.)
-2. **The allocator matters more than the estimator.** In the fully crossed block (logistic
-   regression, random forest, WoE × CLUMPY, Dinamica), a two-way ANOVA on per-run FoM gives
-   49 % of the variance to the allocator, 24 % to the estimator, 2 % to their interaction and
-   25 % to the replicates. (The shares move by a few points between replays, because the
-   Dinamica realisations are not seeded: 47–51 % allocator, 23–24 % estimator over four runs.) The last share is the stochastic allocation that single-map tools
-   hide.
-3. **Dinamica scores above CLUMPY on the same potentials, consistently.** The gain is +0.005
-   to +0.008 FoM for every estimator. This is expected rather than a defect of CLUMPY: Dinamica's
-   Expander/Patcher prune to the highest-probability cells (`pruneFactor`; thesis ch. 3.8),
-   which approaches greedy allocation. A single-map FoM rewards the mode. CLUMPY samples in
-   proportion to the potentials, which gives an unbiased ensemble at the cost of single-map FoM.
-   This is the same effect as the deterministic stand-in in `2026-09-paper-figures` Fig. 2.
-   **The ensemble-level score reverses the ranking** (`051-ensemble-scores.r`). It scores each
-   ensemble's per-cell class frequencies as a probabilistic forecast, with the fair Brier score
-   (Ferro 2014) and skill relative to random allocation of the same quantities. Scores, best
-   first:
+**Other scores** (`figures/pie-ensemble-summary.csv`, `pie-ensemble-brier.csv`), ranges over the
+four estimators:
 
-   | pairing | fair Brier skill |
-   | --- | --- |
-   | CLUMPY ensembles | −0.020 to +0.001 |
-   | Dinamica ensembles | −0.077 to −0.099 |
-   | greedy (deterministic, evoland) | −0.90, −0.92 |
-   | CLUMondo (deterministic) | −0.64 |
-   | Ordered (deterministic) | −0.72 |
-   | CLUE-S (deterministic) | −3.6 |
+| allocator | gross change (cells) | allocation disagreement | fair Brier skill |
+| --- | --- | --- | --- |
+| CLUMPY | 4 753 | 0.077–0.079 | −0.03 to +0.00 |
+| Dinamica | 4 743 | 0.077–0.078 | −0.18 to −0.06 |
+| greedy | 4 748 | 0.075–0.078 | −0.96 to −0.90 |
+| CLUE-S | 3 050–3 120 | 0.062–0.063 | −0.60 to −0.57 |
+| Ordered | 3 130–4 010 | 0.063–0.071 | −0.79 to −0.58 |
+| CLUMondo | 2 900–3 020 | 0.060–0.063 | −0.60 to −0.55 |
+| *lulcc GLM × CLUE-S, as shipped* | *17 829* | *0.181* | *−3.57* |
 
-   Two readings:
-   - **Dinamica.** It wins on FoM by concentrating change, not by placing it more probably.
-   - **PIE overall.** On this case even the best potentials are only about as good a
-     probabilistic forecast as the quantities alone; the location signal in three static
-     factors plus neighbourhood is weak.
+**Variance of per-run FoM** over the crossing of the stochastic allocators (4 estimators ×
+CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 42 %, allocator 36 %,
+interaction 14 %, replicates 7 %.
 
-   The random forest has the highest FoM but a slightly worse Brier score than the logistic
-   regression: calibration matters for an unbiased sampler.
-   **The greedy allocator completes the picture** (`020-alloc-evoland-greedy.r`). On the same
-   potentials, evoland's deterministic rank-and-fill reaches the highest FoM of all pairings
-   (0.038 and 0.043; 1.9 and 2.1 × random), and nearly the worst ensemble score (fair Brier
-   skill −0.90): FoM rises with greediness (CLUMPY < Dinamica < greedy) while the probabilistic
-   score falls in the same order.
-4. **Estimators.** The random forest is best under both allocators. evoland's logistic
-   regression beats Dinamica's Weights of Evidence under both allocators. The two models get
-   the same information except that evoland uses neighbourhood counts where WoE uses distance
-   maps; WoE additionally assumes conditional independence between variables. The class-
-   suitability surfaces (lulcc, CLUinPy) are the weakest *transition* estimators when CLUMPY
-   allocates them, as expected: they describe where a class is, not where it appears.
-5. **CLUE-family behaviour is different in kind, and FoM alone hides it.**
-   - **CLUE-S (lulcc defaults: elasticity 0.2, all conversions allowed).** It matches the class
-     totals but changes 17 829 cells, 3.8× the observed change. That includes 2 614 cells of
-     built → forest, against 8 observed. FoM rewards the extra hits that so much change buys,
-     so CLUE-S ranks second by FoM while having by far the worst allocation disagreement.
-   - **CLUMondo (CLUinPy) and Ordered (lulcc).** They do the opposite: they produce only net
-     change (3 248 and 3 901 cells). They are deterministic in practice (sd 0); CLUinPy's random
-     seed only changes the convergence speed. This is why "estimator × allocator" is a cleaner
-     framing than tool-vs-tool: the CLUE family answers a different question (class totals) than
-     the transition-based tools.
-6. **Cost is not a differentiator on this case** (but see Scaling below for larger domains).
+What these numbers say:
 
-   | step | median time | note |
-   | --- | --- | --- |
-   | Dinamica native allocation | 0.9 s | single-threaded, see Replay check |
-   | Dinamica WoE calibration | 4.8 s | single-threaded |
-   | CLUMPY allocation | 2.1 s | |
-   | CLUinPy allocation | 5.7 s | 8 annual steps |
-   | lulcc CLUE-S allocation | 4.2 s | 8 annual steps |
-   | lulcc Ordered allocation | 2.3 s | 8 annual steps |
-   | evoland → Dinamica allocation | 5.2 s | including writing the inputs and an R round trip inside Dinamica |
-   | random forest fit | 41 s | all 5 transitions |
-   | random forest prediction | 27 s | all 5 transitions |
+1. **Every pairing beats random allocation, none by much**: FoM 0.025–0.045, 1.2–2.5 × the
+   null. PIE is hard for location: about 4 % of cells change, much of it scattered.
+   (`070d-lulcc-moulds2015.r` reproduces the multi-resolution FoM of Moulds et al. 2015, Fig. 8,
+   within ~0.02; their run spans 1985 → 1999.)
+2. **With the estimators decoupled, the estimator matters as much as the allocator.** The
+   ranking of the estimators is the same under five of the six allocators: random forest >
+   logistic regression > naive Bayes > Weights of Evidence. The exception is CLUMPY, under
+   which naive Bayes comes first; that is most of the 14 % interaction. A plausible reading, not
+   yet checked: CLUMPY samples in proportion to the potentials, so sharper (overconfident)
+   probabilities, which naive Bayes tends to produce, concentrate its samples on the likely
+   cells, while the rank-based allocators only use the order. (The earlier 3 × 2 block, CLUMPY and Dinamica only, gave
+   the allocator 49 % and the estimator 24 %: with only the two patch allocators, the estimators
+   looked closer than they are.)
+3. **The tools' own estimators were the weak part, not their allocators.** Fed the random
+   forest's class probabilities, lulcc's CLUE-S and Ordered and CLUinPy's CLUMondo reach the
+   highest FoM of the whole matrix (0.040–0.045), above the transition allocators. As shipped,
+   with their class-presence logistic regressions, the same allocators score 0.029–0.033. The
+   logistic regression row makes the same point within one model family: evoland's logistic
+   regression on transitions, with neighbourhood counts, beats the presence models of lulcc and
+   CLUinPy (also logistic regressions, on the three factors alone) under their own allocators
+   (0.040 vs. 0.033 for CLUE-S, 0.039 vs. 0.029 for Ordered, 0.038 vs. 0.033 for CLUMondo).
+4. **CLUE-S's excess change came from its inputs.** As shipped (presence GLMs, all conversions
+   allowed, elasticity 0.2), CLUE-S changes 17 829 cells, 3.8× the observed change, including
+   2 614 cells of built → forest. With an estimator's class probabilities and the viable
+   transitions, the same allocator with the same parameters changes 3 050–3 120 cells.
+5. **Class-total allocators produce net change, and FoM rewards it.** CLUE-S, Ordered and
+   CLUMondo convert other and forest to built and little else (gross change 2 900–3 100 cells,
+   against 4 702 observed): the swaps between forest and other, which every estimator predicts
+   poorly, are left out, and so are their false alarms. The transition allocators place every
+   viable transition at its observed count and pay for the swaps. The class-total maps also have
+   the lowest allocation disagreement (0.060–0.063).
+6. **Scored as probabilistic forecasts, the order reverses**, as in the earlier rounds
+   (`051-ensemble-scores.r`: fair Brier skill against random allocation of the same quantities).
+   CLUMPY ensembles are about as good a forecast as the quantities alone (−0.03 to 0.00), Dinamica
+   ensembles slightly worse (−0.18 to −0.06), and the near-deterministic maps far worse: CLUE-S,
+   Ordered and CLUMondo −0.79 to −0.55, greedy −0.96 to −0.90, CLUE-S as shipped −3.6. FoM rises
+   with greediness (CLUMPY < Dinamica < greedy, class totals) while the probabilistic score
+   falls in the same order. The random forest has the highest FoM but a slightly worse Brier
+   score than the logistic regression under CLUMPY: calibration matters for an unbiased
+   sampler.
+7. **Naive Bayes and Weights of Evidence**, the same model family (additive log-odds per
+   predictor, conditional independence): naive Bayes on evoland's predictors beats Dinamica's
+   Weights of Evidence on its distance maps under every allocator (0.031–0.036 vs. 0.025–0.030).
+   The two differ in predictors (neighbourhood counts vs. distances) and in density (Gaussian vs.
+   binned ranges); separating those is in TODO.
+8. **Dinamica driven by evoland and Dinamica as shipped agree**: Weights of Evidence × Dinamica
+   0.0290 through `alloc_dinamica()`, 0.0286 through the standalone `simulate.ego`, with
+   identical transition counts.
+9. **Cost is not a differentiator at PIE's size** (but see Scaling). Median times per
+   allocation: CLUMPY 1.9 s, greedy 1.2 s, Dinamica via evoland 5.5 s, Dinamica standalone
+   0.5 s, lulcc Ordered 2.9 s, CLUinPy 10 s (as shipped 6 s; up to 74 s in the crossing, where
+   the first year needs ~11 000 demand iterations), lulcc CLUE-S 34 s on the crossing's class
+   probabilities (4 s as shipped). Fits: logistic regression 5.6 s, naive Bayes 4.0 s, random
+   forest 55 s.
 
-   Scaling to millions of cells is where the tools may separate; PIE does not test it.
+### Where the crossing needed care
+
+- **lulcc**: suitability enters as the logit of the class probability, through a GLM with
+  coefficients fixed at (0, 1), so lulcc's own `predict()` returns the estimator's
+  probability; checked to 1e-5. Its stochastic Ordered mode corrupts the map on small
+  suitabilities (TODO, upstream issues), so Ordered runs deterministically in the crossing.
+- **CLUinPy**: CLUMondo needs ~11 000 iterations in the first year on these surfaces
+  (limit raised to 30 000), and the binned WoE surface oscillates around a 0.25 % demand gap,
+  so the crossing's tolerance is 0.5 % (0.1 % as shipped). Its 20 realisations differ by
+  10–220 cells.
 
 ## Scaling (080-scaling)
 
@@ -333,8 +336,10 @@ actually took:
   potential: confirmed for lulcc and CLUinPy (see the matrix above). This is a different
   modelling paradigm.
   - **lulcc.** Installs from CRAN or apt, but depends on retired packages (`raster`, `sp`).
-    It *suggests* packages that its constructors require (`gsubfn`, `caret`). Its demo
-    parameters produce the excessive gross change shown above.
+    It *suggests* packages that its constructors require (`gsubfn`, `caret`). With its own
+    GLMs and the demo parameters it produces the excessive gross change above; fed an
+    estimator's class probabilities and the viable transitions, it does not (finding 4). Its
+    stochastic Ordered mode corrupts maps when suitabilities are small (TODO).
   - **CLUinPy.** Configured by a text file plus four Excel workbooks with positional
     conventions (classes 0..N−1, band order = class order, first column = labels). It does not
     pin dependencies, and needs system GDAL bindings. Its documented convergence tolerance
@@ -381,6 +386,9 @@ actually took:
   It is the strongest statistical and validation workbench of the open tools, but unmaintained.
 
 ## Replay check
+
+Checked on the pipeline before the 2026-10-21 restructuring into the 4 × 6 crossing; the new
+pipeline has been run once from scratch so far (TODO).
 
 The whole pipeline was run twice from scratch (`execute-all.sh`, fresh database), and the
 per-run FoM of the two runs compared:

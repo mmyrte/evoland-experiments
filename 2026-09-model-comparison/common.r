@@ -62,12 +62,7 @@ native_pipelines <- data.table::data.table(
   id_run = c(7000L, 7000L, 8000L, 3000L),
   offset = c(400L, 500L, 600L, 700L),
   n_members = n_realisations,
-  estimator_label = c(
-    "GLM (lulcc)",
-    "GLM (lulcc)",
-    "logistic regression (CLUinPy)",
-    "Weights of Evidence"
-  ),
+  estimator_label = c("lulcc GLM", "lulcc GLM", "CLUinPy logistic", "Dinamica WoE"),
   allocator_label = c("CLUE-S", "Ordered", "CLUMondo", "Dinamica (simulate.ego)")
 )
 
