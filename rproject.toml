@@ -45,4 +45,6 @@ dependencies = [
     "future.mirai",
     "ggspatial",
     "viridis",
+    # 2026-09-model-comparison: two-panel figures
+    "patchwork",
 ]

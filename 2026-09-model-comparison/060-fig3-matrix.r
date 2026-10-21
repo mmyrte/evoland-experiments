@@ -11,11 +11,14 @@
 #'   estimator (outlined).
 #' - **(b)** shares of the per-run FoM variance over the crossing of the stochastic allocators.
 #'
-#' Output: `figures/fig3-pie-matrix.pdf`, copied by hand to `evoland-plus-paper/figures/`.
+#' Output: `figures/fig3-pie-matrix.pdf` (`ggsave()`, with the platform's default PDF device), copied
+#' by hand to `evoland-plus-paper/figures/`.
 
 #| label: setup
 #| output: false
 library(data.table)
+library(ggplot2)
+library(patchwork)
 source("2026-09-model-comparison/common.r")
 figures_dir <- file.path(pie_dir, "figures")
 summary_dt <- fread(file.path(figures_dir, "pie-ensemble-summary.csv"))
@@ -23,101 +26,91 @@ shares <- fread(file.path(figures_dir, "pie-variance-shares.csv"))
 
 # rows: the crossing's estimators, then each tool as shipped; columns: the allocators
 summary_dt[, allocator := sub(" (simulate.ego)", "", allocator_label, fixed = TRUE)]
-summary_dt[, row := fifelse(as_shipped, paste0(estimator_label, ", as shipped"), estimator_label)]
-rows <- c(estimators$label, unique(summary_dt[as_shipped == TRUE, row]))
-row_labels <- sub(", as shipped", "\n(as shipped)", rows, fixed = TRUE)
-allocator_names <- allocators$label
-allocator_labels <- paste0(
-  allocators$label,
-  "\n(",
-  sub("Dinamica EGO via evoland", "Dinamica", allocators$source),
-  ")"
+summary_dt[, row := fifelse(as_shipped, paste0(estimator_label, "\n(as shipped)"), estimator_label)]
+row_levels <- c(estimators$label, unique(summary_dt[as_shipped == TRUE, row]))
+allocator_labels <- setNames(
+  paste0(
+    allocators$label,
+    "\n(",
+    sub("Dinamica EGO via evoland", "Dinamica", allocators$source),
+    ")"
+  ),
+  allocators$label
 )
-n_crossed <- nrow(estimators)
+summary_dt[,
+  `:=`(
+    row = factor(row, levels = rev(row_levels)),
+    allocator = factor(allocator, levels = allocators$label),
+    cell_label = sprintf("%.2f\n(%.3f)", skill_over_null, figure_of_merit),
+    # white text on the darker half of the ramp
+    dark = (skill_over_null - min(skill_over_null)) / diff(range(skill_over_null)) > 0.55
+  )
+]
+# crossing cells without an ensemble stay grey
+empty <-
+  CJ(
+    row = factor(estimators$label, levels = rev(row_levels)),
+    allocator = factor(allocators$label, levels = allocators$label)
+  )[
+    !summary_dt,
+    on = .(row, allocator)
+  ]
 
 #' # Figure
 
 #| label: fig3
-#| fig-width: 8
+#| fig-width: 8.6
 #| fig-height: 5
-# sequential, one hue, light -> dark (blue ramp)
-ramp <- grDevices::colorRampPalette(c("#e3eefb", "#2a78d6", "#0d3a73"))(100)
-skill_range <- range(summary_dt$skill_over_null)
+matrix_panel <- ggplot(summary_dt, aes(allocator, row)) +
+  geom_tile(data = empty, fill = "#f4f3ef", width = 0.96, height = 0.92) +
+  geom_tile(aes(fill = skill_over_null), width = 0.96, height = 0.92) +
+  geom_tile(
+    data = summary_dt[as_shipped == TRUE],
+    fill = NA,
+    colour = "#0b0b0b",
+    linewidth = 0.6,
+    width = 0.96,
+    height = 0.92
+  ) +
+  geom_text(
+    aes(label = cell_label, colour = dark),
+    size = 2.6,
+    lineheight = 0.9,
+    show.legend = FALSE
+  ) +
+  geom_hline(yintercept = length(row_levels) - nrow(estimators) + 0.5, linewidth = 0.3) +
+  scale_fill_gradient(low = "#e3eefb", high = "#0d3a73", guide = "none") +
+  scale_colour_manual(values = c(`FALSE` = "#0b0b0b", `TRUE` = "white")) +
+  scale_x_discrete(position = "top", labels = allocator_labels) +
+  labs(
+    title = "(a) figure of merit / random-allocation null (figure of merit)",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(), plot.title.position = "plot")
 
-draw_fig3 <- function() {
-  layout(matrix(c(1, 2), nrow = 1), widths = c(3.2, 1.4))
-  op <- par(mar = c(1, 11, 6, 1), cex = 0.75)
-  on.exit(par(op))
-  plot(
-    NA,
-    xlim = c(0.5, length(allocator_names) + 0.5),
-    ylim = c(length(rows) + 0.5, 0.5),
-    axes = FALSE,
-    xlab = "",
-    ylab = ""
-  )
-  # mtext, not axis(): axis() silently drops labels that would overlap
-  mtext(
-    allocator_labels,
-    side = 3,
-    at = seq_along(allocator_names),
-    line = 0.3,
-    padj = 0,
-    cex = 0.68
-  )
-  axis(2, at = seq_along(rows), labels = row_labels, tick = FALSE, las = 1, cex.axis = 0.9)
-  abline(h = n_crossed + 0.5, col = "#0b0b0b", lwd = 0.8)
-  mtext("(a) figure of merit / random-allocation null", side = 3, line = 4.5, adj = 0, cex = 0.8)
-  for (i in seq_along(rows)) {
-    for (j in seq_along(allocator_names)) {
-      cell <- summary_dt[row == rows[i] & allocator == allocator_names[j]]
-      if (nrow(cell) == 0L) {
-        if (i <= n_crossed) {
-          rect(j - 0.48, i - 0.46, j + 0.48, i + 0.46, col = "#f4f3ef", border = NA)
-        }
-        next
-      }
-      k <- 1 + round(99 * (cell$skill_over_null - skill_range[1]) / diff(skill_range))
-      rect(j - 0.48, i - 0.46, j + 0.48, i + 0.46, col = ramp[k], border = NA)
-      if (cell$as_shipped) {
-        rect(j - 0.48, i - 0.46, j + 0.48, i + 0.46, col = NA, border = "#0b0b0b", lwd = 1.5)
-      }
-      text(
-        j,
-        i,
-        sprintf("%.2f\n(%.3f)", cell$skill_over_null, cell$figure_of_merit),
-        col = if (k > 55) "white" else "#0b0b0b",
-        cex = 0.85
-      )
-    }
-  }
+shares[, component := factor(component, levels = rev(component))]
+shares_panel <- ggplot(shares, aes(x = 1, y = share, fill = component)) +
+  geom_col(width = 0.6, colour = "white") +
+  geom_text(
+    aes(x = 1.35, label = sprintf("%s\n%.0f%%", component, 100 * share)),
+    position = position_stack(vjust = 0.5),
+    hjust = 0,
+    size = 2.6,
+    lineheight = 0.9
+  ) +
+  scale_fill_manual(
+    values = c("#2a78d6", "#eb6834", "#1baf7a", "#c9c7bf")[seq_len(nrow(shares))],
+    breaks = levels(shares$component)[nrow(shares):1],
+    guide = "none"
+  ) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
+  scale_x_continuous(limits = c(0.6, 2.4), breaks = NULL) +
+  labs(title = "(b) variance of FoM", x = NULL, y = NULL) +
+  theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(), plot.title.position = "plot")
 
-  par(mar = c(4, 3.5, 6, 0.5))
-  stack <- matrix(shares$share, ncol = 1)
-  share_colours <- c("#2a78d6", "#eb6834", "#1baf7a", "#c9c7bf")
-  barplot(
-    stack,
-    col = share_colours,
-    border = "white",
-    width = 0.6,
-    space = 0.3,
-    axes = FALSE,
-    ylim = c(0, 1),
-    xlim = c(0, 2)
-  )
-  axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), "%"), las = 1, cex.axis = 0.8)
-  mids <- cumsum(shares$share) - shares$share / 2
-  text(
-    0.8,
-    mids,
-    sprintf("%s\n%.0f%%", shares$component, 100 * shares$share),
-    pos = 4,
-    xpd = TRUE,
-    cex = 0.75
-  )
-  mtext("(b) variance of FoM", side = 3, line = 4.5, adj = 0, cex = 0.8)
-}
-draw_fig3()
-cairo_pdf(file.path(figures_dir, "fig3-pie-matrix.pdf"), width = 8.6, height = 5)
-draw_fig3()
-invisible(dev.off())
+fig3 <- matrix_panel + shares_panel + plot_layout(widths = c(3.2, 1))
+fig3
+ggsave(file.path(figures_dir, "fig3-pie-matrix.pdf"), fig3, width = 8.6, height = 5)

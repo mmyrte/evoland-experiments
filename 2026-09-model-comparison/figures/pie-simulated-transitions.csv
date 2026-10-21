@@ -14,13 +14,13 @@ logistic regression × greedy,1->3,423
 logistic regression × greedy,2->3,134
 logistic regression × greedy,3->1,944
 logistic regression × greedy,3->2,1064
-logistic regression × CLUE-S,1->2,1616.3
-logistic regression × CLUE-S,3->2,1500.1
+logistic regression × CLUE-S,1->2,1658.3
+logistic regression × CLUE-S,3->2,1402.05
 logistic regression × Ordered,1->2,1724
 logistic regression × Ordered,3->1,70
 logistic regression × Ordered,3->2,1381
-logistic regression × CLUMondo,1->2,1690.6
-logistic regression × CLUMondo,3->2,1333.5
+logistic regression × CLUMondo,1->2,1531.5
+logistic regression × CLUMondo,3->2,1567.1
 random forest × CLUMPY,1->2,2185.3
 random forest × CLUMPY,1->3,424.3
 random forest × CLUMPY,2->3,134.55
@@ -36,13 +36,13 @@ random forest × greedy,1->3,423
 random forest × greedy,2->3,134
 random forest × greedy,3->1,944
 random forest × greedy,3->2,1064
-random forest × CLUE-S,1->2,1616.25
-random forest × CLUE-S,3->2,1500.45
+random forest × CLUE-S,1->2,1637.7
+random forest × CLUE-S,3->2,1419.25
 random forest × Ordered,1->2,1683
 random forest × Ordered,3->1,29
 random forest × Ordered,3->2,1422
-random forest × CLUMondo,1->2,1598.25
-random forest × CLUMondo,3->2,1331.7
+random forest × CLUMondo,1->2,1518.05
+random forest × CLUMondo,3->2,1569.15
 Weights of Evidence × CLUMPY,1->2,2183.8
 Weights of Evidence × CLUMPY,1->3,424.3
 Weights of Evidence × CLUMPY,2->3,134.25
@@ -58,13 +58,13 @@ Weights of Evidence × greedy,1->3,423
 Weights of Evidence × greedy,2->3,134
 Weights of Evidence × greedy,3->1,944
 Weights of Evidence × greedy,3->2,1064
-Weights of Evidence × CLUE-S,1->2,1551.4
-Weights of Evidence × CLUE-S,3->2,1501.6
+Weights of Evidence × CLUE-S,1->2,1557.2
+Weights of Evidence × CLUE-S,3->2,1442.3
 Weights of Evidence × Ordered,1->2,1579
 Weights of Evidence × Ordered,1->3,75
 Weights of Evidence × Ordered,3->2,1526
-Weights of Evidence × CLUMondo,1->2,1591.7
-Weights of Evidence × CLUMondo,3->2,1412.8
+Weights of Evidence × CLUMondo,1->2,1560.1
+Weights of Evidence × CLUMondo,3->2,1555.5
 naive Bayes × CLUMPY,1->2,2184.45
 naive Bayes × CLUMPY,1->3,424.35
 naive Bayes × CLUMPY,2->3,134.1
@@ -80,28 +80,26 @@ naive Bayes × greedy,1->3,423
 naive Bayes × greedy,2->3,134
 naive Bayes × greedy,3->1,944
 naive Bayes × greedy,3->2,1064
-naive Bayes × CLUE-S,1->2,1775.95
-naive Bayes × CLUE-S,3->1,69.3
-naive Bayes × CLUE-S,3->2,1276.25
+naive Bayes × CLUE-S,1->2,1722.15
+naive Bayes × CLUE-S,3->1,19
+naive Bayes × CLUE-S,3->2,1388.6
 naive Bayes × Ordered,1->2,2559
 naive Bayes × Ordered,3->1,905
 naive Bayes × Ordered,3->2,546
-naive Bayes × CLUMondo,1->2,1472.75
-naive Bayes × CLUMondo,3->1,2
-naive Bayes × CLUMondo,3->2,1430.5
-lulcc GLM × CLUE-S (as shipped),1->2,4052.05
-lulcc GLM × CLUE-S (as shipped),1->3,3683.9
-lulcc GLM × CLUE-S (as shipped),2->1,2613.9
-lulcc GLM × CLUE-S (as shipped),2->3,1196
-lulcc GLM × CLUE-S (as shipped),3->1,3468.2
-lulcc GLM × CLUE-S (as shipped),3->2,2814.95
-lulcc GLM × Ordered (as shipped),1->2,2455.55
-lulcc GLM × Ordered (as shipped),3->1,801.55
-lulcc GLM × Ordered (as shipped),3->2,649.45
-CLUinPy logistic × CLUMondo (as shipped),1->2,1615
-CLUinPy logistic × CLUMondo (as shipped),1->3,103
-CLUinPy logistic × CLUMondo (as shipped),3->1,45
-CLUinPy logistic × CLUMondo (as shipped),3->2,1485.1
+naive Bayes × CLUMondo,1->2,1464.25
+naive Bayes × CLUMondo,3->2,1572.3
+lulcc GLM × CLUE-S (as shipped),1->2,3863.05
+lulcc GLM × CLUE-S (as shipped),1->3,3187.4
+lulcc GLM × CLUE-S (as shipped),2->1,2361.8
+lulcc GLM × CLUE-S (as shipped),2->3,1017.8
+lulcc GLM × CLUE-S (as shipped),3->1,3059.3
+lulcc GLM × CLUE-S (as shipped),3->2,2645.1
+lulcc GLM × Ordered (as shipped),1->2,2412.05
+lulcc GLM × Ordered (as shipped),3->1,758.05
+lulcc GLM × Ordered (as shipped),3->2,692.95
+CLUinPy logistic × CLUMondo (as shipped),1->2,1685.05
+CLUinPy logistic × CLUMondo (as shipped),3->1,47.8
+CLUinPy logistic × CLUMondo (as shipped),3->2,1426.8
 Dinamica WoE × Dinamica (simulate.ego) (as shipped),1->2,2182
 Dinamica WoE × Dinamica (simulate.ego) (as shipped),1->3,422
 Dinamica WoE × Dinamica (simulate.ego) (as shipped),2->3,133

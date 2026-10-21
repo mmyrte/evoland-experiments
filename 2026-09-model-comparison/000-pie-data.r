@@ -58,14 +58,20 @@ tile_mirrored <- function(x, k) {
   if (k == 1L) {
     return(x)
   }
-  row_of_tiles <- do.call(terra::merge, lapply(seq_len(k), function(j) {
-    tile <- if (j %% 2 == 0) terra::flip(x, "horizontal") else x
-    terra::shift(tile, dx = (j - 1) * terra::xmax(x) - (j - 1) * terra::xmin(x))
-  }))
-  do.call(terra::merge, lapply(seq_len(k), function(i) {
-    tile <- if (i %% 2 == 0) terra::flip(row_of_tiles, "vertical") else row_of_tiles
-    terra::shift(tile, dy = (i - 1) * (terra::ymax(x) - terra::ymin(x)))
-  }))
+  row_of_tiles <- do.call(
+    terra::merge,
+    lapply(seq_len(k), function(j) {
+      tile <- if (j %% 2 == 0) terra::flip(x, "horizontal") else x
+      terra::shift(tile, dx = (j - 1) * terra::xmax(x) - (j - 1) * terra::xmin(x))
+    })
+  )
+  do.call(
+    terra::merge,
+    lapply(seq_len(k), function(i) {
+      tile <- if (i %% 2 == 0) terra::flip(row_of_tiles, "vertical") else row_of_tiles
+      terra::shift(tile, dy = (i - 1) * (terra::ymax(x) - terra::ymin(x)))
+    })
+  )
 }
 lu <- tile_mirrored(lu, pie_scale)
 ef <- tile_mirrored(ef, pie_scale)
@@ -106,7 +112,11 @@ lu_values <- data.table::as.data.table(terra::values(lu))
 data.table::setnames(lu_values, as.character(years))
 lu_values <- lu_values[!is.na(`1985`) & !is.na(`1991`) & !is.na(`1999`)]
 data.table::fwrite(
-  lu_values[`1991` != `1999`, .(count = .N), by = .(id_lulc_anterior = `1991`, id_lulc_posterior = `1999`)][
+  lu_values[
+    `1991` != `1999`,
+    .(count = .N),
+    by = .(id_lulc_anterior = `1991`, id_lulc_posterior = `1999`)
+  ][
     order(id_lulc_anterior, id_lulc_posterior)
   ],
   file.path(outputs_dir, "demand_transitions_1991_1999.csv")

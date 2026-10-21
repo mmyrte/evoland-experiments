@@ -1,0 +1,31 @@
+[project]
+name = "evoland-experiments"
+version = "0.0.0"
+description = "Python side of the evoland experiments (CLUinPy for 2026-09-model-comparison)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # CLUinPy (nomisthomsen/CLUinPy, cloned separately, see CLUINPY_REPO): its requirements.txt
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "statsmodels",
+    "scipy",
+    "rasterio",
+    "geopandas",
+    # xgboost on Linux pulls in NVIDIA's NCCL (several hundred MB); CLUinPy only imports it
+    "xgboost-cpu; sys_platform == 'linux'",
+    "xgboost; sys_platform != 'linux'",
+    "joblib",
+    "numba",
+    "openpyxl",
+    # Python bindings of the system GDAL; built from source against libgdal-dev, so the
+    # version has to match `gdal-config --version` (3.8.4 on Ubuntu 24.04)
+    "gdal[numpy]==3.8.4",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.extra-build-dependencies]
+# the GDAL bindings need numpy (for gdal_array) and setuptools at build time
+gdal = ["setuptools", "numpy"]

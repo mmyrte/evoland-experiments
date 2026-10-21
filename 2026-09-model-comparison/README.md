@@ -1,8 +1,7 @@
 # Model comparison (2026-09) — the Plum Island Ecosystems benchmark
 
-**Status:** active. The pipeline runs end to end in about two hours on 4 cores (lulcc's
-CLUE-S on the crossing takes most of it). The first
-results are below; [`TODO.md`](TODO.md) holds the open work.
+**Status:** active. The pipeline runs end to end in about an hour on 4 cores. Results are
+below; [`TODO.md`](TODO.md) holds the open work.
 
 Two purposes, served by one worked example:
 
@@ -40,9 +39,10 @@ What is held fixed across tools:
 
 - **Inputs.** The GeoTIFFs written by `000-pie-data.r`. The grid is relabelled to exactly
   100 m, with no resampling, and set to EPSG:26986.
-- **Demand.** The observed 1991 → 1999 quantities. Transition-based tools (evoland,
-  Dinamica) get the counts of the five transitions that were viable in 1985 → 1991. Class-total
-  tools (lulcc, CLUinPy) get the class totals of 1999, interpolated annually. The comparison is
+- **Demand.** The observed 1991 → 1999 quantities, prescribed, and allocated in one step by
+  every tool. Transition-based tools (evoland, Dinamica) get the counts of the five transitions
+  that were viable in 1985 → 1991. Class-total tools (lulcc, CLUinPy) get the observed class
+  totals of 1999. The comparison is
   therefore about *where* change goes. The 8 cells of built → forest are unmodelled everywhere,
   since that transition never occurred in 1985 → 1991.
 - **Patch parameters and expander fractions.** For the patch-based allocators (CLUMPY,
@@ -67,9 +67,9 @@ the deterministic greedy allocator).
 | columns | CLUMPY (uPAM) | evoland | transitions, patches, one step |
 | | Dinamica Expander/Patcher | Dinamica EGO, driven by evoland's `alloc_dinamica()` | transitions, patches, one step |
 | | greedy rank-and-fill | evoland `alloc_greedy()` | transitions, cells, one step |
-| | CLUE-S | lulcc | class totals, 8 annual steps |
-| | Ordered | lulcc | class totals, 8 annual steps |
-| | CLUMondo | CLUinPy | class totals, 8 annual steps |
+| | CLUE-S | lulcc | class totals, one step |
+| | Ordered | lulcc | class totals, one step |
+| | CLUMondo | CLUinPy | class totals, one step |
 
 How the decoupling works:
 
@@ -92,12 +92,16 @@ How the decoupling works:
   allowed; standalone Dinamica allocates its WoE probabilities with its own `simulate.ego`.
   Earlier versions of this benchmark had these as separate estimator rows; under different
   names they are the same logistic regression, which says nothing about the estimator.
+  lulcc and CLUinPy fit them on 10 % samples of the 1991 map, as their demos do; evoland's
+  learners use every cell. The sample is not what holds them back: refitted on all cells,
+  lulcc's GLMs rank the cells the same (Spearman ≥ 0.995 for every class, over 10 samples). What
+  differs is the paradigm: presence on one map, against transitions between two.
 - **What stays with the estimator.** Weights of Evidence uses Dinamica's distance-to-class maps
   where evoland's learners use neighbourhood counts; naive Bayes is the same model family as
   Weights of Evidence (additive log-odds per predictor, conditional independence), with a
   Gaussian density in place of binned ranges, on evoland's predictors. The naive Bayes – WoE
   pair separates the model from Dinamica's feature engineering.
-- **What stays with the allocator.** Time stepping (one step vs. 8 annual), the allocators' own
+- **What stays with the allocator.** The allocators' own
   parameters (patch parameters for CLUMPY and Dinamica, evoland's estimates; elasticities and
   iteration settings for CLUE-S; resistance and neighbourhood weights for CLUMondo), and
   demand as transition counts or class totals (the same observed 1999 quantities).
@@ -125,6 +129,7 @@ Steps sharing a number are independent.
 | [`040-alloc-cluinpy.r`](040-alloc-cluinpy.r) | Calls [`040-alloc-cluinpy/run_pie.py`](040-alloc-cluinpy/run_pie.py): CLUMondo on every estimator's class probabilities; as shipped, CLUinPy's logistic suitability module |
 | [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
+| [`052-check-greedy-ordered.r`](052-check-greedy-ordered.r) | Check: evoland's `alloc_greedy(arbitration = "ordered")` against lulcc's Ordered model, cell by cell |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the crossing and the tools as shipped, ANOVA shares |
 | [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
 | [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
@@ -145,11 +150,10 @@ the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_r
   `CalculateRExpression` with "Failed to send message, session is closed".
 - **lulcc 1.0.4** from apt (`r-cran-lulcc`, c2d4u). It also needs `gsubfn` and `caret`, which
   it only *suggests* but calls in `ExpVarRasterList()` and `glmModels()`.
-- **CLUinPy** (<https://github.com/nomisthomsen/CLUinPy>, commit `7d18dfe`). Its dependencies go
-  into a venv with access to the system GDAL bindings:
-  `uv venv --python /usr/bin/python3.12 --system-site-packages`, then
-  `uv pip install numpy pandas scikit-learn statsmodels scipy rasterio geopandas xgboost joblib numba openpyxl`.
-  Point `CLUINPY_REPO` and `CLUINPY_PYTHON` at the clone and the venv's python.
+- **CLUinPy** (<https://github.com/nomisthomsen/CLUinPy>, commit `7d18dfe`). Its dependencies are
+  the repository's uv environment (`pyproject.toml`): `uv sync` at the repository root makes
+  `.venv`, building the GDAL bindings against the system GDAL (needs `libgdal-dev` 3.8.4).
+  Point `CLUINPY_REPO` at the clone; `CLUINPY_PYTHON` overrides the venv's python.
 - **naive Bayes** needs `e1071` (an mlr3learners suggestion).
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes`) restricts the estimators.
@@ -165,13 +169,13 @@ crossing) are deterministic, one map each; all other ensembles have 20 realisati
 
 | estimator ↓ / allocator → | CLUMPY | Dinamica | greedy | CLUE-S | Ordered | CLUMondo |
 | --- | --- | --- | --- | --- | --- | --- |
-| random forest | 0.029 | 0.036 | 0.043 | 0.043 | **0.045** | 0.040 |
-| logistic regression | 0.026 | 0.034 | 0.038 | 0.040 | 0.039 | 0.038 |
+| random forest | 0.029 | 0.036 | 0.043 | 0.042 | **0.045** | 0.041 |
+| logistic regression | 0.026 | 0.034 | 0.038 | 0.039 | 0.039 | 0.037 |
 | naive Bayes | **0.031** | 0.032 | 0.034 | 0.036 | 0.033 | 0.033 |
-| Weights of Evidence | 0.025 | 0.029 | 0.030 | 0.029 | 0.030 | 0.026 |
+| Weights of Evidence | 0.025 | 0.029 | 0.030 | 0.029 | 0.030 | 0.027 |
 
-**Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.033, lulcc GLM × Ordered 0.029,
-CLUinPy logistic × CLUMondo 0.033, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
+**Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.033, lulcc GLM × Ordered 0.028,
+CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
 
 **Other scores** (`figures/pie-ensemble-summary.csv`, `pie-ensemble-brier.csv`), ranges over the
 four estimators:
@@ -181,14 +185,14 @@ four estimators:
 | CLUMPY | 4 753 | 0.077–0.079 | −0.03 to +0.00 |
 | Dinamica | 4 743 | 0.077–0.078 | −0.18 to −0.06 |
 | greedy | 4 748 | 0.075–0.078 | −0.96 to −0.90 |
-| CLUE-S | 3 050–3 120 | 0.062–0.063 | −0.60 to −0.57 |
+| CLUE-S | 3 000–3 130 | 0.062–0.063 | −0.60 to −0.57 |
 | Ordered | 3 130–4 010 | 0.063–0.071 | −0.79 to −0.58 |
-| CLUMondo | 2 900–3 020 | 0.060–0.063 | −0.60 to −0.55 |
-| *lulcc GLM × CLUE-S, as shipped* | *17 829* | *0.181* | *−3.57* |
+| CLUMondo | 3 040–3 120 | 0.062–0.064 | −0.63 to −0.58 |
+| *lulcc GLM × CLUE-S, as shipped* | *16 134* | *0.168* | *−3.23* |
 
 **Variance of per-run FoM** over the crossing of the stochastic allocators (4 estimators ×
-CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 42 %, allocator 36 %,
-interaction 14 %, replicates 7 %.
+CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 42 %, allocator 37 %,
+interaction 13 %, replicates 8 %.
 
 What these numbers say:
 
@@ -199,7 +203,7 @@ What these numbers say:
 2. **With the estimators decoupled, the estimator matters as much as the allocator.** The
    ranking of the estimators is the same under five of the six allocators: random forest >
    logistic regression > naive Bayes > Weights of Evidence. The exception is CLUMPY, under
-   which naive Bayes comes first; that is most of the 14 % interaction. A plausible reading, not
+   which naive Bayes comes first; that is most of the 13 % interaction. A plausible reading, not
    yet checked: CLUMPY samples in proportion to the potentials, so sharper (overconfident)
    probabilities, which naive Bayes tends to produce, concentrate its samples on the likely
    cells, while the rank-based allocators only use the order. (The earlier 3 × 2 block, CLUMPY and Dinamica only, gave
@@ -207,27 +211,27 @@ What these numbers say:
    looked closer than they are.)
 3. **The tools' own estimators were the weak part, not their allocators.** Fed the random
    forest's class probabilities, lulcc's CLUE-S and Ordered and CLUinPy's CLUMondo reach the
-   highest FoM of the whole matrix (0.040–0.045), above the transition allocators. As shipped,
-   with their class-presence logistic regressions, the same allocators score 0.029–0.033. The
+   highest FoM of the whole matrix (0.041–0.045), above the transition allocators. As shipped,
+   with their class-presence logistic regressions, the same allocators score 0.028–0.034. The
    logistic regression row makes the same point within one model family: evoland's logistic
    regression on transitions, with neighbourhood counts, beats the presence models of lulcc and
    CLUinPy (also logistic regressions, on the three factors alone) under their own allocators
-   (0.040 vs. 0.033 for CLUE-S, 0.039 vs. 0.029 for Ordered, 0.038 vs. 0.033 for CLUMondo).
+   (0.039 vs. 0.033 for CLUE-S, 0.039 vs. 0.028 for Ordered, 0.037 vs. 0.034 for CLUMondo).
 4. **CLUE-S's excess change came from its inputs.** As shipped (presence GLMs, all conversions
-   allowed, elasticity 0.2), CLUE-S changes 17 829 cells, 3.8× the observed change, including
-   2 614 cells of built → forest. With an estimator's class probabilities and the viable
-   transitions, the same allocator with the same parameters changes 3 050–3 120 cells.
+   allowed, elasticity 0.2), CLUE-S changes 16 134 cells, 3.4× the observed change, including
+   2 362 cells of built → forest. With an estimator's class probabilities and the viable
+   transitions, the same allocator with the same parameters changes 3 000–3 130 cells.
 5. **Class-total allocators produce net change, and FoM rewards it.** CLUE-S, Ordered and
-   CLUMondo convert other and forest to built and little else (gross change 2 900–3 100 cells,
-   against 4 702 observed): the swaps between forest and other, which every estimator predicts
+   CLUMondo convert other and forest to built and little else (gross change mostly 3 000–3 130
+   cells, against 4 702 observed): the swaps between forest and other, which every estimator predicts
    poorly, are left out, and so are their false alarms. The transition allocators place every
    viable transition at its observed count and pay for the swaps. The class-total maps also have
-   the lowest allocation disagreement (0.060–0.063).
+   the lowest allocation disagreement (0.062–0.064).
 6. **Scored as probabilistic forecasts, the order reverses**, as in the earlier rounds
    (`051-ensemble-scores.r`: fair Brier skill against random allocation of the same quantities).
    CLUMPY ensembles are about as good a forecast as the quantities alone (−0.03 to 0.00), Dinamica
    ensembles slightly worse (−0.18 to −0.06), and the near-deterministic maps far worse: CLUE-S,
-   Ordered and CLUMondo −0.79 to −0.55, greedy −0.96 to −0.90, CLUE-S as shipped −3.6. FoM rises
+   Ordered and CLUMondo −0.79 to −0.57, greedy −0.96 to −0.90, CLUE-S as shipped −3.2. FoM rises
    with greediness (CLUMPY < Dinamica < greedy, class totals) while the probabilistic score
    falls in the same order. The random forest has the highest FoM but a slightly worse Brier
    score than the logistic regression under CLUMPY: calibration matters for an unbiased
@@ -242,10 +246,9 @@ What these numbers say:
    identical transition counts.
 9. **Cost is not a differentiator at PIE's size** (but see Scaling). Median times per
    allocation: CLUMPY 1.9 s, greedy 1.2 s, Dinamica via evoland 5.5 s, Dinamica standalone
-   0.5 s, lulcc Ordered 2.9 s, CLUinPy 10 s (as shipped 6 s; up to 74 s in the crossing, where
-   the first year needs ~11 000 demand iterations), lulcc CLUE-S 34 s on the crossing's class
-   probabilities (4 s as shipped). Fits: logistic regression 5.6 s, naive Bayes 4.0 s, random
-   forest 55 s.
+   0.5 s, lulcc Ordered 0.8 s (1.5 s as shipped, stochastic), CLUinPy 2.3 s (as shipped 2.0 s;
+   up to 39 s), lulcc CLUE-S 2.6 s (1.6 s as shipped). Fits: logistic regression 5.6 s, naive
+   Bayes 4.0 s, random forest 55 s.
 
 ### Where the crossing needed care
 
@@ -253,10 +256,15 @@ What these numbers say:
   coefficients fixed at (0, 1), so lulcc's own `predict()` returns the estimator's
   probability; checked to 1e-5. Its stochastic Ordered mode corrupts the map on small
   suitabilities (TODO, upstream issues), so Ordered runs deterministically in the crossing.
-- **CLUinPy**: CLUMondo needs ~11 000 iterations in the first year on these surfaces
-  (limit raised to 30 000), and the binned WoE surface oscillates around a 0.25 % demand gap,
-  so the crossing's tolerance is 0.5 % (0.1 % as shipped). Its 20 realisations differ by
-  10–220 cells.
+- **CLUinPy**: CLUMondo needs up to ~1 600 demand iterations on these surfaces (limit 30 000),
+  and the binned WoE surface oscillates around a 0.25 % demand gap, so the crossing's
+  tolerance is 0.5 % (0.1 % as shipped).
+- **One step.** Every allocator goes from 1991 to 1999 in one step with the prescribed 1999
+  quantities. An earlier version had the class-total tools take 8 annual steps on linearly
+  interpolated totals. With static suitabilities that changes little: Ordered gives the same
+  maps (ranking by a fixed surface and filling in 8 instalments takes the same cells as
+  filling at once), CLUE-S maps differ by ~140 cells, CLUMondo's by its tolerance, and no
+  ensemble's FoM moved by more than 0.0013.
 
 ## Scaling (080-scaling)
 
@@ -268,11 +276,14 @@ What these numbers say:
   process.
 - **Machine.** 4 cores, 16 GiB, R's vector heap capped at 12 GiB (`R_MAX_VSIZE`).
 - **Outputs.** `figures/scaling-steps.csv`, `figures/scaling-stages.csv`, `figures/scaling.pdf`.
+- **When.** 2026-10-06, on the stacked evoland branches with streamed neighbours
+  (ethzplus/evoland-plus#66, now the default on develop) and `coords_t` pruned, before the
+  crossing and the pin to `08aa38e`. To be rerun on the current pin (TODO). Before streaming,
+  the calibration ran out of memory from 1.8 M cells (10.1 GB at 1.0 M cells).
 
 | step | 0.11 M | 0.45 M | 1.0 M | 1.8 M | 4.1 M cells |
 | --- | --- | --- | --- | --- | --- |
-| evoland calibration (set-up, neighbours, fit, predict) | 45 s, 2.0 GB | 106 s, 6.7 GB | 204 s, 10.1 GB | **out of memory** (R heap 12 GB) | **OOM-killed** (14 GB) |
-| ↳ streamed neighbours (ethzplus/evoland-plus#66) + `coords_t` pruned | 37 s, 1.5 GB | 92 s, 2.6 GB | 141 s, 3.4 GB | 226 s, 5.3 GB | 424 s, 9.3 GB |
+| evoland calibration (set-up, neighbours, fit, predict) | 37 s, 1.5 GB | 92 s, 2.6 GB | 141 s, 3.4 GB | 226 s, 5.3 GB | 424 s, 9.3 GB |
 | evoland CLUMPY allocation (same) | 10 s, 0.6 GB | 17 s, 1.1 GB | 22 s, 1.4 GB | 36 s, 2.3 GB | 49 s, 3.3 GB |
 | evoland Dinamica allocation (same) | 13 s, 0.7 GB | 22 s, 1.2 GB | 27 s, 2.2 GB | 41 s, 2.8 GB | 56 s, 5.8 GB |
 | Dinamica standalone (WoE calibration + allocation) | 11 s | 18 s | 34 s | 44 s | 88 s, **0.28 GB** |
@@ -316,10 +327,10 @@ Memory is the peak of the largest process. For standalone Dinamica that is the R
    cells to 7 min and 9.3 GB (neighbours 96 s instead of 177 s unpruned). The remaining peak is
    this pipeline's ingestion of the full rectangle into R before the pruning, i.e. the script,
    not evoland; the results of the benchmark itself are bit-identical with and without pruning.
-3. **DuckLake.** Every catalog-resolving call costs a fixed 20–70 ms: `get_read_expr()`, the
-   table bindings, `.has_predictions()`. A plain DuckDB query costs 1 ms. On PIE that is 75 % of a
-   prediction (11 s, of which the model's `predict()` takes 1.7 s), but the cost does not grow with
-   the domain. The data-bound work in DuckDB (the `pred_data_wide_v()` PIVOT, the joins) scales
+3. **DuckLake** (ethzplus/evoland-plus#85). Every catalog-resolving call costs a fixed
+   20–70 ms: `get_read_expr()`, the table bindings, `.has_predictions()`. A plain DuckDB query
+   costs 1 ms. On PIE that is 75 % of a prediction (11 s, of which the model's `predict()` takes
+   1.7 s), but the cost does not grow with the domain. The data-bound work in DuckDB (the `pred_data_wide_v()` PIVOT, the joins) scales
    linearly here. Two side effects:
    - every realisation stores a full map (`lulc_data_t` held 25 M rows after the benchmark);
    - every commit makes a snapshot (283 after the benchmark).
@@ -357,10 +368,20 @@ actually took:
     transitions: built land is taken from forest or other alike, purely by built suitability.
     `stochastic = TRUE` thins the ranked candidates by a Bernoulli(suitability) draw before taking
     the top n. High-suitability cells survive almost always, so it stays nearly deterministic
-    (FoM sd 0.0004 here). evoland now has the same allocator, on transitions instead of classes:
+    (FoM sd 0.0004 here). evoland has the same procedure on transitions instead of classes:
     `alloc_greedy(arbitration = "ordered", order = ...)`, next to a `"joint"` mode that ranks all
     transitions together by adjusted potential (ethzplus/evoland-plus#65).
-  - DynaCLUE: C++ code that is hard to compile; not attempted.
+
+    **Check** (`052-check-greedy-ordered.r`, `figures/pie-greedy-ordered-vs-lulcc.csv`): with the
+    same estimator and priority (transitions into built, then forest, then other), the two do
+    the same where they fill the same demand. They place built land alike: 81–86 % of the cells
+    that greedy turns built are also built in lulcc's map. FoM is within 0.002 (logistic
+    regression 0.0392 vs. 0.0392, random forest 0.043 vs. 0.045, WoE 0.0298 vs. 0.0297, naive
+    Bayes 0.033 vs. 0.033), and 98 % of all cells agree. They differ in the demand they fill:
+    greedy changes the 4 748 cells of the observed transitions, lulcc only the net class change
+    (3 130–4 010 cells), so it skips the swaps between forest and other.
+  - DynaCLUE: not attempted. Its C++ code is hard to compile, which is arguably solvable, but
+    it is definitely harder to extend than an R or Python package.
 - **Dinamica EGO.**
   - **Running it.** It runs fully headless from the console. The `.ego` scripts are
     plain-text, diffable artifacts (see `015-dinamica-woe/`). However:
@@ -383,7 +404,9 @@ actually took:
   pinned. It serves as the experimental reference implementation, and evoland includes its
   allocator.
 - **R lulcc.** R scripting; exact replay is realistic with package lockfiles and seed control.
-  It is the strongest statistical and validation workbench of the open tools, but unmaintained.
+  It is the strongest statistical and validation workbench of the open tools, but unmaintained,
+  and slow on big domains: everything is held in memory through `raster`, and CLUE-S's absolute
+  tolerances stop it converging above ~1 M cells (Scaling: 26 min and 6.6 GB at 4.1 M cells).
 
 ## Replay check
 
@@ -408,9 +431,17 @@ per-run FoM of the two runs compared:
     rows. Fixed upstream (stacked branch 06); with that and the learner seed, the potentials of
     two runs of `010` are bit-identical.
   - **Weights of Evidence × CLUMPY.** It differed for two reasons:
-    1. *Corroded probabilities.* The WoE probabilities were saved after `AllocateTransitions`,
-       which depletes ("corrodes") the probability map in place, so the crossing was fed one
-       realisation's leftover probabilities. They now come from `probabilities.ego`.
+    1. *Corroded probabilities.* The script saved the map it had passed *into*
+       `AllocateTransitions` (`SaveMap { map = probabilities }`, after the allocation), and got
+       it back depleted. Inside `AllocateTransitions`, Expander "corrodes" the probability map
+       as it allocates, so that Patcher does not reuse those cells, and hands it on as an
+       explicit output, `corrodedProbabilities`. That much is by design and visible in the
+       functor's interface. But the input map is changed too: the corrosion happens in place,
+       although the script's dataflow treats `probabilities` as a value that the allocation only
+       reads. We could not check whether this is documented (the Dinamica wiki at csr.ufmg.br
+       answered 503). It is a trap for anyone saving or reusing a probability map in the same
+       script. The crossing was fed one realisation's leftover probabilities; they now come
+       from `probabilities.ego`, which does no allocation.
     2. *A parallel race in Dinamica.* `CalcWOfEProbabilityMap` in Dinamica 8.11.2 is **not
        deterministic when run in parallel**: between identical runs, the probabilities of the
        forest transitions differed in 300–1 300 cells, some turning NA. Calibration and distance

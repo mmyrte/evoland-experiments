@@ -1,5 +1,5 @@
-"""CLUinPy on the PIE benchmark: CLUMondo-style allocation of 1992..1999 with the observed
-1999 class totals as demand, on one of two suitability surfaces.
+"""CLUinPy on the PIE benchmark: CLUMondo-style allocation of 1991 -> 1999 in one step, with the
+observed 1999 class totals as demand, on one of two suitability surfaces.
 
 Usage (from the repository root, with CLUinPy's src/ and src/suitability/ on PYTHONPATH):
 
@@ -41,7 +41,7 @@ TIMINGS = os.path.join(OUT_DIR, "timings-cluinpy.csv")
 VIABLE_ONLY = False  # set in main()
 NO_DATA = -9999
 CLASSES = ["Forest", "Built", "Other"]  # PIE codes 1, 2, 3 -> CLUinPy 0, 1, 2
-START_YEAR, END_YEAR = 1992, 1999
+START_YEAR, END_YEAR = 1999, 1999
 
 
 def record_timing(stage, seconds, note=""):
@@ -86,14 +86,11 @@ def prepare_inputs():
     region_path = os.path.join(WORK_DIR, "region.tif")
     write_like(lu_1991_path, region_path, region, "int16", NO_DATA)
 
-    # one service per class: the class area. Demand interpolates the observed totals
+    # one service per class: the class area. Demand is the observed 1999 total of each class,
+    # allocated in one step from the 1991 map (CLUinPy's "year" 1999 is the only step)
     totals = pd.read_csv(os.path.join(OUT_DIR, "demand_class_totals.csv"))
-    t91 = totals[totals.year == 1991].sort_values("id_lulc").N.to_numpy(float)
     t99 = totals[totals.year == 1999].sort_values("id_lulc").N.to_numpy(float)
-    years = np.arange(START_YEAR, END_YEAR + 1)
-    frac = (years - 1991) / (1999 - 1991)
-    demand = pd.DataFrame(np.outer(1 - frac, t91) + np.outer(frac, t99),
-                          columns=[f"{c}_area" for c in CLASSES])
+    demand = pd.DataFrame([t99], columns=[f"{c}_area" for c in CLASSES])
     demand.to_excel(os.path.join(WORK_DIR, "demand.xlsx"), index=False)
 
     identity = pd.DataFrame(np.eye(3), columns=[f"{c}_area" for c in CLASSES])
@@ -216,7 +213,7 @@ def main():
         os.makedirs(out_dir)
         config = os.path.join(out_dir, "config.txt")
         # 0.1 % as shipped; 0.5 % in the crossing, where the binned Weights of Evidence surface
-        # (many cells tied) oscillates around 0.25 % in 1996 and never reaches 0.1 %
+        # (many cells tied) oscillates around 0.25 % and does not reach 0.1 %
         write_config(config, land_path, suit_path, region_path, out_dir, 0.1 if native else 0.5)
         # the allocation draws its demand-adjustment "speed" from Python's random module
         random.seed(args.seed_base + i)

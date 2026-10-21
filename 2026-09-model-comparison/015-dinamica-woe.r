@@ -80,26 +80,39 @@ viable <- alloc_params[, .(id_lulc_anterior, id_lulc_posterior)]
 demand <- fread(file.path(outputs_dir, "demand_transitions_1991_1999.csv"))
 n_anterior <- fread(file.path(outputs_dir, "demand_class_totals.csv"))[year == 1991]
 
-trans_rates <- viable[, .(id_lulc_anterior, id_lulc_posterior)][
-  demand,
-  on = .(id_lulc_anterior, id_lulc_posterior),
-  nomatch = NULL
-][n_anterior, on = .(id_lulc_anterior = id_lulc), nomatch = NULL][
-  order(id_lulc_anterior, id_lulc_posterior),
-  .(`From*` = id_lulc_anterior, `To*` = id_lulc_posterior, Rate = count / N)
-]
-expansion <- alloc_params[, .(
-  `From*` = id_lulc_anterior,
-  `To*` = id_lulc_posterior,
-  Frac_expander = pmax(1e-6, pmin(1 - 1e-6, frac_expander))
-)]
-patcher <- alloc_params[, .(
-  `From*` = id_lulc_anterior,
-  `To*` = id_lulc_posterior,
-  Mean_Patch_Size = mean_patch_size,
-  Patch_Size_Variance = patch_size_variance,
-  Patch_Isometry = patch_isometry
-)]
+trans_rates <-
+  viable[,
+    .(id_lulc_anterior, id_lulc_posterior)
+  ][
+    demand,
+    on = .(id_lulc_anterior, id_lulc_posterior),
+    nomatch = NULL
+  ][
+    n_anterior,
+    on = .(id_lulc_anterior = id_lulc),
+    nomatch = NULL
+  ][
+    order(id_lulc_anterior, id_lulc_posterior),
+    .(`From*` = id_lulc_anterior, `To*` = id_lulc_posterior, Rate = count / N)
+  ]
+expansion <-
+  alloc_params[,
+    .(
+      `From*` = id_lulc_anterior,
+      `To*` = id_lulc_posterior,
+      Frac_expander = pmax(1e-6, pmin(1 - 1e-6, frac_expander))
+    )
+  ]
+patcher <-
+  alloc_params[,
+    .(
+      `From*` = id_lulc_anterior,
+      `To*` = id_lulc_posterior,
+      Mean_Patch_Size = mean_patch_size,
+      Patch_Size_Variance = patch_size_variance,
+      Patch_Isometry = patch_isometry
+    )
+  ]
 fwrite(trans_rates, file.path(work_dir, "trans_rates.csv"))
 fwrite(expansion, file.path(work_dir, "expansion_table.csv"))
 fwrite(patcher, file.path(work_dir, "patcher_table.csv"))

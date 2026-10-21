@@ -25,7 +25,9 @@ data("pie", package = "lulcc")
 # the shipped PROJ string (with +towgs84) no longer compares equal to the CRS current PROJ
 # derives for lulcc's own output rasters ("different crs" in stack()); it is NAD83 /
 # Massachusetts Mainland, so the equivalent EPSG code is set. Cell values are untouched.
-for (n in names(pie)) raster::crs(pie[[n]]) <- "EPSG:26986"
+for (n in names(pie)) {
+  raster::crs(pie[[n]]) <- "EPSG:26986"
+}
 seeds <- 1:5
 # the paper's resolutions (2^1 ... 2^8 cells) plus the native one
 factors <- c(1, 2^(1:8))
@@ -48,7 +50,12 @@ run_demo <- function(seed) {
     Forest ~ ef_001 + ef_002,
     Other ~ ef_001 + ef_002
   )
-  glm_models <- suppressWarnings(glmModels(formula = forms, family = binomial, data = train_data, obs = obs))
+  glm_models <- suppressWarnings(glmModels(
+    formula = forms,
+    family = binomial,
+    data = train_data,
+    obs = obs
+  ))
   dmd <- approxExtrapDemand(obs = obs, tout = 0:14)
   clues <- allocate(CluesModel(
     obs = obs,
@@ -58,33 +65,52 @@ run_demo <- function(seed) {
     demand = dmd,
     elas = c(0.2, 0.2, 0.2),
     rules = matrix(data = 1, nrow = 3, ncol = 3, byrow = TRUE),
-    params = list(jitter.f = 0.0002, scale.f = 0.000001, max.iter = 1000, max.diff = 50, ave.diff = 50)
+    params = list(
+      jitter.f = 0.0002,
+      scale.f = 0.000001,
+      max.iter = 1000,
+      max.diff = 50,
+      ave.diff = 50
+    )
   ))
   ordered <- allocate(
-    OrderedModel(obs = obs, ef = ef, models = glm_models, time = 0:14, demand = dmd, order = c(2, 1, 3)),
+    OrderedModel(
+      obs = obs,
+      ef = ef,
+      models = glm_models,
+      time = 0:14,
+      demand = dmd,
+      order = c(2, 1, 3)
+    ),
     stochastic = TRUE
   )
-  rbindlist(lapply(list(`CLUE-S` = clues, Ordered = ordered), function(model) {
-    tabs <- ThreeMapComparison(x = model, factors = factors, timestep = 14)
-    fom <- FigureOfMerit(x = tabs)
-    # forest -> built at each resolution, and overall
-    data.table(
-      factor = factors,
-      fom_forest_built = vapply(fom@transition, function(m) m[1, 2], numeric(1)),
-      fom_overall = unlist(fom@overall)
-    )
-  }), idcol = "model")[, seed := seed][]
+  rbindlist(
+    lapply(list(`CLUE-S` = clues, Ordered = ordered), function(model) {
+      tabs <- ThreeMapComparison(x = model, factors = factors, timestep = 14)
+      fom <- FigureOfMerit(x = tabs)
+      # forest -> built at each resolution, and overall
+      data.table(
+        factor = factors,
+        fom_forest_built = vapply(fom@transition, function(m) m[1, 2], numeric(1)),
+        fom_overall = unlist(fom@overall)
+      )
+    }),
+    idcol = "model"
+  )[,
+    seed := seed
+  ][]
 }
 results <- rbindlist(lapply(seeds, run_demo))
 
 #| label: summary
-summary_dt <- results[,
-  .(
-    fom_forest_built = mean(fom_forest_built),
-    fom_forest_built_sd = sd(fom_forest_built),
-    fom_overall = mean(fom_overall)
-  ),
-  by = .(model, factor)
-]
+summary_dt <-
+  results[,
+    .(
+      fom_forest_built = mean(fom_forest_built),
+      fom_forest_built_sd = sd(fom_forest_built),
+      fom_overall = mean(fom_overall)
+    ),
+    by = .(model, factor)
+  ]
 summary_dt
 fwrite(results, file.path(pie_dir, "figures", "moulds2015-reproduction.csv"))

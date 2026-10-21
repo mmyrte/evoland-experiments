@@ -24,6 +24,7 @@
 library(evoland)
 library(data.table)
 library(terra)
+library(ggplot2)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
 maps_dir <- file.path(outputs_dir, "maps")
@@ -33,48 +34,55 @@ dir.create(figures_dir, showWarnings = FALSE)
 #' # Ensembles
 
 #| label: ensembles
-crossing <- crossing_members()[, .(
-  estimator,
-  allocator,
-  estimator_label,
-  allocator_label,
-  member,
-  id_run,
-  id_run_parent,
-  as_shipped = FALSE,
-  # maps made outside evoland's database, imported below
-  maps = fifelse(
-    allocator %in% c("clue-s", "ordered", "clumondo"),
-    external_maps_dir(allocator, estimator),
-    NA_character_
-  )
-)]
-as_shipped <- native_pipelines[,
-  .(member = seq_len(n_members)),
-  by = .(native, id_run_parent = id_run, offset, estimator_label, allocator_label)
-][, .(
-  estimator = native,
-  allocator = native,
-  estimator_label,
-  allocator_label,
-  member,
-  id_run = id_run_parent + offset + member,
-  id_run_parent,
-  as_shipped = TRUE,
-  maps = file.path(outputs_dir, "maps", native)
-)]
+crossing <-
+  crossing_members()[,
+    .(
+      estimator,
+      allocator,
+      estimator_label,
+      allocator_label,
+      member,
+      id_run,
+      id_run_parent,
+      as_shipped = FALSE,
+      # maps made outside evoland's database, imported below
+      maps = fifelse(
+        allocator %in% c("clue-s", "ordered", "clumondo"),
+        external_maps_dir(allocator, estimator),
+        NA_character_
+      )
+    )
+  ]
+as_shipped <-
+  native_pipelines[,
+    .(member = seq_len(n_members)),
+    by = .(native, id_run_parent = id_run, offset, estimator_label, allocator_label)
+  ][,
+    .(
+      estimator = native,
+      allocator = native,
+      estimator_label,
+      allocator_label,
+      member,
+      id_run = id_run_parent + offset + member,
+      id_run_parent,
+      as_shipped = TRUE,
+      maps = file.path(outputs_dir, "maps", native)
+    )
+  ]
 members <- rbind(crossing, as_shipped)
 members[, ensemble := paste(estimator_label, "×", allocator_label)]
 members[as_shipped == TRUE, ensemble := paste(ensemble, "(as shipped)")]
-ensembles <- members[,
-  .(
-    estimator_label = estimator_label[1],
-    allocator_label = allocator_label[1],
-    as_shipped = as_shipped[1],
-    n_members = .N
-  ),
-  by = ensemble
-]
+ensembles <-
+  members[,
+    .(
+      estimator_label = estimator_label[1],
+      allocator_label = allocator_label[1],
+      as_shipped = as_shipped[1],
+      n_members = .N
+    ),
+    by = ensemble
+  ]
 ensembles
 
 #' # Import the maps made outside the database
@@ -122,57 +130,74 @@ for (i in seq_len(nrow(imported))) {
 
 #| label: fom
 db$id_run <- NULL
-fom <- db$figure_of_merit_v(
-  id_period_anterior = 2L,
-  id_period_post = 3L,
-  id_run_reference = id_run_observed,
-  id_run_simulated = members$id_run
-)[members, on = "id_run"]
+fom <-
+  db$figure_of_merit_v(
+    id_period_anterior = 2L,
+    id_period_post = 3L,
+    id_run_reference = id_run_observed,
+    id_run_simulated = members$id_run
+  )[
+    members,
+    on = "id_run"
+  ]
 
 # ensemble expectation: ratio of the mean counts, not the mean of the ratios
-fom_ensemble <- fom[,
-  c(
-    lapply(.SD, mean),
-    .(
-      fom_sd = sd(figure_of_merit),
-      fom_min = min(figure_of_merit),
-      fom_max = max(figure_of_merit),
-      figure_of_merit_null = mean(figure_of_merit_null)
+fom_ensemble <-
+  fom[,
+    c(
+      lapply(.SD, mean),
+      .(
+        fom_sd = sd(figure_of_merit),
+        fom_min = min(figure_of_merit),
+        fom_max = max(figure_of_merit),
+        figure_of_merit_null = mean(figure_of_merit_null)
+      )
+    ),
+    by = .(ensemble, estimator_label, allocator_label, as_shipped),
+    .SDcols = c("hits", "wrong_hits", "misses", "false_alarms")
+  ][,
+    `:=`(
+      figure_of_merit = hits / (hits + wrong_hits + misses + false_alarms),
+      producers_accuracy = hits / (hits + wrong_hits + misses),
+      users_accuracy = hits / (hits + wrong_hits + false_alarms)
     )
-  ),
-  by = .(ensemble, estimator_label, allocator_label, as_shipped),
-  .SDcols = c("hits", "wrong_hits", "misses", "false_alarms")
-][, `:=`(
-  figure_of_merit = hits / (hits + wrong_hits + misses + false_alarms),
-  producers_accuracy = hits / (hits + wrong_hits + misses),
-  users_accuracy = hits / (hits + wrong_hits + false_alarms)
-)][, skill_over_null := figure_of_merit / figure_of_merit_null][order(-figure_of_merit)]
-fom_ensemble[, .(
-  ensemble,
-  figure_of_merit = round(figure_of_merit, 4),
-  fom_sd = round(fom_sd, 4),
-  null = round(figure_of_merit_null, 4),
-  skill_over_null = round(skill_over_null, 2),
-  producers_accuracy = round(producers_accuracy, 3),
-  users_accuracy = round(users_accuracy, 3)
-)]
-
-fom_by_transition <- db$figure_of_merit_v(
-  id_period_anterior = 2L,
-  id_period_post = 3L,
-  id_run_reference = id_run_observed,
-  id_run_simulated = members$id_run,
-  by_transition = TRUE
-)[members[, .(id_run, ensemble)], on = "id_run"][,
+  ][,
+    skill_over_null := figure_of_merit / figure_of_merit_null
+  ][
+    order(-figure_of_merit)
+  ]
+fom_ensemble[,
   .(
-    observed = mean(observed),
-    simulated = mean(simulated),
-    hits = mean(hits),
-    figure_of_merit = mean(hits) / (mean(observed) + mean(simulated) - mean(hits)),
-    figure_of_merit_null = mean(figure_of_merit_null)
-  ),
-  by = .(ensemble, id_lulc_anterior, id_lulc_posterior)
+    ensemble,
+    figure_of_merit = round(figure_of_merit, 4),
+    fom_sd = round(fom_sd, 4),
+    null = round(figure_of_merit_null, 4),
+    skill_over_null = round(skill_over_null, 2),
+    producers_accuracy = round(producers_accuracy, 3),
+    users_accuracy = round(users_accuracy, 3)
+  )
 ]
+
+fom_by_transition <-
+  db$figure_of_merit_v(
+    id_period_anterior = 2L,
+    id_period_post = 3L,
+    id_run_reference = id_run_observed,
+    id_run_simulated = members$id_run,
+    by_transition = TRUE
+  )[
+    members[, .(id_run, ensemble)],
+    on = "id_run"
+  ][,
+    .(
+      observed = mean(observed),
+      simulated = mean(simulated),
+      hits = mean(hits),
+      figure_of_merit = mean(hits) / (mean(observed) + mean(simulated) - mean(hits)),
+      figure_of_merit_null = mean(figure_of_merit_null)
+    ),
+    by = .(ensemble, id_lulc_anterior, id_lulc_posterior)
+  ]
 dcast(
   fom_by_transition,
   id_lulc_anterior + id_lulc_posterior ~ ensemble,
@@ -212,25 +237,30 @@ pontius <- function(ct) {
 simulated_transitions <- rbindlist(lapply(members$id_run, function(id) {
   crosstab(id, id, 2L)[, id_run := id]
 }))
-disagreement <- rbindlist(lapply(members$id_run, function(id) {
-  as.list(c(
-    id_run = id,
-    pontius(crosstab(id_run_observed, id, 3L)),
-    gross_change = simulated_transitions[
-      id_run == id & id_lulc_anterior != id_lulc_posterior,
-      sum(n_cells)
-    ]
-  ))
-}))[members[, .(id_run, ensemble)], on = "id_run"]
-disagreement_ensemble <- disagreement[,
-  .(
-    quantity = mean(quantity),
-    allocation = mean(allocation),
-    total = mean(total),
-    gross_change = mean(gross_change)
-  ),
-  by = ensemble
-]
+disagreement <-
+  rbindlist(lapply(members$id_run, function(id) {
+    as.list(c(
+      id_run = id,
+      pontius(crosstab(id_run_observed, id, 3L)),
+      gross_change = simulated_transitions[
+        id_run == id & id_lulc_anterior != id_lulc_posterior,
+        sum(n_cells)
+      ]
+    ))
+  }))[
+    members[, .(id_run, ensemble)],
+    on = "id_run"
+  ]
+disagreement_ensemble <-
+  disagreement[,
+    .(
+      quantity = mean(quantity),
+      allocation = mean(allocation),
+      total = mean(total),
+      gross_change = mean(gross_change)
+    ),
+    by = ensemble
+  ]
 observed_transitions <- crosstab(id_run_observed, id_run_observed, 2L)
 observed_gross_change <- observed_transitions[id_lulc_anterior != id_lulc_posterior, sum(n_cells)]
 observed_gross_change
@@ -240,11 +270,15 @@ disagreement_ensemble[order(total)]
 #' allocators need not reproduce them.
 
 #| label: transitions
-transitions_ensemble <- simulated_transitions[members[, .(id_run, ensemble)], on = "id_run"][
-  id_lulc_anterior != id_lulc_posterior,
-  .(n_cells = sum(n_cells) / uniqueN(id_run)),
-  by = .(ensemble, transition = paste0(id_lulc_anterior, "->", id_lulc_posterior))
-]
+transitions_ensemble <-
+  simulated_transitions[
+    members[, .(id_run, ensemble)],
+    on = "id_run"
+  ][
+    id_lulc_anterior != id_lulc_posterior,
+    .(n_cells = sum(n_cells) / uniqueN(id_run)),
+    by = .(ensemble, transition = paste0(id_lulc_anterior, "->", id_lulc_posterior))
+  ]
 dcast(
   rbind(
     transitions_ensemble,
@@ -273,10 +307,11 @@ lulc_wide <- dcast(
   id_coord ~ id_run,
   value.var = "id_lulc"
 )
-anterior_1991 <- db$fetch("lulc_data_t", where = "id_run = 0 and id_period = 2")[
-  lulc_wide[, .(id_coord)],
-  on = "id_coord"
-]$id_lulc
+anterior_1991 <-
+  db$fetch("lulc_data_t", where = "id_run = 0 and id_period = 2")[
+    lulc_wide[, .(id_coord)],
+    on = "id_coord"
+  ]$id_lulc
 observed_1999 <- lulc_wide[[as.character(id_run_observed)]]
 
 #' # Fuzzy similarity of the built-land gains
@@ -297,22 +332,26 @@ map_1991 <- tabular_to_raster(
   db$coords_minimal
 )
 map_1999 <- lulc_map(id_run_observed)
-fuzzy <- rbindlist(lapply(members$id_run, function(id) {
-  simulated <- lulc_map(id)
-  rbindlist(lapply(list(c(1L, 2L), c(3L, 2L)), function(tr) {
-    s <- calc_transition_similarity(
-      map_1991,
-      map_1999,
-      simulated,
-      from_class = tr[1],
-      to_class = tr[2],
-      window_size = 11L,
-      use_exp_decay = TRUE,
-      decay_divisor = 2
-    )
-    data.table(id_run = id, transition = paste0(tr[1], "->", tr[2]), similarity = s$similarity)
-  }))
-}))[members[, .(id_run, ensemble)], on = "id_run"]
+fuzzy <-
+  rbindlist(lapply(members$id_run, function(id) {
+    simulated <- lulc_map(id)
+    rbindlist(lapply(list(c(1L, 2L), c(3L, 2L)), function(tr) {
+      s <- calc_transition_similarity(
+        map_1991,
+        map_1999,
+        simulated,
+        from_class = tr[1],
+        to_class = tr[2],
+        window_size = 11L,
+        use_exp_decay = TRUE,
+        decay_divisor = 2
+      )
+      data.table(id_run = id, transition = paste0(tr[1], "->", tr[2]), similarity = s$similarity)
+    }))
+  }))[
+    members[, .(id_run, ensemble)],
+    on = "id_run"
+  ]
 fuzzy_ensemble <- dcast(
   fuzzy[, .(similarity = mean(similarity)), by = .(ensemble, transition)],
   ensemble ~ transition,
@@ -354,10 +393,13 @@ timings <- rbindlist(lapply(
   list.files(outputs_dir, pattern = "^timings-.*\\.csv$", full.names = TRUE),
   fread
 ))
-timings_summary <- timings[,
-  .(n = .N, total_s = sum(seconds), median_s = stats::median(seconds)),
-  by = .(tool, stage)
-][order(tool, stage)]
+timings_summary <-
+  timings[,
+    .(n = .N, total_s = sum(seconds), median_s = stats::median(seconds)),
+    by = .(tool, stage)
+  ][
+    order(tool, stage)
+  ]
 timings_summary
 
 #' # Figures
@@ -370,54 +412,51 @@ allocator_colours <- setNames(
   c("#2a78d6", "#eb6834", "#4a3aa7", "#1baf7a", "#eda100", "#e87ba4"),
   allocator_levels
 )
-allocator_pch <- setNames(c(16, 17, 8, 15, 18, 25), allocator_levels)
+allocator_pch <- setNames(c(16, 17, 8, 15, 18, 6), allocator_levels)
 # rows: the crossing's estimators, then each tool as shipped
 fom[, row := fifelse(as_shipped, paste0(estimator_label, ", as shipped"), estimator_label)]
 fom[, allocator_key := sub(" (simulate.ego)", "", allocator_label, fixed = TRUE)]
 row_levels <- c(estimators$label, unique(fom[as_shipped == TRUE, row]))
 
-plot_fom <- function() {
-  op <- par(mar = c(7.5, 15, 1, 1), las = 1, cex = 0.8)
-  on.exit(par(op))
-  y <- match(fom$row, row_levels) + (match(fom$allocator_key, allocator_levels) - 3.5) * 0.12
-  plot(
-    NA,
-    xlim = c(0, max(fom$figure_of_merit) * 1.05),
-    ylim = c(length(row_levels) + 0.5, 0.5),
-    yaxt = "n",
-    xlab = "Figure of merit, 1991 to 1999 (20 realisations each)",
-    ylab = ""
+# rows top to bottom, the allocators side by side within a row
+fom[,
+  `:=`(
+    y = match(row, row_levels) + (match(allocator_key, allocator_levels) - 3.5) * 0.12,
+    allocator_f = factor(allocator_key, levels = allocator_levels)
   )
-  axis(2, at = seq_along(row_levels), labels = row_levels, tick = FALSE)
-  abline(h = seq_along(row_levels) + 0.5, col = "grey90")
-  abline(h = nrow(estimators) + 0.5, col = "grey40")
-  abline(v = mean(fom$figure_of_merit_null), lty = 2, col = "grey40")
-  text(mean(fom$figure_of_merit_null), 0.5, "random allocation", pos = 2, cex = 0.8, col = "grey30")
-  points(
-    fom$figure_of_merit,
-    y,
-    col = allocator_colours[fom$allocator_key],
-    bg = allocator_colours[fom$allocator_key],
-    pch = allocator_pch[fom$allocator_key],
-    cex = 0.8
+]
+fig_fom <- ggplot(fom, aes(figure_of_merit, y, colour = allocator_f, shape = allocator_f)) +
+  geom_hline(yintercept = seq_along(row_levels)[-1] - 0.5, colour = "grey90") +
+  geom_hline(yintercept = nrow(estimators) + 0.5, colour = "grey40") +
+  geom_vline(xintercept = mean(fom$figure_of_merit_null), linetype = 2, colour = "grey40") +
+  annotate(
+    "text",
+    x = mean(fom$figure_of_merit_null),
+    y = 0.45,
+    label = "random allocation",
+    hjust = 1.05,
+    size = 2.8,
+    colour = "grey30"
+  ) +
+  geom_point(size = 1.3) +
+  scale_colour_manual(values = allocator_colours, drop = FALSE) +
+  scale_shape_manual(values = allocator_pch, drop = FALSE) +
+  scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
+  scale_y_reverse(breaks = seq_along(row_levels), labels = row_levels) +
+  labs(
+    x = "Figure of merit, 1991 to 1999 (20 realisations each)",
+    y = NULL,
+    colour = "allocator",
+    shape = "allocator"
+  ) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    legend.position = "bottom"
   )
-  legend(
-    "bottom",
-    inset = c(0, -0.3),
-    xpd = TRUE,
-    ncol = 3,
-    legend = allocator_levels,
-    col = allocator_colours,
-    pt.bg = allocator_colours,
-    pch = allocator_pch,
-    title = "allocator",
-    bty = "n"
-  )
-}
-plot_fom()
-cairo_pdf(file.path(figures_dir, "pie-figure-of-merit.pdf"), width = 7, height = 5.5)
-plot_fom()
-invisible(dev.off())
+fig_fom
+ggsave(file.path(figures_dir, "pie-figure-of-merit.pdf"), fig_fom, width = 7, height = 5.5)
 
 #| label: fig-maps
 #| fig-width: 9
@@ -438,45 +477,40 @@ outcome_map <- function(id) {
   )
   tabular_to_raster(data.table(id_coord = lulc_wide$id_coord, id_lulc = outcome), db$coords_minimal)
 }
-outcome_colours <- data.frame(
-  value = 0:4,
-  color = c("#ecebe6", "#1baf7a", "#2a78d6", "#e34948", "#eda100")
+outcome_levels <- c("persistence (both)", "hit", "miss", "false alarm", "wrong hit")
+outcome_colours <- setNames(
+  c("#ecebe6", "#1baf7a", "#2a78d6", "#e34948", "#eda100"),
+  outcome_levels
 )
-plot_maps <- function() {
-  op <- par(mfrow = c(2, 3), mar = c(0.5, 0.5, 2, 0.5), oma = c(2, 0, 0, 0))
-  on.exit(par(op))
-  for (e in map_panels) {
-    runs_e <- fom[ensemble == e][order(figure_of_merit)]
-    id <- runs_e$id_run[ceiling(nrow(runs_e) / 2)]
-    plot(
-      outcome_map(id),
-      col = outcome_colours,
-      legend = FALSE,
-      axes = FALSE,
-      box = FALSE,
-      main = sprintf(
-        "%s\nFoM %.3f",
-        sub(" × ", " / ", e, fixed = TRUE),
-        runs_e[id_run == id, figure_of_merit]
-      ),
-      cex.main = 0.8
+outcome_cells <- rbindlist(lapply(map_panels, function(e) {
+  runs_e <- fom[ensemble == e][order(figure_of_merit)]
+  id <- runs_e$id_run[ceiling(nrow(runs_e) / 2)]
+  cells <- as.data.table(terra::as.data.frame(outcome_map(id), xy = TRUE))
+  setnames(cells, 3, "outcome")
+  cells[,
+    panel := sprintf(
+      "%s\nFoM %.3f",
+      sub(" × ", " / ", e, fixed = TRUE),
+      runs_e[id_run == id, figure_of_merit]
     )
-  }
-  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
-  plot.new()
-  legend(
-    "bottom",
-    horiz = TRUE,
-    legend = c("persistence (both)", "hit", "miss", "false alarm", "wrong hit"),
-    fill = outcome_colours$color,
-    bty = "n",
-    cex = 0.9
+  ]
+}))
+outcome_cells[,
+  `:=`(
+    outcome = factor(outcome_levels[outcome + 1L], levels = outcome_levels),
+    panel = factor(panel, levels = unique(panel))
   )
-}
-plot_maps()
-cairo_pdf(file.path(figures_dir, "pie-outcome-maps.pdf"), width = 9, height = 6.4)
-plot_maps()
-invisible(dev.off())
+]
+fig_maps <- ggplot(outcome_cells, aes(x, y, fill = outcome)) +
+  geom_raster() +
+  scale_fill_manual(values = outcome_colours, drop = FALSE) +
+  facet_wrap(~panel, ncol = 3) +
+  coord_equal() +
+  labs(fill = NULL) +
+  theme_void(base_size = 9) +
+  theme(legend.position = "bottom")
+fig_maps
+ggsave(file.path(figures_dir, "pie-outcome-maps.pdf"), fig_maps, width = 9, height = 6.4)
 
 #' # Tables written
 

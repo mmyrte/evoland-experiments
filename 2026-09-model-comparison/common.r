@@ -40,9 +40,11 @@ estimators <- data.table::data.table(
   )
 )
 # PIE_ESTIMATORS restricts the estimators, e.g. to "log_reg" for the scaling runs
-estimators <- estimators[
-  estimator %in% strsplit(Sys.getenv("PIE_ESTIMATORS", "log_reg,ranger,woe,naive_bayes"), ",")[[1]]
-]
+estimators <-
+  estimators[
+    estimator %in%
+      strsplit(Sys.getenv("PIE_ESTIMATORS", "log_reg,ranger,woe,naive_bayes"), ",")[[1]]
+  ]
 
 allocators <- data.table::data.table(
   allocator = c("clumpy", "dinamica", "greedy", "clue-s", "ordered", "clumondo"),
@@ -73,18 +75,25 @@ crossing_members <- function() {
     allocator = allocators$allocator,
     sorted = FALSE
   )
-  crossed <- estimators[, .(estimator, id_run_parent = id_run, estimator_label = label)][
-    crossed,
-    on = "estimator"
-  ]
-  crossed <- allocators[, .(allocator, offset, n_members, allocator_label = label)][
-    crossed,
-    on = "allocator"
-  ]
-  members <- crossed[,
-    .(member = seq_len(n_members)),
-    by = .(estimator, allocator, id_run_parent, offset, estimator_label, allocator_label)
-  ]
+  crossed <-
+    estimators[,
+      .(estimator, id_run_parent = id_run, estimator_label = label)
+    ][
+      crossed,
+      on = "estimator"
+    ]
+  crossed <-
+    allocators[,
+      .(allocator, offset, n_members, allocator_label = label)
+    ][
+      crossed,
+      on = "allocator"
+    ]
+  members <-
+    crossed[,
+      .(member = seq_len(n_members)),
+      by = .(estimator, allocator, id_run_parent, offset, estimator_label, allocator_label)
+    ]
   members[, id_run := id_run_parent + offset + member]
   members[, seed := 10000L + id_run]
   members[]
