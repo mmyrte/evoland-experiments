@@ -7,8 +7,10 @@ against the system libraries it installs.
 Usage: install_r_deps.py <rproject.toml>
 """
 
+import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 
 with open(sys.argv[1], "rb") as f:
@@ -31,13 +33,19 @@ def r(code):
 
 
 r(f"install.packages(c({', '.join(repr(p) for p in cran + ['remotes'])}))")
-# install_git clones with git; install_github would go through the GitHub API and its rate limit
+# git dependencies: clone at the pinned ref, dependencies from r2u, then install. (remotes'
+# install_github goes through the GitHub API and its rate limit; install_git cannot resolve a
+# bare commit hash with ls-remote.)
 for dep in git:
-    ref = dep.get("commit") or dep.get("tag") or dep.get("branch") or "HEAD"
-    r(
-        f"remotes::install_git({dep['git']!r}, ref = {ref!r}, "
-        f"dependencies = {'TRUE' if dep.get('install_suggestions') else 'NA'}, upgrade = 'never')"
-    )
+    ref = dep.get("commit") or dep.get("tag") or dep.get("branch")
+    src = tempfile.mkdtemp()
+    subprocess.run(["git", "clone", "--quiet", dep["git"], src], check=True)
+    if ref:
+        subprocess.run(["git", "-C", src, "checkout", "--quiet", ref], check=True)
+    deps_arg = "TRUE" if dep.get("install_suggestions") else "NA"
+    r(f"remotes::install_deps({src!r}, dependencies = {deps_arg}, upgrade = 'never')")
+    subprocess.run(["R", "CMD", "INSTALL", "--no-docs", src], check=True)
+    shutil.rmtree(src)
 # fail the build if anything is missing
 r(
     f"missing <- setdiff(c({', '.join(repr(p) for p in cran)}, {', '.join(repr(d['name']) for d in git)}), "
