@@ -18,6 +18,7 @@ ARG QUARTO_VERSION=1.10.18
 RUN apt-get update -qq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     cmake \
+    curl \
     gdal-bin \
     git \
     git-lfs \
