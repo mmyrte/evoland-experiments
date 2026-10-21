@@ -34,9 +34,10 @@ dir.create(suitability_dir, recursive = TRUE, showWarnings = FALSE)
 db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE][order(id_lulc_anterior, id_lulc_posterior)]
 viable
-anterior <- db$fetch("lulc_data_t", where = "id_run = 0 and id_period = 2")[,
-  .(id_coord, id_lulc_anterior = id_lulc)
-]
+anterior <-
+  db$fetch("lulc_data_t", where = "id_run = 0 and id_period = 2")[,
+    .(id_coord, id_lulc_anterior = id_lulc)
+  ]
 
 #' # Weights of Evidence into `trans_pot_t`
 
@@ -47,17 +48,26 @@ if ("woe" %in% estimators$estimator) {
   woe <- terra::rast(file.path(maps_dir, "dinamica-native", "probabilities.tif"))
   # numeric layer names do not survive extraction, hence the prefixes
   names(woe) <- paste0("trans_", viable$id_trans)
-  woe_pot <- extract_using_coords_t(woe, db$coords_t)[, .(
-    id_trans = as.integer(sub("trans_", "", as.character(layer))),
-    id_coord,
-    value
-  )]
+  woe_pot <-
+    extract_using_coords_t(woe, db$coords_t)[,
+      .(
+        id_trans = as.integer(sub("trans_", "", as.character(layer))),
+        id_coord,
+        value
+      )
+    ]
   # a transition's potential only matters in the cells of its anterior class
-  woe_pot <- woe_pot[viable[, .(id_trans, id_lulc_anterior)], on = "id_trans"][
-    anterior,
-    on = .(id_coord, id_lulc_anterior),
-    nomatch = NULL
-  ][!is.na(value)]
+  woe_pot <-
+    woe_pot[
+      viable[, .(id_trans, id_lulc_anterior)],
+      on = "id_trans"
+    ][
+      anterior,
+      on = .(id_coord, id_lulc_anterior),
+      nomatch = NULL
+    ][
+      !is.na(value)
+    ]
   id_run_woe <- estimators[estimator == "woe", id_run]
   db$id_run <- id_run_woe
   db$commit(
@@ -80,18 +90,22 @@ if ("woe" %in% estimators$estimator) {
 #| fig-asp: 0.35
 class_probabilities <- function(id_run) {
   db$id_run <- id_run
-  adjusted <- db$adjusted_trans_pot_v(3L)[
-    viable[, .(id_trans, id_lulc_anterior, id_lulc_posterior)],
-    on = "id_trans",
-    nomatch = NULL
-  ]
+  adjusted <-
+    db$adjusted_trans_pot_v(3L)[
+      viable[, .(id_trans, id_lulc_anterior, id_lulc_posterior)],
+      on = "id_trans",
+      nomatch = NULL
+    ]
   # every cell, every class: zero unless a viable transition leads there
   cells <- CJ(id_coord = anterior$id_coord, id_lulc = lulc_classes)[anterior, on = "id_coord"]
   cells[
     adjusted,
     on = .(id_coord, id_lulc_anterior, id_lulc = id_lulc_posterior),
     p := i.value
-  ][is.na(p), p := 0]
+  ][
+    is.na(p),
+    p := 0
+  ]
   # staying in the anterior class takes what the transitions leave
   cells[, p_change := sum(p[id_lulc != id_lulc_anterior]), by = id_coord]
   cells[id_lulc == id_lulc_anterior, p := pmax(0, 1 - p_change)]

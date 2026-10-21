@@ -61,11 +61,14 @@ db$periods_t
 #' # Data
 
 #| label: lulc
-lulc_long <- extract_using_coords_t(lu, db$coords_t)[, .(
-  id_coord,
-  id_period = id_period_by_year[sub("lu_", "", layer)],
-  id_lulc = as.integer(value)
-)]
+lulc_long <-
+  extract_using_coords_t(lu, db$coords_t)[,
+    .(
+      id_coord,
+      id_period = id_period_by_year[sub("lu_", "", layer)],
+      id_lulc = as.integer(value)
+    )
+  ]
 lulc_long[, .N, by = .(id_period, id_lulc)][order(id_period, id_lulc)]
 
 db$lulc_data_t <- as_lulc_data_t(lulc_long[
@@ -95,13 +98,16 @@ db$pred_meta_t <- create_pred_meta_t(list(
   ef_002 = list(pretty_name = "Slope", data_type = "float"),
   ef_003 = list(pretty_name = "Distance to built land 1985", data_type = "float")
 ))
-db$pred_data_t <- extract_using_coords_t(ef, db$coords_minimal)[, .(
-  id_coord,
-  id_run = 0L,
-  id_period = 0L,
-  id_pred = match(as.character(layer), names(ef)),
-  value
-)] |>
+db$pred_data_t <-
+  extract_using_coords_t(ef, db$coords_minimal)[,
+    .(
+      id_coord,
+      id_run = 0L,
+      id_period = 0L,
+      id_pred = match(as.character(layer), names(ef)),
+      value
+    )
+  ] |>
   as_pred_data_t()
 
 timed("evoland", "neighbours", {
@@ -169,24 +175,36 @@ db$alloc_params_t
 #' # Demand: observed quantities 1991 → 1999
 
 #| label: demand
-observed_2_3 <- lulc_long[id_period == 2L, .(id_coord, id_lulc_anterior = id_lulc)][
-  lulc_long[id_period == 3L, .(id_coord, id_lulc_posterior = id_lulc)],
-  on = "id_coord"
-]
+observed_2_3 <-
+  lulc_long[
+    id_period == 2L,
+    .(id_coord, id_lulc_anterior = id_lulc)
+  ][
+    lulc_long[id_period == 3L, .(id_coord, id_lulc_posterior = id_lulc)],
+    on = "id_coord"
+  ]
 anterior_totals <- observed_2_3[, .(n_anterior = .N), by = id_lulc_anterior]
-observed_counts <- observed_2_3[
-  id_lulc_anterior != id_lulc_posterior,
-  .(count = .N),
-  by = .(id_lulc_anterior, id_lulc_posterior)
-]
-rates_3 <- db$trans_meta_t[
-  is_viable == TRUE,
-  .(id_trans, id_lulc_anterior, id_lulc_posterior)
-][observed_counts, on = .(id_lulc_anterior, id_lulc_posterior), nomatch = NULL][
-  anterior_totals,
-  on = "id_lulc_anterior",
-  nomatch = NULL
-][, .(id_run = 0L, id_period = 3L, id_trans, count, rate = count / n_anterior)]
+observed_counts <-
+  observed_2_3[
+    id_lulc_anterior != id_lulc_posterior,
+    .(count = .N),
+    by = .(id_lulc_anterior, id_lulc_posterior)
+  ]
+rates_3 <-
+  db$trans_meta_t[
+    is_viable == TRUE,
+    .(id_trans, id_lulc_anterior, id_lulc_posterior)
+  ][
+    observed_counts,
+    on = .(id_lulc_anterior, id_lulc_posterior),
+    nomatch = NULL
+  ][
+    anterior_totals,
+    on = "id_lulc_anterior",
+    nomatch = NULL
+  ][,
+    .(id_run = 0L, id_period = 3L, id_trans, count, rate = count / n_anterior)
+  ]
 db$trans_rates_t <- as_trans_rates_t(rates_3)
 rates_3
 

@@ -7,10 +7,10 @@
 #' lulcc 1.0.4 (CRAN), with the allocation parameters of its GMD demo
 #' (`demo("gmd-paper", package = "lulcc")`, Moulds et al. 2015):
 #'
-#' - **Allocation**: 8 annual steps from 1991, with CLUE-S (Verburg et al. 2002; elasticity
-#'   0.2 for every class, the demo's iteration parameters) and the Ordered procedure (Fuchs et
-#'   al. 2013; order built, forest, other). CLUE-S jitters suitabilities by a random amount, so
-#'   it is repeated with seeds.
+#' - **Allocation**: one step from 1991 to 1999, like every other allocator here, with CLUE-S
+#'   (Verburg et al. 2002; elasticity 0.2 for every class, the demo's iteration parameters) and
+#'   the Ordered procedure (Fuchs et al. 2013; order built, forest, other). CLUE-S jitters
+#'   suitabilities by a random amount, so it is repeated with seeds.
 #' - **Ordered, deterministic in the crossing.** lulcc's stochastic mode thins each class's
 #'   ranked candidates by a Bernoulli(suitability) draw and then takes the first n, retrying up
 #'   to 1000 times. That suits presence probabilities (lulcc's GLMs). With the crossing's class
@@ -19,9 +19,9 @@
 #'   lulcc's C code reads out of range: the maps came out with class codes in the billions. The
 #'   crossing therefore runs Ordered with `stochastic = FALSE`, one map per estimator; the
 #'   as-shipped run keeps the demo's stochastic mode.
-#' - **Demand**: lulcc's `approxExtrapDemand()` interpolates the class totals linearly between
-#'   1991 and 1999 in annual steps; the end point is the observed 1999 total of every class,
-#'   the same quantities the transition allocators get as transition counts.
+#' - **Demand**: prescribed, the observed 1999 total of every class (the demo instead
+#'   interpolates annual totals with `approxExtrapDemand()`). These are the same quantities the
+#'   transition allocators get as transition counts.
 #'
 #' **The crossing.** lulcc allocates on a suitability per class and cell, which it gets by
 #' predicting a list of fitted models on its explanatory variables. Here the suitability is each
@@ -54,20 +54,25 @@ lu <- raster::stack(lapply(c(1991, 1999), \(y) {
 }))
 names(lu) <- c("lu_1991", "lu_1999")
 class_labels <- c("Forest", "Built", "Other")
+# lulcc's time: 0 = 1991, 8 = 1999, allocated in one step
+time_steps <- c(0, 8)
 obs <- ObsLulcRasterStack(
   x = lu,
   pattern = "lu",
   categories = c(1, 2, 3),
   labels = class_labels,
-  t = c(0, 8)
+  t = time_steps
 )
 obs
-crossTabulate(obs, times = c(0, 8))
+crossTabulate(obs, times = time_steps)
 
 #' # Demand and allocation parameters
 
 #| label: demand
-dmd <- approxExtrapDemand(obs = obs, tout = 0:8)
+# the known class totals, 1991 and 1999: rows are time steps, columns classes
+dmd <- fread(file.path(outputs_dir, "demand_class_totals.csv"))[year %in% c(1991, 1999)]
+dmd <- as.matrix(dcast(dmd, year ~ id_lulc, value.var = "N")[, -"year"])
+stopifnot(all(rowSums(dmd) == rowSums(dmd)[1]), all(dmd[1, ] == total(obs)$total[1, ]))
 dmd
 clues_parms <- list(
   jitter.f = 0.0002,
@@ -80,10 +85,13 @@ elasticity <- c(0.2, 0.2, 0.2)
 ordered_order <- c(2, 1, 3)
 
 # conversion rules for the crossing: rows from, columns to; the viable transitions of 010
-viable <- fread(file.path(outputs_dir, "alloc_params_viable.csv"))[, .(
-  id_lulc_anterior,
-  id_lulc_posterior
-)]
+viable <-
+  fread(file.path(outputs_dir, "alloc_params_viable.csv"))[,
+    .(
+      id_lulc_anterior,
+      id_lulc_posterior
+    )
+  ]
 viable_rules <- diag(3)
 viable_rules[as.matrix(viable)] <- 1
 viable_rules
@@ -111,7 +119,7 @@ allocate_both <- function(ef, models, rules, seeds, dirs, tag, ordered_stochasti
       obs = obs,
       ef = ef,
       models = models,
-      time = 0:8,
+      time = time_steps,
       demand = dmd,
       elas = elasticity,
       rules = rules,
@@ -131,7 +139,7 @@ allocate_both <- function(ef, models, rules, seeds, dirs, tag, ordered_stochasti
       obs = obs,
       ef = ef,
       models = models,
-      time = 0:8,
+      time = time_steps,
       demand = dmd,
       rules = rules,
       order = ordered_order

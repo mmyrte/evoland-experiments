@@ -28,34 +28,53 @@ read_steps <- function(k) {
   rbindlist(lapply(marks, function(f) {
     x <- strsplit(readLines(f, warn = FALSE)[1], ",")[[1]]
     length(x) <- 5
-    data.table(k = as.integer(x[1]), step = x[2], status = x[3], wall = x[4], peak_rss_kb = as.numeric(x[5]))
+    data.table(
+      k = as.integer(x[1]),
+      step = x[2],
+      status = x[3],
+      wall = x[4],
+      peak_rss_kb = as.numeric(x[5])
+    )
   }))
 }
 wall_seconds <- function(w) {
-  vapply(strsplit(ifelse(is.na(w) | w == "", "NA", w), ":"), function(p) {
-    p <- suppressWarnings(as.numeric(p))
-    if (anyNA(p)) NA_real_ else sum(p * 60^(rev(seq_along(p)) - 1))
-  }, numeric(1))
+  vapply(
+    strsplit(ifelse(is.na(w) | w == "", "NA", w), ":"),
+    function(p) {
+      p <- suppressWarnings(as.numeric(p))
+      if (anyNA(p)) NA_real_ else sum(p * 60^(rev(seq_along(p)) - 1))
+    },
+    numeric(1)
+  )
 }
 steps <- rbindlist(lapply(scales, read_steps))
-steps[, `:=`(
-  cells = 113563 * k^2,
-  seconds = wall_seconds(wall),
-  peak_rss_gib = peak_rss_kb / 2^20,
-  outcome = fcase(
-    status == "0", "ok",
-    status == "124", "timeout",
-    status == "skipped", "skipped (calibration failed)",
-    default = "failed"
+steps[,
+  `:=`(
+    cells = 113563 * k^2,
+    seconds = wall_seconds(wall),
+    peak_rss_gib = peak_rss_kb / 2^20,
+    outcome = fcase(
+      status == "0"       , "ok"                           ,
+      status == "124"     , "timeout"                      ,
+      status == "skipped" , "skipped (calibration failed)" ,
+      default = "failed"
+    )
   )
-)]
+]
 steps[order(step, k), .(step, k, cells, outcome, seconds, peak_rss_gib = round(peak_rss_gib, 2))]
 
 #| label: stages
-stages <- rbindlist(lapply(scales, function(k) {
-  files <- list.files(file.path(pie_dir, paste0("outputs-k", k)), "^timings-.*\\.csv$", full.names = TRUE)
-  rbindlist(lapply(files, fread))[, k := k]
-}), fill = TRUE)
+stages <- rbindlist(
+  lapply(scales, function(k) {
+    files <- list.files(
+      file.path(pie_dir, paste0("outputs-k", k)),
+      "^timings-.*\\.csv$",
+      full.names = TRUE
+    )
+    rbindlist(lapply(files, fread))[, k := k]
+  }),
+  fill = TRUE
+)
 stage_table <- dcast(
   stages[, .(seconds = sum(seconds)), by = .(tool, stage, k)],
   tool + stage ~ k,
@@ -88,7 +107,10 @@ step_labels <- c(
   `030-lulcc.r` = "lulcc: GLM, CLUE-S, Ordered",
   `030-cluinpy.r` = "CLUinPy: suitability + CLUMondo"
 )
-colours <- setNames(c("#2a78d6", "#1baf7a", "#eb6834", "#eda100", "#e87ba4", "#4a3aa7"), names(step_labels))
+colours <- setNames(
+  c("#2a78d6", "#1baf7a", "#eb6834", "#eda100", "#e87ba4", "#4a3aa7"),
+  names(step_labels)
+)
 plot_scaling <- function() {
   op <- par(mfrow = c(1, 2), mar = c(4, 4.5, 1, 1), cex = 0.8, las = 1)
   on.exit(par(op))
@@ -102,7 +124,9 @@ plot_scaling <- function() {
       xlab = "cells",
       ylab = if (what == "seconds") "wall time (s)" else "peak resident memory (GiB)"
     )
-    if (what == "peak_rss_gib") abline(h = 12, lty = 2, col = "grey50")
+    if (what == "peak_rss_gib") {
+      abline(h = 12, lty = 2, col = "grey50")
+    }
     for (s in names(step_labels)) {
       d <- ok[step == s][order(cells)]
       d_ok <- d[outcome == "ok"]
@@ -110,7 +134,14 @@ plot_scaling <- function() {
       points(d_ok$cells, d_ok[[what]], col = colours[s], pch = 16)
       d_fail <- d[outcome %in% c("failed", "timeout")]
       if (nrow(d_fail) > 0 && what == "peak_rss_gib") {
-        points(d_fail$cells, pmin(d_fail[[what]], 16), col = colours[s], pch = 4, cex = 1.5, lwd = 2)
+        points(
+          d_fail$cells,
+          pmin(d_fail[[what]], 16),
+          col = colours[s],
+          pch = 4,
+          cex = 1.5,
+          lwd = 2
+        )
       }
     }
   }

@@ -52,7 +52,10 @@ db$figure_of_merit_v(
   id_period_post = 3L,
   id_run_reference = id_run_observed,
   id_run_simulated = members$id_run
-)[members[, .(id_run, estimator)], on = "id_run"][,
+)[
+  members[, .(id_run, estimator)],
+  on = "id_run"
+][,
   .(
     fom_mean = mean(figure_of_merit),
     fom_sd = sd(figure_of_merit),
