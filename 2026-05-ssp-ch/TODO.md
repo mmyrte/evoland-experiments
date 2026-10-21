@@ -278,9 +278,9 @@ for rare transitions and diverge only where potentials are high.
 ethzplus/evoland-plus#49 (per-run `trans_pot_t`, run-lineage reads, exported single-period
 allocators), #50 (`update_neighbors`) and #53 (`create_alloc_params_t()` returns the best
 estimate only) and #55 (validation metrics) are merged into `develop`. The `evoland` pin in
-`rproject.toml` / `rv.lock` is on the head of #57 (d1ee3cf: `lulc_crosstab_v()` and
-`figure_of_merit_v(exclude_id_lulc = )`, which `080` uses); bump it to `develop` once #57 is
-merged.
+`rproject.toml` / `rv.lock` is on `develop` (08aa38e), which also carries #57
+(`lulc_crosstab_v()`, `figure_of_merit_v(exclude_id_lulc = )`, used by `080`) and #82
+(argument predicates).
 
 - [ ] 🔴 **Re-run `080` and `091` on the new pin** (on the group's infrastructure, as
       part of running the pipeline end to end). The pin is bumped; neither step has run on it
