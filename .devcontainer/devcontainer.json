@@ -1,0 +1,51 @@
+// Dev container for evoland-experiments; see .devcontainer/README.md
+{
+  "name": "evoland-experiments",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "options": ["--platform=linux/amd64"]
+  },
+  "runArgs": ["--platform=linux/amd64"],
+  "workspaceFolder": "/workspaces/evoland-experiments",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/evoland-experiments,type=bind",
+  // Many small files on a macOS bind mount are slow: the rv library and the PIE benchmark's
+  // database and outputs live in named volumes instead (they survive a rebuild; `docker volume
+  // rm` to start over). The figures and tables the steps write stay in the repo.
+  "mounts": [
+    {
+      "source": "evoland-experiments-rv-library",
+      "target": "/workspaces/evoland-experiments/rv/library",
+      "type": "volume"
+    },
+    {
+      "source": "evoland-experiments-pie-outputs",
+      "target": "/workspaces/evoland-experiments/2026-09-model-comparison/outputs",
+      "type": "volume"
+    },
+    {
+      "source": "evoland-experiments-pie-db",
+      "target": "/workspaces/evoland-experiments/2026-09-model-comparison/pie.evolanddb",
+      "type": "volume"
+    }
+  ],
+  // rv installs the packages of rproject.toml / rv.lock into rv/library
+  "postCreateCommand": "git config --global --add safe.directory /workspaces/evoland-experiments && rv sync",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "r.plot.useHttpgd": true,
+        "r.bracketedPaste": true,
+        "shellcheck.executablePath": "/usr/bin/shellcheck",
+        "rewrap.wrappingColumn": 100
+      },
+      "extensions": [
+        "Posit.air-vscode",
+        "quarto.quarto",
+        "REditorSupport.r",
+        "RDebugger.r-debugger",
+        "timonwong.shellcheck"
+      ]
+    }
+  }
+}
