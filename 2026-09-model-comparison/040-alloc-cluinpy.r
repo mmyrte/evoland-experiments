@@ -28,9 +28,9 @@
 #'   0.6 (other) and a 3 × 3 neighbourhood weight of 0.3 for built land only, after the
 #'   tutorial's values for comparable classes.
 #' - CLUinPy draws its demand-adjustment speed from Python's `random`; each realisation seeds
-#'   it. That speed is CLUinPy's only randomness, and it changes how fast the demand loop
-#'   converges, not the map it converges to: 20 seeded realisations gave identical maps. The
-#'   crossing therefore makes one map per estimator; the as-shipped run keeps 20.
+#'   it. That speed is CLUinPy's only randomness: it changes where within the tolerance the
+#'   demand loop stops. As shipped (tolerance 0.1 %), the 20 realisations differ by one cell at most; in the
+#'   crossing (0.5 %) they differ by 10–220 cells.
 #' - **Iterations.** CLUMondo raises a class's demand elasticity by the relative demand gap per
 #'   iteration, about 1 % of the class total per year here, in shrinking steps. With the
 #'   crossing's class probabilities (about 0.97 for the current class, a few per cent for any
@@ -50,10 +50,10 @@ cluinpy_python <- Sys.getenv("CLUINPY_PYTHON", "python3")
 stopifnot("set CLUINPY_REPO to a clone of nomisthomsen/CLUinPy" = dir.exists(cluinpy_repo))
 system2("git", c("-C", cluinpy_repo, "rev-parse", "HEAD"))
 reset_timings("cluinpy")
-run_cluinpy <- function(...) {
+run_cluinpy <- function(n, ...) {
   processx::run(
     cluinpy_python,
-    c(file.path(pie_dir, "040-alloc-cluinpy", "run_pie.py"), cluinpy_repo, n_realisations, ...),
+    c(file.path(pie_dir, "040-alloc-cluinpy", "run_pie.py"), cluinpy_repo, n, ...),
     env = c(
       "current",
       PYTHONPATH = paste(
@@ -69,6 +69,7 @@ run_cluinpy <- function(...) {
 members <- crossing_members()[allocator == "clumondo"]
 for (est in estimators$estimator) {
   res <- run_cluinpy(
+    members[estimator == est, .N],
     "crossing",
     file.path(outputs_dir, "suitability", paste0(est, ".tif")),
     external_maps_dir("clumondo", est),
@@ -78,6 +79,7 @@ for (est in estimators$estimator) {
 }
 native <- native_pipelines[native == "cluinpy"]
 res <- run_cluinpy(
+  native$n_members,
   "native",
   "",
   file.path(outputs_dir, "maps", "cluinpy"),

@@ -49,9 +49,8 @@ allocators <- data.table::data.table(
   offset = c(100L, 200L, 300L, 400L, 500L, 600L),
   label = c("CLUMPY", "Dinamica", "greedy", "CLUE-S", "Ordered", "CLUMondo"),
   source = c("evoland", "Dinamica EGO via evoland", "evoland", "lulcc", "lulcc", "CLUinPy"),
-  # one map each where the allocator is deterministic: greedy; Ordered in the crossing (040);
-  # CLUMondo, whose only randomness is the convergence speed (identical maps, 040)
-  n_members = c(n_realisations, n_realisations, 1L, n_realisations, 1L, 1L)
+  # one map each where the allocator is deterministic: greedy, and Ordered in the crossing (040)
+  n_members = c(n_realisations, n_realisations, 1L, n_realisations, 1L, n_realisations)
 )
 
 # Each tool as shipped, with its own estimator, for reference only (not part of the crossing):
