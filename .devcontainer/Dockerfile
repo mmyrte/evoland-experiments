@@ -1,21 +1,23 @@
 # Dev container for evoland-experiments: Ubuntu 24.04 with R 4.6 and every CRAN package as an
-# apt binary from r2u (https://eddelbuettel.github.io/r2u/), Dinamica EGO, quarto, and the Python
-# environment of CLUinPy (2026-09-model-comparison).
+# apt binary from r2u (https://eddelbuettel.github.io/r2u/), Dinamica EGO, quarto, and the
+# repository's uv environment (pyproject.toml; CLUinPy for 2026-09-model-comparison).
 #
 # Dinamica comes from your own ghcr.io/mmyrte/evoland image (its licence forbids redistribution,
 # so it is not downloaded here). Dinamica is distributed for amd64 only: on Apple silicon this
 # runs under Rosetta.
 
 ARG DINAMICA_IMAGE=ghcr.io/mmyrte/evoland:latest
+ARG UV_VERSION=0.8.17
 FROM --platform=linux/amd64 ${DINAMICA_IMAGE} AS dinamica
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
 FROM --platform=linux/amd64 rocker/r2u:24.04
 ARG DINAMICA_DIR=/opt/dinamica
 ARG CLUINPY_COMMIT=7d18dfe1919e5e7a75516ed24c5c78c1d8612cdc
 ARG QUARTO_VERSION=1.10.18
 
-# Tools, Python with GDAL bindings for CLUinPy. The system libraries of the R packages come
-# with their r2u binaries.
+# Tools, and what the Python environment builds on: the GDAL bindings are compiled against the
+# system GDAL. The system libraries of the R packages come with their r2u binaries.
 RUN apt-get update -qq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     curl \
@@ -23,8 +25,8 @@ RUN apt-get update -qq \
     git \
     git-lfs \
     htop \
-    python3-gdal \
-    python3-venv \
+    libgdal-dev \
+    python3-dev \
     shellcheck \
     time \
   && rm -rf /var/lib/apt/lists/*
@@ -61,12 +63,22 @@ ENV LD_LIBRARY_PATH="${DINAMICA_DIR}/usr/lib/" \
   DINAMICA_EGO_8_INSTALLATION_DIRECTORY=${DINAMICA_DIR}/usr/bin \
   DINAMICA_EGO_CLI=${DINAMICA_DIR}/usr/bin/DinamicaConsole
 
-# CLUinPy (2026-09-model-comparison/040-alloc-cluinpy.r), at the commit the benchmark used, in
-# a venv that sees the system GDAL bindings
+# The repository's Python environment (pyproject.toml, uv.lock), on the system Python, in
+# /opt/venv rather than the workspace's .venv: a venv on the macOS bind mount would be slow.
+# `uv sync` in the container keeps it in step with the lock file.
+COPY --from=uv /uv /uvx /usr/local/bin/
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+  UV_PYTHON=/usr/bin/python3 \
+  UV_PYTHON_DOWNLOADS=never \
+  UV_LINK_MODE=copy
+COPY pyproject.toml uv.lock /tmp/uv-project/
+RUN cd /tmp/uv-project \
+  && uv sync --frozen --no-cache \
+  && rm -rf /tmp/uv-project
+
+# CLUinPy (2026-09-model-comparison/040-alloc-cluinpy.r), at the commit the benchmark used; its
+# dependencies are in the uv environment
 RUN git clone --quiet https://github.com/nomisthomsen/CLUinPy /opt/CLUinPy \
-  && git -C /opt/CLUinPy checkout --quiet ${CLUINPY_COMMIT} \
-  && python3 -m venv --system-site-packages /opt/cluinpy-venv \
-  && /opt/cluinpy-venv/bin/pip install --quiet --no-cache-dir \
-    geopandas joblib numba numpy openpyxl pandas rasterio scikit-learn scipy statsmodels xgboost
+  && git -C /opt/CLUinPy checkout --quiet ${CLUINPY_COMMIT}
 ENV CLUINPY_REPO=/opt/CLUinPy \
-  CLUINPY_PYTHON=/opt/cluinpy-venv/bin/python
+  CLUINPY_PYTHON=/opt/venv/bin/python

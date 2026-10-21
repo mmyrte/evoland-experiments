@@ -24,8 +24,9 @@
       "type": "volume"
     }
   ],
-  // the R packages are in the image (r2u); rv is not used in the container
-  "postCreateCommand": "git config --global --add safe.directory /workspaces/evoland-experiments",
+  // the R packages are in the image (r2u); rv is not used in the container. The Python
+  // environment is in the image too (/opt/venv); `uv sync` only catches up with a changed lock.
+  "postCreateCommand": "git config --global --add safe.directory /workspaces/evoland-experiments && uv sync --frozen",
   "customizations": {
     "vscode": {
       "settings": {
