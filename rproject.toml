@@ -38,6 +38,10 @@ dependencies = [
     "yaml",
     "mlr3learners",
     "e1071",
+    # 2026-09-model-comparison: lulcc, and two packages it only suggests but calls
+    "lulcc",
+    "gsubfn",
+    "caret",
     "future.mirai",
     "ggspatial",
     "viridis",
