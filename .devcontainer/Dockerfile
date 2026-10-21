@@ -11,7 +11,7 @@ FROM --platform=linux/amd64 ${DINAMICA_IMAGE} AS dinamica
 
 FROM --platform=linux/amd64 rocker/r2u:24.04
 ARG DINAMICA_DIR=/opt/dinamica
-ARG CLUINPY_COMMIT=7d18dfe
+ARG CLUINPY_COMMIT=7d18dfe1919e5e7a75516ed24c5c78c1d8612cdc
 ARG QUARTO_VERSION=1.10.18
 
 # Tools, Python with GDAL bindings for CLUinPy. The system libraries of the R packages come
@@ -38,9 +38,9 @@ RUN curl -fsSL -o /tmp/quarto.deb \
 # setup is not used in here: without the rv binary, the .Rprofile's activation warns once and
 # leaves the library paths alone, so R finds these system-wide packages.
 COPY rproject.toml /tmp/rproject.toml
-COPY .devcontainer/install_r_deps.py /tmp/install_r_deps.py
-RUN python3 /tmp/install_r_deps.py /tmp/rproject.toml \
-  && rm -rf /tmp/rproject.toml /tmp/install_r_deps.py /var/lib/apt/lists/*
+COPY .devcontainer/install_rproject_via_r2u.py /tmp/install_rproject_via_r2u.py
+RUN python3 /tmp/install_rproject_via_r2u.py /tmp/rproject.toml \
+  && rm -rf /tmp/rproject.toml /tmp/install_rproject_via_r2u.py /var/lib/apt/lists/*
 
 # Dinamica EGO, set up as in the ghcr.io/mmyrte/evoland image, with its bundled R package for the
 # R bridge (CalculateRExpression)

@@ -60,3 +60,4 @@ dinamica_rundir/*
 
 /.quarto/
 **/*.quarto_ipynb
+__pycache__/

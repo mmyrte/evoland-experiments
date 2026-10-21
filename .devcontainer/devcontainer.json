@@ -1,4 +1,4 @@
-// Dev container for evoland-experiments; see .devcontainer/README.md
+// Dev container for evoland-experiments: R 4.6 with r2u, Dinamica EGO, quarto, CLUinPy (see Dockerfile)
 {
   "name": "evoland-experiments",
   "build": {

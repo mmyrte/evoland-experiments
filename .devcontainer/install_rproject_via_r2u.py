@@ -4,7 +4,7 @@ dependencies (evoland-plus at its pinned commit) with remotes, their dependencie
 r2u. rv's own options (force_source, the repositories) do not apply: r2u builds everything
 against the system libraries it installs.
 
-Usage: install_r_deps.py <rproject.toml>
+Usage: install_rproject_via_r2u.py <rproject.toml>
 """
 
 import shutil
