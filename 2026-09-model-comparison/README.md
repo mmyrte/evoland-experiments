@@ -157,7 +157,10 @@ the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_r
 - **CLUinPy** (<https://github.com/nomisthomsen/CLUinPy>, commit `7d18dfe`). Its dependencies are
   the repository's uv environment (`pyproject.toml`): `uv sync` at the repository root makes
   `.venv`, building the GDAL bindings against the system GDAL (needs `libgdal-dev` 3.8.4).
-  Point `CLUINPY_REPO` at the clone; `CLUINPY_PYTHON` overrides the venv's python.
+  CLUinPy itself is not an installable package (its `setup.py` packages nothing), so
+  `python-env.r` clones it at the pinned commit into `.cache/CLUinPy` on first use. The R steps
+  call the project's python (`.venv`, or `UV_PROJECT_ENVIRONMENT`); no environment variables
+  are needed.
 - **naive Bayes** needs `e1071` (an mlr3learners suggestion).
 - **clumpy** (mmyrte/clumpy at `e9f73b9`, with its `ekde` and `hyperclip` extensions) comes
   from the same uv environment; its Cython extensions need NumPy 1.x, so the environment pins

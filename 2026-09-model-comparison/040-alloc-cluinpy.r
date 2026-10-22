@@ -39,28 +39,23 @@
 #'   before it outbids forest: 20–1 600 iterations, against 10–800 as shipped. The limit is
 #'   30 000.
 #'
-#' Needs `CLUINPY_REPO` (a clone of nomisthomsen/CLUinPy) and a Python with its requirements,
-#' GDAL bindings included: the repository's uv environment (`uv sync` at the repository root
-#' makes `.venv`), or `CLUINPY_PYTHON`.
+#' Needs the repository's uv environment (`uv sync` at the repository root), which holds
+#' CLUinPy's dependencies, GDAL bindings included. CLUinPy itself is not an installable package;
+#' `python-env.r` clones it at its pinned commit on first use.
 
 #| label: run
 source("2026-09-model-comparison/common.r")
-cluinpy_repo <- Sys.getenv("CLUINPY_REPO")
-cluinpy_python <- Sys.getenv("CLUINPY_PYTHON", file.path(".venv", "bin", "python"))
-stopifnot("set CLUINPY_REPO to a clone of nomisthomsen/CLUinPy" = dir.exists(cluinpy_repo))
-system2("git", c("-C", cluinpy_repo, "rev-parse", "HEAD"))
+source("python-env.r")
+cluinpy_dir <- cluinpy_repo()
+cluinpy_python <- project_python()
 reset_timings("cluinpy")
 run_cluinpy <- function(n, ...) {
   processx::run(
     cluinpy_python,
-    c(file.path(pie_dir, "040-alloc-cluinpy", "run_pie.py"), cluinpy_repo, n, ...),
+    c(file.path(pie_dir, "040-alloc-cluinpy", "run_pie.py"), cluinpy_dir, n, ...),
     env = c(
       "current",
-      PYTHONPATH = paste(
-        file.path(cluinpy_repo, "src"),
-        file.path(cluinpy_repo, "src", "suitability"),
-        sep = ":"
-      )
+      PYTHONPATH = cluinpy_pythonpath(cluinpy_dir)
     ),
     echo = FALSE,
     error_on_status = TRUE
