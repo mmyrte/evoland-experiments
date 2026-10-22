@@ -6,7 +6,7 @@
 # outputs-k<k>/scaling/ to repeat it.
 #
 # Usage (repo root): 2026-09-model-comparison/080-scaling/run.sh "1 2 3 4 6" [timeout_s]
-# Needs CLUINPY_REPO and CLUINPY_PYTHON as for 040-alloc-cluinpy.r. The lulcc and CLUinPy steps
+# Needs the repository's uv environment, as for 040-alloc-cluinpy.r. The lulcc and CLUinPy steps
 # allocate the logistic regression's surface and run the tool as shipped; their timings are
 # recorded per stage, so collect.r can tell the two apart.
 

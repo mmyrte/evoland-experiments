@@ -22,7 +22,7 @@
 #'
 #' The potentials go into `trans_pot_t` under run 5000, like Weights of Evidence under 3000
 #' (`020`), so that every allocator reads them. Needs the repository's uv environment
-#' (`uv sync`), or `CLUMPY_PYTHON` pointing at a Python with clumpy installed.
+#' (`uv sync`), which installs clumpy from its pinned commit (`python-env.r`).
 
 #| label: setup
 #| output: false
@@ -35,7 +35,8 @@ reset_timings("clumpy-kde")
 work_dir <- file.path(outputs_dir, "clumpy-kde-work")
 unlink(work_dir, recursive = TRUE)
 dir.create(work_dir, recursive = TRUE)
-python <- Sys.getenv("CLUMPY_PYTHON", file.path(".venv", "bin", "python"))
+source("python-env.r")
+python <- project_python()
 
 db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE]

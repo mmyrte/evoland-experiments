@@ -45,6 +45,7 @@ library(terra)
 library(ggplot2)
 library(patchwork)
 library(mlr3learners)
+source("python-env.r")
 
 out_dir <- "2026-09-paper-figures/figures"
 db_path <- "2026-09-paper-figures/fig2-ensembles.evolanddb"
@@ -380,7 +381,8 @@ deterministic_by <- lapply(adjusted_by, greedy_map)
 #'   urban land only).
 #'
 #' Every realisation is imported as a run, so that all allocators are scored by the same code.
-#' Needs Dinamica EGO, lulcc, the repository's uv environment and `CLUINPY_REPO`.
+#' Needs Dinamica EGO, lulcc and the repository's uv environment (`python-env.r`, which also
+#' clones CLUinPy at its pinned commit).
 
 #| label: allocators
 allocators <- data.table(
@@ -554,10 +556,10 @@ fwrite(
   file.path(cluinpy_work, "params.csv")
 )
 processx::run(
-  Sys.getenv("CLUINPY_PYTHON", file.path(".venv", "bin", "python")),
+  project_python(),
   c(
     file.path("2026-09-paper-figures", "010-fig2-ensembles", "cluinpy_alloc.py"),
-    Sys.getenv("CLUINPY_REPO"),
+    cluinpy_repo(),
     cluinpy_work,
     n_realisations,
     allocators[allocator == "CLUMondo", 10000L + offset],

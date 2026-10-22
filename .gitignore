@@ -64,3 +64,6 @@ dinamica_rundir/*
 # Python
 __pycache__/
 .venv/
+
+# CLUinPy, cloned on first use (python-env.r)
+.cache/

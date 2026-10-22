@@ -59,7 +59,7 @@ The backcast works as follows:
     because CLUMondo cannot hold a fixed class at its demand). CLUE-S's absolute tolerances are
     scaled to the domain (5 cells).
 
-  Needs Dinamica EGO, lulcc, the repository's uv environment and `CLUINPY_REPO`; about 18 min,
+  Needs Dinamica EGO, lulcc and the repository's uv environment (`uv sync`); about 18 min,
   most of it Dinamica.
 - **Deterministic:** the same demand is also allocated by rank-and-fill on the adjusted
   potentials, the kind of allocator SEALS uses.
