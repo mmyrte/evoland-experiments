@@ -13,7 +13,6 @@ FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
 FROM --platform=linux/amd64 rocker/r2u:24.04
 ARG DINAMICA_DIR=/opt/dinamica
-ARG CLUINPY_COMMIT=7d18dfe1919e5e7a75516ed24c5c78c1d8612cdc
 ARG QUARTO_VERSION=1.10.18
 
 # Tools, and what the Python environment builds on: the GDAL bindings are compiled against the
@@ -65,7 +64,9 @@ ENV LD_LIBRARY_PATH="${DINAMICA_DIR}/usr/lib/" \
 
 # The repository's Python environment (pyproject.toml, uv.lock), on the system Python, in
 # /opt/venv rather than the workspace's .venv: a venv on the macOS bind mount would be slow.
-# `uv sync` in the container keeps it in step with the lock file.
+# `uv sync` in the container keeps it in step with the lock file. CLUinPy itself is not an
+# installable package; python-env.r clones it at its pinned commit into the workspace's .cache/
+# on first use, so the image needs neither a clone nor CLUINPY_* variables.
 COPY --from=uv /uv /uvx /usr/local/bin/
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
   UV_PYTHON=/usr/bin/python3 \
@@ -75,10 +76,3 @@ COPY pyproject.toml uv.lock /tmp/uv-project/
 RUN cd /tmp/uv-project \
   && uv sync --frozen --no-cache \
   && rm -rf /tmp/uv-project
-
-# CLUinPy (2026-09-model-comparison/040-alloc-cluinpy.r), at the commit the benchmark used; its
-# dependencies are in the uv environment
-RUN git clone --quiet https://github.com/nomisthomsen/CLUinPy /opt/CLUinPy \
-  && git -C /opt/CLUinPy checkout --quiet ${CLUINPY_COMMIT}
-ENV CLUINPY_REPO=/opt/CLUinPy \
-  CLUINPY_PYTHON=/opt/venv/bin/python
