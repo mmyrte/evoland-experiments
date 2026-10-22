@@ -3,7 +3,8 @@ observed 1999 class totals as demand, on one of two suitability surfaces.
 
 Usage (from the repository root, with CLUinPy's src/ and src/suitability/ on PYTHONPATH):
 
-    # as shipped: CLUinPy's own logistic suitability on the 1991 map, all conversions allowed
+    # as shipped: CLUinPy's own logistic suitability on the 1991 map (fitted on every cell), all
+    # conversions allowed
     python 2026-09-model-comparison/040-alloc-cluinpy/run_pie.py <cluinpy_repo> <n> native
 
     # the crossing: an estimator's class probability map (band k = class k), only the viable
@@ -112,24 +113,47 @@ def prepare_inputs():
 
 
 def fit_suitability(land_path, env_dir):
-    """CLUinPy's own suitability module, logistic regression, as in its tutorial."""
+    """CLUinPy's own suitability module, logistic regression, as in its tutorial, but fitted on
+    every cell of the 1991 map rather than a sample, like evoland's learners.
+
+    CLUinPy samples twice: a spatially thinned stratified sample per class (the tutorial's
+    10 %, capped at 500 cells), and a 30 % hold-out for its AUC. Both are bypassed here by
+    replacing its sampler and its train/test split, so the AUC it reports is in-sample. What
+    stays is its model: per class, presence against an equal number of absences drawn from the
+    other classes (its case-control design), VIF screening, RFECV feature selection."""
+    import suitability.main as suit_main
+    import models as suit_models
     from suitability.main import suitability
-    from suitability.sampling import sample_per_class
     from suitability.io_utils import find_files
 
-    land = rasterio.open(land_path).read(1)
-    sample_list = sample_per_class(land, NO_DATA, "fraction", 0.1, 100, 500)
+    def all_cells(data_array, land_use_layer, land_use_classes, sample_size_list, distance_width,
+                  random_state=None):
+        cells = data_array.reshape(data_array.shape[0], -1).T
+        keep = np.isin(cells[:, land_use_layer], land_use_classes)
+        keep &= np.all(cells != NO_DATA, axis=1) & np.all(np.isfinite(cells), axis=1)
+        return pd.DataFrame(cells[keep])
+
+    def no_split(x, y, test_size=None, random_state=None):
+        return x, x, y, y
+
+    suit_main.draw_stratified_sample_by_class = all_cells
+    suit_models.train_test_split = no_split
+
+    env_vars = find_files(env_dir, ".tif", ".tif")
+    # every cell where all predictors have data (CLUinPy's own region for the VIF sample)
+    n_cells = int(np.sum(np.all([rasterio.open(p).read(1) != NO_DATA for p in env_vars], axis=0)))
     out = os.path.join(WORK_DIR, "suitability_out")
     suitability(classification=land_path,
-                env_vars=find_files(env_dir, ".tif", ".tif"),
+                env_vars=env_vars,
                 mode="logistic",
                 out_path=out,
-                n_samples_corr=1000,
+                # the VIF screening on every cell as well
+                n_samples_corr=n_cells,
                 vif_threshold=5,
-                min_distance=3,
-                test_fraction=0.3,
+                min_distance=0,
+                test_fraction=0.3,  # ignored, see no_split
                 random_state=12,
-                sample_size_list=sample_list,
+                sample_size_list=[0, 0, 0],  # ignored, see all_cells
                 no_data_value=NO_DATA,
                 predict_outputs=True)
     stacks = sorted(glob.glob(os.path.join(out, "*", "suitability_stack.tif")))

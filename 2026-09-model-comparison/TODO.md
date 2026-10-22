@@ -35,8 +35,6 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
       classes; document a sensitivity check or justify.
 - [ ] **Dinamica's own patch parameters.** Here they are evoland's estimates, to isolate the
       estimator. A variant with Dinamica's GUI defaults would show how much a typical user gets.
-- [ ] **Subsampling.** The as-shipped lulcc and CLUinPy suitabilities are fitted on 10 %
-      samples, as their demos do; check their FoM with a fit on all cells (see the README).
 
 ## Proposed, awaiting a decision
 

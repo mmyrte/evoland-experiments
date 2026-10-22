@@ -13,9 +13,12 @@
 #'   `020-potentials.r`, as CLUinPy's suitability stack, with only the viable conversions
 #'   allowed (`010`).
 #' - **Suitability, as shipped** (reference, runs 8601...): CLUinPy's own suitability module,
-#'   logistic regression on the three factors (VIF filtering, stratified sample of 10 % per
-#'   class, as in its tutorial), fitted on the *1991* map, with all conversions allowed: like
-#'   lulcc, the CLUE paradigm of where each class is.
+#'   logistic regression on the three factors (VIF filtering, RFECV feature selection,
+#'   presence against an equal number of absences per class), fitted on the *1991* map, with
+#'   all conversions allowed: like lulcc, the CLUE paradigm of where each class is. Its
+#'   tutorial fits on a spatially thinned sample (10 % per class, capped at 500 cells) and holds
+#'   out 30 % for AUC; `run_pie.py` bypasses both, so it sees every cell like evoland's
+#'   learners.
 #' - **Demand**: one service per class (its area, identity service and conversion matrices),
 #'   prescribed as the observed 1999 totals and allocated from the 1991 map in one step, like
 #'   every other allocator here. Convergence tolerance 0.1 % of demand as shipped (the

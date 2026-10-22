@@ -33,9 +33,11 @@
 #' allocators cannot produce them either.
 #'
 #' **As shipped (reference, runs 7401..., 7501...).** lulcc's own suitability models: one
-#' binomial GLM per class, fitted on a 10 % spatially stratified sample of the *1991* map, with
-#' the demo's formulas (built on all three factors; forest and other on elevation and slope),
-#' and all conversions allowed, as in the demo. This is the CLUE paradigm, where each class
+#' binomial GLM per class, fitted on every cell of the *1991* map, with the demo's formulas
+#' (built on all three factors; forest and other on elevation and slope), and all conversions
+#' allowed, as in the demo. The demo fits on a 10 % spatial sample and keeps the rest to report
+#' ROC; here the GLMs see every cell, as evoland's learners do, so that the comparison is
+#' between paradigms, not sample sizes (`070d` reproduces the demo as published). This is the CLUE paradigm, where each class
 #' *is*, rather than where it *changes to*. Its GLMs are logistic regressions on the factors
 #' alone, so the crossing's logistic-regression row replaces it there.
 #'
@@ -211,13 +213,11 @@ for (est in estimators$estimator) {
 ef_stack <- raster::stack(file.path(data_dir, paste0("ef_00", 1:3, ".tif")))
 names(ef_stack) <- paste0("ef_00", 1:3)
 ef_native <- ExpVarRasterList(x = ef_stack, pattern = "ef")
-set.seed(1991)
-fit <- timed("lulcc", "fit_glm", {
-  part <- partition(x = obs[[1]], size = 0.1, spatial = TRUE)
+glm_models <- timed("lulcc", "fit_glm", {
   train_data <- getPredictiveModelInputData(
     obs = obs,
     ef = ef_native,
-    cells = part[["train"]],
+    cells = study_cells,
     t = 0
   )
   forms <- list(
@@ -225,22 +225,14 @@ fit <- timed("lulcc", "fit_glm", {
     Forest ~ ef_001 + ef_002,
     Other ~ ef_001 + ef_002
   )
-  glm_models <- glmModels(formula = forms, family = binomial, data = train_data, obs = obs)
-  list(part = part, glm_models = glm_models)
+  glmModels(formula = forms, family = binomial, data = train_data, obs = obs)
 })
-glm_models <- fit$glm_models
 glm_models
 
-#' Discrimination on the held-out 90 % of 1991 cells (lulcc's ROC tooling):
+#' Discrimination on the cells the GLMs were fitted on (lulcc's ROC tooling; in-sample):
 
 #| label: native-roc
-test_data <- getPredictiveModelInputData(
-  obs = obs,
-  ef = ef_native,
-  cells = fit$part[["test"]],
-  t = 0
-)
-PerformanceList(pred = PredictionList(models = glm_models, newdata = test_data), measure = "rch")
+PerformanceList(pred = PredictionList(models = glm_models, newdata = train_data), measure = "rch")
 
 #| label: native-allocate
 #| output: false
