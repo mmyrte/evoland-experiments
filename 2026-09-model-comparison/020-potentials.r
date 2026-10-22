@@ -8,9 +8,10 @@
 #' allocator can read, so that any estimator can be paired with any allocator.
 #'
 #' 1. **Transition potentials** in evoland's `trans_pot_t`, under the estimator's run. evoland's
-#'    learners (logistic regression, random forest, naive Bayes) wrote theirs in `010`. Here
-#'    Dinamica's Weights of Evidence probability maps (`015`) are written into run 3000 the same
-#'    way, so CLUMPY, Dinamica and the greedy allocator (`030`) read all four alike.
+#'    learners (logistic regression, random forest, naive Bayes) wrote theirs in `010`, clumpy's
+#'    Bayes-eKDE into run 5000 in `015-clumpy-kde.r`. Here Dinamica's Weights of Evidence
+#'    probability maps (`015-dinamica-woe.r`) are written into run 3000 the same way, so CLUMPY,
+#'    Dinamica and the greedy allocator (`030`) read all five alike.
 #' 2. **Class probability maps** for the allocators that work on class totals rather than
 #'    transitions (CLUE-S, Ordered, CLUMondo; `040`). They take a suitability per class and
 #'    cell. Here that is the estimator's probability that the cell is of class k in 1999:

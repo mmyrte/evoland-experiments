@@ -1,6 +1,6 @@
 # Model comparison (2026-09) — the Plum Island Ecosystems benchmark
 
-**Status:** active. The pipeline runs end to end in about an hour on 4 cores. Results are
+**Status:** active. The pipeline runs end to end in about 45 minutes on 4 cores. Results are
 below; [`TODO.md`](TODO.md) holds the open work.
 
 Two purposes, served by one worked example:
@@ -52,7 +52,7 @@ What is held fixed across tools:
 
 ### Estimator × allocator crossing
 
-Every estimator is paired with every allocator: 4 × 6 pairings, 20 realisations each (one for
+Every estimator is paired with every allocator: 5 × 6 pairings, 20 realisations each (one for
 the deterministic greedy allocator).
 
 | | estimator | from |
@@ -61,6 +61,7 @@ the deterministic greedy allocator).
 | | random forest | evoland, `classif.ranger` (500 trees, min node 50) |
 | | naive Bayes | evoland, `classif.naive_bayes` (e1071, Gaussian) |
 | | Weights of Evidence | Dinamica EGO, `015-dinamica-woe/` |
+| | Bayes-eKDE | clumpy (mmyrte/clumpy): kernel densities (`ekde`) per final class, Bayes' rule; `015-clumpy-kde/` |
 
 | | allocator | from | allocates |
 | --- | --- | --- | --- |
@@ -109,7 +110,7 @@ How the decoupling works:
   demand as transition counts or class totals (the same observed 1999 quantities).
 
 Run ids (`common.r`): estimator 1000 (logistic regression), 2000 (random forest), 3000 (WoE),
-4000 (naive Bayes); realisation `estimator + allocator offset + member`, with offsets CLUMPY 100,
+4000 (naive Bayes), 5000 (Bayes-eKDE); realisation `estimator + allocator offset + member`, with offsets CLUMPY 100,
 Dinamica 200, greedy 300, CLUE-S 400, Ordered 500, CLUMondo 600. As shipped: lulcc 7401…/7501…,
 CLUinPy 8601…, standalone Dinamica 3701….
 
@@ -122,6 +123,7 @@ Steps sharing a number are independent.
 | --- | --- |
 | [`000-pie-data.r`](000-pie-data.r) | Writes `data/` (git-ignored) from `lulcc::pie`, and the demand tables |
 | [`010-evoland-calibrate.r`](010-evoland-calibrate.r) | Builds the evoland DB: domain, predictors (factors plus neighbourhood counts within 150 m and 150–500 m), held-out run, demand, allocation parameters, every run of the crossing; fits the logistic regression, random forest and naive Bayes and predicts their potentials |
+| [`015-clumpy-kde.r`](015-clumpy-kde.r) | clumpy's Bayes-eKDE estimator on evoland's predictors, through [`015-clumpy-kde/fit_predict.py`](015-clumpy-kde/fit_predict.py); potentials into run 5000 |
 | [`015-dinamica-woe.r`](015-dinamica-woe.r) | Standalone Dinamica: [`calibrate.ego`](015-dinamica-woe/calibrate.ego) (Weights of Evidence on the three factors plus distances to classes), [`probabilities.ego`](015-dinamica-woe/probabilities.ego) (the WoE estimator's probability maps) and, as shipped, [`simulate.ego`](015-dinamica-woe/simulate.ego) (`AllocateTransitions`) |
 | [`020-potentials.r`](020-potentials.r) | WoE probabilities into run 3000's `trans_pot_t`; every estimator's class probability map for the class-total allocators |
 | [`030-alloc-evoland-clumpy.r`](030-alloc-evoland-clumpy.r) | CLUMPY (uPAM) on every estimator |
@@ -157,10 +159,13 @@ the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_r
   `.venv`, building the GDAL bindings against the system GDAL (needs `libgdal-dev` 3.8.4).
   Point `CLUINPY_REPO` at the clone; `CLUINPY_PYTHON` overrides the venv's python.
 - **naive Bayes** needs `e1071` (an mlr3learners suggestion).
+- **clumpy** (mmyrte/clumpy at `e9f73b9`, with its `ekde` and `hyperclip` extensions) comes
+  from the same uv environment; its Cython extensions need NumPy 1.x, so the environment pins
+  `numpy<2`.
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
-  `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes`) restricts the estimators.
+  `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes,kde`) restricts the estimators.
 
-## Results: the 4 × 6 crossing (2026-10-21)
+## Results: the 5 × 6 crossing (2026-10-22)
 
 Figure of merit (FoM) is the ratio of the ensemble-mean counts. The null is the FoM expected
 from placing the same quantities at random within the anterior class (about 0.020);
@@ -171,16 +176,17 @@ crossing) are deterministic, one map each; all other ensembles have 20 realisati
 
 | estimator ↓ / allocator → | CLUMPY | Dinamica | greedy | CLUE-S | Ordered | CLUMondo |
 | --- | --- | --- | --- | --- | --- | --- |
-| random forest | 0.029 | 0.036 | 0.043 | 0.042 | **0.045** | 0.041 |
+| random forest | 0.029 | 0.034 | 0.043 | 0.042 | **0.045** | 0.041 |
 | logistic regression | 0.026 | 0.034 | 0.038 | 0.039 | 0.039 | 0.037 |
+| Bayes-eKDE (clumpy) | 0.029 | 0.032 | 0.036 | 0.035 | 0.034 | 0.035 |
 | naive Bayes | **0.031** | 0.032 | 0.034 | 0.036 | 0.033 | 0.033 |
-| Weights of Evidence | 0.025 | 0.029 | 0.030 | 0.029 | 0.030 | 0.027 |
+| Weights of Evidence | 0.025 | 0.030 | 0.030 | 0.029 | 0.030 | 0.027 |
 
 **Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.032, lulcc GLM × Ordered 0.029,
-CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
+CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.030.
 
 **Other scores** (`figures/pie-ensemble-summary.csv`, `pie-ensemble-brier.csv`), ranges over the
-four estimators:
+five estimators:
 
 | allocator | gross change (cells) | allocation disagreement | fair Brier skill |
 | --- | --- | --- | --- |
@@ -189,12 +195,13 @@ four estimators:
 | greedy | 4 748 | 0.075–0.078 | −0.96 to −0.90 |
 | CLUE-S | 3 000–3 130 | 0.062–0.063 | −0.60 to −0.57 |
 | Ordered | 3 130–4 010 | 0.063–0.071 | −0.79 to −0.58 |
-| CLUMondo | 3 040–3 120 | 0.062–0.064 | −0.63 to −0.58 |
+| CLUMondo | 3 030–3 120 | 0.061–0.064 | −0.63 to −0.58 |
 | *lulcc GLM × CLUE-S, as shipped* | *15 883* | *0.166* | *−3.18* |
 
-**Variance of per-run FoM** over the crossing of the stochastic allocators (4 estimators ×
-CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 42 %, allocator 37 %,
-interaction 13 %, replicates 8 %.
+**Variance of per-run FoM** over the crossing of the stochastic allocators (5 estimators ×
+CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 36 %, allocator 39 %,
+interaction 15 %, replicates 9 % (with the four estimators before Bayes-eKDE: 42, 37, 13 and
+8 %).
 
 What these numbers say:
 
@@ -203,9 +210,10 @@ What these numbers say:
    (`070d-lulcc-moulds2015.r` reproduces the multi-resolution FoM of Moulds et al. 2015, Fig. 8,
    within ~0.02; their run spans 1985 → 1999.)
 2. **With the estimators decoupled, the estimator matters as much as the allocator.** The
-   ranking of the estimators is the same under five of the six allocators: random forest >
-   logistic regression > naive Bayes > Weights of Evidence. The exception is CLUMPY, under
-   which naive Bayes comes first; that is most of the 13 % interaction. A plausible reading, not
+   ranking of the estimators is nearly the same under five of the six allocators: random
+   forest > logistic regression > Bayes-eKDE ≈ naive Bayes > Weights of Evidence. The
+   exception is CLUMPY, under which naive Bayes comes first and logistic regression drops to
+   fourth; that is most of the 15 % interaction. A plausible reading, not
    yet checked: CLUMPY samples in proportion to the potentials, so sharper (overconfident)
    probabilities, which naive Bayes tends to produce, concentrate its samples on the likely
    cells, while the rank-based allocators only use the order. (The earlier 3 × 2 block, CLUMPY and Dinamica only, gave
@@ -244,13 +252,21 @@ What these numbers say:
    The two differ in predictors (neighbourhood counts vs. distances) and in density (Gaussian vs.
    binned ranges); separating those is in TODO.
 8. **Dinamica driven by evoland and Dinamica as shipped agree**: Weights of Evidence × Dinamica
-   0.0290 through `alloc_dinamica()`, 0.0286 through the standalone `simulate.ego`, with
-   identical transition counts.
+   0.0299 through `alloc_dinamica()`, 0.0300 through the standalone `simulate.ego`, with
+   identical transition counts. (Both moved by ~0.001 from the previous run: Dinamica draws a
+   fresh seed per run, see Replay check.)
+10. **clumpy's Bayes-eKDE**, the density-ratio estimator of the reference clumpy, on the same
+    nine predictors as the evoland learners: FoM 0.029–0.036, between the logistic regression
+    and naive Bayes, and second only to naive Bayes under CLUMPY (0.029, tied with the random
+    forest). It is the one non-parametric estimator besides the random forest, and like it, it
+    is not calibrated by a likelihood: its fair Brier skill under CLUMPY is −0.03, against
+    0.00 for the logistic regression. Under lulcc's Ordered model it shares 92 % of greedy's
+    built gains, the most of any estimator (`052`). Fit and prediction take 2.5 min for the
+    three anterior classes (ekde in nine dimensions; 47 k cells for forest).
 9. **Cost is not a differentiator at PIE's size** (but see Scaling). Median times per
-   allocation: CLUMPY 1.9 s, greedy 1.2 s, Dinamica via evoland 5.5 s, Dinamica standalone
-   0.5 s, lulcc Ordered 0.8 s (1.5 s as shipped, stochastic), CLUinPy 2.3 s (as shipped 2.0 s;
-   up to 39 s), lulcc CLUE-S 2.6 s (1.6 s as shipped). Fits: logistic regression 5.6 s, naive
-   Bayes 4.0 s, random forest 55 s.
+   allocation: CLUMPY 1.7 s, greedy 1.1 s, Dinamica via evoland 5.1 s, Dinamica standalone
+   0.4 s, lulcc Ordered 0.9 s, CLUinPy 1.3 s, lulcc CLUE-S 1.5 s. Fits: logistic regression
+   5.4 s, naive Bayes 3.4 s, random forest 50 s, Bayes-eKDE 150 s.
 
 ### Where the crossing needed care
 

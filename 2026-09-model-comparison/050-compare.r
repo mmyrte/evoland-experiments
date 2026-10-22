@@ -111,16 +111,23 @@ runs <- rbind(
 )
 db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
 
-for (i in seq_len(nrow(imported))) {
-  map <- terra::rast(file.path(imported$maps[i], sprintf("r%02d.tif", imported$member[i])))
-  db$id_run <- imported$id_run[i]
+# The maps share the grid of the input rasters, so their values are read by cell index rather
+# than through extract_using_coords_t()'s point geometries (ethzplus/evoland-plus#86), and each
+# ensemble is committed at once: one snapshot per ensemble instead of one per map.
+coords <- db$coords_t
+cells <- terra::cellFromXY(read_lu(1991), as.matrix(coords[, .(lon, lat)]))
+for (dir_maps in unique(imported$maps)) {
+  ensemble_maps <- imported[maps == dir_maps]
   db$commit(
-    as_lulc_data_t(extract_using_coords_t(map, db$coords_t)[, .(
-      id_run = imported$id_run[i],
-      id_coord,
-      id_period = 3L,
-      id_lulc = as.integer(value)
-    )]),
+    as_lulc_data_t(rbindlist(lapply(seq_len(nrow(ensemble_maps)), function(i) {
+      map <- terra::rast(file.path(dir_maps, sprintf("r%02d.tif", ensemble_maps$member[i])))
+      data.table(
+        id_run = ensemble_maps$id_run[i],
+        id_coord = coords$id_coord,
+        id_period = 3L,
+        id_lulc = as.integer(map[cells][[1]])
+      )[!is.na(id_lulc)]
+    }))),
     "lulc_data_t",
     method = "upsert"
   )
@@ -206,9 +213,12 @@ dcast(
 
 #' # Quantity and allocation disagreement, gross change
 #'
-#' From `lulc_crosstab_v()`: each simulated 1999 map against the observed one (Pontius &
-#' Millones 2011), and against its own 1991 map for the gross change and the simulated
-#' transition counts.
+#' Each simulated 1999 map against the observed one (Pontius & Millones 2011), and against the
+#' 1991 map for the gross change and the simulated transition counts. One DuckDB query counts
+#' the cells of every run by their 1991, observed and simulated class; `lulc_crosstab_v()`
+#' does the same for one pair of runs at a time, but calling it twice per run costs two
+#' catalog round trips each (ethzplus/evoland-plus#85), five minutes over the ~500 runs here.
+#' Every run stores its complete 1999 map, so the query reads the runs' own rows.
 
 #| label: disagreement
 db$id_run <- NULL
@@ -234,20 +244,44 @@ pontius <- function(ct) {
   total <- share[id_lulc_anterior != id_lulc_posterior, sum(p)]
   c(quantity = quantity, allocation = total - quantity, total = total)
 }
-simulated_transitions <- rbindlist(lapply(members$id_run, function(id) {
-  crosstab(id, id, 2L)[, id_run := id]
-}))
+run_cells <-
+  db$get_query(glue::glue(
+    "
+    select
+      s.id_run,
+      a.id_lulc as id_lulc_1991,
+      o.id_lulc as id_lulc_observed,
+      s.id_lulc as id_lulc_simulated,
+      count(*)::integer as n_cells
+    from
+      dl_db.lulc_data_t s
+      inner join dl_db.lulc_data_t a
+        on a.id_coord = s.id_coord and a.id_run = 0 and a.id_period = 2
+      inner join dl_db.lulc_data_t o
+        on o.id_coord = s.id_coord and o.id_run = {id_run_observed} and o.id_period = 3
+    where
+      s.id_period = 3
+      and s.id_run in ({paste(members$id_run, collapse = ', ')})
+    group by all
+    "
+  ))
+stopifnot(setequal(run_cells$id_run, members$id_run))
+simulated_transitions <-
+  run_cells[,
+    .(n_cells = sum(n_cells)),
+    by = .(id_run, id_lulc_anterior = id_lulc_1991, id_lulc_posterior = id_lulc_simulated)
+  ]
 disagreement <-
-  rbindlist(lapply(members$id_run, function(id) {
+  run_cells[,
     as.list(c(
-      id_run = id,
-      pontius(crosstab(id_run_observed, id, 3L)),
-      gross_change = simulated_transitions[
-        id_run == id & id_lulc_anterior != id_lulc_posterior,
-        sum(n_cells)
-      ]
-    ))
-  }))[
+      pontius(.SD[,
+        .(n_cells = sum(n_cells)),
+        by = .(id_lulc_anterior = id_lulc_observed, id_lulc_posterior = id_lulc_simulated)
+      ]),
+      gross_change = sum(n_cells[id_lulc_1991 != id_lulc_simulated])
+    )),
+    by = id_run
+  ][
     members[, .(id_run, ensemble)],
     on = "id_run"
   ]
@@ -321,19 +355,23 @@ observed_1999 <- lulc_wide[[as.character(id_run_observed)]]
 #' similarity is the minimum of the two directions.
 
 #| label: fuzzy
+# runs in parallel in forked workers (PIE_WORKERS, default: all cores), which must not touch the
+# database connection: the coordinates are read once, here
+coords_minimal <- db$coords_minimal
 lulc_map <- function(id_run) {
   tabular_to_raster(
     lulc_wide[, .(id_coord, id_lulc = get(as.character(id_run)))],
-    db$coords_minimal
+    coords_minimal
   )
 }
 map_1991 <- tabular_to_raster(
   data.table(id_coord = lulc_wide$id_coord, id_lulc = anterior_1991),
-  db$coords_minimal
+  coords_minimal
 )
 map_1999 <- lulc_map(id_run_observed)
+n_workers <- as.integer(Sys.getenv("PIE_WORKERS", parallel::detectCores()))
 fuzzy <-
-  rbindlist(lapply(members$id_run, function(id) {
+  rbindlist(parallel::mclapply(mc.cores = n_workers, members$id_run, function(id) {
     simulated <- lulc_map(id)
     rbindlist(lapply(list(c(1L, 2L), c(3L, 2L)), function(tr) {
       s <- calc_transition_similarity(
