@@ -36,11 +36,6 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
 - [ ] **Dinamica's own patch parameters.** Here they are evoland's estimates, to isolate the
       estimator. A variant with Dinamica's GUI defaults would show how much a typical user gets.
 
-## Proposed, awaiting a decision
-
-- [ ] **Fig. 2 (ensembles)**: the class-total and greedy allocators next to CLUMPY, with a
-      binned realised-vs-estimated probability panel to show their bias.
-
 ## Ideas, not needed for the paper
 
 - **Annual steps.** Everything allocates 1991 → 1999 in one step. Iterating 8 annual steps with
@@ -56,6 +51,7 @@ evoland-plus (performance, from the scaling benchmark):
 - ethzplus/evoland-plus#86: `extract_using_coords_t()` builds point geometries; indexing cells
   takes a fifth of the memory (the 9.3 GB ingestion peak at 4.1 M cells).
 - ethzplus/evoland-plus#87: optional stratified training subsample in `fit_full_models()`.
+- ethzplus/evoland-plus#88: checkpoint DuckLake after a batch of allocations.
 - `figure_of_merit_v()` over ~500 runs takes ~105 s per call, one lineage subquery per run;
   `050` calls it twice (overall, per transition) on the same cells. A single call returning
   both, or a batched lineage resolution (#85), would halve or better.

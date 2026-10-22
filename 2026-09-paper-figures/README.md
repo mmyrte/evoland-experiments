@@ -48,37 +48,52 @@ The backcast works as follows:
   of the ensemble runs, so the ensemble cannot read it.
 - **Demand** is the observed 2 → 3 quantity of each viable transition. The figure is about
   *where* change is placed, not how much.
-- **Ensembles:** 100 CLUMPY realisations, each run registered in `runs_t` with its
-  own seed.
-- **Deterministic stand-in:** the same demand is also allocated greedily on the adjusted
-  potentials. This stands in for tools without stochastic allocation until
-  `2026-09-model-comparison/` provides the real Dinamica, lulcc and LCM runs.
+- **Ensembles:** the same random-forest potentials, 100 realisations each of four allocators,
+  every run registered in `runs_t` with its own seed:
+  - CLUMPY (uSAM, evoland);
+  - Dinamica EGO's expander and patcher, through evoland's `alloc_dinamica()`;
+  - CLUE-S (lulcc) and CLUMondo (CLUinPy), which allocate class totals: they get the class
+    probability map of the potentials and the observed class totals of period 3, as in
+    `2026-09-model-comparison/` (lulcc through a GLM with coefficients fixed at 0 and 1;
+    CLUinPy through `010-fig2-ensembles/cluinpy_alloc.py`, with the lake left out as no data,
+    because CLUMondo cannot hold a fixed class at its demand). CLUE-S's absolute tolerances are
+    scaled to the domain (5 cells).
+
+  Needs Dinamica EGO, lulcc, the repository's uv environment and `CLUINPY_REPO`; about 18 min,
+  most of it Dinamica.
+- **Deterministic:** the same demand is also allocated by rank-and-fill on the adjusted
+  potentials, the kind of allocator SEALS uses.
 
 Panels, on a 3 × 2 grid with a legend each:
-- **(a)** observed land use in period 3, with the change since period 2 outlined
-- **(b)** one random-forest realisation, the draw with the median figure of merit, coloured by
+- **(a)** observed land use in period 3 (all cells), with the cells changed since period 2
+  outlined
+- **(b)** one CLUMPY realisation, the draw with the median figure of merit, coloured by
   outcome (hit / miss / false alarm / wrong hit)
-- **(c)** change frequency across the random-forest ensemble, with the observed change outlined
-- **(d)** FoM of every realisation, with the ensemble expectation (from mean counts), the
-  deterministic map, and the persistence and random-allocation nulls
+- **(c)** change frequency across the CLUMPY ensemble, with the observed change outlined
+- **(d)** FoM of every realisation, one row per allocator, with each ensemble's expectation
+  (from mean counts), the deterministic map, and the two nulls (no change, random placement),
+  labelled in the panel
 - **(e)** where change is placed: the cumulative distribution of changed cells over the
-  percentile of their true probability, for the observed change, the realisations (median and
-  5–95 % band) and the deterministic map; the diagonal is random allocation
+  percentile of their true probability, for the observed change, the median realisation of
+  each allocator (band: CLUMPY's 5–95 %) and the deterministic map; the diagonal is random
+  placement
 
 ### What the numbers say (last render)
 
 All four transitions are viable; none of the 573 observed changes on the 6687 forest and arable
 cells is unmodelled.
 
-| | random forest |
-| --- | --- |
-| FoM, realisations: median (5–95 %) | 0.136 (0.119–0.148) |
-| FoM, ensemble expectation | 0.134 |
-| FoM, deterministic greedy | 0.237 |
-| Brier skill, adjusted potentials | 0.158 |
-| Brier skill, ensemble frequency (fair) | 0.155 |
-| Brier skill, deterministic | −0.32 |
-| Brier skill, single realisation (median) | −0.63 |
+Random-forest potentials, 100 realisations per allocator:
+
+| allocator | FoM median (5–95 %) | FoM ensemble | Brier skill, ensemble (fair) | Brier skill, single map (median) | change in top 5 % |
+| --- | --- | --- | --- | --- | --- |
+| CLUMPY | 0.138 (0.123–0.152) | 0.137 | 0.164 | −0.62 | 0.339 |
+| Dinamica | 0.164 (0.149–0.177) | 0.164 | 0.138 | −0.53 | 0.426 |
+| CLUE-S | 0.161 (no spread) | 0.161 | −0.034 | −0.034 | 0.957 |
+| CLUMondo | 0.165 (no spread) | 0.165 | −0.180 | −0.181 | 0.706 |
+| rank-and-fill (deterministic) | 0.245 | | −0.30 | | 0.660 |
+
+Adjusted potentials: Brier skill 0.160. Observed change: 0.361 in the top 5 %.
 
 References: FoM of random allocation 0.033; Brier skill of the true probabilities 0.191
 (multiclass Brier score over the cells that can change).
@@ -99,19 +114,25 @@ the cells that could make the same transition:
 | --- | --- | --- |
 | expected under the true probabilities | 0.361 | — |
 | observed | 0.361 | 0.909 |
-| realisations (median) | 0.334 | 0.902 |
-| deterministic | 0.660 | 0.965 |
+| CLUMPY realisations (median) | 0.339 | 0.902 |
+| Dinamica realisations (median) | 0.426 | 0.936 |
+| CLUMondo realisations (median) | 0.706 | 0.974 |
+| CLUE-S realisations (median) | 0.957 | 0.984 |
+| rank-and-fill (deterministic) | 0.660 | 0.965 |
 
 What the figure argues:
 
-1. **FoM is the wrong yardstick for a stochastic process.** The deterministic map scores nearly
-   twice the FoM of any realisation, because they put all change on the most probable cells.
-   Panel (e) shows that observed change does not do that: only a third of it falls in the top
-   5 %, exactly what the true probabilities predict. The realisations reproduce this; the
-   deterministic map puts two thirds of its change there.
-2. **The ensemble loses next to nothing.** Its frequency is almost as good a probabilistic
-   forecast as the potentials it samples from (skill 0.155 vs. 0.158), while every hard map,
-   the deterministic one included, is worse than the uniform forecast.
+1. **FoM is the wrong yardstick for a stochastic process.** It ranks the allocators by how much
+   they concentrate change: rank-and-fill highest, then CLUMondo, Dinamica and CLUE-S, CLUMPY
+   lowest. Panel (e) shows that observed change does not concentrate: only a third of it falls
+   in the top 5 %, exactly what the true probabilities predict. CLUMPY's realisations reproduce
+   this; Dinamica is slightly biased towards the top (43 %); rank-and-fill, CLUMondo and CLUE-S
+   put two thirds to almost all of their change there.
+2. **The unbiased ensemble loses nothing.** The CLUMPY ensemble frequency is as good a
+   probabilistic forecast as the potentials it samples from (skill 0.164 vs. 0.160), Dinamica's
+   is close (0.138). CLUE-S and CLUMondo are near-deterministic: their 100 realisations barely
+   differ, so their ensembles are no better than single maps and score below the uniform
+   forecast, as does rank-and-fill.
 3. **Patches matter.** In the earlier two-learner version, uPAM on the estimated patches made the
    logistic-regression ensemble put only 28 % of its change in the top 5 % (observed: 36 %), and
    its ensemble lost skill against its potentials (0.166 vs. 0.183). Patch parameters estimated
