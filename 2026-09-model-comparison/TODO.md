@@ -1,101 +1,75 @@
 # TODO — 2026-09-model-comparison
 
-Open work. Design rationale is in [`README.md`](README.md). Nothing is built yet.
+Open work only. Design rationale and results are in [`README.md`](README.md).
 
-## Decide before writing any code
+## Pipeline
 
-- [ ] **Study extent.** Full SSP-CH extent; if any one of the other tools fails due to memory
-      pressure/computation time, that is a direct result (although we can afford to run it on a
-      machine with 2TiB of RAM x 128 cores)
-- [ ] **Predictor set.** A small set every tool can take, reused from `2026-05-ssp-ch/`
-      ingestion. Deliberately not the full SSP-CH set. See README.
-- [ ] **Calibration / validation period pair**, out of the four observed Arealstatistik
-      periods. See README.
-- [ ] **Which comparators are actually in reach.** TerrSet needs a Windows machine and leads to
-      point&click adventures; drop it. Dinamica standalone needs a workable headless setup beyond what
-      `alloc_dinamica()` already drives.
-- [x] **How to compare?** Lead with a comparison of
-      usability/robustness/reproducibility/accessibility/auditability criteria, see readme. Then follow
-      up with a quantitative comparison where feasible, but again focus on feasibility.
+- [ ] **Replay from scratch** in the devcontainer (mmyrte/evoland-experiments#3) and compare
+      the per-run FoM with this branch's; the README's Replay check predates the crossing.
+- [ ] **Render via quarto** (`execute-all.sh`) and commit the HTML reports from a machine with
+      LFS push access (the cloud container gets 403 from lfs.github.com).
+- [ ] **Rerun the scaling benchmark** (`080-scaling/`) on the current pin, once the evoland
+      performance issues below are settled; the README table predates the crossing.
+- [ ] **Tool versions** in a table for the paper.
 
-## Build
+## Analysis
 
-- [ ] **`001-setup-db`** — a small `*.evolanddb` on the chosen extent.
-- [ ] **`010-`/`020-` ingestion** — LULC history and the agreed predictors, reusing the
-      `2026-05-ssp-ch/` steps.
-- [ ] **`030-`–`060-` evoland-plus reference run** — neighbours, viable transitions, covariate
-      selection, transition models. Written to be readable as an illustration, since that is
-      half the point of this sub-project.
-- [ ] **`070-alloc-evoland`** — calibrate → allocate → validate with CLUMPY.
-- [ ] **`071-alloc-dinamica`** — same models, Dinamica allocation via `alloc_dinamica()`.
-- [ ] **`072-dinamica-native`** — Dinamica's Weights-of-Evidence estimator plus its own
-      allocator, run standalone but headless.
-  - [ ] call via processx,
-  - [ ] data from evoland dumped to tifs,
-  - [ ] read back into dinamica, use .ego script. see also dump of dinamica functors at `2026-09-model-comparison/072-dinamica/dinamica-functors.txt`.
-  - [ ] read output like alloc-dinamica, write to evoland DB for validation.
-- [ ] **`073-lulcc`** — lulcc's suitability estimation and CLUE-S allocation. as with dinamica, read back into evoland DB for easy validation/comparison.
-- [ ] **`080-compare`** — common metrics across all runs: figure of merit against the
-      random-allocation null, masked fuzzy similarity, quantity vs. allocation disagreement,
-      per-transition AUC where available.
-- [ ] **`080d-report`** — comparison figures and tables.
+- [ ] **Reliability diagrams** per estimator and per ensemble, to check the reading of the
+      naive Bayes × CLUMPY interaction (sharp probabilities) and of the Brier skill (`051`).
+      Decide whether to score only cells of anterior classes with viable transitions, and
+      whether the Dinamica ensembles need more realisations.
+- [ ] **Weights of Evidence on evoland's predictors.** WoE uses Dinamica's distance maps, the
+      evoland learners neighbourhood counts; feeding WoE evoland's predictors (as rasters)
+      would make the WoE – naive Bayes pair a pure test of binning vs. Gaussian densities.
+- [ ] **Ordered, stochastic.** The crossing runs lulcc's Ordered deterministically (see
+      upstream issues); a stochastic variant needs lulcc patched.
+- [ ] **CLUE-S configuration.** The lulcc demo parameters (elasticity 0.2 for all classes, all
+      conversions allowed) overshoot the observed gross change as shipped. A variant with built
+      elasticity 1 / no built conversions would show whether CLUE-S is mis-parametrised by the
+      demo or structurally different. Report the default anyway.
+- [ ] **Elasticity on conditional probabilities.** The crossing's class probabilities already
+      condition on the anterior class, so CLUE-S elasticity and CLUMondo conversion resistance
+      count persistence a second time. A variant with both set to zero would show how much
+      that matters.
+- [ ] **CLUinPy neighbourhood and resistance** values are taken from its tutorial's analogous
+      classes; document a sensitivity check or justify.
+- [ ] **Dinamica's own patch parameters.** Here they are evoland's estimates, to isolate the
+      estimator. A variant with Dinamica's GUI defaults would show how much a typical user gets.
 
-## Publication: what the comparison should show
+## Ideas, not needed for the paper
 
-The comparison is meant to support a model-description paper on evoland-plus and the modelling
-framework (Geoscientific Model Development and Environmental Modelling & Software are the
-natural venues; GMD requires the code and data availability that this repo already aims for).
+- **Annual steps.** Everything allocates 1991 → 1999 in one step. Iterating 8 annual steps with
+  recomputed neighbourhoods and distance maps (Dinamica's `DetermineTransitionMatrix`, evoland's
+  `alloc_*` over yearly periods, CLUE's annual demand) moves towards cellular automata and away
+  from the pattern-based approach.
 
-The comparison is not supposed to go out of its way to compare correctness (that is already done by
-Mazy in his thesis, https://theses.hal.science/tel-04382012/document). Rather, it is supposed to
-show that the results hold up when compared to other modelling environments.
+## Upstream
 
-The comparison tries to complete an **estimator x allocator** matrix:
+evoland-plus (performance, from the scaling benchmark):
 
-- {mlr3 learner (GLM, ranger, GRRF), Dinamica Weights of Evidence (naive bayes), lulcc's suitability model}
-- {CLUMPY uSAM/uPAM, Dinamica, CLUE-S}
+- ethzplus/evoland-plus#85: DuckLake per-call overhead in prediction (batch the catalog work).
+- ethzplus/evoland-plus#86: `extract_using_coords_t()` builds point geometries; indexing cells
+  takes a fifth of the memory (the 9.3 GB ingestion peak at 4.1 M cells).
+- ethzplus/evoland-plus#87: optional stratified training subsample in `fit_full_models()`.
+- ethzplus/evoland-plus#88: checkpoint DuckLake after a batch of allocations.
+- `figure_of_merit_v()` over ~500 runs takes ~105 s per call, one lineage subquery per run;
+  `050` calls it twice (overall, per transition) on the same cells. A single call returning
+  both, or a batched lineage resolution (#85), would halve or better.
 
-wherever the tools allow the pairing. Decompose each outcome metric into estimator, allocator,
-interaction and stochastic (replicate) variance. If we manage this, this could be a nice figure: it
-says how much of the "tool difference" belongs to each stage.
+Other tools, to report:
 
-### How to validate
-
-- [ ] **Backcast skill against nulls.** Figure of merit against three nulls: persistence (no
-      change), random allocation within the anterior class, and a neighbourhood-only model. A tool
-      is only useful where it beats all three.
-- [ ] **Multi-resolution agreement.** FoM and masked fuzzy similarity across window sizes (1–15
-      cells). Runs that look different at cellular level converge at coarser resolutions; where they
-      converge lies a useful resolution (source?)
-
-### D. Practical utility
-
-- [ ] **Capability matrix.** Open source, language, estimator choice, stochastic allocation,
-      ensembles, scenario/run lineage, provenance of inputs, interventions, HPC/concurrency,
-      licence cost. Might work better in prose.
-- [ ] **Scaling benchmark.** Wall time and peak memory per stage (prediction, allocation) from
-      the 40×40 replica to the full 4.1 M-cell grid, on the same machine for all tools, plus
-      evoland's parallel writers on DuckLake. Ship the timing harness with the paper.
-- [ ] **Reproducibility.** Rebuild the study database from md5-pinned sources and show identical
-      outputs under fixed seeds; report what the other tools need to reach the same bar.
-
-### Protocol guard rails
-
-- [ ] Write the comparison protocol down (inputs, periods, metrics, nulls, seeds, what is held
-      fixed per tool) before the first run, and keep it in this directory.
-- [ ] Record tool versions, licences, settings and hardware from the first run, including the
-      Dinamica build (currently 8.11.2 from `ghcr.io/mmyrte/evoland`).
-- [ ] Report every tool at its best-documented configuration, not evoland at its tuned best
-      against the others' defaults.
-
-## Non-comparison sections: illustrate model use / goodies
-
-- [ ] **Ensembles vs. single maps.** The CLUMPY ensemble as a per-cell change-frequency map with its
-      FoM distribution, next to the deterministic tools' single values. This is not infeasible with
-      other models, just not built-in.
-- [ ] **Estimator quality on its own.** mlr3 makes swapping learners a one-line change; show that,
-      and show where learners disagree.
-- [ ] The LP solver (`trans_rates_lp`) versus linear extrapolation of observed rates or Markov
-      chain as in TerrSet/lulcc.
-- [ ] **Landscape pattern analysis.** Efficient patch statistics in `patch_stats.cpp`, like fragstats and patch elongation.
-- [ ] Emphasize easy export for ecosystem services / ecological value
+- lulcc 1.0.4 lists `gsubfn` and `caret` under Suggests but needs them in
+  `ExpVarRasterList()` / `glmModels()`.
+- lulcc 1.0.4, `OrderedModel` with `stochastic = TRUE`: `.ordered()` thins each class's ranked
+  candidates by Bernoulli(suitability) and takes the first n; when the draws cannot supply n
+  cells in 1000 tries (small suitabilities), the missing picks become `NA` indices, cells stay
+  at -1, and the next step's C code (`total`/`allow`) reads out of range: the output map holds
+  class codes in the billions. Reproducer: `040-alloc-lulcc.r` with `ordered_stochastic = TRUE`
+  in the crossing (seed 11501). For simonmoulds/lulcc.
+- Dinamica 8.11.2: `CalcWOfEProbabilityMap` is not deterministic in parallel (README, Replay
+  check). Needs a minimal reproducer for the Dinamica team (`probabilities.ego` run three times
+  with default settings shows it). Check whether evoland's `alloc_dinamica()`, which runs
+  Dinamica with parallel functors, has a similar race in `CreateCubeOfProbabilityMaps`.
+- Dinamica 8.11.2: `AllocateTransitions` (Expander) corrodes its *input* probability map in
+  place, so saving that map after the allocation saves the depleted one (README, Replay check).
+  Check the documentation once csr.ufmg.br is reachable; report if undocumented.

@@ -45,6 +45,7 @@ library(terra)
 library(ggplot2)
 library(patchwork)
 library(mlr3learners)
+source("python-env.r")
 
 out_dir <- "2026-09-paper-figures/figures"
 db_path <- "2026-09-paper-figures/fig2-ensembles.evolanddb"
@@ -361,6 +362,249 @@ greedy_map <- function(adjusted) {
 }
 deterministic_by <- lapply(adjusted_by, greedy_map)
 
+#' # The established allocators on the same potentials
+#'
+#' The same random-forest potentials and the same quantities, allocated `n_realisations` times by
+#' three established allocators besides CLUMPY:
+#'
+#' - **Dinamica EGO**'s expander and patcher, through evoland's `alloc_dinamica()`, with the same
+#'   single-cell allocation parameters as CLUMPY;
+#' - **CLUE-S** in lulcc and **CLUMondo** in CLUinPy, which allocate class totals rather than
+#'   transitions. They get the class probability map of the potentials, as in
+#'   `2026-09-model-comparison/020-potentials.r`: for a cell of class i, the adjusted potential of
+#'   i -> k for k != i, and the remainder for staying in i; the lake is fixed. Their demand is the
+#'   observed class totals of period 3; only the viable transitions are allowed. lulcc reads the
+#'   probabilities through its own model interface (a GLM on the logit with coefficients fixed at
+#'   0 and 1, as in `040-alloc-lulcc.r`). CLUE-S's tolerances are absolute cell counts: the GMD
+#'   demo's 50 cells on PIE's 113 k cells scale to 5 on this 8 100-cell domain. CLUinPy's
+#'   parameters follow `040-alloc-cluinpy.r` (conversion resistance, a neighbourhood weight for
+#'   urban land only).
+#'
+#' Every realisation is imported as a run, so that all allocators are scored by the same code.
+#' Needs Dinamica EGO, lulcc and the repository's uv environment (`python-env.r`, which also
+#' clones CLUinPy at its pinned commit).
+
+#| label: allocators
+allocators <- data.table(
+  allocator = c("CLUMPY", "Dinamica", "CLUE-S", "CLUMondo"),
+  tool = c("evoland", "Dinamica EGO via evoland", "lulcc", "CLUinPy"),
+  offset = c(0L, 2000L, 3000L, 4000L)
+)
+other_members <- allocators[
+  allocator != "CLUMPY",
+  .(member = seq_len(n_realisations)),
+  by = .(allocator, offset)
+][, `:=`(id_run = offset + member, seed = 10000L + offset + member)]
+members[, allocator := "CLUMPY"]
+db$id_run <- NULL
+db$commit(
+  as_runs_t(rbind(
+    db$runs_t[!id_run %in% other_members$id_run],
+    other_members[, .(
+      id_run,
+      parent_id_run = 0L,
+      description = paste("random forest x", allocator, "realisation", member),
+      seed
+    )]
+  )),
+  "runs_t",
+  method = "overwrite"
+)
+
+#| label: alloc-dinamica
+#| output: false
+for (i in which(other_members$allocator == "Dinamica")) {
+  db$id_run <- other_members$id_run[i]
+  set.seed(other_members$seed[i])
+  db$alloc_dinamica(
+    id_periods = 3L,
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    use_parent_trans_pot = TRUE,
+    update_neighbors = FALSE
+  )
+}
+
+#| label: class-probabilities
+viable_trans <- db$trans_meta_t[
+  is_viable == TRUE,
+  .(id_trans, id_lulc_anterior, id_lulc_posterior)
+]
+lulc_classes <- 1:4
+anterior_2 <- lulc_long[id_period == 2L, .(id_coord, id_lulc_anterior = id_lulc)]
+class_p <-
+  CJ(id_coord = anterior_2$id_coord, id_lulc = lulc_classes)[
+    anterior_2,
+    on = "id_coord"
+  ][
+    adjusted_by[["ranger"]][viable_trans, on = "id_trans", nomatch = NULL],
+    on = .(id_coord, id_lulc_anterior, id_lulc = id_lulc_posterior),
+    p := i.value
+  ][
+    is.na(p),
+    p := 0
+  ]
+class_p[, p_change := sum(p[id_lulc != id_lulc_anterior]), by = id_coord]
+class_p[id_lulc == id_lulc_anterior, p := pmax(0, 1 - p_change)]
+stopifnot(class_p[, abs(sum(p) - 1) < 1e-6, by = id_coord]$V1)
+class_p_rast <- terra::rast(lapply(lulc_classes, function(k) {
+  tabular_to_raster(
+    class_p[id_lulc == k, .(id_coord, value = p)],
+    db$coords_minimal,
+    value_col = "value"
+  )
+}))
+names(class_p_rast) <- paste0("p_", lulc_classes)
+totals_3 <- lulc_long[id_period == 3L, .N, keyby = id_lulc][J(lulc_classes), N]
+# conversions allowed: persistence and the viable transitions
+allow <- diag(length(lulc_classes))
+allow[as.matrix(viable_trans[, .(id_lulc_anterior, id_lulc_posterior)])] <- 1
+maps_dir <- file.path(tempdir(), "fig2-allocator-maps")
+
+#| label: alloc-clues
+#| output: false
+suppressPackageStartupMessages(library(lulcc))
+lu_23 <- raster::stack(lapply(2:3, function(t) raster::raster(synthetic_lulc[[t]])))
+names(lu_23) <- c("lu_2", "lu_3")
+obs_23 <- ObsLulcRasterStack(
+  x = lu_23,
+  pattern = "lu",
+  categories = lulc_classes,
+  labels = c("Forest", "Arable", "Urban", "Lake"),
+  t = c(0, 1)
+)
+suit <- raster::stack(raster::calc(raster::stack(class_p_rast), function(p) {
+  stats::qlogis(pmin(pmax(p, 1e-6), 1 - 1e-6))
+}))
+names(suit) <- paste0("suit_", lulc_classes)
+ef_suit <- ExpVarRasterList(x = suit, pattern = "suit")
+study_cells <- which(!is.na(raster::values(obs_23[[1]])))
+clues_models <- suppressWarnings(glmModels(
+  formula = list(Forest ~ suit_1, Arable ~ suit_2, Urban ~ suit_3, Lake ~ suit_4),
+  family = binomial,
+  data = getPredictiveModelInputData(obs = obs_23, ef = ef_suit, cells = study_cells, t = 0),
+  obs = obs_23
+))
+for (j in seq_along(clues_models@models)) {
+  beta <- clues_models@models[[j]]$coefficients
+  clues_models@models[[j]]$coefficients <- setNames(c(0, 1), names(beta))
+}
+dir.create(file.path(maps_dir, "clue-s"), recursive = TRUE, showWarnings = FALSE)
+for (i in which(other_members$allocator == "CLUE-S")) {
+  set.seed(other_members$seed[i])
+  clues <- allocate(CluesModel(
+    obs = obs_23,
+    ef = ef_suit,
+    models = clues_models,
+    time = c(0, 1),
+    demand = rbind(total(obs_23)$total[1, ], totals_3),
+    elas = c(0.2, 0.2, 0.2, 1),
+    rules = allow,
+    params = list(
+      jitter.f = 0.0002,
+      scale.f = 0.000001,
+      max.iter = 1000,
+      max.diff = 5,
+      ave.diff = 5
+    )
+  ))
+  raster::writeRaster(
+    clues@output[[2]],
+    file.path(maps_dir, "clue-s", sprintf("r%02d.tif", other_members$member[i])),
+    datatype = "INT1U",
+    overwrite = TRUE
+  )
+}
+
+#| label: alloc-clumondo
+#| output: false
+cluinpy_work <- file.path(tempdir(), "fig2-cluinpy")
+unlink(cluinpy_work, recursive = TRUE)
+dir.create(cluinpy_work)
+# the lake never changes and CLUMondo cannot hold a fixed class at its demand: it is left out
+# (no data) and restored from the period-2 map on import
+cluinpy_classes <- 1:3
+lulc_2_codes <- terra::ifel(is.na(lulc_2) | lulc_2 == 4, -9999, lulc_2 - 1)
+terra::writeRaster(
+  lulc_2_codes,
+  file.path(cluinpy_work, "land.tif"),
+  datatype = "INT2S",
+  NAflag = -9999
+)
+terra::writeRaster(
+  terra::ifel(
+    is.na(class_p_rast[[cluinpy_classes]]) | lulc_2 == 4,
+    -9999,
+    class_p_rast[[cluinpy_classes]]
+  ),
+  file.path(cluinpy_work, "suit.tif"),
+  datatype = "FLT4S",
+  NAflag = -9999
+)
+fwrite(as.data.table(t(totals_3[cluinpy_classes])), file.path(cluinpy_work, "demand.csv"))
+fwrite(
+  as.data.table(allow[cluinpy_classes, cluinpy_classes]),
+  file.path(cluinpy_work, "allow.csv"),
+  col.names = FALSE
+)
+fwrite(
+  data.table(
+    name = c("Forest", "Arable", "Urban"),
+    conv_res = c(0.8, 0.6, 1),
+    neigh_weight = c(0, 0, 0.3)
+  ),
+  file.path(cluinpy_work, "params.csv")
+)
+processx::run(
+  project_python(),
+  c(
+    file.path("2026-09-paper-figures", "010-fig2-ensembles", "cluinpy_alloc.py"),
+    cluinpy_repo(),
+    cluinpy_work,
+    n_realisations,
+    allocators[allocator == "CLUMondo", 10000L + offset],
+    file.path(maps_dir, "clumondo")
+  ),
+  echo = FALSE,
+  error_on_status = TRUE
+)
+
+#| label: import
+cells <- terra::cellFromXY(template_rast, as.matrix(db$coords_t[, .(lon, lat)]))
+lulc_2_at <- lulc_2[cells][[1]]
+for (a in c("CLUE-S", "CLUMondo")) {
+  m <- other_members[allocator == a]
+  db$commit(
+    as_lulc_data_t(rbindlist(lapply(seq_len(nrow(m)), function(i) {
+      map <- terra::rast(file.path(maps_dir, tolower(a), sprintf("r%02d.tif", m$member[i])))
+      data.table(
+        id_run = m$id_run[i],
+        id_coord = db$coords_t$id_coord,
+        id_period = 3L,
+        # cells a tool left out (CLUinPy: the lake) keep their period-2 class
+        id_lulc = as.integer(fcoalesce(as.numeric(map[cells][[1]]), as.numeric(lulc_2_at)))
+      )[!is.na(id_lulc)]
+    }))),
+    "lulc_data_t",
+    method = "upsert"
+  )
+}
+members <- rbind(
+  members,
+  other_members[, .(
+    learner = "ranger",
+    label = "random forest",
+    id_run_parent = 0L,
+    id_run,
+    member,
+    seed,
+    allocator
+  )],
+  use.names = TRUE
+)
+members[, allocator := factor(allocator, levels = allocators$allocator)]
+members[, .N, by = allocator]
+
 #' # Validation
 
 #| label: fom
@@ -370,12 +614,12 @@ fom <- db$figure_of_merit_v(
   id_period_post = 3L,
   id_run_reference = id_run_observed,
   id_run_simulated = members$id_run
-)[members[, .(id_run, learner, label)], on = "id_run"]
+)[members[, .(id_run, learner, label, allocator)], on = "id_run"]
 
 # expected counts of each ensemble: ratio of mean counts, not mean of ratios
 fom_ensemble <- fom[,
   lapply(.SD, mean),
-  by = .(learner, label),
+  by = .(allocator),
   .SDcols = c("hits", "wrong_hits", "misses", "false_alarms")
 ][, figure_of_merit := hits / (hits + wrong_hits + misses + false_alarms)]
 
@@ -412,7 +656,10 @@ simulated_all <- db$fetch(
   where = glue::glue(
     "id_run in ({paste(members$id_run, collapse = ', ')}) and id_period = 3"
   )
-)[, .(id_run, id_coord, simulated = id_lulc)][members[, .(id_run, learner)], on = "id_run"]
+)[, .(id_run, id_coord, simulated = id_lulc)][
+  members[, .(id_run, learner, allocator)],
+  on = "id_run"
+]
 
 knitr::kable(
   fom[,
@@ -421,11 +668,10 @@ knitr::kable(
       fom_q05 = quantile(figure_of_merit, 0.05),
       fom_q95 = quantile(figure_of_merit, 0.95)
     ),
-    by = .(learner)
-  ][fom_ensemble[, .(learner, fom_ensemble = figure_of_merit)], on = "learner"][
-    fom_deterministic[, .(learner, fom_deterministic = figure_of_merit)],
-    on = "learner"
-  ][, fom_random_null := fom_null][],
+    by = .(allocator)
+  ][fom_ensemble[, .(allocator, fom_ensemble = figure_of_merit)], on = "allocator"][,
+    `:=`(fom_deterministic = fom_deterministic$figure_of_merit, fom_random_null = fom_null)
+  ][],
   digits = 3
 )
 
@@ -502,28 +748,29 @@ potentials_long <- function(adjusted) {
 }
 
 scores <- rbindlist(c(
-  lapply(learners$learner, function(lr) {
-    sims <- simulated_all[learner == lr]
+  lapply(levels(members$allocator), function(a) {
+    sims <- simulated_all[allocator == a]
     draws <- sims[, .(bs = brier(.SD[, .(id_coord, class = simulated, p = 1)])), by = id_run]
     data.table(
-      learner = lr,
-      forecast = c(
-        "ensemble frequency (fair)",
-        "adjusted potentials",
-        "deterministic",
-        "single realisation (median)"
-      ),
+      learner = a,
+      forecast = c("ensemble frequency (fair)", "single realisation (median)"),
       brier = c(
         brier(
           sims[, .(p = .N / n_realisations), by = .(id_coord, class = simulated)],
           n_realisations
         ),
-        brier(persist(potentials_long(adjusted_by[[lr]]))),
-        brier(deterministic_by[[lr]][, .(id_coord, class = deterministic, p = 1)]),
         median(draws$bs)
       )
     )
   }),
+  list(data.table(
+    learner = "random forest",
+    forecast = c("adjusted potentials", "deterministic"),
+    brier = c(
+      brier(persist(potentials_long(adjusted_by[["ranger"]]))),
+      brier(deterministic_by[["ranger"]][, .(id_coord, class = deterministic, p = 1)])
+    )
+  )),
   list(data.table(
     learner = "reference",
     forecast = c("true probabilities", "uniform forecast", "persistence"),
@@ -591,18 +838,18 @@ ranks_deterministic <- rbindlist(
 ranks_draws <- rank_of_change(
   simulated_all[maps[, .(id_coord, anterior)], on = "id_coord"][
     anterior != simulated,
-    .(id_run, learner, id_coord, anterior, posterior = simulated)
+    .(id_run, allocator, id_coord, anterior, posterior = simulated)
   ]
 )
 
 cdf_observed <- ecdf_on_grid(ranks_observed$rank)
 cdf_draws <- ranks_draws[,
   .(x = rank_grid, cdf = ecdf_on_grid(rank)),
-  by = .(learner, id_run)
+  by = .(allocator, id_run)
 ]
 cdf_band <- cdf_draws[,
   .(lo = quantile(cdf, 0.05), med = median(cdf), hi = quantile(cdf, 0.95)),
-  by = .(learner, x)
+  by = .(allocator, x)
 ]
 cdf_deterministic <- ranks_deterministic[,
   .(x = rank_grid, cdf = ecdf_on_grid(rank)),
@@ -612,37 +859,38 @@ cdf_deterministic <- ranks_deterministic[,
 bias_tab <- rbind(
   data.table(
     changed_cells = "observed",
-    learner = NA_character_,
+    allocator = NA_character_,
     share_in_top_5_pct = mean(ranks_observed$rank > 0.95),
     median_percentile = median(ranks_observed$rank)
   ),
   ranks_draws[,
     .(share = mean(rank > 0.95), med = median(rank)),
-    by = .(learner, id_run)
+    by = .(allocator, id_run)
   ][,
     .(
       changed_cells = "realisations (median)",
       share_in_top_5_pct = median(share),
       median_percentile = median(med)
     ),
-    by = learner
+    by = allocator
   ],
   ranks_deterministic[,
     .(
       changed_cells = "deterministic",
+      allocator = "rank-and-fill",
       share_in_top_5_pct = mean(rank > 0.95),
       median_percentile = median(rank)
     ),
     by = learner
-  ],
+  ][, !"learner"],
   use.names = TRUE
 )
 knitr::kable(bias_tab, digits = 3)
 
 # Kolmogorov-Smirnov distance of each curve to the observed one. Not shown in the figure: the
 # distance is not widely known, and the panel shows the bias plainly. Uncomment to report it.
-# ks_draws <- cdf_draws[, .(ks = max(abs(cdf - cdf_observed))), by = .(learner, id_run)]
-# ks_draws[, .(ks_median = median(ks)), by = learner]
+# ks_draws <- cdf_draws[, .(ks = max(abs(cdf - cdf_observed))), by = .(allocator, id_run)]
+# ks_draws[, .(ks_median = median(ks)), by = allocator]
 # cdf_deterministic[, .(ks = max(abs(cdf - cdf_observed))), by = learner]
 
 #' # Figure
@@ -685,7 +933,7 @@ outcome <- function(anterior, observed, simulated) {
 }
 
 # the realisation shown: the random forest draw closest to its ensemble median
-fom_ranger <- fom[learner == "ranger"]
+fom_ranger <- fom[allocator == "CLUMPY"]
 shown_run <- fom_ranger[order(abs(figure_of_merit - median(figure_of_merit)))][1, id_run]
 
 lulc_names <- c("1" = "forest", "2" = "arable", "3" = "urban", "4" = "lake (fixed)")
@@ -694,7 +942,7 @@ panel_draw <- maps[
   simulated_all[id_run == shown_run, .(id_coord, simulated)],
   on = "id_coord"
 ][, .(id_coord, status = outcome(anterior, observed, simulated))]
-panel_freq <- simulated_all[learner == "ranger"][
+panel_freq <- simulated_all[allocator == "CLUMPY"][
   maps[, .(id_coord, anterior)],
   on = "id_coord"
 ][, .(p_change = mean(simulated != anterior)), by = id_coord]
@@ -702,7 +950,7 @@ observed_change_cells <- maps[anterior != observed, .(id_coord)]
 
 #| label: figure
 #| fig-width: 7.2
-#| fig-height: 6.6
+#| fig-height: 7.4
 col_surface <- "#f1f0ed"
 # Okabe-Ito: distinguishable under the common colour-vision deficiencies
 lulc_cols <- c(
@@ -737,7 +985,7 @@ outline <- function() {
     aes(x, y),
     fill = NA,
     colour = "#1a1a1a",
-    linewidth = 0.45,
+    linewidth = 0.8,
     width = 70,
     height = 70,
     inherit.aes = FALSE
@@ -752,7 +1000,7 @@ p_a <- ggplot(coords_xy[panel_lulc, on = "id_coord", nomatch = NULL], aes(x, y, 
   labs(
     title = "(a) Observed land use, period 3",
     subtitle = sprintf(
-      "outline: change since period 2\n%d \u00d7 %d window of the domain",
+      "all cells; outline: changed since period 2\n%d \u00d7 %d window of the domain",
       n_window,
       n_window
     )
@@ -770,7 +1018,7 @@ p_b <- ggplot(coords_xy[panel_draw, on = "id_coord", nomatch = NULL], aes(x, y, 
   labs(
     title = "(b) One realisation",
     subtitle = sprintf(
-      "random forest, median draw\nFoM %.2f (whole domain)",
+      "random forest, CLUMPY, median draw\nFoM %.2f (whole domain)",
       fom[id_run == shown_run, figure_of_merit]
     )
   ) +
@@ -790,7 +1038,7 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
   coord_equal(expand = FALSE) +
   labs(
     title = "(c) Change frequency",
-    subtitle = "random forest ensemble\noutline: observed change"
+    subtitle = "random forest, CLUMPY ensemble\noutline: observed change"
   ) +
   theme_map +
   theme(
@@ -799,58 +1047,75 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
     legend.key.height = unit(5, "pt")
   )
 
-# (d): realisations jittered around one row
-fom[, y := 0]
-fom_ensemble[, y := 0]
-fom_deterministic[, y := 0]
+# (d): one row per allocator, realisations jittered around it; the deterministic allocation below
+allocator_cols <- c(
+  "CLUMPY" = "#2a78d6",
+  "Dinamica" = "#4a3aa7",
+  "CLUE-S" = "#1baf7a",
+  "CLUMondo" = "#e87ba4",
+  "rank-and-fill" = "#eb6834"
+)
+row_levels <- c(levels(members$allocator), "rank-and-fill")
+fom[, row := factor(as.character(allocator), levels = rev(row_levels))]
+fom_ensemble[, row := factor(as.character(allocator), levels = rev(row_levels))]
+fom_deterministic[, row := factor("rank-and-fill", levels = rev(row_levels))]
 set.seed(7)
-p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
+p_d <- ggplot(fom, aes(x = figure_of_merit, y = row)) +
   geom_vline(xintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
   geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  # the nulls, labelled along their lines
   annotate(
     "text",
     x = 0,
-    y = 0.62,
-    label = " persistence",
-    hjust = 0,
+    y = length(row_levels) + 0.4,
+    label = "null: no change",
+    angle = 90,
+    hjust = 1,
+    vjust = 1.4,
     size = 2.4,
     colour = "#555555"
   ) +
   annotate(
     "text",
     x = fom_null,
-    y = 0.48,
-    label = " random allocation",
-    hjust = 0,
+    y = length(row_levels) + 0.4,
+    label = "null: random placement",
+    angle = 90,
+    hjust = 1,
+    vjust = 1.4,
     size = 2.4,
     colour = "#555555"
   ) +
-  geom_jitter(height = 0.22, width = 0, size = 1, alpha = 0.6, colour = "#2a78d6") +
+  geom_jitter(aes(colour = allocator), height = 0.18, width = 0, size = 0.8, alpha = 0.5) +
   geom_point(
     data = fom_ensemble,
     aes(shape = "ensemble expectation"),
-    size = 2.8,
-    fill = "#0d366b",
+    size = 2.6,
+    fill = "#1a1a1a",
     colour = "white",
-    stroke = 0.7
+    stroke = 0.6
   ) +
   geom_point(
     data = fom_deterministic,
     aes(shape = "deterministic allocation"),
     size = 3,
-    fill = "#eb6834",
+    fill = allocator_cols[["rank-and-fill"]],
     colour = "white",
     stroke = 0.7
   ) +
+  scale_colour_manual(values = allocator_cols, guide = "none") +
   scale_shape_manual(
     values = c("ensemble expectation" = 21, "deterministic allocation" = 23),
     name = NULL
   ) +
-  scale_y_continuous(breaks = NULL, limits = c(-0.4, 0.75), expand = c(0, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.6, 1))) +
   scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.02, 0.06))) +
   labs(
     title = "(d) Figure of merit against the held-out observation",
-    subtitle = sprintf("random forest; one dot per realisation (n = %d)", n_realisations),
+    subtitle = sprintf(
+      "random-forest potentials; one dot per realisation (n = %d per allocator)",
+      n_realisations
+    ),
     x = "figure of merit",
     y = NULL
   ) +
@@ -862,36 +1127,37 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
-# (e): colour = how change was placed
+# (e): colour = allocator; black = observed change; band = CLUMPY's 5-95 % range
 cdf_lines <- rbind(
   data.table(x = rank_grid, cdf = cdf_observed, what = "observed change"),
-  cdf_band[, .(x, cdf = med, what = "realisations (median, 5-95 %)")],
-  cdf_deterministic[, .(x, cdf, what = "deterministic allocation")]
+  cdf_band[, .(x, cdf = med, what = as.character(allocator))],
+  cdf_deterministic[, .(x, cdf, what = "rank-and-fill")]
 )
-what_cols <- c(
-  "observed change" = "#1a1a1a",
-  "realisations (median, 5-95 %)" = "#2a78d6",
-  "deterministic allocation" = "#eb6834"
-)
+what_cols <- c("observed change" = "#1a1a1a", allocator_cols)
+cdf_lines[, what := factor(what, levels = names(what_cols))]
 p_e <- ggplot() +
   geom_abline(slope = 1, intercept = 0, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
   annotate(
     "text",
     x = 0.6,
     y = 0.66,
-    label = "random allocation",
+    label = "random placement",
     angle = 45,
     size = 2.3,
     colour = "#555555"
   ) +
-  geom_ribbon(data = cdf_band, aes(x = x, ymin = lo, ymax = hi), fill = "#cde2fb") +
-  geom_line(data = cdf_lines, aes(x, cdf, colour = what), linewidth = 0.6) +
+  geom_ribbon(
+    data = cdf_band[allocator == "CLUMPY"],
+    aes(x = x, ymin = lo, ymax = hi),
+    fill = "#cde2fb"
+  ) +
+  geom_line(data = cdf_lines, aes(x, cdf, colour = what), linewidth = 0.55) +
   scale_colour_manual(values = what_cols, breaks = names(what_cols)) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
     title = "(e) Where change is placed",
-    subtitle = "changed cells by their true probability",
+    subtitle = "changed cells by their true probability;\nmedian realisation per allocator",
     x = "percentile among candidate cells",
     y = "cumulative share of change"
   ) +
@@ -901,19 +1167,19 @@ p_e <- ggplot() +
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)
   ) +
-  guides(colour = guide_legend(ncol = 1))
+  guides(colour = guide_legend(ncol = 2))
 
 fig2 <- p_a +
   p_b +
   p_c +
   p_d +
   p_e +
-  plot_layout(design = "ABC\nDDE", heights = c(1, 1.05))
+  plot_layout(design = "ABC\nDDE", heights = c(1, 1.25))
 ggsave(
   file.path(out_dir, "fig2-ensembles.pdf"),
   fig2,
   width = 7.2,
-  height = 6.6
+  height = 7.4
   # device = cairo_pdf
 )
 fig2

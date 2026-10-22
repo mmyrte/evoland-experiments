@@ -60,3 +60,10 @@ dinamica_rundir/*
 
 /.quarto/
 **/*.quarto_ipynb
+
+# Python
+__pycache__/
+.venv/
+
+# CLUinPy, cloned on first use (python-env.r)
+.cache/
