@@ -29,22 +29,27 @@ n_realisations <- as.integer(Sys.getenv("PIE_N_REALISATIONS", "20"))
 id_run_observed <- 1L
 
 estimators <- data.table::data.table(
-  estimator = c("log_reg", "ranger", "woe", "naive_bayes"),
-  id_run = c(1000L, 2000L, 3000L, 4000L),
-  label = c("logistic regression", "random forest", "Weights of Evidence", "naive Bayes"),
+  estimator = c("log_reg", "ranger", "woe", "naive_bayes", "kde"),
+  id_run = c(1000L, 2000L, 3000L, 4000L, 5000L),
+  label = c(
+    "logistic regression",
+    "random forest",
+    "Weights of Evidence",
+    "naive Bayes",
+    "Bayes-eKDE"
+  ),
   source = c(
     "evoland, mlr3 classif.log_reg",
     "evoland, mlr3 classif.ranger",
     "Dinamica EGO",
-    "evoland, mlr3 classif.naive_bayes (e1071)"
+    "evoland, mlr3 classif.naive_bayes (e1071)",
+    "clumpy (mmyrte/clumpy), Bayes transition probabilities from ekde densities"
   )
 )
 # PIE_ESTIMATORS restricts the estimators, e.g. to "log_reg" for the scaling runs
-estimators <-
-  estimators[
-    estimator %in%
-      strsplit(Sys.getenv("PIE_ESTIMATORS", "log_reg,ranger,woe,naive_bayes"), ",")[[1]]
-  ]
+estimators <- estimators[
+  estimator %in% strsplit(Sys.getenv("PIE_ESTIMATORS", paste(estimator, collapse = ",")), ",")[[1]]
+]
 
 allocators <- data.table::data.table(
   allocator = c("clumpy", "dinamica", "greedy", "clue-s", "ordered", "clumondo"),

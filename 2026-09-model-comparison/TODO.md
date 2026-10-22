@@ -38,8 +38,6 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
 
 ## Proposed, awaiting a decision
 
-- [ ] **clumpy's own estimator** (mmyrte/clumpy, Bayes-eKDE transition probabilities) as a
-      fifth row of the crossing.
 - [ ] **Fig. 2 (ensembles)**: the class-total and greedy allocators next to CLUMPY, with a
       binned realised-vs-estimated probability panel to show their bias.
 
@@ -54,8 +52,13 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
 
 evoland-plus (performance, from the scaling benchmark):
 
-- ethzplus/evoland-plus#85: DuckLake per-call overhead in prediction.
-- Further candidates are listed in the PR #2 discussion; to be opened once agreed.
+- ethzplus/evoland-plus#85: DuckLake per-call overhead in prediction (batch the catalog work).
+- ethzplus/evoland-plus#86: `extract_using_coords_t()` builds point geometries; indexing cells
+  takes a fifth of the memory (the 9.3 GB ingestion peak at 4.1 M cells).
+- ethzplus/evoland-plus#87: optional stratified training subsample in `fit_full_models()`.
+- `figure_of_merit_v()` over ~500 runs takes ~105 s per call, one lineage subquery per run;
+  `050` calls it twice (overall, per transition) on the same cells. A single call returning
+  both, or a batched lineage resolution (#85), would halve or better.
 
 Other tools, to report:
 
