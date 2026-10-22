@@ -92,10 +92,12 @@ How the decoupling works:
   allowed; standalone Dinamica allocates its WoE probabilities with its own `simulate.ego`.
   Earlier versions of this benchmark had these as separate estimator rows; under different
   names they are the same logistic regression, which says nothing about the estimator.
-  lulcc and CLUinPy fit them on 10 % samples of the 1991 map, as their demos do; evoland's
-  learners use every cell. The sample is not what holds them back: refitted on all cells,
-  lulcc's GLMs rank the cells the same (Spearman ≥ 0.995 for every class, over 10 samples). What
-  differs is the paradigm: presence on one map, against transitions between two.
+  Like evoland's learners, they are fitted on every cell, not on the samples their demos draw
+  (lulcc 10 % with the rest held out for ROC; CLUinPy 10 % per class capped at 500 cells, with
+  30 % of those held out). The comparison is between paradigms, presence on one map against
+  transitions between two, not between sample sizes; `070d` shows separately that lulcc as
+  published reproduces. (A refit on all cells barely changes lulcc's ranking of cells:
+  Spearman ≥ 0.995 for every class against 10 different 10 % samples.)
 - **What stays with the estimator.** Weights of Evidence uses Dinamica's distance-to-class maps
   where evoland's learners use neighbourhood counts; naive Bayes is the same model family as
   Weights of Evidence (additive log-odds per predictor, conditional independence), with a
@@ -174,7 +176,7 @@ crossing) are deterministic, one map each; all other ensembles have 20 realisati
 | naive Bayes | **0.031** | 0.032 | 0.034 | 0.036 | 0.033 | 0.033 |
 | Weights of Evidence | 0.025 | 0.029 | 0.030 | 0.029 | 0.030 | 0.027 |
 
-**Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.033, lulcc GLM × Ordered 0.028,
+**Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.032, lulcc GLM × Ordered 0.029,
 CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
 
 **Other scores** (`figures/pie-ensemble-summary.csv`, `pie-ensemble-brier.csv`), ranges over the
@@ -188,7 +190,7 @@ four estimators:
 | CLUE-S | 3 000–3 130 | 0.062–0.063 | −0.60 to −0.57 |
 | Ordered | 3 130–4 010 | 0.063–0.071 | −0.79 to −0.58 |
 | CLUMondo | 3 040–3 120 | 0.062–0.064 | −0.63 to −0.58 |
-| *lulcc GLM × CLUE-S, as shipped* | *16 134* | *0.168* | *−3.23* |
+| *lulcc GLM × CLUE-S, as shipped* | *15 883* | *0.166* | *−3.18* |
 
 **Variance of per-run FoM** over the crossing of the stochastic allocators (4 estimators ×
 CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 42 %, allocator 37 %,
@@ -212,14 +214,14 @@ What these numbers say:
 3. **The tools' own estimators were the weak part, not their allocators.** Fed the random
    forest's class probabilities, lulcc's CLUE-S and Ordered and CLUinPy's CLUMondo reach the
    highest FoM of the whole matrix (0.041–0.045), above the transition allocators. As shipped,
-   with their class-presence logistic regressions, the same allocators score 0.028–0.034. The
+   with their class-presence logistic regressions, the same allocators score 0.029–0.034. The
    logistic regression row makes the same point within one model family: evoland's logistic
    regression on transitions, with neighbourhood counts, beats the presence models of lulcc and
    CLUinPy (also logistic regressions, on the three factors alone) under their own allocators
-   (0.039 vs. 0.033 for CLUE-S, 0.039 vs. 0.028 for Ordered, 0.037 vs. 0.034 for CLUMondo).
+   (0.039 vs. 0.032 for CLUE-S, 0.039 vs. 0.029 for Ordered, 0.037 vs. 0.034 for CLUMondo).
 4. **CLUE-S's excess change came from its inputs.** As shipped (presence GLMs, all conversions
-   allowed, elasticity 0.2), CLUE-S changes 16 134 cells, 3.4× the observed change, including
-   2 362 cells of built → forest. With an estimator's class probabilities and the viable
+   allowed, elasticity 0.2), CLUE-S changes 15 883 cells, 3.4× the observed change, including
+   2 410 cells of built → forest. With an estimator's class probabilities and the viable
    transitions, the same allocator with the same parameters changes 3 000–3 130 cells.
 5. **Class-total allocators produce net change, and FoM rewards it.** CLUE-S, Ordered and
    CLUMondo convert other and forest to built and little else (gross change mostly 3 000–3 130

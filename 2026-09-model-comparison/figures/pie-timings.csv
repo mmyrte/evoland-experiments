@@ -1,6 +1,6 @@
 tool,stage,n,total_s,median_s
-cluinpy,allocate,100,352.76,2.16
-cluinpy,fit_suitability,1,39.34,39.34
+cluinpy,allocate,100,183.24,1.07
+cluinpy,fit_suitability,1,30.66,30.66
 dinamica-native,allocate,20,9.91,0.48
 dinamica-native,calibrate,1,2.03,2.03
 evoland,alloc_params,1,1.49,1.49
@@ -14,6 +14,6 @@ evoland,predict_ranger,1,38.09,38.09
 evoland-clumpy,allocate,80,151.61,1.85
 evoland-dinamica,allocate,80,443.91,5.52
 evoland-greedy,allocate,4,4.99,1.23
-lulcc,allocate_clues,100,306.89,2.475
-lulcc,allocate_ordered,24,36.5,1.495
-lulcc,fit_glm,1,7.44,7.44
+lulcc,allocate_clues,100,194.69,1.535
+lulcc,allocate_ordered,24,21.02,0.885
+lulcc,fit_glm,1,2.27,2.27
