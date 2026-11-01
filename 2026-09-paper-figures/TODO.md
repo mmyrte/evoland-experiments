@@ -47,8 +47,10 @@ Open:
       `figures/metric-{relations,agreement}.pdf`.
 - [ ] Decide which of the metric figures goes into the paper (main text or appendix), and whether
       Fig. 2 (d) should show a kappa next to the FoM.
-- [ ] Fig. 2 palette: CLUMondo (`#e87ba4`) and rank-and-fill (`#eb6834`) are hard to tell apart
-      even with normal colour vision (ΔE 13 < 15); the metric figures use Okabe-Ito instead.
+- [x] Fig. 2 palette: validated, CVD-safe scales. Allocators in Okabe-Ito order, shared with the
+      metric figures (linetypes as second encoding in (e)); outcomes in two hue families (hits
+      blue, errors warm); land cover stepped in lightness, apart from the other panels' hues;
+      outlines with a white halo.
 
 ## Experiments
 

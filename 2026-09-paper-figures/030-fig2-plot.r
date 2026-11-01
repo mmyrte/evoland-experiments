@@ -78,19 +78,24 @@ observed_change_cells <- maps[anterior != observed, .(id_coord)]
 #| fig-width: 7.2
 #| fig-height: 7.4
 col_surface <- "#f1f0ed"
-# Okabe-Ito: distinguishable under the common colour-vision deficiencies
+# land cover as area fills, in conventional hues but stepped in lightness (urban darkest) so the
+# classes separate under colour-vision deficiencies (validated: CVD and normal-vision distances
+# >= 15 on all pairs); kept apart from the allocator and outcome hues used in the other panels
 lulc_cols <- c(
-  "forest" = "#009E73",
-  "arable" = "#F0E442",
-  "urban" = "#D55E00",
-  "lake (fixed)" = "#56B4E9"
+  "forest" = "#5AAE61",
+  "arable" = "#E8D48B",
+  "urban" = "#45434F",
+  "lake (fixed)" = "#8EC3E6"
 )
+# outcomes in two hue families (validated, CVD-safe on all pairs): change in the right place is
+# blue (dark: right class, light: wrong class), errors are warm (vermilion: miss, orange: false
+# alarm)
 outcome_cols <- c(
   "persistence" = col_surface,
-  "hit" = "#2a78d6",
-  "miss" = "#eb6834",
-  "false alarm" = "#1baf7a",
-  "wrong hit" = "#3d3d3d"
+  "hit" = "#0072B2",
+  "wrong hit" = "#56B4E9",
+  "miss" = "#D55E00",
+  "false alarm" = "#E69F00"
 )
 seq_blue <- c("#fcfcfb", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b")
 
@@ -105,16 +110,12 @@ theme_panel_text <- theme(
 theme_map <- theme_void(base_size = 9) +
   theme_panel_text +
   theme(plot.margin = margin(2, 6, 2, 6))
+# a white halo under the black outline keeps it visible on dark fills (urban) and light ones
 outline <- function() {
-  geom_tile(
-    data = coords_xy[observed_change_cells, on = "id_coord", nomatch = NULL],
-    aes(x, y),
-    fill = NA,
-    colour = "#1a1a1a",
-    linewidth = 0.8,
-    width = 70,
-    height = 70,
-    inherit.aes = FALSE
+  changed <- coords_xy[observed_change_cells, on = "id_coord", nomatch = NULL]
+  list(
+    geom_tile(data = changed, aes(x, y), fill = NA, colour = "white", linewidth = 1.5, width = 70, height = 70, inherit.aes = FALSE),
+    geom_tile(data = changed, aes(x, y), fill = NA, colour = "#1a1a1a", linewidth = 0.7, width = 70, height = 70, inherit.aes = FALSE)
   )
 }
 
@@ -174,12 +175,23 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
   )
 
 # (d): one row per allocator, realisations jittered around it; the deterministic allocation below
+# Okabe-Ito, in the same order as the metric figures (030-metric-relations-plot.r), so each
+# allocator keeps its colour across the paper. CLUE-S and CLUMondo are only 7.6 apart under
+# deuteranopia (validator floor 6-8): (d) names its rows, (e) adds linetypes.
 allocator_cols <- c(
-  "CLUMPY" = "#2a78d6",
-  "Dinamica" = "#4a3aa7",
-  "CLUE-S" = "#1baf7a",
-  "CLUMondo" = "#e87ba4",
-  "rank-and-fill" = "#eb6834"
+  "CLUMPY" = "#0072B2",
+  "Dinamica" = "#E69F00",
+  "CLUE-S" = "#009E73",
+  "CLUMondo" = "#CC79A7",
+  "rank-and-fill" = "#D55E00"
+)
+allocator_linetypes <- c(
+  "observed change" = "solid",
+  "CLUMPY" = "solid",
+  "Dinamica" = "42",
+  "CLUE-S" = "11",
+  "CLUMondo" = "2212",
+  "rank-and-fill" = "73"
 )
 row_levels <- c(allocator_levels, "rank-and-fill")
 fom[, row := factor(as.character(allocator), levels = rev(row_levels))]
@@ -271,10 +283,12 @@ p_e <- ggplot() +
   geom_ribbon(
     data = cdf[what == "CLUMPY"],
     aes(x = x, ymin = lo, ymax = hi),
-    fill = "#cde2fb"
+    fill = allocator_cols[["CLUMPY"]],
+    alpha = 0.2
   ) +
-  geom_line(data = cdf_lines, aes(x, cdf, colour = what), linewidth = 0.55) +
+  geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.55) +
   scale_colour_manual(values = what_cols, breaks = names(what_cols)) +
+  scale_linetype_manual(values = allocator_linetypes, breaks = names(what_cols)) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
@@ -289,7 +303,10 @@ p_e <- ggplot() +
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)
   ) +
-  guides(colour = guide_legend(ncol = 2))
+  guides(
+    colour = guide_legend(ncol = 2, override.aes = list(linewidth = 0.7)),
+    linetype = guide_legend(ncol = 2)
+  )
 
 fig2 <- p_a +
   p_b +
