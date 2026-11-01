@@ -53,7 +53,7 @@ for (u in sort(unique(viable$id_lulc_anterior))) {
   from_u <- viable[id_lulc_anterior == u]
   train <- NULL
   for (i in seq_len(nrow(from_u))) {
-    x <- db$trans_pred_data_v(
+    x <- db$pred_wide_train_v(
       id_trans = from_u$id_trans[i],
       id_pred = sort(trans_preds[id_trans == from_u$id_trans[i], id_pred])
     )
@@ -69,7 +69,7 @@ for (u in sort(unique(viable$id_lulc_anterior))) {
   }
   fwrite(train, file.path(work_dir, sprintf("train_%d.csv", u)))
   fwrite(
-    db$pred_data_wide_v(id_trans = from_u$id_trans[1], id_period_anterior = 2L)[,
+    db$pred_wide_predict_v(id_trans = from_u$id_trans[1], id_period_anterior = 2L)[,
       !c("id_lulc")
     ],
     file.path(work_dir, sprintf("pred_%d.csv", u))
