@@ -119,6 +119,14 @@ CLUinPy 8601…, standalone Dinamica 3701….
 Run with `./execute-all.sh --workers 3 '2026-09-model-comparison/0*.r'` from the repo root.
 Steps sharing a number are independent.
 
+**Plotting elsewhere** (e.g. on macOS): `050-compare.r` writes every simulated map (sparse: the
+cells that differ from 1991), the 1991 and observed 1999 maps, and each estimator's potentials to
+`results/` (Parquet, LFS-tracked). `051-validation-metrics.r` reads only those (plus Rcpp for
+`validation-metrics.r`), and the `060` steps read only `figures/*.csv` and `results/`, with
+data.table, arrow, ggplot2 and patchwork. After `git lfs pull`,
+`Rscript 2026-09-model-comparison/060-metric-relations-plot.r` redraws without the database,
+Dinamica, lulcc or CLUinPy.
+
 | Step | What it does |
 | --- | --- |
 | [`000-pie-data.r`](000-pie-data.r) | Writes `data/` (git-ignored) from `lulcc::pie`, and the demand tables |
@@ -131,18 +139,24 @@ Steps sharing a number are independent.
 | [`030-alloc-evoland-greedy.r`](030-alloc-evoland-greedy.r) | evoland's deterministic rank-and-fill (`alloc_greedy()`, joint ranking) on every estimator |
 | [`040-alloc-lulcc.r`](040-alloc-lulcc.r) | lulcc 1.0.4: CLUE-S and Ordered on every estimator's class probabilities; as shipped, its GLMs on the 1991 map |
 | [`040-alloc-cluinpy.r`](040-alloc-cluinpy.r) | Calls [`040-alloc-cluinpy/run_pie.py`](040-alloc-cluinpy/run_pie.py): CLUMondo on every estimator's class probabilities; as shipped, CLUinPy's logistic suitability module |
-| [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
+| [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/`, and every map and the potentials to `results/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
+| [`051-validation-metrics.r`](051-validation-metrics.r) | Every map and ensemble scored with the validation metrics of `validation-metrics.r` (repository root): KSim, Fuzzy Kappa Simulation, similarity of differences, TOC AUC, disagreement, Brier; concentration on the potentials; ANOVA per metric. Reads and writes `results/` only |
 | [`052-check-greedy-ordered.r`](052-check-greedy-ordered.r) | Check: evoland's `alloc_greedy(arbitration = "ordered")` against lulcc's Ordered model, cell by cell |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the crossing and the tools as shipped, ANOVA shares |
+| [`060-fom-outcome-maps-plot.r`](060-fom-outcome-maps-plot.r) | `figures/pie-figure-of-merit.pdf`, `figures/pie-outcome-maps.pdf` (formerly drawn by `050`) |
+| [`060-metric-relations-plot.r`](060-metric-relations-plot.r) | Appendix: `figures/pie-metric-relations.pdf` (metrics against allocation bias), `figures/pie-metric-agreement.pdf` (variance shares per metric, rank correlations, ensembles as forecasts) |
 | [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
 | [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
 
 ## Environment
 
-The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6.1, 4 cores,
-15 GiB) against evoland-plus `develop` at `08aa38e`, as pinned in `rproject.toml` (it carries
-the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`).
+The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6, 4 cores,
+15 GiB) against evoland-plus `develop`, as pinned in `rproject.toml`: first `08aa38e` (the
+stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`),
+now `3bc7856` (renamed `pred_wide_train_v()`/`pred_wide_predict_v()`, period filters, upserts
+into key-only tables, ethzplus/evoland-plus#84, #116, #125). The results below are from a rerun
+from scratch on `3bc7856` (R 4.6.2), see Replay check.
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
@@ -351,7 +365,7 @@ Memory is the peak of the largest process. For standalone Dinamica that is the R
 3. **DuckLake** (ethzplus/evoland-plus#85). Every catalog-resolving call costs a fixed
    20–70 ms: `get_read_expr()`, the table bindings, `.has_predictions()`. A plain DuckDB query
    costs 1 ms. On PIE that is 75 % of a prediction (11 s, of which the model's `predict()` takes
-   1.7 s), but the cost does not grow with the domain. The data-bound work in DuckDB (the `pred_data_wide_v()` PIVOT, the joins) scales
+   1.7 s), but the cost does not grow with the domain. The data-bound work in DuckDB (the `pred_wide_predict_v()` PIVOT, the joins) scales
    linearly here. Two side effects:
    - every realisation stores a full map (`lulc_data_t` held 25 M rows after the benchmark);
    - every commit makes a snapshot (283 after the benchmark).
