@@ -30,7 +30,7 @@ dependencies = [
     "rmarkdown",
     "writexl",
     "svglite",
-    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "08aa38ec0de5ccfb48faacc2ff0a958fccaeedd7", install_suggestions = true },
+    { name = "evoland", git = "https://github.com/ethzplus/evoland-plus/", commit = "3bc78561d938efcb5698cfbbc52466ddcb3e1f4f", install_suggestions = true },
     "mapview",
     "stars",
     "methods",
@@ -42,6 +42,7 @@ dependencies = [
     "lulcc",
     "gsubfn",
     "caret",
+    "Hmisc", # lulcc::approxExtrapDemand() (070d)
     "future.mirai",
     "ggspatial",
     "viridis",

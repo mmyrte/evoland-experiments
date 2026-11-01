@@ -67,3 +67,6 @@ __pycache__/
 
 # CLUinPy, cloned on first use (python-env.r)
 .cache/
+
+# stray default graphics device output
+Rplots.pdf

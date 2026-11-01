@@ -4,8 +4,14 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
 
 ## Pipeline
 
-- [ ] **Replay from scratch** in the devcontainer (mmyrte/evoland-experiments#3) and compare
-      the per-run FoM with this branch's; the README's Replay check predates the crossing.
+- [x] **Replay from scratch** on the new pin (`3bc7856`, 2026-11-01, cloud container): 369 of
+      370 non-Dinamica maps bit-identical (README, Replay check). Still open: the same in the
+      devcontainer (mmyrte/evoland-experiments#3).
+- [ ] **Bayes-eKDE × CLUMPY**: one realisation of 20 differed between the two runs (0.0003 FoM);
+      check whether the eKDE potentials (`015-clumpy-kde`) replay bit for bit.
+- [ ] **Paper:** `main.tex` cites the ANOVA shares 36/39/15/9 %; the rerun gives 40/38/13/9 %,
+      moved by Dinamica's seeds alone. Either report a range over reruns, or find a way to give
+      each Dinamica member its own replayable seed (`-predefined-seed` gives every run the same).
 - [ ] **Render via quarto** (`execute-all.sh`) and commit the HTML reports from a machine with
       LFS push access (the cloud container gets 403 from lfs.github.com).
 - [ ] **Rerun the scaling benchmark** (`080-scaling/`) on the current pin, once the evoland
@@ -13,6 +19,13 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
 - [ ] **Tool versions** in a table for the paper.
 
 ## Analysis
+
+- [x] **Further validation metrics** (`051-validation-metrics.r`): KSim, Fuzzy Kappa Simulation,
+      similarity of differences, TOC AUC, per map and per ensemble; ANOVA per metric; appendix
+      figures `figures/pie-metric-{relations,agreement}.pdf`.
+- [ ] Decide which metric figure goes into the appendix, and whether the per-metric variance
+      shares belong in Sect. 5 (they show that "how substitutable are the estimators" depends on
+      the metric).
 
 - [ ] **Reliability diagrams** per estimator and per ensemble, to check the reading of the
       naive Bayes × CLUMPY interaction (sharp probabilities) and of the Brier skill (`051`).
