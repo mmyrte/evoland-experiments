@@ -64,6 +64,13 @@ set up on Euler.
   - Rendered HTML with embedded graphics and richer visualisations (e.g. leaflet) is
     LFS-tracked (`.gitattributes`) and committed ad-hoc; the `_freeze/` cache is git-ignored.
 - **State lives in a DuckLake.** Each experiment builds a git-ignored `*.evolanddb`.
+- **Shared validation metrics.** `validation-metrics.r` (with its C++ kernel and
+  `validation-metrics-tests.r`) at the root is sourced by the 2026-09 experiments: figure of merit,
+  disagreement, Kappa Simulation, Fuzzy Kappa Simulation, similarity of differences, TOC AUC,
+  Brier. To move into evoland-plus once settled.
+- **Results for plotting elsewhere.** Expensive steps write their maps and scores to a
+  `results/` folder beside them (Parquet via git-LFS, CSV), and plot steps read only those, so
+  figures can be redrawn on another machine (e.g. macOS) without rerunning the models.
 - **Data provenance.** Ingest scripts ideally download from public sources and verify
   md5sums via `evoland::download_and_verify()` into the evoland cache, ensuring maximum
   reproducibility.

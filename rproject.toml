@@ -42,6 +42,7 @@ dependencies = [
     "lulcc",
     "gsubfn",
     "caret",
+    "Hmisc", # lulcc::approxExtrapDemand() (070d)
     "future.mirai",
     "ggspatial",
     "viridis",

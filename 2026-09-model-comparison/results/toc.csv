@@ -1,0 +1,1441 @@
+forecast,hits_false_alarms,hits,threshold
+Bayes-eKDE <U+00D7> CLUE-S,0,0,Inf
+Bayes-eKDE <U+00D7> CLUE-S,3076,363,1
+Bayes-eKDE <U+00D7> CLUE-S,3078,363,0.95
+Bayes-eKDE <U+00D7> CLUE-S,3081,363,0.85
+Bayes-eKDE <U+00D7> CLUE-S,3082,363,0.8
+Bayes-eKDE <U+00D7> CLUE-S,3084,363,0.75
+Bayes-eKDE <U+00D7> CLUE-S,3085,363,0.6
+Bayes-eKDE <U+00D7> CLUE-S,3086,363,0.55
+Bayes-eKDE <U+00D7> CLUE-S,3087,363,0.3
+Bayes-eKDE <U+00D7> CLUE-S,3091,363,0.1
+Bayes-eKDE <U+00D7> CLUE-S,3093,363,0.05
+Bayes-eKDE <U+00D7> CLUE-S,113563,4756,0
+Bayes-eKDE <U+00D7> CLUMPY,0,0,Inf
+Bayes-eKDE <U+00D7> CLUMPY,16,0,1
+Bayes-eKDE <U+00D7> CLUMPY,17,0,0.95
+Bayes-eKDE <U+00D7> CLUMPY,19,0,0.9
+Bayes-eKDE <U+00D7> CLUMPY,24,0,0.85
+Bayes-eKDE <U+00D7> CLUMPY,25,0,0.8
+Bayes-eKDE <U+00D7> CLUMPY,26,0,0.75
+Bayes-eKDE <U+00D7> CLUMPY,31,1,0.7
+Bayes-eKDE <U+00D7> CLUMPY,38,3,0.65
+Bayes-eKDE <U+00D7> CLUMPY,62,7,0.6
+Bayes-eKDE <U+00D7> CLUMPY,113,14,0.55
+Bayes-eKDE <U+00D7> CLUMPY,199,26,0.5
+Bayes-eKDE <U+00D7> CLUMPY,382,51,0.45
+Bayes-eKDE <U+00D7> CLUMPY,684,83,0.4
+Bayes-eKDE <U+00D7> CLUMPY,1200,138,0.35
+Bayes-eKDE <U+00D7> CLUMPY,2211,238,0.3
+Bayes-eKDE <U+00D7> CLUMPY,4213,447,0.25
+Bayes-eKDE <U+00D7> CLUMPY,7750,829,0.2
+Bayes-eKDE <U+00D7> CLUMPY,13948,1346,0.15
+Bayes-eKDE <U+00D7> CLUMPY,24017,2057,0.1
+Bayes-eKDE <U+00D7> CLUMPY,40060,3073,0.05
+Bayes-eKDE <U+00D7> CLUMPY,113563,4756,0
+Bayes-eKDE <U+00D7> CLUMondo,0,0,Inf
+Bayes-eKDE <U+00D7> CLUMondo,3030,371,1
+Bayes-eKDE <U+00D7> CLUMondo,3031,371,0.85
+Bayes-eKDE <U+00D7> CLUMondo,3032,371,0.75
+Bayes-eKDE <U+00D7> CLUMondo,3033,371,0.65
+Bayes-eKDE <U+00D7> CLUMondo,3034,371,0.5
+Bayes-eKDE <U+00D7> CLUMondo,3035,371,0.45
+Bayes-eKDE <U+00D7> CLUMondo,3036,371,0.1
+Bayes-eKDE <U+00D7> CLUMondo,3037,371,0.05
+Bayes-eKDE <U+00D7> CLUMondo,113563,4756,0
+Bayes-eKDE <U+00D7> Dinamica,0,0,Inf
+Bayes-eKDE <U+00D7> Dinamica,28,3,1
+Bayes-eKDE <U+00D7> Dinamica,42,4,0.95
+Bayes-eKDE <U+00D7> Dinamica,62,5,0.9
+Bayes-eKDE <U+00D7> Dinamica,80,8,0.85
+Bayes-eKDE <U+00D7> Dinamica,112,12,0.8
+Bayes-eKDE <U+00D7> Dinamica,154,15,0.75
+Bayes-eKDE <U+00D7> Dinamica,224,27,0.7
+Bayes-eKDE <U+00D7> Dinamica,327,38,0.65
+Bayes-eKDE <U+00D7> Dinamica,487,60,0.6
+Bayes-eKDE <U+00D7> Dinamica,756,91,0.55
+Bayes-eKDE <U+00D7> Dinamica,1082,124,0.5
+Bayes-eKDE <U+00D7> Dinamica,1631,175,0.45
+Bayes-eKDE <U+00D7> Dinamica,2405,264,0.4
+Bayes-eKDE <U+00D7> Dinamica,3532,380,0.35
+Bayes-eKDE <U+00D7> Dinamica,5122,537,0.3
+Bayes-eKDE <U+00D7> Dinamica,7216,725,0.25
+Bayes-eKDE <U+00D7> Dinamica,9997,973,0.2
+Bayes-eKDE <U+00D7> Dinamica,13975,1327,0.15
+Bayes-eKDE <U+00D7> Dinamica,19458,1751,0.1
+Bayes-eKDE <U+00D7> Dinamica,28170,2375,0.05
+Bayes-eKDE <U+00D7> Dinamica,113563,4756,0
+Bayes-eKDE <U+00D7> Ordered,0,0,Inf
+Bayes-eKDE <U+00D7> Ordered,3366,374,1
+Bayes-eKDE <U+00D7> Ordered,113563,4756,0
+Bayes-eKDE <U+00D7> greedy,0,0,Inf
+Bayes-eKDE <U+00D7> greedy,4748,506,1
+Bayes-eKDE <U+00D7> greedy,113563,4756,0
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),0,0,Inf
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),3161,363,1
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),3163,363,0.95
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),3165,363,0.85
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),3167,363,0.05
+CLUinPy logistic <U+00D7> CLUMondo (as shipped),113563,4756,0
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),0,0,Inf
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),1,0,0.9
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),5,1,0.85
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),10,2,0.8
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),26,3,0.75
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),56,6,0.7
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),110,9,0.65
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),197,13,0.6
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),368,30,0.55
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),638,56,0.5
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),1128,97,0.45
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),1843,169,0.4
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),3042,271,0.35
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),4727,419,0.3
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),7165,612,0.25
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),10831,899,0.2
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),14613,1193,0.15
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),23320,1903,0.1
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),26780,2167,0.05
+Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),113563,4756,0
+Weights of Evidence <U+00D7> CLUE-S,0,0,Inf
+Weights of Evidence <U+00D7> CLUE-S,2740,309,1
+Weights of Evidence <U+00D7> CLUE-S,2751,310,0.95
+Weights of Evidence <U+00D7> CLUE-S,2773,314,0.9
+Weights of Evidence <U+00D7> CLUE-S,2810,318,0.85
+Weights of Evidence <U+00D7> CLUE-S,2855,321,0.8
+Weights of Evidence <U+00D7> CLUE-S,2900,326,0.75
+Weights of Evidence <U+00D7> CLUE-S,2938,328,0.7
+Weights of Evidence <U+00D7> CLUE-S,2956,328,0.65
+Weights of Evidence <U+00D7> CLUE-S,2964,328,0.6
+Weights of Evidence <U+00D7> CLUE-S,2970,328,0.55
+Weights of Evidence <U+00D7> CLUE-S,2971,328,0.35
+Weights of Evidence <U+00D7> CLUE-S,2974,328,0.3
+Weights of Evidence <U+00D7> CLUE-S,2995,329,0.25
+Weights of Evidence <U+00D7> CLUE-S,3113,335,0.2
+Weights of Evidence <U+00D7> CLUE-S,3293,356,0.15
+Weights of Evidence <U+00D7> CLUE-S,3485,369,0.1
+Weights of Evidence <U+00D7> CLUE-S,3592,377,0.05
+Weights of Evidence <U+00D7> CLUE-S,113563,4756,0
+Weights of Evidence <U+00D7> CLUMPY,0,0,Inf
+Weights of Evidence <U+00D7> CLUMPY,1,0,0.55
+Weights of Evidence <U+00D7> CLUMPY,6,0,0.45
+Weights of Evidence <U+00D7> CLUMPY,33,4,0.4
+Weights of Evidence <U+00D7> CLUMPY,131,9,0.35
+Weights of Evidence <U+00D7> CLUMPY,496,42,0.3
+Weights of Evidence <U+00D7> CLUMPY,1637,124,0.25
+Weights of Evidence <U+00D7> CLUMPY,4761,372,0.2
+Weights of Evidence <U+00D7> CLUMPY,11867,968,0.15
+Weights of Evidence <U+00D7> CLUMPY,25948,2032,0.1
+Weights of Evidence <U+00D7> CLUMPY,50170,3373,0.05
+Weights of Evidence <U+00D7> CLUMPY,113563,4756,0
+Weights of Evidence <U+00D7> CLUMondo,0,0,Inf
+Weights of Evidence <U+00D7> CLUMondo,3062,295,1
+Weights of Evidence <U+00D7> CLUMondo,3071,295,0.95
+Weights of Evidence <U+00D7> CLUMondo,3076,297,0.85
+Weights of Evidence <U+00D7> CLUMondo,3078,297,0.8
+Weights of Evidence <U+00D7> CLUMondo,3115,302,0.7
+Weights of Evidence <U+00D7> CLUMondo,3138,304,0.55
+Weights of Evidence <U+00D7> CLUMondo,3142,305,0.15
+Weights of Evidence <U+00D7> CLUMondo,3143,305,0.05
+Weights of Evidence <U+00D7> CLUMondo,113563,4756,0
+Weights of Evidence <U+00D7> Dinamica,0,0,Inf
+Weights of Evidence <U+00D7> Dinamica,4,0,0.65
+Weights of Evidence <U+00D7> Dinamica,12,1,0.6
+Weights of Evidence <U+00D7> Dinamica,47,2,0.55
+Weights of Evidence <U+00D7> Dinamica,121,11,0.5
+Weights of Evidence <U+00D7> Dinamica,325,33,0.45
+Weights of Evidence <U+00D7> Dinamica,753,72,0.4
+Weights of Evidence <U+00D7> Dinamica,1580,143,0.35
+Weights of Evidence <U+00D7> Dinamica,3014,275,0.3
+Weights of Evidence <U+00D7> Dinamica,5517,479,0.25
+Weights of Evidence <U+00D7> Dinamica,9231,803,0.2
+Weights of Evidence <U+00D7> Dinamica,14799,1265,0.15
+Weights of Evidence <U+00D7> Dinamica,23107,1878,0.1
+Weights of Evidence <U+00D7> Dinamica,36350,2749,0.05
+Weights of Evidence <U+00D7> Dinamica,113563,4756,0
+Weights of Evidence <U+00D7> Ordered,0,0,Inf
+Weights of Evidence <U+00D7> Ordered,3180,354,1
+Weights of Evidence <U+00D7> Ordered,113563,4756,0
+Weights of Evidence <U+00D7> greedy,0,0,Inf
+Weights of Evidence <U+00D7> greedy,4748,404,1
+Weights of Evidence <U+00D7> greedy,113563,4756,0
+logistic regression <U+00D7> CLUE-S,0,0,Inf
+logistic regression <U+00D7> CLUE-S,3041,375,1
+logistic regression <U+00D7> CLUE-S,3046,375,0.95
+logistic regression <U+00D7> CLUE-S,3049,375,0.9
+logistic regression <U+00D7> CLUE-S,3051,376,0.85
+logistic regression <U+00D7> CLUE-S,3054,376,0.8
+logistic regression <U+00D7> CLUE-S,3056,376,0.75
+logistic regression <U+00D7> CLUE-S,3058,376,0.7
+logistic regression <U+00D7> CLUE-S,3059,376,0.65
+logistic regression <U+00D7> CLUE-S,3060,376,0.55
+logistic regression <U+00D7> CLUE-S,3061,376,0.45
+logistic regression <U+00D7> CLUE-S,3063,377,0.4
+logistic regression <U+00D7> CLUE-S,3064,377,0.35
+logistic regression <U+00D7> CLUE-S,3065,377,0.3
+logistic regression <U+00D7> CLUE-S,3069,377,0.25
+logistic regression <U+00D7> CLUE-S,3070,377,0.2
+logistic regression <U+00D7> CLUE-S,3072,377,0.15
+logistic regression <U+00D7> CLUE-S,3073,377,0.1
+logistic regression <U+00D7> CLUE-S,3077,377,0.05
+logistic regression <U+00D7> CLUE-S,113563,4756,0
+logistic regression <U+00D7> CLUMPY,0,0,Inf
+logistic regression <U+00D7> CLUMPY,1,0,0.6
+logistic regression <U+00D7> CLUMPY,7,1,0.55
+logistic regression <U+00D7> CLUMPY,17,1,0.5
+logistic regression <U+00D7> CLUMPY,49,3,0.45
+logistic regression <U+00D7> CLUMPY,131,13,0.4
+logistic regression <U+00D7> CLUMPY,377,48,0.35
+logistic regression <U+00D7> CLUMPY,933,117,0.3
+logistic regression <U+00D7> CLUMPY,2409,275,0.25
+logistic regression <U+00D7> CLUMPY,5661,566,0.2
+logistic regression <U+00D7> CLUMPY,12244,1135,0.15
+logistic regression <U+00D7> CLUMPY,24839,2059,0.1
+logistic regression <U+00D7> CLUMPY,48396,3404,0.05
+logistic regression <U+00D7> CLUMPY,113563,4756,0
+logistic regression <U+00D7> CLUMondo,0,0,Inf
+logistic regression <U+00D7> CLUMondo,3060,359,1
+logistic regression <U+00D7> CLUMondo,3070,362,0.95
+logistic regression <U+00D7> CLUMondo,3084,362,0.9
+logistic regression <U+00D7> CLUMondo,3086,362,0.85
+logistic regression <U+00D7> CLUMondo,3091,362,0.8
+logistic regression <U+00D7> CLUMondo,3092,363,0.75
+logistic regression <U+00D7> CLUMondo,3094,364,0.65
+logistic regression <U+00D7> CLUMondo,3095,364,0.55
+logistic regression <U+00D7> CLUMondo,3096,364,0.45
+logistic regression <U+00D7> CLUMondo,3098,364,0.4
+logistic regression <U+00D7> CLUMondo,3105,364,0.35
+logistic regression <U+00D7> CLUMondo,3106,364,0.3
+logistic regression <U+00D7> CLUMondo,3111,365,0.25
+logistic regression <U+00D7> CLUMondo,3127,367,0.15
+logistic regression <U+00D7> CLUMondo,3132,368,0.1
+logistic regression <U+00D7> CLUMondo,3133,368,0.05
+logistic regression <U+00D7> CLUMondo,113563,4756,0
+logistic regression <U+00D7> Dinamica,0,0,Inf
+logistic regression <U+00D7> Dinamica,1,0,1
+logistic regression <U+00D7> Dinamica,3,0,0.95
+logistic regression <U+00D7> Dinamica,4,0,0.9
+logistic regression <U+00D7> Dinamica,11,0,0.85
+logistic regression <U+00D7> Dinamica,24,1,0.8
+logistic regression <U+00D7> Dinamica,52,4,0.75
+logistic regression <U+00D7> Dinamica,108,10,0.7
+logistic regression <U+00D7> Dinamica,196,16,0.65
+logistic regression <U+00D7> Dinamica,347,29,0.6
+logistic regression <U+00D7> Dinamica,564,56,0.55
+logistic regression <U+00D7> Dinamica,942,103,0.5
+logistic regression <U+00D7> Dinamica,1483,182,0.45
+logistic regression <U+00D7> Dinamica,2258,270,0.4
+logistic regression <U+00D7> Dinamica,3286,364,0.35
+logistic regression <U+00D7> Dinamica,4724,533,0.3
+logistic regression <U+00D7> Dinamica,6736,733,0.25
+logistic regression <U+00D7> Dinamica,9540,978,0.2
+logistic regression <U+00D7> Dinamica,13598,1312,0.15
+logistic regression <U+00D7> Dinamica,19672,1773,0.1
+logistic regression <U+00D7> Dinamica,31311,2541,0.05
+logistic regression <U+00D7> Dinamica,113563,4756,0
+logistic regression <U+00D7> Ordered,0,0,Inf
+logistic regression <U+00D7> Ordered,3175,381,1
+logistic regression <U+00D7> Ordered,113563,4756,0
+logistic regression <U+00D7> greedy,0,0,Inf
+logistic regression <U+00D7> greedy,4748,513,1
+logistic regression <U+00D7> greedy,113563,4756,0
+lulcc GLM <U+00D7> CLUE-S (as shipped),0,0,Inf
+lulcc GLM <U+00D7> CLUE-S (as shipped),15842,1126,1
+lulcc GLM <U+00D7> CLUE-S (as shipped),15846,1126,0.95
+lulcc GLM <U+00D7> CLUE-S (as shipped),15850,1127,0.9
+lulcc GLM <U+00D7> CLUE-S (as shipped),15853,1127,0.85
+lulcc GLM <U+00D7> CLUE-S (as shipped),15863,1128,0.8
+lulcc GLM <U+00D7> CLUE-S (as shipped),15870,1128,0.75
+lulcc GLM <U+00D7> CLUE-S (as shipped),15876,1128,0.7
+lulcc GLM <U+00D7> CLUE-S (as shipped),15878,1128,0.65
+lulcc GLM <U+00D7> CLUE-S (as shipped),15882,1128,0.6
+lulcc GLM <U+00D7> CLUE-S (as shipped),15884,1128,0.55
+lulcc GLM <U+00D7> CLUE-S (as shipped),15886,1128,0.5
+lulcc GLM <U+00D7> CLUE-S (as shipped),15888,1128,0.45
+lulcc GLM <U+00D7> CLUE-S (as shipped),15890,1128,0.4
+lulcc GLM <U+00D7> CLUE-S (as shipped),15895,1128,0.35
+lulcc GLM <U+00D7> CLUE-S (as shipped),15898,1128,0.3
+lulcc GLM <U+00D7> CLUE-S (as shipped),15904,1128,0.25
+lulcc GLM <U+00D7> CLUE-S (as shipped),15909,1128,0.2
+lulcc GLM <U+00D7> CLUE-S (as shipped),15911,1128,0.15
+lulcc GLM <U+00D7> CLUE-S (as shipped),15913,1129,0.1
+lulcc GLM <U+00D7> CLUE-S (as shipped),15923,1129,0.05
+lulcc GLM <U+00D7> CLUE-S (as shipped),113563,4756,0
+lulcc GLM <U+00D7> Ordered (as shipped),0,0,Inf
+lulcc GLM <U+00D7> Ordered (as shipped),9,1,1
+lulcc GLM <U+00D7> Ordered (as shipped),45,5,0.95
+lulcc GLM <U+00D7> Ordered (as shipped),117,17,0.9
+lulcc GLM <U+00D7> Ordered (as shipped),220,31,0.85
+lulcc GLM <U+00D7> Ordered (as shipped),382,48,0.8
+lulcc GLM <U+00D7> Ordered (as shipped),615,72,0.75
+lulcc GLM <U+00D7> Ordered (as shipped),1002,109,0.7
+lulcc GLM <U+00D7> Ordered (as shipped),1571,170,0.65
+lulcc GLM <U+00D7> Ordered (as shipped),2365,235,0.6
+lulcc GLM <U+00D7> Ordered (as shipped),3387,320,0.55
+lulcc GLM <U+00D7> Ordered (as shipped),4484,400,0.5
+lulcc GLM <U+00D7> Ordered (as shipped),5461,490,0.45
+lulcc GLM <U+00D7> Ordered (as shipped),6271,566,0.4
+lulcc GLM <U+00D7> Ordered (as shipped),6743,607,0.35
+lulcc GLM <U+00D7> Ordered (as shipped),7043,636,0.3
+lulcc GLM <U+00D7> Ordered (as shipped),7191,646,0.25
+lulcc GLM <U+00D7> Ordered (as shipped),7254,653,0.2
+lulcc GLM <U+00D7> Ordered (as shipped),7319,660,0.15
+lulcc GLM <U+00D7> Ordered (as shipped),7388,673,0.1
+lulcc GLM <U+00D7> Ordered (as shipped),7460,677,0.05
+lulcc GLM <U+00D7> Ordered (as shipped),113563,4756,0
+naive Bayes <U+00D7> CLUE-S,0,0,Inf
+naive Bayes <U+00D7> CLUE-S,3119,370,1
+naive Bayes <U+00D7> CLUE-S,3122,370,0.95
+naive Bayes <U+00D7> CLUE-S,3123,370,0.85
+naive Bayes <U+00D7> CLUE-S,3124,370,0.8
+naive Bayes <U+00D7> CLUE-S,3125,370,0.7
+naive Bayes <U+00D7> CLUE-S,3126,370,0.65
+naive Bayes <U+00D7> CLUE-S,3127,370,0.6
+naive Bayes <U+00D7> CLUE-S,3128,370,0.5
+naive Bayes <U+00D7> CLUE-S,3131,370,0.45
+naive Bayes <U+00D7> CLUE-S,3132,370,0.4
+naive Bayes <U+00D7> CLUE-S,3133,370,0.35
+naive Bayes <U+00D7> CLUE-S,3134,370,0.3
+naive Bayes <U+00D7> CLUE-S,3136,371,0.25
+naive Bayes <U+00D7> CLUE-S,3137,371,0.2
+naive Bayes <U+00D7> CLUE-S,3139,371,0.15
+naive Bayes <U+00D7> CLUE-S,3143,371,0.1
+naive Bayes <U+00D7> CLUE-S,113563,4756,0
+naive Bayes <U+00D7> CLUMPY,0,0,Inf
+naive Bayes <U+00D7> CLUMPY,1,0,0.8
+naive Bayes <U+00D7> CLUMPY,5,0,0.75
+naive Bayes <U+00D7> CLUMPY,13,1,0.7
+naive Bayes <U+00D7> CLUMPY,24,3,0.65
+naive Bayes <U+00D7> CLUMPY,44,6,0.6
+naive Bayes <U+00D7> CLUMPY,101,18,0.55
+naive Bayes <U+00D7> CLUMPY,197,32,0.5
+naive Bayes <U+00D7> CLUMPY,419,51,0.45
+naive Bayes <U+00D7> CLUMPY,774,84,0.4
+naive Bayes <U+00D7> CLUMPY,1520,170,0.35
+naive Bayes <U+00D7> CLUMPY,2833,314,0.3
+naive Bayes <U+00D7> CLUMPY,5176,571,0.25
+naive Bayes <U+00D7> CLUMPY,8820,901,0.2
+naive Bayes <U+00D7> CLUMPY,14571,1405,0.15
+naive Bayes <U+00D7> CLUMPY,23273,2147,0.1
+naive Bayes <U+00D7> CLUMPY,37295,3087,0.05
+naive Bayes <U+00D7> CLUMPY,113563,4756,0
+naive Bayes <U+00D7> CLUMondo,0,0,Inf
+naive Bayes <U+00D7> CLUMondo,3021,340,1
+naive Bayes <U+00D7> CLUMondo,3024,342,0.95
+naive Bayes <U+00D7> CLUMondo,3032,343,0.9
+naive Bayes <U+00D7> CLUMondo,3033,343,0.8
+naive Bayes <U+00D7> CLUMondo,3034,343,0.65
+naive Bayes <U+00D7> CLUMondo,3037,344,0.6
+naive Bayes <U+00D7> CLUMondo,3038,344,0.5
+naive Bayes <U+00D7> CLUMondo,3039,344,0.2
+naive Bayes <U+00D7> CLUMondo,3041,344,0.15
+naive Bayes <U+00D7> CLUMondo,3051,345,0.1
+naive Bayes <U+00D7> CLUMondo,3056,346,0.05
+naive Bayes <U+00D7> CLUMondo,113563,4756,0
+naive Bayes <U+00D7> Dinamica,0,0,Inf
+naive Bayes <U+00D7> Dinamica,15,2,1
+naive Bayes <U+00D7> Dinamica,37,6,0.95
+naive Bayes <U+00D7> Dinamica,54,8,0.9
+naive Bayes <U+00D7> Dinamica,88,11,0.85
+naive Bayes <U+00D7> Dinamica,133,15,0.8
+naive Bayes <U+00D7> Dinamica,194,18,0.75
+naive Bayes <U+00D7> Dinamica,288,30,0.7
+naive Bayes <U+00D7> Dinamica,433,44,0.65
+naive Bayes <U+00D7> Dinamica,699,75,0.6
+naive Bayes <U+00D7> Dinamica,1095,109,0.55
+naive Bayes <U+00D7> Dinamica,1606,152,0.5
+naive Bayes <U+00D7> Dinamica,2383,229,0.45
+naive Bayes <U+00D7> Dinamica,3355,327,0.4
+naive Bayes <U+00D7> Dinamica,4605,442,0.35
+naive Bayes <U+00D7> Dinamica,6095,602,0.3
+naive Bayes <U+00D7> Dinamica,7942,790,0.25
+naive Bayes <U+00D7> Dinamica,10232,1001,0.2
+naive Bayes <U+00D7> Dinamica,13252,1256,0.15
+naive Bayes <U+00D7> Dinamica,17443,1607,0.1
+naive Bayes <U+00D7> Dinamica,24911,2157,0.05
+naive Bayes <U+00D7> Dinamica,113563,4756,0
+naive Bayes <U+00D7> Ordered,0,0,Inf
+naive Bayes <U+00D7> Ordered,4010,403,1
+naive Bayes <U+00D7> Ordered,113563,4756,0
+naive Bayes <U+00D7> greedy,0,0,Inf
+naive Bayes <U+00D7> greedy,4748,478,1
+naive Bayes <U+00D7> greedy,113563,4756,0
+random forest <U+00D7> CLUE-S,0,0,Inf
+random forest <U+00D7> CLUE-S,3047,396,1
+random forest <U+00D7> CLUE-S,3049,396,0.9
+random forest <U+00D7> CLUE-S,3050,396,0.85
+random forest <U+00D7> CLUE-S,3051,397,0.8
+random forest <U+00D7> CLUE-S,3052,397,0.75
+random forest <U+00D7> CLUE-S,3053,397,0.65
+random forest <U+00D7> CLUE-S,3055,397,0.6
+random forest <U+00D7> CLUE-S,3056,397,0.5
+random forest <U+00D7> CLUE-S,3057,397,0.45
+random forest <U+00D7> CLUE-S,3059,398,0.4
+random forest <U+00D7> CLUE-S,3063,398,0.3
+random forest <U+00D7> CLUE-S,3065,398,0.2
+random forest <U+00D7> CLUE-S,3067,398,0.15
+random forest <U+00D7> CLUE-S,3072,399,0.05
+random forest <U+00D7> CLUE-S,113563,4756,0
+random forest <U+00D7> CLUMPY,0,0,Inf
+random forest <U+00D7> CLUMPY,2,0,0.7
+random forest <U+00D7> CLUMPY,3,0,0.65
+random forest <U+00D7> CLUMPY,11,1,0.6
+random forest <U+00D7> CLUMPY,25,5,0.55
+random forest <U+00D7> CLUMPY,77,9,0.5
+random forest <U+00D7> CLUMPY,170,19,0.45
+random forest <U+00D7> CLUMPY,367,41,0.4
+random forest <U+00D7> CLUMPY,799,94,0.35
+random forest <U+00D7> CLUMPY,1668,195,0.3
+random forest <U+00D7> CLUMPY,3338,385,0.25
+random forest <U+00D7> CLUMPY,6672,695,0.2
+random forest <U+00D7> CLUMPY,12994,1267,0.15
+random forest <U+00D7> CLUMPY,24478,2112,0.1
+random forest <U+00D7> CLUMPY,44494,3342,0.05
+random forest <U+00D7> CLUMPY,113563,4756,0
+random forest <U+00D7> CLUMondo,0,0,Inf
+random forest <U+00D7> CLUMondo,3062,388,1
+random forest <U+00D7> CLUMondo,3074,392,0.95
+random forest <U+00D7> CLUMondo,3076,393,0.85
+random forest <U+00D7> CLUMondo,3077,393,0.75
+random forest <U+00D7> CLUMondo,3080,393,0.7
+random forest <U+00D7> CLUMondo,3081,393,0.65
+random forest <U+00D7> CLUMondo,3083,393,0.6
+random forest <U+00D7> CLUMondo,3087,393,0.45
+random forest <U+00D7> CLUMondo,3088,393,0.4
+random forest <U+00D7> CLUMondo,3091,393,0.35
+random forest <U+00D7> CLUMondo,3097,394,0.3
+random forest <U+00D7> CLUMondo,3104,394,0.15
+random forest <U+00D7> CLUMondo,3110,395,0.1
+random forest <U+00D7> CLUMondo,3124,398,0.05
+random forest <U+00D7> CLUMondo,113563,4756,0
+random forest <U+00D7> Dinamica,0,0,Inf
+random forest <U+00D7> Dinamica,2,1,0.95
+random forest <U+00D7> Dinamica,8,2,0.9
+random forest <U+00D7> Dinamica,18,2,0.85
+random forest <U+00D7> Dinamica,28,2,0.8
+random forest <U+00D7> Dinamica,58,3,0.75
+random forest <U+00D7> Dinamica,96,5,0.7
+random forest <U+00D7> Dinamica,157,12,0.65
+random forest <U+00D7> Dinamica,257,22,0.6
+random forest <U+00D7> Dinamica,437,43,0.55
+random forest <U+00D7> Dinamica,693,79,0.5
+random forest <U+00D7> Dinamica,1112,138,0.45
+random forest <U+00D7> Dinamica,1840,233,0.4
+random forest <U+00D7> Dinamica,2858,350,0.35
+random forest <U+00D7> Dinamica,4360,509,0.3
+random forest <U+00D7> Dinamica,6472,726,0.25
+random forest <U+00D7> Dinamica,9576,1042,0.2
+random forest <U+00D7> Dinamica,13944,1423,0.15
+random forest <U+00D7> Dinamica,20588,1942,0.1
+random forest <U+00D7> Dinamica,32356,2748,0.05
+random forest <U+00D7> Dinamica,113563,4756,0
+random forest <U+00D7> Ordered,0,0,Inf
+random forest <U+00D7> Ordered,3134,418,1
+random forest <U+00D7> Ordered,113563,4756,0
+random forest <U+00D7> greedy,0,0,Inf
+random forest <U+00D7> greedy,4748,549,1
+random forest <U+00D7> greedy,113563,4756,0
+logistic regression potentials,0,0,Inf
+logistic regression potentials,566,96,0.228577465840677
+logistic regression potentials,1132,175,0.196440168814449
+logistic regression potentials,1698,259,0.1780558486634
+logistic regression potentials,2264,343,0.16603823883516
+logistic regression potentials,2830,414,0.156956359279469
+logistic regression potentials,3396,490,0.148988844886661
+logistic regression potentials,3961,560,0.142910675906968
+logistic regression potentials,4527,626,0.137598247064903
+logistic regression potentials,5093,685,0.132648737197705
+logistic regression potentials,5659,749,0.128418648800298
+logistic regression potentials,6225,823,0.124849602363952
+logistic regression potentials,6791,892,0.121517765872978
+logistic regression potentials,7357,955,0.118264686293466
+logistic regression potentials,7923,1006,0.115314278339621
+logistic regression potentials,8489,1068,0.112712108296845
+logistic regression potentials,9055,1130,0.110290125063177
+logistic regression potentials,9621,1189,0.10796380914177
+logistic regression potentials,10187,1240,0.105776926725669
+logistic regression potentials,10753,1285,0.103516795706282
+logistic regression potentials,11318,1335,0.101580075446485
+logistic regression potentials,11884,1382,0.0996787793714955
+logistic regression potentials,12450,1442,0.0978454954247461
+logistic regression potentials,13016,1512,0.0960663024970572
+logistic regression potentials,13582,1560,0.0944630751191181
+logistic regression potentials,14148,1601,0.0928267696942184
+logistic regression potentials,14714,1650,0.0912371663122052
+logistic regression potentials,15280,1702,0.0897623240590495
+logistic regression potentials,15846,1745,0.0883626963886716
+logistic regression potentials,16412,1800,0.0868539206578329
+logistic regression potentials,16978,1837,0.0854109000545877
+logistic regression potentials,17544,1878,0.0841392888457502
+logistic regression potentials,18110,1919,0.0829428338046585
+logistic regression potentials,18676,1963,0.0815986184030754
+logistic regression potentials,19241,2016,0.0803375853054419
+logistic regression potentials,19807,2064,0.0792521757883878
+logistic regression potentials,20373,2112,0.0781302406875314
+logistic regression potentials,20939,2153,0.0769861801575688
+logistic regression potentials,21505,2187,0.0758699530684156
+logistic regression potentials,22071,2225,0.0748553366162773
+logistic regression potentials,22637,2272,0.0738048736657277
+logistic regression potentials,23203,2321,0.0728298851336228
+logistic regression potentials,23769,2368,0.071765798026659
+logistic regression potentials,24335,2414,0.0708104635548972
+logistic regression potentials,24901,2458,0.0698741279875403
+logistic regression potentials,25467,2498,0.0689677278253232
+logistic regression potentials,26033,2537,0.0681070121169847
+logistic regression potentials,26598,2568,0.0672795974461963
+logistic regression potentials,27164,2608,0.0663437853727946
+logistic regression potentials,27730,2649,0.0655437793059747
+logistic regression potentials,28296,2689,0.0646345574605239
+logistic regression potentials,28862,2732,0.063811938841
+logistic regression potentials,29428,2775,0.0630299084855948
+logistic regression potentials,29994,2809,0.0622231207614493
+logistic regression potentials,30560,2845,0.0614525533369212
+logistic regression potentials,31126,2885,0.0606329453240593
+logistic regression potentials,31692,2920,0.0598963851589089
+logistic regression potentials,32258,2961,0.0591608527943949
+logistic regression potentials,32824,2999,0.0584144825069332
+logistic regression potentials,33390,3037,0.0577017977853083
+logistic regression potentials,33955,3073,0.0569366613766802
+logistic regression potentials,34521,3101,0.056220546741747
+logistic regression potentials,35087,3134,0.0555537421237123
+logistic regression potentials,35653,3166,0.0548110239161221
+logistic regression potentials,36219,3206,0.0541056168947041
+logistic regression potentials,36785,3250,0.0534120894047543
+logistic regression potentials,37351,3283,0.0527414414131935
+logistic regression potentials,37917,3314,0.0520675537204292
+logistic regression potentials,38483,3356,0.0513389538459002
+logistic regression potentials,39049,3387,0.0506447949359093
+logistic regression potentials,39615,3417,0.0499539561344893
+logistic regression potentials,40181,3456,0.0493127962928844
+logistic regression potentials,40747,3490,0.0485962103545977
+logistic regression potentials,41312,3530,0.047917390665146
+logistic regression potentials,41878,3557,0.047273452948354
+logistic regression potentials,42444,3583,0.0466243962883863
+logistic regression potentials,43010,3615,0.0459902593258946
+logistic regression potentials,43576,3648,0.0452911166304935
+logistic regression potentials,44142,3677,0.0445999131458761
+logistic regression potentials,44708,3707,0.0439296565949108
+logistic regression potentials,45274,3741,0.0432759267431139
+logistic regression potentials,45840,3775,0.0426212789020278
+logistic regression potentials,46406,3808,0.0419644496412533
+logistic regression potentials,46972,3841,0.0413026684994959
+logistic regression potentials,47538,3873,0.0406003932705585
+logistic regression potentials,48104,3908,0.039910960865662
+logistic regression potentials,48670,3937,0.0392140642265094
+logistic regression potentials,49235,3970,0.0385518205511529
+logistic regression potentials,49801,4002,0.0378772228835422
+logistic regression potentials,50367,4030,0.0371946334208448
+logistic regression potentials,50933,4055,0.0365293912930132
+logistic regression potentials,51499,4085,0.0358222373406962
+logistic regression potentials,52065,4109,0.0351748186962977
+logistic regression potentials,52631,4137,0.03449688299797
+logistic regression potentials,53197,4158,0.0337798696074464
+logistic regression potentials,53763,4183,0.0331110861358266
+logistic regression potentials,54329,4204,0.032426812632151
+logistic regression potentials,54895,4221,0.0316807541110914
+logistic regression potentials,55461,4237,0.0310138299168049
+logistic regression potentials,56027,4256,0.0303675278918085
+logistic regression potentials,56592,4284,0.0296449838910058
+logistic regression potentials,57158,4304,0.0289984698026838
+logistic regression potentials,57724,4323,0.0282961070458629
+logistic regression potentials,58290,4343,0.0275911824826428
+logistic regression potentials,58856,4364,0.0268566918565958
+logistic regression potentials,59422,4379,0.0262358903769653
+logistic regression potentials,59988,4403,0.0255093369466892
+logistic regression potentials,60554,4429,0.0248281964348259
+logistic regression potentials,61120,4448,0.0241287088039792
+logistic regression potentials,61686,4460,0.0234842046308681
+logistic regression potentials,62252,4476,0.0227802104299315
+logistic regression potentials,62818,4486,0.022121623400959
+logistic regression potentials,63384,4497,0.0213882981222963
+logistic regression potentials,63949,4508,0.0206619912230555
+logistic regression potentials,64515,4521,0.0199488014407326
+logistic regression potentials,65081,4534,0.0192322165230634
+logistic regression potentials,65647,4545,0.0185393214783391
+logistic regression potentials,66213,4552,0.0178688613940983
+logistic regression potentials,66779,4560,0.0171842421364586
+logistic regression potentials,67345,4564,0.0164440976093001
+logistic regression potentials,67911,4570,0.015711368005273
+logistic regression potentials,68477,4579,0.0149475513703917
+logistic regression potentials,69043,4584,0.014259224762158
+logistic regression potentials,69609,4592,0.0136041804713416
+logistic regression potentials,70175,4602,0.012921290847003
+logistic regression potentials,70741,4609,0.0122219041260265
+logistic regression potentials,71307,4611,0.0114872333441512
+logistic regression potentials,71872,4612,0.0108116485461183
+logistic regression potentials,72438,4616,0.0101774310994557
+logistic regression potentials,73004,4620,0.0095343002752547
+logistic regression potentials,73570,4621,0.00890933989489462
+logistic regression potentials,74136,4623,0.00835813434633104
+logistic regression potentials,74702,4623,0.00786311287944819
+logistic regression potentials,75268,4625,0.00739748553414621
+logistic regression potentials,75835,4626,0.00696092359495715
+logistic regression potentials,76401,4628,0.00659339738463582
+logistic regression potentials,76967,4629,0.00622780417476943
+logistic regression potentials,77533,4632,0.00589197008560716
+logistic regression potentials,78099,4636,0.00559115453150938
+logistic regression potentials,78665,4636,0.00532248545283287
+logistic regression potentials,79230,4636,0.00507175631303003
+logistic regression potentials,79796,4638,0.00482950800259274
+logistic regression potentials,80362,4640,0.00461752266897531
+logistic regression potentials,80928,4640,0.00442727867018355
+logistic regression potentials,81494,4642,0.00425481514720283
+logistic regression potentials,82060,4645,0.00408564528000166
+logistic regression potentials,82626,4645,0.00391298079685398
+logistic regression potentials,83192,4645,0.00377669841165729
+logistic regression potentials,83758,4646,0.00364085945055981
+logistic regression potentials,84325,4646,0.00350909755340989
+logistic regression potentials,84891,4649,0.00339487812755268
+logistic regression potentials,85457,4652,0.00328166687640097
+logistic regression potentials,86023,4652,0.00317607953575838
+logistic regression potentials,86588,4652,0.00307804016005042
+logistic regression potentials,87154,4656,0.00298363582132633
+logistic regression potentials,87720,4656,0.00289405039095814
+logistic regression potentials,88286,4658,0.00280473690738003
+logistic regression potentials,88852,4658,0.00272796976831802
+logistic regression potentials,89418,4658,0.00265294697940333
+logistic regression potentials,89985,4660,0.00258084312984508
+logistic regression potentials,90551,4661,0.00250178804812318
+logistic regression potentials,91117,4664,0.00242918022003125
+logistic regression potentials,91683,4665,0.00236331409078194
+logistic regression potentials,92249,4667,0.00230047350758966
+logistic regression potentials,92815,4667,0.00224342356923668
+logistic regression potentials,93382,4671,0.0021870997976795
+logistic regression potentials,93948,4678,0.00212477294303171
+logistic regression potentials,94514,4678,0.00206960348173824
+logistic regression potentials,95081,4680,0.00201655635690734
+logistic regression potentials,95647,4682,0.00196662046130458
+logistic regression potentials,96215,4682,0.00192037377588628
+logistic regression potentials,96781,4683,0.00187477838551287
+logistic regression potentials,97347,4683,0.00183092036545329
+logistic regression potentials,97913,4683,0.0017871407352692
+logistic regression potentials,98479,4685,0.00174642763816046
+logistic regression potentials,99045,4687,0.00170739352155325
+logistic regression potentials,99611,4687,0.00166696813994693
+logistic regression potentials,100177,4689,0.00162579423993714
+logistic regression potentials,100743,4693,0.00158713193435067
+logistic regression potentials,101309,4695,0.00154486753277383
+logistic regression potentials,101874,4698,0.00150187349337216
+logistic regression potentials,102440,4698,0.00146301979521979
+logistic regression potentials,103006,4701,0.00142356492033013
+logistic regression potentials,103572,4701,0.00138705246980975
+logistic regression potentials,104138,4702,0.00134916676623897
+logistic regression potentials,104704,4705,0.00130876977229621
+logistic regression potentials,105270,4706,0.00126659230856807
+logistic regression potentials,105836,4707,0.00122413901116136
+logistic regression potentials,106402,4708,0.00118349118069561
+logistic regression potentials,106968,4711,0.00113989235598333
+logistic regression potentials,107534,4711,0.00109214583787931
+logistic regression potentials,108100,4714,0.0010470477769885
+logistic regression potentials,108666,4715,0.000993180000273375
+logistic regression potentials,109232,4717,0.000941190254352686
+logistic regression potentials,109798,4718,0.000882911678910969
+logistic regression potentials,110365,4720,0.000822433176358661
+logistic regression potentials,110931,4720,0.000747510379677574
+logistic regression potentials,111497,4720,0.000654603263097409
+logistic regression potentials,112063,4720,0.00046323083307398
+logistic regression potentials,113563,4756,7.7715611723761e-16
+random forest potentials,0,0,Inf
+random forest potentials,423,65,0.339199254397835
+random forest potentials,846,134,0.283369287939027
+random forest potentials,1268,208,0.251860500032476
+random forest potentials,1691,276,0.231148681340225
+random forest potentials,2113,330,0.215071038429417
+random forest potentials,2536,374,0.200588419070096
+random forest potentials,2958,427,0.190058350995058
+random forest potentials,3381,490,0.181503482197497
+random forest potentials,3803,548,0.173476327180424
+random forest potentials,4226,599,0.166082446534736
+random forest potentials,4648,649,0.160156473162544
+random forest potentials,5071,706,0.154680362307349
+random forest potentials,5493,746,0.149713995295834
+random forest potentials,5916,796,0.145415125217595
+random forest potentials,6338,832,0.141332739884335
+random forest potentials,6761,875,0.137743072630372
+random forest potentials,7183,928,0.134239610184768
+random forest potentials,7606,969,0.131153419115168
+random forest potentials,8028,1014,0.128243216191065
+random forest potentials,8451,1057,0.125585232516947
+random forest potentials,8873,1095,0.1230487275039
+random forest potentials,9296,1137,0.120483577030012
+random forest potentials,9718,1166,0.118178335672066
+random forest potentials,10141,1197,0.115920985477106
+random forest potentials,10563,1248,0.113695005930753
+random forest potentials,10986,1282,0.111499699690156
+random forest potentials,11408,1319,0.109539588480269
+random forest potentials,11831,1363,0.10769408429783
+random forest potentials,12253,1397,0.105903641871785
+random forest potentials,12676,1441,0.104265396282603
+random forest potentials,13098,1492,0.102513011784797
+random forest potentials,13521,1532,0.100931773081752
+random forest potentials,13943,1569,0.0994220827950741
+random forest potentials,14366,1602,0.0980234343840443
+random forest potentials,14788,1635,0.0965053285561545
+random forest potentials,15211,1677,0.0950812334201573
+random forest potentials,15633,1711,0.0936391010942062
+random forest potentials,16056,1749,0.0922387520137009
+random forest potentials,16478,1783,0.0909107805283213
+random forest potentials,16901,1808,0.0896849064351919
+random forest potentials,17323,1845,0.0885433769988561
+random forest potentials,17746,1889,0.0874102169894206
+random forest potentials,18168,1920,0.0862010873133621
+random forest potentials,18591,1956,0.0851044837344014
+random forest potentials,19013,1983,0.0840429602166071
+random forest potentials,19436,2020,0.0829951165495628
+random forest potentials,19858,2048,0.0818819454990189
+random forest potentials,20281,2080,0.080851784964618
+random forest potentials,20703,2109,0.0798517848065252
+random forest potentials,21126,2145,0.0788123518187984
+random forest potentials,21548,2175,0.0778459794100137
+random forest potentials,21971,2205,0.0769068144447597
+random forest potentials,22393,2241,0.0758746164744548
+random forest potentials,22816,2276,0.0749312062752137
+random forest potentials,23239,2314,0.0739890803542432
+random forest potentials,23662,2339,0.0731104565166524
+random forest potentials,24084,2367,0.0721746734892362
+random forest potentials,24507,2397,0.0713262873858748
+random forest potentials,24929,2428,0.0704905625060774
+random forest potentials,25352,2466,0.0695763762254727
+random forest potentials,25774,2503,0.0687634122602283
+random forest potentials,26197,2533,0.067907001060172
+random forest potentials,26619,2561,0.0670795330210705
+random forest potentials,27042,2584,0.0663275794404246
+random forest potentials,27464,2613,0.0655625655128868
+random forest potentials,27887,2641,0.0647385926636004
+random forest potentials,28309,2674,0.0639708892624261
+random forest potentials,28733,2702,0.0632071960550598
+random forest potentials,29155,2724,0.0623892143978788
+random forest potentials,29578,2763,0.0616676741326826
+random forest potentials,30000,2792,0.0609446634816686
+random forest potentials,30423,2833,0.0601766291231065
+random forest potentials,30845,2859,0.0594736842998667
+random forest potentials,31268,2885,0.0587586836911486
+random forest potentials,31690,2911,0.058042249611936
+random forest potentials,32113,2939,0.0573315938617107
+random forest potentials,32535,2968,0.05664007159887
+random forest potentials,32958,2998,0.0559171646387856
+random forest potentials,33380,3023,0.0552476417262138
+random forest potentials,33803,3050,0.0545818711856852
+random forest potentials,34225,3079,0.0538791280661842
+random forest potentials,34648,3106,0.0532331828746165
+random forest potentials,35070,3133,0.0524969497870974
+random forest potentials,35493,3156,0.0518487734265624
+random forest potentials,35915,3177,0.0512196572389518
+random forest potentials,36338,3209,0.0505374698809442
+random forest potentials,36760,3242,0.0498488077290166
+random forest potentials,37184,3270,0.0491725401935572
+random forest potentials,37606,3296,0.0484938312289489
+random forest potentials,38029,3315,0.0478604675605707
+random forest potentials,38451,3339,0.0472548329483431
+random forest potentials,38874,3350,0.046589999158666
+random forest potentials,39296,3371,0.0459566841519732
+random forest potentials,39719,3405,0.0452724822932457
+random forest potentials,40141,3426,0.0446201934018381
+random forest potentials,40564,3449,0.0439486802193609
+random forest potentials,40986,3471,0.043346136391821
+random forest potentials,41409,3497,0.0427347691504396
+random forest potentials,41831,3526,0.0420285318090327
+random forest potentials,42254,3548,0.0413893190612198
+random forest potentials,42676,3571,0.0407099998790294
+random forest potentials,43099,3592,0.0401231331649037
+random forest potentials,43521,3612,0.0394731125144787
+random forest potentials,43944,3633,0.0388720232867088
+random forest potentials,44366,3665,0.0382048369134014
+random forest potentials,44789,3686,0.0376329823922958
+random forest potentials,45211,3710,0.0370408566683128
+random forest potentials,45634,3731,0.0364086304105691
+random forest potentials,46056,3755,0.0358001570478421
+random forest potentials,46479,3776,0.0351396460225701
+random forest potentials,46901,3798,0.0345434211015264
+random forest potentials,47324,3820,0.0339185202136989
+random forest potentials,47746,3842,0.0333200555636153
+random forest potentials,48169,3862,0.0326959538861953
+random forest potentials,48591,3880,0.0320708775516996
+random forest potentials,49014,3898,0.0314712916034728
+random forest potentials,49436,3923,0.0309178642183579
+random forest potentials,49860,3941,0.0302881121992992
+random forest potentials,50282,3958,0.0296840883693208
+random forest potentials,50705,3986,0.0291064491444487
+random forest potentials,51127,4006,0.0284876162965485
+random forest potentials,51550,4018,0.0278738095761673
+random forest potentials,51972,4035,0.0272396222614002
+random forest potentials,52396,4053,0.0266519492167434
+random forest potentials,52818,4071,0.0259930081701593
+random forest potentials,53241,4091,0.0253982700940321
+random forest potentials,53663,4106,0.0248049285985322
+random forest potentials,54086,4121,0.0242313417907444
+random forest potentials,54509,4140,0.023645917728138
+random forest potentials,54932,4155,0.0230211970647045
+random forest potentials,55354,4172,0.0224202457973128
+random forest potentials,55777,4189,0.0217963569210266
+random forest potentials,56200,4209,0.0211656142110791
+random forest potentials,56623,4228,0.0205996888670366
+random forest potentials,57045,4245,0.0200424275285599
+random forest potentials,57468,4253,0.0194035174671247
+random forest potentials,57892,4265,0.0188433098279797
+random forest potentials,58315,4277,0.0182506163097963
+random forest potentials,58738,4291,0.0176757077463501
+random forest potentials,59162,4313,0.0170713623283093
+random forest potentials,59584,4326,0.0164672148124784
+random forest potentials,60007,4341,0.0159309813078403
+random forest potentials,60429,4355,0.0154064628742839
+random forest potentials,60853,4367,0.014814022986918
+random forest potentials,61275,4378,0.0142495869229831
+random forest potentials,61698,4391,0.0136941790878006
+random forest potentials,62120,4406,0.0131535214054515
+random forest potentials,62543,4424,0.0126257680446238
+random forest potentials,62967,4436,0.0120958174757998
+random forest potentials,63391,4444,0.011626720466951
+random forest potentials,63814,4452,0.011142206399663
+random forest potentials,64238,4461,0.0106455046726731
+random forest potentials,64660,4471,0.0101626307272421
+random forest potentials,65083,4477,0.00972097112827408
+random forest potentials,65506,4487,0.0093245476055871
+random forest potentials,65931,4496,0.0089236517047665
+random forest potentials,66357,4507,0.00849386522992679
+random forest potentials,66780,4517,0.00808735732384058
+random forest potentials,67203,4521,0.00769443497422839
+random forest potentials,67628,4527,0.00732468030158884
+random forest potentials,68056,4531,0.00696682608858279
+random forest potentials,68484,4536,0.00663484386122548
+random forest potentials,68917,4545,0.00630372138375068
+random forest potentials,69344,4554,0.00596765703907254
+random forest potentials,69770,4565,0.00564837057781775
+random forest potentials,70193,4567,0.00533347488431302
+random forest potentials,70615,4573,0.00503894325299426
+random forest potentials,71045,4578,0.00477223036860031
+random forest potentials,71476,4581,0.00450507878843065
+random forest potentials,71903,4589,0.0042227806913594
+random forest potentials,72330,4593,0.00399587968651516
+random forest potentials,72765,4594,0.00375245286961157
+random forest potentials,73193,4596,0.0035364013425544
+random forest potentials,73621,4598,0.00330440712978186
+random forest potentials,74058,4601,0.00310206617379627
+random forest potentials,74493,4607,0.00290154661484388
+random forest potentials,74930,4611,0.00273017700374667
+random forest potentials,75382,4612,0.00255081032281335
+random forest potentials,75825,4615,0.0023799053288599
+random forest potentials,76290,4618,0.00221315936779698
+random forest potentials,76755,4622,0.00206052579354343
+random forest potentials,77195,4626,0.00192295523945751
+random forest potentials,77650,4630,0.00179268557667578
+random forest potentials,78119,4632,0.00167075951391682
+random forest potentials,78607,4637,0.00154641714165649
+random forest potentials,79076,4639,0.0014308624469449
+random forest potentials,79551,4640,0.00132897052413217
+random forest potentials,80102,4641,0.00122959645594267
+random forest potentials,80623,4643,0.00112438805301585
+random forest potentials,81196,4646,0.00102304500686734
+random forest potentials,81778,4652,0.000923419865509367
+random forest potentials,82356,4653,0.000824980476769266
+random forest potentials,83025,4658,0.000733663938810247
+random forest potentials,83731,4662,0.000635135462452086
+random forest potentials,84436,4667,0.000549322138513775
+random forest potentials,85411,4670,0.000453301265478712
+random forest potentials,86589,4673,0.000356593770135527
+random forest potentials,88320,4682,0.000242480472318452
+random forest potentials,113563,4756,0
+Weights of Evidence potentials,0,0,Inf
+Weights of Evidence potentials,145,19,0.123118870311885
+Weights of Evidence potentials,314,48,0.12152132656845
+Weights of Evidence potentials,494,71,0.120458815552903
+Weights of Evidence potentials,837,111,0.11959372550192
+Weights of Evidence potentials,1159,171,0.1188270543717
+Weights of Evidence potentials,1702,254,0.117790054429959
+Weights of Evidence potentials,2154,323,0.117022211846554
+Weights of Evidence potentials,2540,368,0.11618409262383
+Weights of Evidence potentials,3110,443,0.11545720330279
+Weights of Evidence potentials,3455,492,0.114760142332158
+Weights of Evidence potentials,3828,532,0.11397604186748
+Weights of Evidence potentials,4489,625,0.113239351883956
+Weights of Evidence potentials,4800,654,0.112421984248049
+Weights of Evidence potentials,5201,701,0.111431858534381
+Weights of Evidence potentials,5638,746,0.110780555523415
+Weights of Evidence potentials,5874,773,0.109857384063598
+Weights of Evidence potentials,6260,814,0.108854640921388
+Weights of Evidence potentials,6719,867,0.108230036471478
+Weights of Evidence potentials,7143,922,0.107194280408948
+Weights of Evidence potentials,7596,978,0.10631484885425
+Weights of Evidence potentials,7954,1009,0.105625467452192
+Weights of Evidence potentials,8186,1025,0.104716496078356
+Weights of Evidence potentials,8625,1062,0.103982024309197
+Weights of Evidence potentials,9078,1109,0.103050444469317
+Weights of Evidence potentials,9382,1135,0.102202769707563
+Weights of Evidence potentials,9571,1154,0.101423288868708
+Weights of Evidence potentials,9991,1201,0.100479704754211
+Weights of Evidence potentials,10210,1230,0.09951088398696
+Weights of Evidence potentials,10487,1252,0.0984863224667038
+Weights of Evidence potentials,10733,1274,0.0975174362134153
+Weights of Evidence potentials,10988,1304,0.0969906779031517
+Weights of Evidence potentials,11383,1341,0.0961434738242051
+Weights of Evidence potentials,11566,1362,0.0952257654829909
+Weights of Evidence potentials,12059,1403,0.0944458075782521
+Weights of Evidence potentials,12337,1430,0.0936482160934254
+Weights of Evidence potentials,13467,1506,0.0924613895191354
+Weights of Evidence potentials,13914,1539,0.0916972751426688
+Weights of Evidence potentials,14339,1570,0.0907252151562621
+Weights of Evidence potentials,15203,1639,0.0898303182898872
+Weights of Evidence potentials,15409,1668,0.0890958488253726
+Weights of Evidence potentials,15681,1685,0.088242579301818
+Weights of Evidence potentials,15860,1701,0.0872963514845504
+Weights of Evidence potentials,16399,1738,0.0867601921221322
+Weights of Evidence potentials,17369,1808,0.0856716583120957
+Weights of Evidence potentials,19915,1956,0.0847185235040201
+Weights of Evidence potentials,20830,2018,0.083736832541313
+Weights of Evidence potentials,22860,2158,0.0828277070922188
+Weights of Evidence potentials,23489,2201,0.0819854251892488
+Weights of Evidence potentials,23865,2223,0.081264450509439
+Weights of Evidence potentials,24257,2258,0.0801331587840417
+Weights of Evidence potentials,24701,2284,0.078910330651826
+Weights of Evidence potentials,25564,2355,0.0779953141409696
+Weights of Evidence potentials,27685,2489,0.0769782914997369
+Weights of Evidence potentials,28463,2543,0.0758268933452475
+Weights of Evidence potentials,29007,2592,0.0750554031409647
+Weights of Evidence potentials,29433,2623,0.0741583901804528
+Weights of Evidence potentials,30833,2725,0.0730477258679285
+Weights of Evidence potentials,31150,2747,0.0720085620863112
+Weights of Evidence potentials,31874,2803,0.0707301552918959
+Weights of Evidence potentials,33396,2908,0.0697743603095523
+Weights of Evidence potentials,33934,2944,0.0686933165632846
+Weights of Evidence potentials,34502,2987,0.067632970362893
+Weights of Evidence potentials,35624,3093,0.066852242056799
+Weights of Evidence potentials,36356,3129,0.0660560446149096
+Weights of Evidence potentials,37085,3172,0.0648636921292961
+Weights of Evidence potentials,37759,3215,0.0639198045040107
+Weights of Evidence potentials,38374,3254,0.0627631197038483
+Weights of Evidence potentials,39554,3337,0.0615637503109614
+Weights of Evidence potentials,40278,3389,0.0603209002922039
+Weights of Evidence potentials,41731,3485,0.0593753301341593
+Weights of Evidence potentials,42412,3525,0.0584487077070267
+Weights of Evidence potentials,43010,3551,0.0574223490901535
+Weights of Evidence potentials,43714,3611,0.0565604331395384
+Weights of Evidence potentials,44700,3677,0.0555809012735793
+Weights of Evidence potentials,45127,3705,0.0541085545742138
+Weights of Evidence potentials,45631,3734,0.0532561713689811
+Weights of Evidence potentials,46912,3812,0.052249070242373
+Weights of Evidence potentials,47717,3867,0.0512068256007099
+Weights of Evidence potentials,48134,3895,0.0503872019552791
+Weights of Evidence potentials,48865,3941,0.0493826160107241
+Weights of Evidence potentials,49805,3995,0.0482575685064892
+Weights of Evidence potentials,50216,4020,0.0468689866949067
+Weights of Evidence potentials,50581,4038,0.0458114619442274
+Weights of Evidence potentials,51061,4066,0.0448703980290179
+Weights of Evidence potentials,52198,4107,0.0438837999004906
+Weights of Evidence potentials,52816,4132,0.0428021882182454
+Weights of Evidence potentials,53222,4149,0.0418594249728858
+Weights of Evidence potentials,53710,4171,0.0409374441530695
+Weights of Evidence potentials,54053,4183,0.0399245705806058
+Weights of Evidence potentials,54977,4217,0.0388141949197083
+Weights of Evidence potentials,55236,4229,0.0375527255580246
+Weights of Evidence potentials,55692,4252,0.0364034259432915
+Weights of Evidence potentials,55933,4256,0.0355605516278027
+Weights of Evidence potentials,56350,4270,0.0346617378922588
+Weights of Evidence potentials,56514,4279,0.0339650907701352
+Weights of Evidence potentials,56796,4293,0.0333187359896665
+Weights of Evidence potentials,57108,4302,0.0325487152652835
+Weights of Evidence potentials,57345,4312,0.0317400540031676
+Weights of Evidence potentials,57732,4327,0.0307737567167607
+Weights of Evidence potentials,57852,4332,0.0300958670570326
+Weights of Evidence potentials,58288,4343,0.0294487857824807
+Weights of Evidence potentials,58484,4346,0.028769238635818
+Weights of Evidence potentials,58724,4355,0.0281937320288858
+Weights of Evidence potentials,58932,4362,0.0276842553136981
+Weights of Evidence potentials,59098,4368,0.0268656409608922
+Weights of Evidence potentials,59373,4378,0.0261952924917079
+Weights of Evidence potentials,59539,4384,0.0257177743443093
+Weights of Evidence potentials,59789,4390,0.0251450167174985
+Weights of Evidence potentials,60291,4404,0.0246112321616498
+Weights of Evidence potentials,60514,4411,0.0241809072396634
+Weights of Evidence potentials,60779,4422,0.0238088657551357
+Weights of Evidence potentials,61142,4434,0.0233615706041057
+Weights of Evidence potentials,61339,4435,0.0230005040870466
+Weights of Evidence potentials,61580,4437,0.0227548819271141
+Weights of Evidence potentials,61895,4439,0.0223521150542944
+Weights of Evidence potentials,62073,4442,0.0220675674890026
+Weights of Evidence potentials,62292,4445,0.0217928625770687
+Weights of Evidence potentials,62469,4448,0.0215699551526598
+Weights of Evidence potentials,62650,4450,0.0210272560505053
+Weights of Evidence potentials,62904,4452,0.020602813232279
+Weights of Evidence potentials,63237,4457,0.0202360067101841
+Weights of Evidence potentials,63416,4461,0.0199096135839258
+Weights of Evidence potentials,63606,4466,0.0195593580715434
+Weights of Evidence potentials,63915,4475,0.019144428182003
+Weights of Evidence potentials,64221,4480,0.0189440994521641
+Weights of Evidence potentials,64600,4481,0.018677941812146
+Weights of Evidence potentials,64899,4485,0.0184347729096266
+Weights of Evidence potentials,65093,4490,0.0180739513761529
+Weights of Evidence potentials,65459,4493,0.017760972967229
+Weights of Evidence potentials,65992,4496,0.0173602250582436
+Weights of Evidence potentials,66296,4506,0.0171314346594476
+Weights of Evidence potentials,66498,4509,0.0168479683709826
+Weights of Evidence potentials,66694,4514,0.016592829696661
+Weights of Evidence potentials,67018,4521,0.0163148580304758
+Weights of Evidence potentials,67334,4524,0.0160780140904359
+Weights of Evidence potentials,67613,4531,0.0157737923883358
+Weights of Evidence potentials,67796,4538,0.0154457525335845
+Weights of Evidence potentials,68107,4546,0.0151516668932473
+Weights of Evidence potentials,68364,4552,0.0147508146241754
+Weights of Evidence potentials,68799,4558,0.0143195097976779
+Weights of Evidence potentials,69019,4558,0.0137260328620391
+Weights of Evidence potentials,69237,4563,0.0131332332695207
+Weights of Evidence potentials,69391,4563,0.0126281439709163
+Weights of Evidence potentials,69562,4566,0.0123131176667548
+Weights of Evidence potentials,69768,4569,0.0120803664392046
+Weights of Evidence potentials,69980,4572,0.0117481029825468
+Weights of Evidence potentials,70245,4574,0.011359738786888
+Weights of Evidence potentials,70489,4578,0.0109538891033678
+Weights of Evidence potentials,70893,4582,0.0106009432253531
+Weights of Evidence potentials,71465,4591,0.0101907424376786
+Weights of Evidence potentials,71755,4594,0.00918089456769222
+Weights of Evidence potentials,71970,4598,0.0088005927601974
+Weights of Evidence potentials,72170,4601,0.00799978241832766
+Weights of Evidence potentials,72318,4606,0.00705770978114484
+Weights of Evidence potentials,72503,4606,0.00652206468614036
+Weights of Evidence potentials,72762,4606,0.00618777041580965
+Weights of Evidence potentials,73071,4606,0.00597545421445545
+Weights of Evidence potentials,73493,4609,0.00577031598840583
+Weights of Evidence potentials,74302,4610,0.00561251321313705
+Weights of Evidence potentials,75176,4616,0.00546699481605906
+Weights of Evidence potentials,75497,4618,0.00532848424101096
+Weights of Evidence potentials,76657,4627,0.00520552660012397
+Weights of Evidence potentials,77686,4628,0.00508194134536311
+Weights of Evidence potentials,78110,4628,0.00495065402432371
+Weights of Evidence potentials,78686,4631,0.00485201825003911
+Weights of Evidence potentials,79470,4634,0.00475306110698215
+Weights of Evidence potentials,79811,4635,0.00465585333402629
+Weights of Evidence potentials,80648,4637,0.00457505528246271
+Weights of Evidence potentials,81799,4643,0.00447521154642505
+Weights of Evidence potentials,82425,4646,0.00437886598017023
+Weights of Evidence potentials,83009,4648,0.00427916178565657
+Weights of Evidence potentials,84102,4651,0.00418482351140059
+Weights of Evidence potentials,85319,4652,0.00410177813802348
+Weights of Evidence potentials,86521,4657,0.00399826132371373
+Weights of Evidence potentials,87018,4657,0.00392962992347323
+Weights of Evidence potentials,87932,4661,0.0038249333177679
+Weights of Evidence potentials,88773,4661,0.00373495664367374
+Weights of Evidence potentials,90141,4666,0.0036282217941952
+Weights of Evidence potentials,90869,4680,0.00351979368576838
+Weights of Evidence potentials,91748,4682,0.00340554459588249
+Weights of Evidence potentials,92732,4685,0.00328198367344423
+Weights of Evidence potentials,93485,4691,0.00317786293602884
+Weights of Evidence potentials,94849,4699,0.00306586810543275
+Weights of Evidence potentials,95622,4703,0.00296836926885369
+Weights of Evidence potentials,96233,4711,0.00287781436037748
+Weights of Evidence potentials,97332,4713,0.00278287355212525
+Weights of Evidence potentials,98466,4721,0.00268552497080377
+Weights of Evidence potentials,99255,4723,0.00259111979560034
+Weights of Evidence potentials,100631,4727,0.00247116305489681
+Weights of Evidence potentials,102269,4727,0.00235699998311578
+Weights of Evidence potentials,104114,4736,0.00224536044071755
+Weights of Evidence potentials,105289,4738,0.00212367454586937
+Weights of Evidence potentials,106544,4739,0.00199009617589407
+Weights of Evidence potentials,107991,4741,0.0018525588195395
+Weights of Evidence potentials,109373,4748,0.00169283068441761
+Weights of Evidence potentials,110131,4750,0.00148992916374091
+Weights of Evidence potentials,110866,4751,0.0012673369835362
+Weights of Evidence potentials,112414,4755,0.000989435985096154
+Weights of Evidence potentials,113563,4756,0.000396867966270364
+naive Bayes potentials,0,0,Inf
+naive Bayes potentials,589,96,0.379097342674939
+naive Bayes potentials,1159,155,0.317847897860843
+naive Bayes potentials,1730,222,0.293982103502113
+naive Bayes potentials,2300,278,0.27641253295533
+naive Bayes potentials,2871,335,0.261155341166158
+naive Bayes potentials,3441,406,0.248639976269793
+naive Bayes potentials,4012,475,0.237933068053644
+naive Bayes potentials,4582,526,0.228879580107861
+naive Bayes potentials,5153,580,0.22187105541738
+naive Bayes potentials,5723,636,0.214639441453651
+naive Bayes potentials,6294,704,0.207237699239609
+naive Bayes potentials,6864,752,0.19911904796209
+naive Bayes potentials,7435,803,0.191489451792201
+naive Bayes potentials,8005,862,0.184095400257649
+naive Bayes potentials,8576,922,0.177117463666091
+naive Bayes potentials,9146,988,0.169839481033088
+naive Bayes potentials,9717,1030,0.162717200689838
+naive Bayes potentials,10287,1074,0.156096989987824
+naive Bayes potentials,10858,1125,0.149616261506572
+naive Bayes potentials,11428,1180,0.143333767062377
+naive Bayes potentials,11999,1230,0.137162734061277
+naive Bayes potentials,12569,1276,0.131664780694899
+naive Bayes potentials,13140,1329,0.126293350250493
+naive Bayes potentials,13710,1377,0.121441188752403
+naive Bayes potentials,14281,1426,0.116483301253049
+naive Bayes potentials,14851,1485,0.111677898814487
+naive Bayes potentials,15422,1539,0.106959098449617
+naive Bayes potentials,15992,1583,0.102762870395327
+naive Bayes potentials,16563,1626,0.0987857004990567
+naive Bayes potentials,17133,1669,0.0949496119231051
+naive Bayes potentials,17704,1715,0.0910943692295573
+naive Bayes potentials,18274,1761,0.0874984106572201
+naive Bayes potentials,18845,1805,0.0840727310526048
+naive Bayes potentials,19415,1854,0.0806947163550692
+naive Bayes potentials,19986,1919,0.0774128876436612
+naive Bayes potentials,20556,1961,0.0745394191049541
+naive Bayes potentials,21127,2010,0.071642358747769
+naive Bayes potentials,21697,2047,0.0690433769092804
+naive Bayes potentials,22268,2098,0.0665719514994145
+naive Bayes potentials,22838,2147,0.0641346627954045
+naive Bayes potentials,23409,2194,0.0616665259461797
+naive Bayes potentials,23979,2252,0.0593280057492054
+naive Bayes potentials,24550,2298,0.0571938924260533
+naive Bayes potentials,25120,2329,0.0550092277271487
+naive Bayes potentials,25691,2375,0.0528810716737734
+naive Bayes potentials,26261,2425,0.0509473719787717
+naive Bayes potentials,26832,2472,0.0492753742697002
+naive Bayes potentials,27402,2528,0.0476040116572813
+naive Bayes potentials,27973,2569,0.0458958516779601
+naive Bayes potentials,28543,2603,0.0443305984347726
+naive Bayes potentials,29114,2634,0.0428256965787152
+naive Bayes potentials,29684,2670,0.0413914313056756
+naive Bayes potentials,30255,2699,0.0399501756981272
+naive Bayes potentials,30825,2750,0.0384503526124138
+naive Bayes potentials,31396,2785,0.0371668568715233
+naive Bayes potentials,31966,2821,0.0360176609358029
+naive Bayes potentials,32537,2853,0.034827606668503
+naive Bayes potentials,33107,2902,0.0336768881177599
+naive Bayes potentials,33678,2935,0.0325904789758185
+naive Bayes potentials,34248,2982,0.0315304983653437
+naive Bayes potentials,34819,3019,0.0305461656886373
+naive Bayes potentials,35389,3050,0.0296146499812556
+naive Bayes potentials,35960,3094,0.0287520753741805
+naive Bayes potentials,36530,3142,0.0278440518857349
+naive Bayes potentials,37101,3175,0.0268629742058739
+naive Bayes potentials,37671,3203,0.02602765388088
+naive Bayes potentials,38242,3242,0.0251693620273886
+naive Bayes potentials,38812,3268,0.0243962631634633
+naive Bayes potentials,39383,3303,0.0236359175487393
+naive Bayes potentials,39953,3339,0.0228850288811795
+naive Bayes potentials,40524,3371,0.0221131571662182
+naive Bayes potentials,41094,3401,0.0213481810636148
+naive Bayes potentials,41665,3430,0.0205879235333792
+naive Bayes potentials,42235,3470,0.0198533027438508
+naive Bayes potentials,42806,3512,0.0191045173521501
+naive Bayes potentials,43376,3549,0.0184421551204541
+naive Bayes potentials,43947,3582,0.0177684804985206
+naive Bayes potentials,44517,3617,0.0170549557246368
+naive Bayes potentials,45088,3649,0.0163771115964206
+naive Bayes potentials,45658,3677,0.0156423912591253
+naive Bayes potentials,46229,3710,0.0149888584633645
+naive Bayes potentials,46799,3737,0.0143516504058977
+naive Bayes potentials,47370,3762,0.0136986958743202
+naive Bayes potentials,47940,3783,0.0130987303336587
+naive Bayes potentials,48511,3813,0.0124853015300429
+naive Bayes potentials,49081,3836,0.0118813555702303
+naive Bayes potentials,49652,3866,0.0112284164432557
+naive Bayes potentials,50222,3896,0.0106705196261625
+naive Bayes potentials,50793,3925,0.010112137777324
+naive Bayes potentials,51363,3956,0.00955129219462558
+naive Bayes potentials,51934,3980,0.00905563037449564
+naive Bayes potentials,52504,4001,0.00853387153490493
+naive Bayes potentials,53075,4029,0.0080315414834099
+naive Bayes potentials,53645,4055,0.00756714818369275
+naive Bayes potentials,54216,4075,0.00707947106446727
+naive Bayes potentials,54786,4096,0.00663773557080571
+naive Bayes potentials,55357,4125,0.00618176899952139
+naive Bayes potentials,55927,4144,0.00574371351200864
+naive Bayes potentials,56498,4168,0.00534756197610986
+naive Bayes potentials,57068,4197,0.00498300477967406
+naive Bayes potentials,57639,4224,0.00460095997768462
+naive Bayes potentials,58209,4244,0.00427164762142462
+naive Bayes potentials,58780,4264,0.00394244865880944
+naive Bayes potentials,59350,4280,0.0036506460614294
+naive Bayes potentials,59921,4301,0.00336827073444634
+naive Bayes potentials,60491,4319,0.00309233893034289
+naive Bayes potentials,61062,4339,0.00284443389421007
+naive Bayes potentials,61632,4357,0.00261335750314584
+naive Bayes potentials,62203,4369,0.00239980863002454
+naive Bayes potentials,62773,4380,0.0022036063723947
+naive Bayes potentials,63344,4404,0.0020244413098981
+naive Bayes potentials,63914,4417,0.00184083061234841
+naive Bayes potentials,64485,4433,0.00168371267549206
+naive Bayes potentials,65055,4442,0.00154477110364692
+naive Bayes potentials,65626,4455,0.00140049679108922
+naive Bayes potentials,66196,4467,0.00127633489374068
+naive Bayes potentials,66767,4476,0.00116966318693923
+naive Bayes potentials,67337,4491,0.00105553235584621
+naive Bayes potentials,67908,4496,0.000959582687638627
+naive Bayes potentials,68478,4507,0.00087220484066397
+naive Bayes potentials,69049,4517,0.000788794910970392
+naive Bayes potentials,69619,4525,0.000720069207539975
+naive Bayes potentials,70190,4532,0.00065232721160291
+naive Bayes potentials,70760,4538,0.000592862368867464
+naive Bayes potentials,71331,4551,0.000540634497795622
+naive Bayes potentials,71901,4559,0.000495453652028188
+naive Bayes potentials,72472,4571,0.000450931111520392
+naive Bayes potentials,73042,4577,0.000410974546855458
+naive Bayes potentials,73613,4584,0.000376537177026348
+naive Bayes potentials,74183,4591,0.000345888665835736
+naive Bayes potentials,74754,4602,0.000317934003496334
+naive Bayes potentials,75324,4606,0.000292959063159959
+naive Bayes potentials,75895,4610,0.000269926073164672
+naive Bayes potentials,76465,4612,0.000249376304644389
+naive Bayes potentials,77036,4615,0.000229971960614139
+naive Bayes potentials,77606,4622,0.000211716186973465
+naive Bayes potentials,78177,4624,0.000195729272034706
+naive Bayes potentials,78747,4633,0.000181641695451207
+naive Bayes potentials,79318,4634,0.000168885867590896
+naive Bayes potentials,79889,4638,0.000156419839044464
+naive Bayes potentials,80460,4644,0.000144628479058717
+naive Bayes potentials,81030,4648,0.000134253477671598
+naive Bayes potentials,81601,4651,0.000124554049452996
+naive Bayes potentials,82171,4657,0.000116184228502347
+naive Bayes potentials,82742,4658,0.000108350281002645
+naive Bayes potentials,83312,4665,0.000101881602239229
+naive Bayes potentials,83883,4668,9.52420859715586e-05
+naive Bayes potentials,84454,4669,8.92527981649627e-05
+naive Bayes potentials,85025,4677,8.37232324490955e-05
+naive Bayes potentials,85595,4677,7.86850218569279e-05
+naive Bayes potentials,86166,4679,7.43568992414012e-05
+naive Bayes potentials,86736,4680,6.99373737674813e-05
+naive Bayes potentials,87307,4681,6.55644796850874e-05
+naive Bayes potentials,87877,4682,6.16864729889866e-05
+naive Bayes potentials,88448,4684,5.8123918573072e-05
+naive Bayes potentials,89018,4685,5.48165420701796e-05
+naive Bayes potentials,89589,4687,5.17894670796215e-05
+naive Bayes potentials,90159,4688,4.88883654272687e-05
+naive Bayes potentials,90730,4689,4.61206971515971e-05
+naive Bayes potentials,91301,4692,4.34590793044753e-05
+naive Bayes potentials,91872,4699,4.08568964950229e-05
+naive Bayes potentials,92443,4702,3.8582197858017e-05
+naive Bayes potentials,93014,4704,3.65077218118515e-05
+naive Bayes potentials,93584,4709,3.44888050464176e-05
+naive Bayes potentials,94155,4711,3.26989695684787e-05
+naive Bayes potentials,94725,4712,3.10233685515415e-05
+naive Bayes potentials,95297,4715,2.92811575870466e-05
+naive Bayes potentials,95867,4717,2.75464514299939e-05
+naive Bayes potentials,96438,4720,2.60065975786761e-05
+naive Bayes potentials,97008,4721,2.46595252948456e-05
+naive Bayes potentials,97580,4722,2.34457051259129e-05
+naive Bayes potentials,98150,4723,2.21630418637542e-05
+naive Bayes potentials,98721,4725,2.09280286279645e-05
+naive Bayes potentials,99291,4728,1.97446441061455e-05
+naive Bayes potentials,99863,4729,1.86883848134478e-05
+naive Bayes potentials,100433,4730,1.75993901995186e-05
+naive Bayes potentials,101004,4730,1.66365109374178e-05
+naive Bayes potentials,101574,4731,1.56647394697895e-05
+naive Bayes potentials,102145,4733,1.47199847558843e-05
+naive Bayes potentials,102715,4734,1.38044416979621e-05
+naive Bayes potentials,103286,4736,1.29525175163181e-05
+naive Bayes potentials,103856,4736,1.21037488065578e-05
+naive Bayes potentials,104427,4737,1.12318638842979e-05
+naive Bayes potentials,104997,4739,1.03395819660568e-05
+naive Bayes potentials,105568,4743,9.46073242091838e-06
+naive Bayes potentials,106138,4745,8.58791674229753e-06
+naive Bayes potentials,106709,4747,7.720380464038e-06
+naive Bayes potentials,107280,4749,6.91957695564405e-06
+naive Bayes potentials,107851,4750,6.12311674608179e-06
+naive Bayes potentials,108422,4750,5.25332384082589e-06
+naive Bayes potentials,108993,4750,4.46806526444021e-06
+naive Bayes potentials,109563,4751,3.6398125844439e-06
+naive Bayes potentials,110134,4753,2.8054751064488e-06
+naive Bayes potentials,110704,4754,2.01696588375544e-06
+naive Bayes potentials,111275,4754,1.26639155695329e-06
+naive Bayes potentials,111845,4756,6.45560496170816e-07
+naive Bayes potentials,112416,4756,1.89630050329015e-07
+naive Bayes potentials,112987,4756,8.45954784001179e-09
+naive Bayes potentials,113563,4756,0
+Bayes-eKDE potentials,0,0,Inf
+Bayes-eKDE potentials,429,55,0.475599059944475
+Bayes-eKDE potentials,746,109,0.374231345882831
+Bayes-eKDE potentials,1168,154,0.327554220345459
+Bayes-eKDE potentials,1483,207,0.292904641931145
+Bayes-eKDE potentials,1809,246,0.269087399473764
+Bayes-eKDE potentials,2128,284,0.25097114826063
+Bayes-eKDE potentials,2448,326,0.238530634163282
+Bayes-eKDE potentials,2846,369,0.226904698943179
+Bayes-eKDE potentials,3160,405,0.215928477152374
+Bayes-eKDE potentials,3494,447,0.206231074714529
+Bayes-eKDE potentials,3811,487,0.198605823008833
+Bayes-eKDE potentials,4200,530,0.191941493526975
+Bayes-eKDE potentials,4516,563,0.184984131064686
+Bayes-eKDE potentials,4833,600,0.179468473041467
+Bayes-eKDE potentials,5159,625,0.174101991716259
+Bayes-eKDE potentials,5479,664,0.169329631451188
+Bayes-eKDE potentials,5793,701,0.165014066236234
+Bayes-eKDE potentials,6124,733,0.160747044365789
+Bayes-eKDE potentials,6442,762,0.156732083997271
+Bayes-eKDE potentials,6758,794,0.152908137647699
+Bayes-eKDE potentials,7073,823,0.149662935266176
+Bayes-eKDE potentials,7386,853,0.146263835698217
+Bayes-eKDE potentials,7701,880,0.143042005203932
+Bayes-eKDE potentials,8015,913,0.140246984532229
+Bayes-eKDE potentials,8438,948,0.137912162431346
+Bayes-eKDE potentials,8752,970,0.135776821626399
+Bayes-eKDE potentials,9072,996,0.133150865540522
+Bayes-eKDE potentials,9388,1017,0.130732932047937
+Bayes-eKDE potentials,9705,1052,0.128610107075075
+Bayes-eKDE potentials,10022,1087,0.126511097919747
+Bayes-eKDE potentials,10335,1120,0.124472382619231
+Bayes-eKDE potentials,10672,1135,0.122553281353275
+Bayes-eKDE potentials,11005,1172,0.120551043102896
+Bayes-eKDE potentials,11340,1198,0.118700879518621
+Bayes-eKDE potentials,11656,1226,0.116966405175055
+Bayes-eKDE potentials,11974,1252,0.11518000629487
+Bayes-eKDE potentials,12304,1284,0.113547294975082
+Bayes-eKDE potentials,12617,1303,0.111876960158731
+Bayes-eKDE potentials,12933,1326,0.110196305277251
+Bayes-eKDE potentials,13249,1347,0.108736545197653
+Bayes-eKDE potentials,13625,1383,0.107169549611259
+Bayes-eKDE potentials,13940,1415,0.105643798078103
+Bayes-eKDE potentials,14256,1439,0.104208062254209
+Bayes-eKDE potentials,14572,1468,0.10281097104371
+Bayes-eKDE potentials,14888,1490,0.101286994717241
+Bayes-eKDE potentials,15218,1524,0.0998886106252386
+Bayes-eKDE potentials,15539,1549,0.0985922843532351
+Bayes-eKDE potentials,15854,1572,0.0973489902324146
+Bayes-eKDE potentials,16224,1600,0.0961633892988735
+Bayes-eKDE potentials,16538,1630,0.0948719259191255
+Bayes-eKDE potentials,16856,1656,0.0935922959407545
+Bayes-eKDE potentials,17171,1679,0.0922668400106892
+Bayes-eKDE potentials,17487,1705,0.0909236634479498
+Bayes-eKDE potentials,17809,1736,0.0897111010173863
+Bayes-eKDE potentials,18127,1760,0.0885590798265975
+Bayes-eKDE potentials,18488,1794,0.0874632731605114
+Bayes-eKDE potentials,18806,1822,0.0864198167907773
+Bayes-eKDE potentials,19122,1847,0.0853031904999121
+Bayes-eKDE potentials,19442,1871,0.0841747627151372
+Bayes-eKDE potentials,19789,1888,0.0830837192271918
+Bayes-eKDE potentials,20121,1907,0.0820037766836338
+Bayes-eKDE potentials,20442,1934,0.0809720104467184
+Bayes-eKDE potentials,20762,1956,0.0798837146593193
+Bayes-eKDE potentials,21078,1990,0.0788598889744613
+Bayes-eKDE potentials,21400,2014,0.077856126654644
+Bayes-eKDE potentials,21714,2050,0.0769292529626051
+Bayes-eKDE potentials,22028,2073,0.0759235113430198
+Bayes-eKDE potentials,22383,2104,0.0751076204320909
+Bayes-eKDE potentials,22699,2127,0.0742264497394426
+Bayes-eKDE potentials,23064,2148,0.0732931301440197
+Bayes-eKDE potentials,23378,2171,0.0723229772138717
+Bayes-eKDE potentials,23693,2198,0.0713867092281271
+Bayes-eKDE potentials,24008,2224,0.0704683924057189
+Bayes-eKDE potentials,24323,2246,0.0696300141068955
+Bayes-eKDE potentials,24647,2266,0.0687154928996459
+Bayes-eKDE potentials,24970,2297,0.0678863231324857
+Bayes-eKDE potentials,25292,2321,0.067005813181544
+Bayes-eKDE potentials,25605,2349,0.0661384101006554
+Bayes-eKDE potentials,25918,2363,0.0652886830207726
+Bayes-eKDE potentials,26237,2392,0.0644536297959852
+Bayes-eKDE potentials,26594,2418,0.0635872981755667
+Bayes-eKDE potentials,26918,2445,0.0628058457979254
+Bayes-eKDE potentials,27266,2465,0.0618867044832483
+Bayes-eKDE potentials,27602,2486,0.0610437022920501
+Bayes-eKDE potentials,27915,2504,0.0602226998225506
+Bayes-eKDE potentials,28235,2523,0.0593551530980615
+Bayes-eKDE potentials,28558,2544,0.0585827900023138
+Bayes-eKDE potentials,28872,2560,0.0578339763281937
+Bayes-eKDE potentials,29191,2579,0.057020956129626
+Bayes-eKDE potentials,29554,2604,0.0563192988322189
+Bayes-eKDE potentials,29870,2631,0.0555546273263429
+Bayes-eKDE potentials,30188,2652,0.0548404412920037
+Bayes-eKDE potentials,30507,2671,0.0540999595620646
+Bayes-eKDE potentials,30820,2698,0.053333962225124
+Bayes-eKDE potentials,31137,2717,0.0525201876039801
+Bayes-eKDE potentials,31451,2738,0.0517436561488206
+Bayes-eKDE potentials,31815,2770,0.0510473257135264
+Bayes-eKDE potentials,32188,2792,0.0502459600360103
+Bayes-eKDE potentials,32501,2810,0.0494770861591547
+Bayes-eKDE potentials,32814,2834,0.0486798250759792
+Bayes-eKDE potentials,33129,2856,0.0479359899893095
+Bayes-eKDE potentials,33455,2880,0.0472836955914661
+Bayes-eKDE potentials,33775,2903,0.0465291267172467
+Bayes-eKDE potentials,34097,2927,0.0458162772179873
+Bayes-eKDE potentials,34441,2952,0.0451596193975441
+Bayes-eKDE potentials,34778,2974,0.0444410896843482
+Bayes-eKDE potentials,35096,2992,0.0437780167840555
+Bayes-eKDE potentials,35418,3017,0.0430501681379736
+Bayes-eKDE potentials,35746,3032,0.0424026759445852
+Bayes-eKDE potentials,36086,3061,0.0416422254168598
+Bayes-eKDE potentials,36423,3080,0.0408988406054975
+Bayes-eKDE potentials,36738,3105,0.0401646618314584
+Bayes-eKDE potentials,37060,3124,0.0394440159329085
+Bayes-eKDE potentials,37393,3141,0.0387554269294994
+Bayes-eKDE potentials,37718,3157,0.0380787358583369
+Bayes-eKDE potentials,38041,3178,0.0374633251191138
+Bayes-eKDE potentials,38373,3198,0.0368570274656261
+Bayes-eKDE potentials,38689,3215,0.0362434617036171
+Bayes-eKDE potentials,39018,3232,0.0356019186727634
+Bayes-eKDE potentials,39363,3249,0.0349341483315214
+Bayes-eKDE potentials,39683,3262,0.0343103467239243
+Bayes-eKDE potentials,40000,3286,0.0336400555541663
+Bayes-eKDE potentials,40314,3301,0.0330058704283407
+Bayes-eKDE potentials,40653,3317,0.0323724829079096
+Bayes-eKDE potentials,40978,3332,0.0317257380536492
+Bayes-eKDE potentials,41304,3359,0.0309594644247099
+Bayes-eKDE potentials,41630,3388,0.0302341015354574
+Bayes-eKDE potentials,41957,3402,0.0295737325761695
+Bayes-eKDE potentials,42299,3424,0.0288814890929152
+Bayes-eKDE potentials,42615,3437,0.0282752542824963
+Bayes-eKDE potentials,42951,3455,0.027675088049281
+Bayes-eKDE potentials,43270,3471,0.0270535622264316
+Bayes-eKDE potentials,43593,3491,0.0263799533303332
+Bayes-eKDE potentials,43926,3509,0.0257214238862166
+Bayes-eKDE potentials,44261,3525,0.0250756514762919
+Bayes-eKDE potentials,44589,3544,0.0244454046961212
+Bayes-eKDE potentials,44918,3561,0.023800182089765
+Bayes-eKDE potentials,45256,3572,0.0231037658838036
+Bayes-eKDE potentials,45576,3589,0.022517439988022
+Bayes-eKDE potentials,45899,3603,0.0219010873616251
+Bayes-eKDE potentials,46231,3620,0.0213266465304705
+Bayes-eKDE potentials,46571,3632,0.020763089047202
+Bayes-eKDE potentials,46895,3652,0.0201793387391317
+Bayes-eKDE potentials,47214,3665,0.019614374875917
+Bayes-eKDE potentials,47547,3677,0.0190335253660762
+Bayes-eKDE potentials,47874,3691,0.0184701175344847
+Bayes-eKDE potentials,48208,3706,0.0179264637329158
+Bayes-eKDE potentials,48532,3719,0.0173051565781492
+Bayes-eKDE potentials,48859,3737,0.016796486515643
+Bayes-eKDE potentials,49184,3755,0.0162279641939839
+Bayes-eKDE potentials,49516,3767,0.0156551740859474
+Bayes-eKDE potentials,49849,3781,0.0151393932683783
+Bayes-eKDE potentials,50183,3794,0.014606806985954
+Bayes-eKDE potentials,50514,3808,0.0141215921484149
+Bayes-eKDE potentials,50836,3819,0.0135374645985157
+Bayes-eKDE potentials,51167,3825,0.012952736666383
+Bayes-eKDE potentials,51500,3834,0.0123914076428
+Bayes-eKDE potentials,51836,3843,0.0118602362402226
+Bayes-eKDE potentials,52170,3851,0.0113779345589214
+Bayes-eKDE potentials,52502,3868,0.0108270860717453
+Bayes-eKDE potentials,52842,3884,0.0103196999652101
+Bayes-eKDE potentials,53182,3890,0.00985529411753239
+Bayes-eKDE potentials,53526,3899,0.00943078779268924
+Bayes-eKDE potentials,53858,3902,0.00896130301385867
+Bayes-eKDE potentials,54197,3908,0.00849187071486479
+Bayes-eKDE potentials,54533,3920,0.00801203656926308
+Bayes-eKDE potentials,54876,3923,0.00751463069495229
+Bayes-eKDE potentials,55224,3936,0.0070736748068384
+Bayes-eKDE potentials,55570,3942,0.00658951682725373
+Bayes-eKDE potentials,55917,3945,0.00611840051700585
+Bayes-eKDE potentials,56270,3955,0.00569178545843985
+Bayes-eKDE potentials,56629,3961,0.00531035205188546
+Bayes-eKDE potentials,56981,3967,0.00489782220588741
+Bayes-eKDE potentials,57326,3971,0.00452658066282674
+Bayes-eKDE potentials,57661,3977,0.00413938767679833
+Bayes-eKDE potentials,58008,3981,0.00378104686025371
+Bayes-eKDE potentials,58343,3983,0.00344784284520139
+Bayes-eKDE potentials,58683,3986,0.00311978599647578
+Bayes-eKDE potentials,59020,3988,0.00279196428023243
+Bayes-eKDE potentials,59348,3992,0.00250304002055568
+Bayes-eKDE potentials,59684,3993,0.00221962951320864
+Bayes-eKDE potentials,60009,3994,0.00194002083404699
+Bayes-eKDE potentials,60340,3995,0.00169075598316382
+Bayes-eKDE potentials,60671,3997,0.00145107253046939
+Bayes-eKDE potentials,60992,3998,0.00125956042259945
+Bayes-eKDE potentials,61309,3998,0.00110044920710461
+Bayes-eKDE potentials,61629,3998,0.000959354781435273
+Bayes-eKDE potentials,61942,3999,0.000837854463569099
+Bayes-eKDE potentials,62259,4001,0.000723564052883208
+Bayes-eKDE potentials,62573,4001,0.000621981554269846
+Bayes-eKDE potentials,62886,4002,0.000553419862840299
+Bayes-eKDE potentials,63200,4004,0.000489119486011602
+Bayes-eKDE potentials,63515,4004,0.000434404547559719
+Bayes-eKDE potentials,63829,4004,0.000385083247441353
+Bayes-eKDE potentials,64143,4004,0.000339630712536398
+Bayes-eKDE potentials,64456,4005,0.000296397981689567
+Bayes-eKDE potentials,64769,4006,0.000253482940055561
+Bayes-eKDE potentials,65083,4007,0.000201233723591709
+Bayes-eKDE potentials,113563,4756,0
+uniform forecast,0,0,Inf
+uniform forecast,26182,2008,0.0766939118478344
+uniform forecast,73213,4614,0.0554102613170037
+uniform forecast,113563,4756,0.00332094175960351

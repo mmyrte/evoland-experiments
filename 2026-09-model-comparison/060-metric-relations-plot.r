@@ -116,7 +116,7 @@ p_var <- ggplot(shares, aes(share, short, fill = component)) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   labs(
     title = "(a) Variance decomposition by metric",
-    subtitle = "five estimators x CLUMPY, Dinamica, CLUE-S, CLUMondo; 20 replicates",
+    subtitle = "estimators x stochastic allocators",
     x = NULL,
     y = NULL
   ) +
@@ -151,7 +151,7 @@ ref[, metric := lbl[as.character(metric)]]
 fc[, allocator_label := factor(allocator_label, levels = allocators$label)]
 p_fc <- ggplot(fc, aes(value, estimator_label)) +
   geom_point(data = ref, aes(shape = "the potentials"), colour = ink, size = 2.4, fill = "white") +
-  geom_point(aes(colour = allocator_label), size = 1.8, position = position_dodge2(width = 0.5)) +
+  geom_point(aes(colour = allocator_label, group = allocator_label), size = 1.8, position = position_dodge(width = 0.6)) +
   facet_wrap(~metric, scales = "free_x") +
   scale_colour_manual(values = allocator_cols) +
   scale_shape_manual(values = c("the potentials" = 21)) +
