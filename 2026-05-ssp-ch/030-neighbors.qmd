@@ -17,7 +17,7 @@ full grid); it is stored in the DB so downstream steps reuse it.
 
 ```{r}
 #| label: neighbors-relations
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 

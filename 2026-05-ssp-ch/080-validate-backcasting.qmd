@@ -33,13 +33,13 @@ Two consequences worth stating before any number is read:
 
 `n_perturbations` × `n_replicates` chained backcasts, each covering three period steps, is the
 cost driver: every allocated period re-runs `predict_trans_pot()` over the full 4.1 M-cell grid
-for every viable transition, because `alloc_clumpy()` predicts inside the same call that
+for every viable transition, because `allocate()` predicts inside the same call that
 allocates. Start small and grow the grid once the runtime is known.
 
 ```{r}
 #| label: backcast-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 n_perturbations <- 3L # perturbed parameter sets *in addition to* the best estimate
 perturb_sd <- 0.05 # sd of the frac_expander perturbation (evoland default)
@@ -162,7 +162,7 @@ plain(alloc_params)[, .(
 ```
 
 A transition that never produced a new patch (all conversions expanded existing ones) comes back
-with `patch_elongation = NA`; `alloc_clumpy()` substitutes `0.5`, and `mean_patch_size = 0` is
+with `patch_elongation = NA`; `alloc_clumpy_spec()` substitutes its `default_elongation` (0.5), and `mean_patch_size = 0` is
 handled as a mono-pixel draw in the C++ patcher. Both are safe, but a transition in that state
 has no estimated patch geometry at all — worth knowing before reading its similarity.
 
@@ -267,7 +267,7 @@ for (p in param_sets) {
 #     Spatial_intervention_updates.txt records SSP1's 0.20 target being cut to 0.15 "because
 #     some of the transitions were already close". They do not transfer unexamined to ours.
 #   * `Patch_Isometry` is a Dinamica parameter. alloc_clumpy consumes `patch_elongation`
-#     (alloc_params_clumpy_v maps it straight through), so an isometry intervention has to be
+#     (alloc_clumpy_spec() maps it straight through), so an isometry intervention has to be
 #     inverted back through isometry_from_elongation(). That mapping is a 1-D interpolation of
 #     Mazy fig. 3.10 and is not injective over its flat segments.
 ```
@@ -324,14 +324,14 @@ glacier_change[, .N, by = id_period]
 
 ### Allocation
 
-Every replicate is allocated one period at a time with `alloc_clumpy_one_period()`, so the
-glacier change can be imposed between periods; the multi-period `alloc_clumpy()` has no such
+Every replicate is allocated one period at a time with `allocate_one_period()`, so the
+glacier change can be imposed between periods; the multi-period `allocate()` has no such
 hook. Each replicate is seeded with its own registered seed: CLUMPY draws through R's RNG, so
 `set.seed()` makes each replicate reproducible and the replicates independent of each other.
 
 The transition potentials for the *first* backcast period are identical across every replicate
 of a parameter set (same observed anterior state, same models, same predictors), so the first
-period reads them from the parameter-set run with `use_parent_trans_pot = TRUE`: the first
+period reads them from the parameter-set run with `potentials_ancestor = 1L`: the first
 replicate predicts them onto the parent and its siblings reuse them. Later periods start from
 each replicate's own simulated map and are predicted per replicate.
 
@@ -339,19 +339,20 @@ each replicate's own simulated map and are predicted per replicate.
 #| label: backcast-allocate
 #| output: false
 replicate_runs <- db$runs_t[kind == "backcast replicate", .(id_run, seed)]
-options("evoland.use_prefetch_predict" = TRUE)
+options("evoland.plus.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 20)
 for (i in seq_len(nrow(replicate_runs))) {
   db$id_run <- replicate_runs$id_run[i]
   set.seed(replicate_runs$seed[i])
 
   for (id_period_post in backcast_periods) {
-    lulc_simulated <- alloc_clumpy_one_period(
-      db = db,
+    lulc_simulated <- allocate_one_period(
+      db,
       id_period_post = id_period_post,
+      allocator = alloc_clumpy_spec(),
       select_score = select_score,
       select_maximize = select_maximize,
-      use_parent_trans_pot = id_period_post == min(backcast_periods)
+      potentials_ancestor = as.integer(id_period_post == min(backcast_periods))
     )
     apply_deterministic_change(
       lulc_simulated,

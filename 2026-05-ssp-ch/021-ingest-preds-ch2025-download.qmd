@@ -49,7 +49,7 @@ atlas URL patterns. The same indicator sets back both the `-gwl` and `-obs` fami
 ```{r}
 #| label: ch2025-download-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
 
@@ -174,8 +174,8 @@ are skipped.
 
 ```{r}
 #| label: ch2025-download-fetch
-cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
-evoland:::ensure_dir(cache_dir)
+cache_dir <- file.path(getOption("evoland.plus.cachedir"), "ch2025")
+evoland.plus:::ensure_dir(cache_dir)
 
 nc_filename <- function(product, indicator, gwl, uncertainty, reference_period, time_of_year) {
   stem <- sub("^climate-ch2025-maps-", "", product)

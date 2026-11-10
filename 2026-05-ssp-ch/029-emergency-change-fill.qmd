@@ -4,7 +4,7 @@
 ```{r}
 #| label: backcast-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 

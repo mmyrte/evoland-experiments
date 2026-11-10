@@ -12,7 +12,7 @@ excluded. Read-only: computes nothing that is written back to the DB.
 #| label: viable-trans-diagnostic
 #| fig-width: 9
 #| fig-height: 6
-library(evoland)
+library(evoland.plus)
 library(ggplot2)
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 

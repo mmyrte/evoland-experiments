@@ -17,17 +17,17 @@ allocations affordable:
 
 - **The transition potentials are computed once per scenario, not once per member.** The
   anterior state is identical across an SSP's members, so the potential surface is too.
-  `use_parent_trans_pot = TRUE` (exposed upstream in `ca4d681`) points every member at its
+  `potentials_ancestor = 1L` (upstream since `allocate()`, ethzplus/evoland.plus#118) points every member at its
   parent scenario run's `trans_pot_t`, so the 20 members share one prediction — the pattern the
   `stochastic-allocation-sensitivity` vignette now uses.
 - **The single-period allocator is called directly**, bypassing the multi-period
-  `alloc_clumpy()` wrapper. See the allocation section for why; it is the difference between
+  `allocate()` loop. See the allocation section for why; it is the difference between
   this step being cheap and it being unrunnable.
 
 ```{r}
 #| label: alloc2030-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 climate_framing_sel <- "current" # the leaves under id_run 100; see 001-setup-db.qmd
 n_members <- 20L # stochastic allocations per SSP
@@ -241,18 +241,18 @@ members[, .N, by = .(ssp, parent_id_run)]
 
 ## Allocate
 
-`use_parent_trans_pot = TRUE` makes each member read its scenario's potentials; the call to
+`potentials_ancestor = 1L` makes each member read its scenario's potentials; the call to
 `predict_trans_pot()` inside the allocator then finds them present and returns without work after the first iteration.
 
-`alloc_clumpy_one_period()` returns the allocated map without committing it or recomputing the
+`allocate_one_period()` returns the allocated map without committing it or recomputing the
 neighbour predictors, which nothing consumes after a single period. It is exported upstream since
-ethzplus/evoland-plus#49; `alloc_clumpy(update_neighbors = FALSE)` from #50 would do the same
+ethzplus/evoland-plus#49; `allocate(update_neighbors = FALSE)` would do the same
 once merged.
 
 ```{r}
 #| label: alloc2030-allocate
 #| output: false
-options("evoland.use_prefetch_predict" = TRUE)
+options("evoland.plus.use_prefetch_predict" = TRUE)
 for (i in seq_len(nrow(members))) {
   db$id_run <- members$id_run[i]
 
@@ -260,12 +260,13 @@ for (i in seq_len(nrow(members))) {
   # (src/alloc_clumpy.cpp), so seeding here is exact and per-member reproducible.
   set.seed(members$seed[i])
 
-  lulc_member <- alloc_clumpy_one_period(
-    db = db,
+  lulc_member <- allocate_one_period(
+    db,
     id_period_post = target_period,
+    allocator = alloc_clumpy_spec(),
     select_score = select_score,
     select_maximize = select_maximize,
-    use_parent_trans_pot = TRUE
+    potentials_ancestor = 1L
   )
 
   db$commit(lulc_member, "lulc_data_t", method = "upsert")

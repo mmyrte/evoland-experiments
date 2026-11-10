@@ -19,7 +19,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(mlr3learners)
@@ -249,7 +249,6 @@ learner_by <- list(
 
 # the estimators fitted in evoland; Weights of Evidence comes from Dinamica (015, 020)
 evoland_estimators <- estimators[estimator %in% names(learner_by)]
-trans_preds_base <- db$trans_preds_t
 modeled_by <- list()
 for (i in seq_len(nrow(evoland_estimators))) {
   db$id_run <- evoland_estimators$id_run[i]
@@ -257,10 +256,9 @@ for (i in seq_len(nrow(evoland_estimators))) {
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),
-    db$fit_full_models(
-      learner = learner_by[[learner_id]],
-      trans_preds = as_trans_preds_t(trans_preds_base[, .(id_run = db$id_run, id_pred, id_trans)])
-    )
+    # the estimator runs inherit run 0's predictor sets; the models are written under the
+    # active run
+    db$fit_full_models(learner = learner_by[[learner_id]])
   )
   modeled_by[[learner_id]] <- unique(trans_models$id_trans[
     !vapply(trans_models$learner_full, is.null, logical(1L))

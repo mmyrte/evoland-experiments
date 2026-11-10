@@ -20,7 +20,7 @@ Surveys used: **1985 / 1997 / 2009 / 2018**.
 
 ```{r}
 #| label: ingest-lulc-download
-library(evoland)
+library(evoland.plus)
 library(data.table)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
@@ -29,7 +29,7 @@ lulc_files <-
     url = "https://dam-api.bfs.admin.ch/hub/api/dam/assets/32376216/appendix",
     md5sum = "c32937eb4a11fc9c5c58c66e9830360a"
   ) |>
-  download_and_verify(target_dir = getOption("evoland.cachedir"))
+  download_and_verify(target_dir = getOption("evoland.plus.cachedir"))
 
 db$reporting_t <-
   as_reporting_t(data.table::rowwiseDT(
@@ -40,7 +40,7 @@ db$reporting_t <-
   ))
 
 zippath <- file.path(
-  getOption("evoland.cachedir"),
+  getOption("evoland.plus.cachedir"),
   lulc_files$md5sum,
   lulc_files$local_filename
 )

@@ -22,7 +22,7 @@ below normalise them to sectors S1/S2/S3.
 
 ```{r}
 #| label: ingest-statent-download
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
