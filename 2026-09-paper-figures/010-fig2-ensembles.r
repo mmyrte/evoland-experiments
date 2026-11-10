@@ -39,7 +39,7 @@
 #| label: setup
 #| output: false
 set.seed(1337)
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(ggplot2)
@@ -306,11 +306,13 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
 for (i in seq_len(nrow(members))) {
   db$id_run <- members$id_run[i]
   set.seed(members$seed[i])
-  db$alloc_clumpy(
+  allocate(
+    db,
     id_periods = 3,
+    allocator = alloc_clumpy_spec(),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    use_parent_trans_pot = TRUE,
+    potentials_ancestor = 1L,
     update_neighbors = FALSE
   )
 }
@@ -367,7 +369,7 @@ deterministic_by <- lapply(adjusted_by, greedy_map)
 #' The same random-forest potentials and the same quantities, allocated `n_realisations` times by
 #' three established allocators besides CLUMPY:
 #'
-#' - **Dinamica EGO**'s expander and patcher, through evoland's `alloc_dinamica()`, with the same
+#' - **Dinamica EGO**'s expander and patcher, through evoland's `alloc_dinamica_spec()`, with the same
 #'   single-cell allocation parameters as CLUMPY;
 #' - **CLUE-S** in lulcc and **CLUMondo** in CLUinPy, which allocate class totals rather than
 #'   transitions. They get the class probability map of the potentials, as in
@@ -416,11 +418,13 @@ db$commit(
 for (i in which(other_members$allocator == "Dinamica")) {
   db$id_run <- other_members$id_run[i]
   set.seed(other_members$seed[i])
-  db$alloc_dinamica(
+  allocate(
+    db,
     id_periods = 3L,
+    allocator = alloc_dinamica_spec(),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    use_parent_trans_pot = TRUE,
+    potentials_ancestor = 1L,
     update_neighbors = FALSE
   )
 }

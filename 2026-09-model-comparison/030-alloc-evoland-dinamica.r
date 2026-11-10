@@ -5,17 +5,17 @@
 #' ---
 #'
 #' Allocates the observed 1991 → 1999 demand with Dinamica's Expander and Patcher, driven by
-#' evoland's `alloc_dinamica()`, on the potentials of each estimator (`010`, `020`), once per
+#' evoland's `alloc_dinamica_spec()`, on the potentials of each estimator (`010`, `020`), once per
 #' registered realisation. For the Weights of Evidence row this is Dinamica's own estimator and
 #' allocator, but with the run set up by evoland; `015` runs it as shipped for reference.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (`use_parent_trans_pot = TRUE`), the allocation parameters and the demand, so the estimators
+#' (`potentials_ancestor = 1L`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials; the realisations differ only in the allocator's randomness.
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
@@ -31,16 +31,20 @@ for (i in seq_len(nrow(members))) {
   timed(
     "evoland-dinamica",
     "allocate",
-    db$alloc_dinamica(
+    allocate(
+      db,
       id_periods = 3L,
+      allocator = alloc_dinamica_spec(),
       select_score = "no.crossval",
       select_maximize = TRUE,
-      use_parent_trans_pot = TRUE,
+      potentials_ancestor = 1L,
       update_neighbors = FALSE
     ),
     note = paste0("id_run=", members$id_run[i])
   )
 }
+# one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
+db$checkpoint()
 
 #' # Figure of merit
 #'

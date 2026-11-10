@@ -19,7 +19,7 @@ ASCII-grid ZIP directly from the geo.admin.ch OGD topology server.
 ```{r}
 #| label: ingest-dem-download
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal

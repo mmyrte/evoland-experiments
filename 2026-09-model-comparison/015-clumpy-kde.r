@@ -26,7 +26,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 stopifnot("kde is not among PIE_ESTIMATORS" = "kde" %in% estimators$estimator)
@@ -40,7 +40,7 @@ python <- project_python()
 
 db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE]
-trans_preds <- db$trans_preds_t[id_run == 0L]
+trans_preds <- db$trans_preds_t[id_run == 0L & is_selected == TRUE]
 
 #' # Calibration and prediction data
 #'
@@ -53,7 +53,7 @@ for (u in sort(unique(viable$id_lulc_anterior))) {
   from_u <- viable[id_lulc_anterior == u]
   train <- NULL
   for (i in seq_len(nrow(from_u))) {
-    x <- db$trans_pred_data_v(
+    x <- db$pred_wide_train_v(
       id_trans = from_u$id_trans[i],
       id_pred = sort(trans_preds[id_trans == from_u$id_trans[i], id_pred])
     )
@@ -69,7 +69,7 @@ for (u in sort(unique(viable$id_lulc_anterior))) {
   }
   fwrite(train, file.path(work_dir, sprintf("train_%d.csv", u)))
   fwrite(
-    db$pred_data_wide_v(id_trans = from_u$id_trans[1], id_period_anterior = 2L)[,
+    db$pred_wide_predict_v(id_trans = from_u$id_trans[1], id_period_anterior = 2L)[,
       !c("id_lulc")
     ],
     file.path(work_dir, sprintf("pred_%d.csv", u))

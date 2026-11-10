@@ -30,7 +30,7 @@ each transition model's discrimination. What to look for:
 ```{r}
 #| label: roc-diagnostic-load
 library(data.table)
-library(evoland)
+library(evoland.plus)
 library(ggplot2)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")

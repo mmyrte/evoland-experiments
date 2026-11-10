@@ -32,10 +32,10 @@ and the scenario/quantile `id_run`.
 ```{r}
 #| label: ch2025-etl-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
-cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
+cache_dir <- file.path(getOption("evoland.plus.cachedir"), "ch2025")
 
 # Reference period to populate the id_period = 0 baseline (see above).
 obs_reference_period <- "1991-2020"

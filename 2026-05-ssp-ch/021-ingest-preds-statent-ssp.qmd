@@ -88,7 +88,7 @@ that will actually be allocated. `runs_to_fill` below defaults to that.
 ```{r}
 #| label: statent-ssp-read
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
@@ -97,7 +97,7 @@ coords_minimal <- db$coords_minimal
 # (see the provenance note above), so it is expected in the evoland cache rather than
 # downloaded. Its md5 is pinned so a swapped file is caught.
 fte_csv <- file.path(
-  getOption("evoland.cachedir"), 
+  getOption("evoland.plus.cachedir"), 
   "9c1950fface91f98f7b82b96ca2854a4", 
   "NCCS_future_FTE.csv"
 )
@@ -166,7 +166,7 @@ sources_boundaries <-
     # matches the STAC multihash 122068E92235...; md5 computed from that archive
     md5sum = "a8f2e3b9bc1d5f5b9a90c768ad99a6ec"
   ) |>
-  download_and_verify(target_dir = getOption("evoland.cachedir"))
+  download_and_verify(target_dir = getOption("evoland.plus.cachedir"))
 
 template_rast <- db$lulc_data_as_rast(1)
 

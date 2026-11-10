@@ -15,7 +15,7 @@ produced sensible spatial fields. Read-only.
 #| label: ch2025-precip-check
 #| fig-width: 9
 #| fig-height: 7
-library(evoland)
+library(evoland.plus)
 library(terra)
 library(data.table)
 db <- evoland_db$new(path = "ssp-ch.evolanddb")

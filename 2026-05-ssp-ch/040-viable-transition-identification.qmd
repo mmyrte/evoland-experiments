@@ -66,7 +66,7 @@ fail the threshold on its merits rather than be admitted by name.
 
 ```{r}
 #| label: viable-trans-identification
-library(evoland)
+library(evoland.plus)
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 lulc_meta <- db$lulc_meta_t

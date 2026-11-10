@@ -19,7 +19,7 @@
 #' 3. [`simulate.ego`](015-dinamica-woe/simulate.ego): the same probability maps, then the
 #'    observed 1991 → 1999 net rates allocated by Expander and Patcher (the
 #'    `AllocateTransitions` submodel shipped with Dinamica, the same one evoland's
-#'    `alloc_dinamica()` drives), in a single step. This is Dinamica as shipped, a reference
+#'    `alloc_dinamica_spec()` drives), in a single step. This is Dinamica as shipped, a reference
 #'    outside the crossing (runs 3701 ...). `probabilities.ego` is separate because Expander and
 #'    Patcher deplete the probability maps in place, so a map saved after allocation is not the
 #'    Weights of Evidence probability.
@@ -34,7 +34,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 reset_timings("dinamica-native")

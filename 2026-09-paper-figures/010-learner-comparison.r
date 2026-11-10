@@ -42,7 +42,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(ggplot2)
@@ -51,7 +51,7 @@ library(mlr3learners)
 options(synthetic_process.source_only = TRUE)
 source("2026-09-paper-figures/000-synthetic-process.r")
 
-options(evoland.ducklake_db_append_warning = FALSE)
+options(evoland.plus.ducklake_db_append_warning = FALSE)
 
 grid_sizes <- c(30L, 90L)
 landscape_seeds <- c(1337L, 2024L, 4711L)
@@ -296,18 +296,20 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     ]
   }
 
-  # feature sets: committed per configuration run (prediction reads them through
-  # pred_data_wide_v), never for the base run. Lineage reads resolve trans_preds_t per
-  # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set.
+  # feature sets: committed per configuration run (fitting and prediction read them from
+  # the database), not for the base run. Lineage reads resolve trans_preds_t per
+  # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set:
+  # the base run holds the available predictors only while they are scored
   db$id_run <- 0L
+  db$trans_preds_t <- as_trans_preds_t(CJ(
+    id_run = 0L,
+    id_pred = available_preds,
+    id_trans = viable$id_trans
+  ))
   scored <- db$get_pred_filter_score(
-    filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart")),
-    trans_preds = as_trans_preds_t(CJ(
-      id_run = 0L,
-      id_pred = available_preds,
-      id_trans = viable$id_trans
-    ))
+    filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart"))
   )
+  db$delete_from("trans_preds_t", where = "id_run = 0")
   feature_sets <- list(
     "available, rpart top 4" = scored[order(-importance)][,
       head(.SD, 4L),
@@ -392,16 +394,10 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
-        # append, not upsert: every column of trans_preds_t is a key column, and
-        # evoland's MERGE then has an empty `update set` (DuckDB parser error). Each
-        # configuration writes its own id_run slice, so append cannot duplicate rows.
-        db$commit(trans_preds, "trans_preds_t", method = "append")
+        db$trans_preds_t <- trans_preds
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
-          models <- db$fit_full_models(
-            learner = learner_specs[[cfg$learner]]$make(),
-            trans_preds = trans_preds
-          )
+          models <- db$fit_full_models(learner = learner_specs[[cfg$learner]]$make())
         })[["elapsed"]]
         failed <- models[vapply(learner_full, is.null, logical(1L)), id_trans]
         if (length(failed) > 0L) {
@@ -481,7 +477,7 @@ parallel::clusterCall(
 )
 parallel::clusterEvalQ(cl, {
   suppressPackageStartupMessages({
-    library(evoland)
+    library(evoland.plus)
     library(data.table)
     library(terra)
     library(mlr3learners)
@@ -490,7 +486,7 @@ parallel::clusterEvalQ(cl, {
   data.table::setDTthreads(1L)
   options(
     synthetic_process.source_only = TRUE,
-    evoland.ducklake_db_append_warning = FALSE
+    evoland.plus.ducklake_db_append_warning = FALSE
   )
   source("2026-09-paper-figures/000-synthetic-process.r")
   NULL

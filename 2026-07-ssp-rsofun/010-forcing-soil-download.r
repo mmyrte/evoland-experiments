@@ -20,7 +20,7 @@
 # 2026-05-ssp-ch/022-ingest-preds-ch2025-etl.qmd
 
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 zenodo_record <- "7821650"
 
@@ -63,7 +63,7 @@ message(
 
 downloaded <- download_and_verify(
   sspm_mean_md5[, .(url, md5sum)],
-  target_dir = getOption("evoland.cachedir")
+  target_dir = getOption("evoland.plus.cachedir")
 )
 
 # Re-attach property/depth so downstream (011-forcing-soil-whc.r) can index by them.

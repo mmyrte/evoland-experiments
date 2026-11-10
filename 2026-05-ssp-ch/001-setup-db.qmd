@@ -12,7 +12,7 @@ the Swiss predictor stack. This step defines the three axes that later steps key
 
 ```{r}
 #| label: setup-db-create
-library(evoland)
+library(evoland.plus)
 
 stopifnot(
   "ssp-ch.evoland directory already exists" = !dir.exists("ssp-ch.evoland")

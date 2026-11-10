@@ -86,7 +86,7 @@ itself lives here, where it is consumed.
 ```{r}
 #| label: ch2025-gwl-trajectories
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 # id_period 5..8 == decades 2025-34, 2035-44, 2045-54, 2055-64
 gwl_trajectories <- data.table::rowwiseDT(
@@ -114,7 +114,7 @@ gwl_trajectories <- data.table::rowwiseDT(
 
 ```{r}
 #| label: ch2025-gwl-params
-cache_dir <- file.path(getOption("evoland.cachedir"), "ch2025")
+cache_dir <- file.path(getOption("evoland.plus.cachedir"), "ch2025")
 base_url <- "https://service.meteoswiss.ch/pbbackend/api/v1/products"
 
 # Which uncertainty arms to materialise. Add "q5"/"q95" for the uncertainty sensitivity.
@@ -145,7 +145,7 @@ pred_names <-
   if (!is.null(pred_names_override)) {
     pred_names_override
   } else {
-    selected <- db$trans_preds_t
+    selected <- db$trans_preds_t[is_selected == TRUE]
     if (nrow(selected) == 0L) {
       stop(
         "trans_preds_t is empty - run 050-covariate-selection.qmd first, or set ",

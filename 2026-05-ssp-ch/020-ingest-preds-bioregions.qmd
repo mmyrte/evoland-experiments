@@ -42,7 +42,7 @@ archive after confirming its SHA-256 against the STAC entry.
 ```{r}
 #| label: ingest-bioregions-download
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal
@@ -57,7 +57,7 @@ sources_bioreg <-
     # matches the STAC multihash 1220f3c0567d...; md5 computed from that archive
     md5sum = "f1cb4ae01c5c0af1ac263f4060b5081d"
   ) |>
-  download_and_verify(target_dir = getOption("evoland.cachedir"))
+  download_and_verify(target_dir = getOption("evoland.plus.cachedir"))
 ```
 
 ## Read the layer

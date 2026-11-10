@@ -73,7 +73,7 @@ Two further aggregations are worth considering, and one is implemented as an opt
 ```{r}
 #| label: ingest-soil-download
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 coords_minimal <- db$coords_minimal

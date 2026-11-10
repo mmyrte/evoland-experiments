@@ -9,12 +9,12 @@
 #' realisation.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (`use_parent_trans_pot = TRUE`), the allocation parameters and the demand, so the estimators
+#' (`potentials_ancestor = 1L`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials; the realisations differ only in the allocator's randomness.
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
@@ -30,16 +30,20 @@ for (i in seq_len(nrow(members))) {
   timed(
     "evoland-clumpy",
     "allocate",
-    db$alloc_clumpy(
+    allocate(
+      db,
       id_periods = 3L,
+      allocator = alloc_clumpy_spec(),
       select_score = "no.crossval",
       select_maximize = TRUE,
-      use_parent_trans_pot = TRUE,
+      potentials_ancestor = 1L,
       update_neighbors = FALSE
     ),
     note = paste0("id_run=", members$id_run[i])
   )
 }
+# one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
+db$checkpoint()
 
 #' # Figure of merit
 #'

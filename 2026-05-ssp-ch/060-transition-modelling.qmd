@@ -44,7 +44,7 @@ is better caught here than after allocation produces noise.
 ```{r}
 #| label: transition-modelling-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 library(mlr3learners)
 
 sample_frac <- 0.7 # stratified train fraction; the remainder is the held-out scoring split

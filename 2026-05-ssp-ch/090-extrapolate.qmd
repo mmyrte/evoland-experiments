@@ -26,7 +26,7 @@ applied here; the comments in the allocation section say what each kind would ta
 ```{r}
 #| label: extrapolate-params
 library(data.table)
-library(evoland)
+library(evoland.plus)
 
 ssp_subset <- c("SSP1", "SSP3") # widen once the runtime per leaf is known
 climate_subset <- "current" # "current" | "gwl"; see 001-setup-db.qmd
@@ -199,15 +199,17 @@ realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
 #| label: extrapolate-allocate
 #| output: false
 realisation_runs <- db$runs_t[kind == "extrapolation realisation"]
-options("evoland.use_prefetch_predict" = TRUE)
+options("evoland.plus.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 10)
 for (i in seq_len(nrow(realisation_runs))) {
   db$id_run <- realisation_runs$id_run[i]
 
   set.seed(realisation_runs$seed[i])
 
-  db$alloc_clumpy(
+  allocate(
+    db,
     id_periods = alloc_periods,
+    allocator = alloc_clumpy_spec(),
     select_score = select_score,
     select_maximize = select_maximize
   )
@@ -239,10 +241,10 @@ NCCS-SSP-scenarios/Tools/SSP*_interventions.yml). Where each would attach:
   and would run per period, ordered by Intervention_ranking, restricted to
   Transition_target_classes (Urban in every file we have) and optionally From_lulc_filter.
 
-  **This is currently not possible without an upstream change.** alloc_clumpy_one_period()
+  **This is currently not possible without an upstream change.** allocate_one_period()
   calls predict_trans_pot() unconditionally as its first act and that write upserts
   trans_pot_t, so any hand-edited potentials are overwritten before they are read -- including
-  under use_parent_trans_pot, which only redirects *which* run is predicted for. What is needed
+  under potentials_ancestor, which only redirects *which* run is predicted for. What is needed
   is either a `skip_prediction` flag or a hook applied between prediction and
   adjusted_trans_pot_v(). Note also that the adjustment interacts with the column scaling in
   adjusted_trans_pot_v(): that view rescales every transition's potentials so their mean matches
