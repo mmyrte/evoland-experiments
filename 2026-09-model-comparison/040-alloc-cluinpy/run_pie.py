@@ -31,9 +31,11 @@ import pandas as pd
 import rasterio
 
 PIE_DIR = "2026-09-model-comparison"
-# PIE_SCALE = k > 1: the tiled grids of 080-scaling, see common.r
+# PIE_SCALE = k > 1: the tiled grids of 080-scaling; PIE_DATASET = synthetic: the synthetic
+# landscape of 000-synthetic-data.r (the same suffixes as common.r)
 _SCALE = os.environ.get("PIE_SCALE", "")
-_SUFFIX = f"-k{_SCALE}" if _SCALE else ""
+_DATASET = os.environ.get("PIE_DATASET", "pie")
+_SUFFIX = ("-synthetic" if _DATASET == "synthetic" else "") + (f"-k{_SCALE}" if _SCALE else "")
 DATA_DIR = os.path.join(PIE_DIR, "data" + _SUFFIX)
 OUT_DIR = os.path.join(PIE_DIR, "outputs" + _SUFFIX)
 WORK_ROOT = os.path.abspath(os.path.join(OUT_DIR, "cluinpy-work"))
