@@ -31,7 +31,6 @@ library(terra)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
 maps_dir <- file.path(outputs_dir, "maps")
-figures_dir <- file.path(pie_dir, "figures")
 dir.create(figures_dir, showWarnings = FALSE)
 
 #' # Ensembles

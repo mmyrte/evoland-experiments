@@ -113,4 +113,4 @@ summary_dt <-
     by = .(model, factor)
   ]
 summary_dt
-fwrite(results, file.path(pie_dir, "figures", "moulds2015-reproduction.csv"))
+fwrite(results, file.path(figures_dir, "moulds2015-reproduction.csv"))

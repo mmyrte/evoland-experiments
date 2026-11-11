@@ -5,7 +5,26 @@ pie_dir <- "2026-09-model-comparison"
 # and database, so the benchmark proper (k = 1) is never touched
 # (an explicit PIE_SCALE=1 also gets its own directories)
 pie_scale <- as.integer(Sys.getenv("PIE_SCALE", "1"))
-scale_suffix <- if (nzchar(Sys.getenv("PIE_SCALE"))) paste0("-k", pie_scale) else ""
+# PIE_DATASET = "synthetic" runs the same pipeline on the synthetic landscape of
+# 000-synthetic-data.r (a known change process, so there is signal to learn) instead of the PIE
+# maps; it gets its own data, outputs, database, results and figures, and PIE is never touched
+pie_dataset <- Sys.getenv("PIE_DATASET", "pie")
+stopifnot(pie_dataset %in% c("pie", "synthetic"))
+dataset_suffix <- if (pie_dataset == "synthetic") "-synthetic" else ""
+scale_suffix <- paste0(
+  dataset_suffix,
+  if (nzchar(Sys.getenv("PIE_SCALE"))) paste0("-k", pie_scale) else ""
+)
+figures_dir <- file.path(pie_dir, paste0("figures", dataset_suffix))
+dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
+
+# a step that belongs to one dataset only ends here for the other (in a quarto render, too)
+only_for_dataset <- function(dataset) {
+  if (pie_dataset != dataset) {
+    message("skipped: this step is for PIE_DATASET=", dataset)
+    if (isTRUE(getOption("knitr.in.progress"))) knitr::knit_exit() else quit(save = "no")
+  }
+}
 data_dir <- file.path(pie_dir, paste0("data", scale_suffix))
 outputs_dir <- file.path(pie_dir, paste0("outputs", scale_suffix))
 db_path <- file.path(pie_dir, paste0("pie", scale_suffix, ".evolanddb"))

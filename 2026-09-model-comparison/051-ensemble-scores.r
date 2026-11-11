@@ -25,7 +25,6 @@ library(evoland)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
-figures_dir <- file.path(pie_dir, "figures")
 fom <- fread(file.path(figures_dir, "pie-fom-per-run.csv"))
 members <- unique(fom[, .(id_run, ensemble)])
 

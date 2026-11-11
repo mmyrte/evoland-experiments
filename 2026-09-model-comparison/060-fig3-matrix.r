@@ -4,19 +4,18 @@
 #' number-sections: true
 #' ---
 #'
-#' Draws the paper's Fig. 3 (the PIE benchmark) from the tables `050-compare.r` and
-#' `051-validation-metrics.r` write. The figure argues for probabilistic evaluation, so the colour
-#' and the first number in every cell are the ensemble's fair Brier skill; the figure of merit
-#' follows in brackets, for readers who know it (Overleaf comment of 2026-10-23: the earlier
-#' version, coloured by FoM, made the single deterministic maps look best).
+#' Draws the paper's Fig. 3 from the tables `050-compare.r` and `051-validation-metrics.r`
+#' write, for PIE or, with `PIE_DATASET=synthetic`, for the synthetic landscape
+#' (`000-synthetic-data.r`). The figure argues for probabilistic evaluation, so it shows only the
+#' ensembles' fair Brier skill (Overleaf comments: the version coloured by FoM made the single
+#' deterministic maps look best, and FoM in brackets made it too busy).
 #'
 #' - **(a)** fair Brier skill of each ensemble (relative to the uniform forecast, i.e. knowing only
 #'   the quantities), for every estimator crossed with every allocator, with the potentials
 #'   themselves as a first column (the forecast before any allocation) and each tool as shipped
-#'   (outlined) below.
-#' - **(b)** what the variance of each score is due to, over the crossing of the stochastic
-#'   allocators: the figure of merit depends on the estimator as much as on the allocator, the
-#'   Brier score almost only on the allocator.
+#'   (outlined) below. Allocators are named as allocators: CLUMPY's patch allocator is uPAM.
+#' - **(b)** what the variance of the Brier score is due to, over the crossing of the stochastic
+#'   allocators.
 #'
 #' Output: `figures/fig3-pie-matrix.pdf` (`ggsave()`, with the platform's default PDF device), copied
 #' by hand to `evoland-plus-paper/figures/`.
@@ -27,8 +26,7 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 source("2026-09-model-comparison/common.r")
-figures_dir <- file.path(pie_dir, "figures")
-results_dir <- file.path(pie_dir, "results")
+results_dir <- file.path(pie_dir, paste0("results", scale_suffix))
 summary_dt <- fread(file.path(figures_dir, "pie-ensemble-summary.csv"))
 forecast <- fread(file.path(results_dir, "metrics-forecast.csv"), encoding = "UTF-8")
 shares <- fread(file.path(results_dir, "metrics-variance-shares.csv"))
@@ -37,7 +35,7 @@ shares <- fread(file.path(results_dir, "metrics-variance-shares.csv"))
 alloc_order <- c("potentials", "CLUMPY", "Dinamica", "CLUE-S", "CLUMondo", "Ordered", "greedy")
 alloc_labels <- c(
   "potentials" = "potentials\n(no allocation)",
-  "CLUMPY" = "CLUMPY\n(uSAM)",
+  "CLUMPY" = "uPAM\n(CLUMPY)",
   "Dinamica" = "Dinamica\nEGO",
   "CLUE-S" = "CLUE-S\n(lulcc)",
   "CLUMondo" = "CLUMondo\n(CLUinPy)",
@@ -59,11 +57,7 @@ row_levels <- c(estimators$label, unique(cells_dt[as_shipped == TRUE, row]))
 cells_dt[, `:=`(
   row = factor(row, levels = rev(row_levels)),
   allocator = factor(allocator, levels = alloc_order),
-  cell_label = fifelse(
-    is.na(figure_of_merit),
-    sprintf("%+.2f", round(brier_skill, 2) + 0),
-    sprintf("%+.2f\n(%.3f)", round(brier_skill, 2) + 0, figure_of_merit)
-  ),
+  cell_label = sprintf("%+.2f", round(brier_skill, 2) + 0),
   # the colour scale is clamped at -1; the one cell beyond it keeps its number
   skill_fill = pmax(brier_skill, -1),
   dark = brier_skill < -0.55
@@ -99,7 +93,7 @@ matrix_panel <- ggplot(cells_dt, aes(allocator, row)) +
   scale_y_discrete(expand = expansion(add = c(0.5, 1.4))) +
   coord_cartesian(clip = "off") +
   labs(
-    title = "(a) Fair Brier skill of each ensemble (figure of merit in brackets)",
+    title = "(a) Fair Brier skill of each ensemble",
     subtitle = "skill relative to knowing only the quantities of change: above 0 better, below 0 worse; rows: estimators, columns: allocators",
     x = NULL, y = NULL
   ) +
@@ -112,7 +106,7 @@ matrix_panel <- ggplot(cells_dt, aes(allocator, row)) +
     legend.key.height = unit(5, "pt"), legend.key.width = unit(28, "pt")
   )
 
-share_metrics <- c("figure_of_merit" = "figure of\nmerit", "brier" = "Brier\nscore")
+share_metrics <- c("brier" = "Brier\nscore")
 sh <- shares[metric %in% names(share_metrics)]
 sh[, `:=`(
   metric = factor(share_metrics[metric], levels = share_metrics),
@@ -131,7 +125,7 @@ shares_panel <- ggplot(sh, aes(x = metric, y = share, fill = component)) +
     name = NULL
   ) +
   scale_y_continuous(labels = scales::percent, expand = expansion(0)) +
-  labs(title = "(b) Variance due to", x = NULL, y = NULL) +
+  labs(title = "(b) Variance of the\nBrier score due to", x = NULL, y = NULL) +
   theme_minimal(base_size = 9) +
   theme(
     panel.grid = element_blank(), plot.title.position = "plot",

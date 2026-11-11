@@ -38,7 +38,10 @@ n_realisations <- scalars$n_realisations
 n_window <- scalars$n_window
 fom_null <- scalars$fom_null
 
-allocator_levels <- c("CLUMPY", "Dinamica", "CLUE-S", "CLUMondo")
+# the figures name the allocator, not the package: CLUMPY's single-cell allocator is uSAM
+for (d in list(runs, fom, fom_ensemble)) d[allocator == "CLUMPY", allocator := "uSAM"]
+cdf[what == "CLUMPY", what := "uSAM"]
+allocator_levels <- c("uSAM", "Dinamica", "CLUE-S", "CLUMondo")
 
 #| label: figure-data
 coords_xy <- cells[block == TRUE, .(id_coord, x, y)]
@@ -66,7 +69,7 @@ outcome <- function(anterior, observed, simulated) {
 # the realisation shown: a typical CLUMPY draw (FoM within 0.005 of the ensemble median) that
 # also shows every outcome in the map window, wrong hits included, so the FoM panel can be read
 # off the map; among those, the one with the most wrong hits in the window
-fom_clumpy <- fom[allocator == "CLUMPY"]
+fom_clumpy <- fom[allocator == "uSAM"]
 window_ids <- cells[block == TRUE, id_coord]
 
 lulc_names <- c("1" = "forest", "2" = "arable", "3" = "urban", "4" = "lake (fixed)")
@@ -82,7 +85,7 @@ stopifnot(candidates[id_run == shown_run, wrong_in_window] > 0)
 panel_draw <- maps[simulated_map(shown_run), on = "id_coord"][,
   .(id_coord, status = outcome(anterior, observed, simulated))
 ]
-clumpy_runs <- runs[allocator == "CLUMPY", id_run]
+clumpy_runs <- runs[allocator == "uSAM", id_run]
 panel_freq <- changes[id_run %in% clumpy_runs, .(n = .N), by = id_coord][
   maps[, .(id_coord)],
   on = "id_coord"
@@ -159,7 +162,7 @@ p_b <- ggplot(coords_xy[panel_draw, on = "id_coord", nomatch = NULL], aes(x, y, 
   coord_equal(expand = FALSE) +
   labs(
     title = "(b) One realisation",
-    subtitle = "random forest, CLUMPY, a typical draw,\nscored cell by cell"
+    subtitle = "random forest, uSAM, a typical draw,\nscored cell by cell"
   ) +
   theme_map +
   guides(fill = guide_legend(nrow = 2))
@@ -177,7 +180,7 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
   coord_equal(expand = FALSE) +
   labs(
     title = "(a) Change frequency",
-    subtitle = "random forest, CLUMPY ensemble\noutline: observed change"
+    subtitle = "random forest, uSAM ensemble\noutline: observed change"
   ) +
   theme_map +
   theme(
@@ -229,7 +232,7 @@ p_fom <- ggplot(decomp) +
 # allocator keeps its colour across the paper. CLUE-S and CLUMondo are only 7.6 apart under
 # deuteranopia (validator floor 6-8): (d) names its rows, (e) adds linetypes.
 allocator_cols <- c(
-  "CLUMPY" = "#0072B2",
+  "uSAM" = "#0072B2",
   "Dinamica" = "#E69F00",
   "CLUE-S" = "#009E73",
   "CLUMondo" = "#CC79A7",
@@ -237,19 +240,20 @@ allocator_cols <- c(
 )
 allocator_linetypes <- c(
   "observed change" = "solid",
-  "CLUMPY" = "solid",
+  "uSAM" = "solid",
   "Dinamica" = "42",
   "CLUE-S" = "11",
   "CLUMondo" = "2212",
   "rank-and-fill" = "73"
 )
 row_levels <- c(allocator_levels, "rank-and-fill")
-row_y <- c("CLUMPY" = 4.4, "Dinamica" = 3.5, "CLUE-S" = 2.3, "CLUMondo" = 1.8, "rank-and-fill" = 1.3)
+row_y <- c("uSAM" = 4.4, "Dinamica" = 3.5, "CLUE-S" = 2.3, "CLUMondo" = 1.8, "rank-and-fill" = 1.3)
 fom[, y := row_y[as.character(allocator)]]
 fom_ensemble[, y := row_y[as.character(allocator)]]
 fom_deterministic[, y := row_y[["rank-and-fill"]]]
 # Brier skill of each allocator's forecast (ensemble frequency; the single map for rank-and-fill)
 brier <- fread(file.path(res_dir, "brier.csv"))
+brier[learner == "CLUMPY", learner := "uSAM"]
 skill <- rbind(
   brier[forecast == "ensemble frequency (fair)", .(allocator = learner, skill)],
   brier[learner == "random forest" & forecast == "deterministic", .(allocator = "rank-and-fill", skill)]
@@ -342,9 +346,9 @@ p_e <- ggplot() +
     colour = "#555555"
   ) +
   geom_ribbon(
-    data = cdf[what == "CLUMPY"],
+    data = cdf[what == "uSAM"],
     aes(x = x, ymin = lo, ymax = hi),
-    fill = allocator_cols[["CLUMPY"]],
+    fill = allocator_cols[["uSAM"]],
     alpha = 0.2
   ) +
   geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.55) +

@@ -16,7 +16,6 @@
 library(data.table)
 library(ggplot2)
 source("2026-09-model-comparison/common.r")
-figures_dir <- file.path(pie_dir, "figures")
 res_dir <- file.path(pie_dir, paste0("results", scale_suffix))
 fom <- fread(file.path(figures_dir, "pie-fom-per-run.csv"))
 cells <- as.data.table(arrow::read_parquet(file.path(res_dir, "cells.parquet")))
