@@ -16,7 +16,11 @@
 #'   periods: an initial map and two steps of the process);
 #' - `ef_001.tif` accessibility, `ef_002.tif` site quality, `ef_003.tif` distance to built land
 #'   in 1985;
-#' - 100 m cells in EPSG:26986, `n_row` × `n_col` cells, all inside the study area.
+#' - 100 m cells in EPSG:26986, `n_row` × `n_col` cells; a ragged corner lies outside the
+#'   study area (NA), as in PIE. Besides making the domain a set of cells rather than a
+#'   rectangle, this keeps CLUinPy working: its demand step (`cluinpy/demand.py`,
+#'   `freq_list = arr2.tolist()[:-1]`) assumes that the map has no-data cells and drops the last
+#'   class count, so on a map without any it never allocates the last class.
 #'
 #' The process is the one of Fig. 2 (`2026-09-paper-figures/000-synthetic-process.r`), with
 #' its four logistic transitions on accessibility, site quality and the share of each class in
@@ -78,6 +82,14 @@ dist_built <- terra::distance(terra::ifel(lu_1985 == 2, 1, NA))
 ef <- c(drivers$accessibility, drivers$site_quality, dist_built)
 names(ef) <- paste0("ef_00", 1:3)
 
+# the study area: everything but a ragged north-east corner (the process ran on the full grid)
+xy <- terra::crds(template, df = TRUE)
+corner <- (xy$x - terra::xmin(template)) / (100 * n_col) + (xy$y - terra::ymin(template)) / (100 * n_row)
+ragged <- terra::values(smooth_field(template, w = 9), mat = FALSE)
+outside <- terra::setValues(template, corner + 0.25 * ragged > 1.85)
+lu <- terra::mask(lu, outside, maskvalues = TRUE)
+ef <- terra::mask(ef, outside, maskvalues = TRUE)
+
 #| label: write
 for (i in seq_along(years)) {
   terra::writeRaster(
@@ -106,6 +118,7 @@ for (n in names(ef)) {
 dir.create(outputs_dir, showWarnings = FALSE, recursive = TRUE)
 lu_values <- as.data.table(terra::values(lu))
 setnames(lu_values, as.character(years))
+lu_values <- lu_values[!is.na(`1985`)]
 fwrite(
   lu_values[
     `1991` != `1999`,
@@ -136,8 +149,9 @@ crosstab_period(1, 2)
 crosstab_period(2, 3)
 #' Share of cells that change, per period:
 c(
-  calibration = mean(values(lu[[1]]) != values(lu[[2]])),
-  validation = mean(values(lu[[2]]) != values(lu[[3]]))
+  calibration = mean(values(lu[[1]]) != values(lu[[2]]), na.rm = TRUE),
+  validation = mean(values(lu[[2]]) != values(lu[[3]]), na.rm = TRUE),
+  cells_in_study_area = sum(!is.na(values(lu[[1]])))
 )
 
 #| label: plot
