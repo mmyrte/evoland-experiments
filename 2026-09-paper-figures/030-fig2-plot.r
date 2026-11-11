@@ -129,8 +129,8 @@ theme_map <- theme_void(base_size = 9) +
 outline <- function() {
   changed <- coords_xy[observed_change_cells, on = "id_coord", nomatch = NULL]
   list(
-    geom_tile(data = changed, aes(x, y), fill = NA, colour = "white", linewidth = 1.5, width = 70, height = 70, inherit.aes = FALSE),
-    geom_tile(data = changed, aes(x, y), fill = NA, colour = "#1a1a1a", linewidth = 0.7, width = 70, height = 70, inherit.aes = FALSE)
+    geom_tile(data = changed, aes(x, y), fill = NA, colour = "white", linewidth = 0.55, width = 84, height = 84, inherit.aes = FALSE),
+    geom_tile(data = changed, aes(x, y), fill = NA, colour = "#1a1a1a", linewidth = 0.28, width = 84, height = 84, inherit.aes = FALSE)
   )
 }
 
