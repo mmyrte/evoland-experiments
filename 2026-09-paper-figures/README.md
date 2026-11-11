@@ -34,7 +34,7 @@ root).
 | [`010-skill-attribution.r`](010-skill-attribution.r) | `figures/skill-attribution.csv` | Where the skill is lost: potentials or allocation |
 | [`010-learner-comparison.r`](010-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
 | [`020-validation-metrics.r`](020-validation-metrics.r) | `results/fig2/metrics-*.csv`, `toc.csv` | Every map of Fig. 2 scored with the validation metrics in common use (below) |
-| [`030-fig2-plot.r`](030-fig2-plot.r) | Fig. 2, `figures/fig2-ensembles.pdf` | Ensembles vs. single maps, drawn from `results/fig2/` |
+| [`030-fig2-plot.r`](030-fig2-plot.r) | Figs. 2a and 2b, `figures/fig2a-fom.pdf`, `figures/fig2b-ensembles.pdf` | (2a) conventional validation: observed map, one realisation scored cell by cell, its figure of merit; (2b) why ensembles: change frequency, FoM of every realisation with each allocator's Brier skill, where change is placed |
 | [`030-metric-relations-plot.r`](030-metric-relations-plot.r) | `figures/metric-relations.pdf`, `figures/metric-agreement.pdf` | How the metrics relate to each other and to allocation bias |
 
 ## Figure 2: ensembles vs. single maps

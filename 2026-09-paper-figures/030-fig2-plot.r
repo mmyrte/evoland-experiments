@@ -7,10 +7,15 @@
 #' be iterated on without rerunning the allocators. Needs only data.table, arrow, ggplot2 and
 #' patchwork. Run from the repository root.
 #'
-#' Six cells of a 3 x 2 grid: three maps on top, the FoM strip across two cells and the bias
-#' panel in the last one below. Map panels show one n_window x n_window block of the domain, the
-#' block with the most observed change; every score, panel (d) and panel (e) use the whole
-#' domain. Each panel keeps its own legend.
+#' Two figures (split after the Overleaf comment of 2026-10-23, "it's overload like this"):
+#'
+#' - `fig2a-fom.pdf`, conventional validation: the observed map, one realisation scored cell by
+#'   cell, and how those cells make up its figure of merit;
+#' - `fig2b-ensembles.pdf`, why ensembles: the change frequency of the CLUMPY ensemble, the FoM of
+#'   every realisation with each allocator's Brier skill, and where change is placed.
+#'
+#' Map panels show one n_window x n_window block of the domain, the block with the most observed
+#' change; every score uses the whole domain. Each panel keeps its own legend.
 
 #| label: setup
 #| output: false
@@ -58,12 +63,22 @@ outcome <- function(anterior, observed, simulated) {
   )
 }
 
-# the realisation shown: the CLUMPY draw closest to its ensemble median
+# the realisation shown: a typical CLUMPY draw (FoM within 0.005 of the ensemble median) that
+# also shows every outcome in the map window, wrong hits included, so the FoM panel can be read
+# off the map; among those, the one with the most wrong hits in the window
 fom_clumpy <- fom[allocator == "CLUMPY"]
-shown_run <- fom_clumpy[order(abs(figure_of_merit - median(figure_of_merit)))][1, id_run]
+window_ids <- cells[block == TRUE, id_coord]
 
 lulc_names <- c("1" = "forest", "2" = "arable", "3" = "urban", "4" = "lake (fixed)")
 panel_lulc <- maps[, .(id_coord, status = lulc_names[as.character(observed)])]
+window_wrong_hits <- function(run) {
+  d <- maps[simulated_map(run), on = "id_coord"][id_coord %in% window_ids]
+  d[, sum(outcome(anterior, observed, simulated) == "wrong hit")]
+}
+candidates <- fom_clumpy[abs(figure_of_merit - median(figure_of_merit)) <= 0.005]
+candidates[, wrong_in_window := vapply(id_run, window_wrong_hits, integer(1))]
+shown_run <- candidates[order(-wrong_in_window, abs(figure_of_merit - median(fom_clumpy$figure_of_merit)))][1, id_run]
+stopifnot(candidates[id_run == shown_run, wrong_in_window] > 0)
 panel_draw <- maps[simulated_map(shown_run), on = "id_coord"][,
   .(id_coord, status = outcome(anterior, observed, simulated))
 ]
@@ -144,10 +159,7 @@ p_b <- ggplot(coords_xy[panel_draw, on = "id_coord", nomatch = NULL], aes(x, y, 
   coord_equal(expand = FALSE) +
   labs(
     title = "(b) One realisation",
-    subtitle = sprintf(
-      "random forest, CLUMPY, median draw\nFoM %.2f (whole domain)",
-      fom[id_run == shown_run, figure_of_merit]
-    )
+    subtitle = "random forest, CLUMPY, a typical draw,\nscored cell by cell"
   ) +
   theme_map +
   guides(fill = guide_legend(nrow = 2))
@@ -164,7 +176,7 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
   ) +
   coord_equal(expand = FALSE) +
   labs(
-    title = "(c) Change frequency",
+    title = "(a) Change frequency",
     subtitle = "random forest, CLUMPY ensemble\noutline: observed change"
   ) +
   theme_map +
@@ -174,7 +186,45 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
     legend.key.height = unit(5, "pt")
   )
 
-# (d): one row per allocator, realisations jittered around it; the deterministic allocation below
+# Fig. 2a (c): the realisation's cells by outcome, and the figure of merit computed from them
+fom_shown <- fom[id_run == shown_run]
+decomp <- data.table(
+  status = factor(c("hit", "wrong hit", "miss", "false alarm"), levels = c("hit", "wrong hit", "miss", "false alarm")),
+  n = c(fom_shown$hits, fom_shown$wrong_hits, fom_shown$misses, fom_shown$false_alarms)
+)
+decomp[, `:=`(xmax = cumsum(n), xmin = cumsum(n) - n)]
+total <- decomp[, sum(n)]
+p_fom <- ggplot(decomp) +
+  geom_rect(aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, fill = status), colour = "white", linewidth = 0.4) +
+  geom_text(aes(x = (xmin + xmax) / 2, y = 1.18, label = n), size = 2.5, colour = "#333333") +
+  annotate("segment", x = 0, xend = decomp[status == "hit", xmax], y = -0.18, yend = -0.18, colour = "#1a1a1a", linewidth = 0.5) +
+  annotate("segment", x = 0, xend = total, y = -0.42, yend = -0.42, colour = "#1a1a1a", linewidth = 0.5) +
+  annotate("text", x = decomp[status == "hit", xmax] + 8, y = -0.18, label = "hits", hjust = 0, size = 2.5) +
+  annotate("text", x = total + 8, y = -0.42, label = "all changed cells, observed or simulated", hjust = 1, vjust = -0.6, size = 2.5) +
+  annotate(
+    "text", x = 0, y = -1.0, hjust = 0, size = 2.9,
+    label = sprintf(
+      "FoM = hits / all changed cells\n        = %d / %d = %.2f",
+      fom_shown$hits, total, fom_shown$figure_of_merit
+    )
+  ) +
+  annotate(
+    "text", x = 0, y = -1.75, hjust = 0, size = 2.5, colour = "#555555",
+    label = sprintf("random placement of the same quantities: %.2f", fom_null)
+  ) +
+  scale_fill_manual(values = outcome_cols[-1]) +
+  scale_x_continuous(expand = expansion(mult = c(0.01, 0.02))) +
+  scale_y_continuous(limits = c(-2.05, 1.35)) +
+  labs(
+    title = "(c) Figure of merit",
+    subtitle = "cells of the whole domain by outcome;\npersistent cells do not count"
+  ) +
+  theme_void(base_size = 9) +
+  theme_panel_text +
+  theme(plot.margin = margin(2, 6, 2, 6)) +
+  guides(fill = "none")  # same colours as (b), whose legend sits next to it
+
+# Fig. 2b (b): one row per allocator, realisations jittered around it; the deterministic allocation below
 # Okabe-Ito, in the same order as the metric figures (030-metric-relations-plot.r), so each
 # allocator keeps its colour across the paper. CLUE-S and CLUMondo are only 7.6 apart under
 # deuteranopia (validator floor 6-8): (d) names its rows, (e) adds linetypes.
@@ -194,18 +244,27 @@ allocator_linetypes <- c(
   "rank-and-fill" = "73"
 )
 row_levels <- c(allocator_levels, "rank-and-fill")
-fom[, row := factor(as.character(allocator), levels = rev(row_levels))]
-fom_ensemble[, row := factor(as.character(allocator), levels = rev(row_levels))]
-fom_deterministic[, row := factor("rank-and-fill", levels = rev(row_levels))]
+row_y <- c("CLUMPY" = 4.4, "Dinamica" = 3.5, "CLUE-S" = 2.3, "CLUMondo" = 1.8, "rank-and-fill" = 1.3)
+fom[, y := row_y[as.character(allocator)]]
+fom_ensemble[, y := row_y[as.character(allocator)]]
+fom_deterministic[, y := row_y[["rank-and-fill"]]]
+# Brier skill of each allocator's forecast (ensemble frequency; the single map for rank-and-fill)
+brier <- fread(file.path(res_dir, "brier.csv"))
+skill <- rbind(
+  brier[forecast == "ensemble frequency (fair)", .(allocator = learner, skill)],
+  brier[learner == "random forest" & forecast == "deterministic", .(allocator = "rank-and-fill", skill)]
+)
+skill[, y := row_y[allocator]]
+x_skill <- max(fom$figure_of_merit, fom_deterministic$figure_of_merit) + 0.03
 set.seed(7)
-p_d <- ggplot(fom, aes(x = figure_of_merit, y = row)) +
+p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   geom_vline(xintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
   geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
   # the nulls, labelled along their lines
   annotate(
     "text",
     x = 0,
-    y = length(row_levels) + 0.4,
+    y = 4.95,
     label = "null: no change",
     angle = 90,
     hjust = 1,
@@ -216,7 +275,7 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = row)) +
   annotate(
     "text",
     x = fom_null,
-    y = length(row_levels) + 0.4,
+    y = 4.95,
     label = "null: random placement",
     angle = 90,
     hjust = 1,
@@ -224,7 +283,9 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = row)) +
     size = 2.4,
     colour = "#555555"
   ) +
-  geom_jitter(aes(colour = allocator), height = 0.18, width = 0, size = 0.8, alpha = 0.5) +
+  geom_jitter(aes(colour = allocator), height = 0.12, width = 0, size = 0.8, alpha = 0.5) +
+  annotate("text", x = x_skill, y = 4.95, label = "Brier skill", hjust = 0, vjust = 1, size = 2.4, fontface = "bold", colour = "#333333") +
+  geom_text(data = skill, aes(x = x_skill, y = y, label = sprintf("%+.2f", skill)), hjust = 0, size = 2.6, colour = "#333333") +
   geom_point(
     data = fom_ensemble,
     aes(shape = "ensemble expectation"),
@@ -246,12 +307,12 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = row)) +
     values = c("ensemble expectation" = 21, "deterministic allocation" = 23),
     name = NULL
   ) +
-  scale_y_discrete(expand = expansion(add = c(0.6, 1))) +
-  scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.02, 0.06))) +
+  scale_y_continuous(breaks = row_y, labels = names(row_y), limits = c(1.0, 5.0), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, x_skill + 0.075), breaks = seq(0, 0.25, 0.05), expand = expansion(mult = c(0.02, 0))) +
   labs(
-    title = "(d) Figure of merit against the held-out observation",
+    title = "(b) Figure of merit of every realisation",
     subtitle = sprintf(
-      "random-forest potentials; one dot per realisation (n = %d per allocator)",
+      "one dot per realisation (n = %d each); right: Brier\nskill of the ensemble as a probabilistic forecast",
       n_realisations
     ),
     x = "figure of merit",
@@ -292,8 +353,8 @@ p_e <- ggplot() +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
-    title = "(e) Where change is placed",
-    subtitle = "changed cells by their true probability;\nmedian realisation per allocator",
+    title = "(c) Where change is placed",
+    subtitle = "changed cells by true probability;\nmedian realisation per allocator",
     x = "percentile among candidate cells",
     y = "cumulative share of change"
   ) +
@@ -308,17 +369,10 @@ p_e <- ggplot() +
     linetype = guide_legend(ncol = 2)
   )
 
-fig2 <- p_a +
-  p_b +
-  p_c +
-  p_d +
-  p_e +
-  plot_layout(design = "ABC\nDDE", heights = c(1, 1.25))
-ggsave(
-  file.path(out_dir, "fig2-ensembles.pdf"),
-  fig2,
-  width = 7.2,
-  height = 7.4
-  # device = cairo_pdf
-)
-fig2
+fig2a <- p_a + p_b + p_fom + plot_layout(widths = c(1, 1, 1.15))
+ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
+
+fig2b <- p_c + p_d + p_e + plot_layout(widths = c(0.85, 1.4, 1))
+ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.3)
+fig2a
+fig2b

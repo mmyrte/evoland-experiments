@@ -39,6 +39,11 @@ Open:
       process are spurious clusters, and uPAM on them biases where change goes. Discussion
       point for the paper, or a panel in the appendix?
 
+- [x] Fig. 2 split into two figures (Overleaf comment, 2026-10-23): 2a explains the figure of
+      merit on a typical CLUMPY draw that shows wrong hits in the map window; 2b keeps the
+      stochastic allocators apart and the (near-)deterministic ones close together, with each
+      allocator's Brier skill next to its FoM row.
+
 ## Validation metrics
 
 - [x] Fig. 2 split into compute (`010`, writes `results/fig2/`) and plot (`030-fig2-plot.r`).
