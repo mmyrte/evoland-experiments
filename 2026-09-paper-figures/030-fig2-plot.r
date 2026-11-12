@@ -39,8 +39,20 @@ n_window <- scalars$n_window
 fom_null <- scalars$fom_null
 
 # the figures name the allocator, not the package: CLUMPY's single-cell allocator is uSAM
-for (d in list(runs, fom, fom_ensemble)) d[allocator == "CLUMPY", allocator := "uSAM"]
-cdf[what == "CLUMPY", what := "uSAM"]
+# the figures name the allocator, not the package: CLUMPY's single-cell allocator is uSAM. Of the
+# two uPAM ensembles of 010, the figure shows the one with merging allowed
+# (avoid_aggregation = FALSE) as "uPAM"; with clumpy's default it placed change further from where
+# the neighbourhood-driven process puts it (see the README).
+relabel_dt <- function(d, col) {
+  d <- d[get(col) != "uPAM"]
+  d[get(col) == "CLUMPY", (col) := "uSAM"]
+  d[get(col) == "uPAM merging", (col) := "uPAM"]
+  d[]
+}
+runs <- relabel_dt(runs, "allocator")
+fom <- relabel_dt(fom, "allocator")
+fom_ensemble <- relabel_dt(fom_ensemble, "allocator")
+cdf <- relabel_dt(cdf, "what")
 allocator_levels <- c("uSAM", "Dinamica", "CLUE-S", "CLUMondo")
 
 #| label: figure-data
@@ -238,7 +250,6 @@ p_fom <- ggplot(decomp) +
 allocator_cols <- c(
   "uSAM" = "#0072B2",
   "uPAM" = "#56B4E9",
-  "uPAM merging" = "#882255",
   "Dinamica" = "#E69F00",
   "CLUE-S" = "#009E73",
   "CLUMondo" = "#CC79A7",
@@ -248,7 +259,6 @@ allocator_linetypes <- c(
   "observed change" = "22",
   "uSAM" = "solid",
   "uPAM" = "solid",
-  "uPAM merging" = "solid",
   "Dinamica" = "42",
   "CLUE-S" = "11",
   "CLUMondo" = "2212",
@@ -257,7 +267,7 @@ allocator_linetypes <- c(
 # rows: the stochastic allocators a little apart, the (near-)deterministic ones close together
 # (names(row_y) also selects which allocators the scatter shows)
 row_y <- c(
-  "uSAM" = 5.0, "uPAM" = 4.3, "uPAM merging" = 3.95, "Dinamica" = 3.6,
+  "uSAM" = 5.0, "uPAM" = 4.3, "Dinamica" = 3.6,
   "CLUE-S" = 2.5, "CLUMondo" = 2.0, "rank-and-fill" = 1.5
 )
 y_lim <- c(1.1, 5.9)
@@ -271,7 +281,7 @@ fom_deterministic[, y := row_y[["rank-and-fill"]]]
 # uniform forecast; the references as vertical lines, like the FoM nulls: the null model, the
 # uniform forecast itself (skill 0 by definition), and the potentials the allocators sample from
 brier <- fread(file.path(res_dir, "brier.csv"))
-brier[learner == "CLUMPY", learner := "uSAM"]
+brier <- relabel_dt(brier, "learner")
 skill <- rbind(
   brier[forecast == "ensemble frequency (fair)", .(allocator = learner, skill)],
   brier[learner == "random forest" & forecast == "deterministic", .(allocator = "rank-and-fill", skill)]
@@ -305,7 +315,7 @@ theme_strip <- theme_minimal(base_size = 9) +
 # drawing an ensemble instead of one map buys. Rank-and-fill is one map, so one diamond.
 brier_uniform <- brier[learner == "reference" & forecast == "uniform forecast", brier]
 per_run <- fread(file.path(res_dir, "metrics-per-run.csv"))[!allocator %in% c("observed")]
-per_run[allocator == "CLUMPY", allocator := "uSAM"]
+per_run <- relabel_dt(per_run, "allocator")
 per_run[, skill := 1 - brier / brier_uniform]
 singles <- per_run[allocator %in% names(row_y) & allocator != "rank-and-fill"]
 single_median <- singles[, .(fom = median(figure_of_merit), skill = median(skill)), by = allocator]
@@ -337,6 +347,8 @@ p_d <- ggplot() +
   geom_point(data = deterministic, aes(fom, skill, fill = allocator, shape = "single map"), size = 3, colour = "#1a1a1a", stroke = 0.5) +
   ggrepel::geom_text_repel(
     data = labels_dt, aes(fom, skill, label = allocator, colour = allocator),
+    # CLUE-S to the right of its marker, clear of uSAM's arrow
+    nudge_x = ifelse(labels_dt$allocator == "CLUE-S", 0.02, 0),
     size = 2.5, fontface = "bold", seed = 3, box.padding = 0.35, point.padding = 0.3,
     min.segment.length = 0.2, segment.size = 0.3, max.overlaps = Inf,
     # the reference labels sit on the left; keep the allocator labels to the right of them
@@ -364,7 +376,6 @@ p_d <- ggplot() +
 
 # (b): colour = allocator; the observed change drawn last as a thin dashed black line, so the
 # allocator curves under it stay visible; bands: 5-95 % over realisations
-cdf[what == "CLUMPY", what := "uSAM"]
 cdf <- cdf[what %in% c("observed change", names(allocator_cols))]
 cdf_lines <- cdf[what != "observed change", .(x, cdf = med, what)]
 cdf_observed <- cdf[what == "observed change", .(x, cdf = med)]

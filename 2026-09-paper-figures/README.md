@@ -39,6 +39,15 @@ root).
 
 ## Figure 2: ensembles vs. single maps
 
+**uPAM in Fig. 2b** is CLUMPY's patch allocator on the patch sizes estimated in period 1 -> 2,
+with merging allowed (`avoid_aggregation = FALSE`). With clumpy's default (`TRUE`), a patch that
+would merge with an existing patch fails and is drawn elsewhere, which keeps change away from the
+target class, exactly where this neighbourhood-driven process makes it most likely: Brier skill
++0.146 instead of +0.155 (uSAM +0.164), 25 % of change in the top 5 % of true probabilities
+instead of 30 % (uSAM 34 %, observed 36 %). `010` still computes both ensembles; the plot shows
+the one with merging allowed. The remaining gap to uSAM comes from growing patches into less
+probable neighbours.
+
 The domain is a synthetic 90 × 90 grid (map panels: the 30 × 30 block with the most observed
 change), set up like the evoland-plus vignette
 `stochastic-allocation-sensitivity.qmd`, with these differences:
