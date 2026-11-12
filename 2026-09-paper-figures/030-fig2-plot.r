@@ -328,7 +328,7 @@ p_bs <- ggplot(skill, aes(x = skill, y = y)) +
   scale_x_continuous(breaks = c(-0.3, 0, 0.2), labels = c("-0.3", "0", "0.2"), expand = expansion(mult = 0.12)) +
   labs(x = "Brier skill", y = NULL) +
   theme_strip +
-  theme(plot.margin = margin(2, 4, 2, 14))
+  theme(plot.margin = margin(2, 4, 2, 24))
 
 # (b): colour = allocator; the observed change drawn last as a thin dashed black line, so the
 # allocator curves under it stay visible; bands: 5-95 % over realisations

@@ -1,7 +1,8 @@
 changed_cells,allocator,share_in_top_5_pct,median_percentile
 observed,,0.361256544502618,0.909466082022182
 realisations (median),CLUMPY,0.338516380308822,0.901587494274566
-realisations (median),Dinamica,0.428070175438597,0.936550874442487
+realisations (median),uPAM,0.254799301919721,0.853433814897052
+realisations (median),Dinamica,0.426315789473684,0.936143485121214
 realisations (median),CLUMondo,0.705539358600583,0.973665480427046
 realisations (median),CLUE-S,0.957446808510638,0.983561142131211
 deterministic,rank-and-fill,0.659685863874346,0.965480427046263
