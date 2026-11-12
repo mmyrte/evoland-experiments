@@ -58,9 +58,9 @@ cells_dt[, `:=`(
   row = factor(row, levels = rev(row_levels)),
   allocator = factor(allocator, levels = alloc_order),
   cell_label = sprintf("%+.2f", round(brier_skill, 2) + 0),
-  # the colour scale is clamped at -1; the one cell beyond it keeps its number
-  skill_fill = pmax(brier_skill, -1),
-  dark = brier_skill < -0.55
+  # the colour scale is clamped to [-0.6, 0.2]; cells beyond keep their numbers
+  skill_fill = pmin(pmax(brier_skill, -0.6), 0.2),
+  dark = brier_skill < -0.4
 )]
 
 #' # Figure
@@ -84,7 +84,7 @@ matrix_panel <- ggplot(cells_dt, aes(allocator, row)) +
   # diverging around zero, skill of knowing only the quantities: blue better, red worse
   scale_fill_gradient2(
     low = "#b2182b", mid = "#f7f7f7", high = "#2166ac", midpoint = 0,
-    limits = c(-1, 0.25), breaks = c(-1, -0.5, 0, 0.25), labels = c("-1 or less", "-0.5", "0", "0.25"),
+    limits = c(-0.6, 0.2), breaks = c(-0.6, -0.3, 0, 0.2), labels = c("-0.6 or less", "-0.3", "0", "0.2 or more"),
     name = "fair Brier skill",
     guide = guide_colourbar(title.position = "top", title.hjust = 0.5)
   ) +
@@ -134,6 +134,6 @@ shares_panel <- ggplot(sh, aes(x = metric, y = share, fill = component)) +
     legend.key.size = unit(7, "pt")
   )
 
-fig3 <- matrix_panel + shares_panel + plot_layout(widths = c(4.4, 1))
+fig3 <- matrix_panel + shares_panel + plot_layout(widths = c(5, 0.8))
 fig3
 ggsave(file.path(figures_dir, "fig3-pie-matrix.pdf"), fig3, width = 8.6, height = 4.6)
