@@ -48,4 +48,6 @@ dependencies = [
     "viridis",
     # 2026-09-model-comparison: two-panel figures
     "patchwork",
+    # 2026-09-paper-figures: allocator labels in Fig. 2b
+    "ggrepel",
 ]

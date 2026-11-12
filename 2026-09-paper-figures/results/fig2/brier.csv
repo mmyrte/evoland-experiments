@@ -3,7 +3,9 @@ CLUMPY,ensemble frequency (fair),0.132493108141381,0.16434147412235
 CLUMPY,single realisation (median),0.256318229400329,-0.616646456113668
 uPAM,ensemble frequency (fair),0.135399214214827,0.146012125890981
 uPAM,single realisation (median),0.274263496336175,-0.729830572060949
-Dinamica,ensemble frequency (fair),0.136686318848724,0.137894119029335
+uPAM merging,ensemble frequency (fair),0.134014286728508,0.154747119566495
+uPAM merging,single realisation (median),0.266188126215044,-0.678897719884672
+Dinamica,ensemble frequency (fair),0.137549776212854,0.132448133814033
 Dinamica,single realisation (median),0.243606998654105,-0.536474373984343
 CLUE-S,ensemble frequency (fair),0.163900104680724,-0.0337482589851692
 CLUE-S,single realisation (median),0.163900104680724,-0.0337482589851692

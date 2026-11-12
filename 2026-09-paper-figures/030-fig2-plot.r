@@ -314,15 +314,8 @@ ensembles <- fom_ensemble[, .(allocator = as.character(allocator), fom = figure_
 ]
 deterministic <- per_run[allocator == "rank-and-fill", .(allocator, fom = figure_of_merit, skill)]
 arrows <- single_median[ensembles, on = "allocator", .(allocator, x = fom, y = skill, xend = i.fom, yend = i.skill)]
-# labels next to the ensemble markers, nudged where markers crowd
+# labels next to the markers, placed by ggrepel with short leader lines where markers crowd
 labels_dt <- rbind(ensembles, deterministic)
-labels_dt[, `:=`(dx = 0.004, dy = 0, hjust = 0)]
-labels_dt[allocator == "uSAM", `:=`(dy = 0.035)]
-labels_dt[allocator == "Dinamica", `:=`(dy = -0.035)]
-labels_dt[allocator == "uPAM", `:=`(dx = -0.005, dy = -0.03, hjust = 1)]
-labels_dt[allocator == "rank-and-fill", `:=`(dx = 0, dy = -0.055, hjust = 0.5)]
-labels_dt[allocator == "CLUMondo", `:=`(dy = -0.03)]
-labels_dt[allocator == "CLUE-S", `:=`(dy = -0.012)]
 
 set.seed(7)
 p_d <- ggplot() +
@@ -330,11 +323,11 @@ p_d <- ggplot() +
   geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
   annotate("text", x = fom_null, y = -0.83, label = "FoM null: random placement", angle = 90, hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
   geom_hline(yintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
-  annotate("text", x = 0.268, y = 0, label = "Brier null: uniform forecast", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
+  annotate("text", x = 0.003, y = 0, label = "Brier null: uniform forecast", hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
   geom_hline(yintercept = skill_potentials, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = 0.268, y = skill_potentials, label = "potentials (no allocation)", hjust = 1, vjust = 1.5, size = 2.3, colour = "#555555") +
+  annotate("text", x = 0.003, y = skill_potentials, label = "potentials (no allocation)", hjust = 0, vjust = 1.5, size = 2.3, colour = "#555555") +
   geom_hline(yintercept = skill_true, colour = "#9a9a9a", linewidth = 0.4, linetype = "11") +
-  annotate("text", x = 0.268, y = skill_true, label = "true process (maximum)", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
+  annotate("text", x = 0.003, y = skill_true, label = "true process (maximum)", hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
   geom_jitter(data = singles, aes(figure_of_merit, skill, colour = allocator), width = 0, height = 0.004, size = 0.7, alpha = 0.45) +
   geom_segment(
     data = arrows, aes(x, y, xend = xend, yend = yend, colour = allocator),
@@ -342,7 +335,13 @@ p_d <- ggplot() +
   ) +
   geom_point(data = ensembles, aes(fom, skill, fill = allocator, shape = "ensemble"), size = 2.8, colour = "#1a1a1a", stroke = 0.5) +
   geom_point(data = deterministic, aes(fom, skill, fill = allocator, shape = "single map"), size = 3, colour = "#1a1a1a", stroke = 0.5) +
-  geom_text(data = labels_dt, aes(fom + dx, skill + dy, label = allocator, colour = allocator, hjust = hjust), size = 2.5, fontface = "bold") +
+  ggrepel::geom_text_repel(
+    data = labels_dt, aes(fom, skill, label = allocator, colour = allocator),
+    size = 2.5, fontface = "bold", seed = 3, box.padding = 0.35, point.padding = 0.3,
+    min.segment.length = 0.2, segment.size = 0.3, max.overlaps = Inf,
+    # the reference labels sit on the left; keep the allocator labels to the right of them
+    xlim = c(0.085, 0.27), ylim = c(-0.75, 0.26)
+  ) +
   scale_colour_manual(values = allocator_cols, guide = "none") +
   scale_fill_manual(values = allocator_cols, guide = "none") +
   scale_shape_manual(values = c("ensemble" = 21, "single map" = 23), name = NULL) +

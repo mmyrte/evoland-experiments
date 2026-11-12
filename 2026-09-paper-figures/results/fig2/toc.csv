@@ -161,102 +161,175 @@ uPAM ensemble,4626,514,0.03
 uPAM ensemble,5257,533,0.02
 uPAM ensemble,5973,553,0.01
 uPAM ensemble,6687,573,0
+uPAM merging ensemble,0,0,Inf
+uPAM merging ensemble,1,1,0.74
+uPAM merging ensemble,2,2,0.7
+uPAM merging ensemble,6,6,0.69
+uPAM merging ensemble,10,9,0.68
+uPAM merging ensemble,11,9,0.67
+uPAM merging ensemble,14,12,0.66
+uPAM merging ensemble,17,15,0.65
+uPAM merging ensemble,22,18,0.64
+uPAM merging ensemble,26,21,0.63
+uPAM merging ensemble,30,23,0.62
+uPAM merging ensemble,43,29,0.61
+uPAM merging ensemble,48,31,0.6
+uPAM merging ensemble,59,40,0.59
+uPAM merging ensemble,64,43,0.58
+uPAM merging ensemble,75,49,0.57
+uPAM merging ensemble,90,59,0.56
+uPAM merging ensemble,95,62,0.55
+uPAM merging ensemble,104,63,0.54
+uPAM merging ensemble,115,67,0.53
+uPAM merging ensemble,122,72,0.52
+uPAM merging ensemble,132,75,0.51
+uPAM merging ensemble,140,81,0.5
+uPAM merging ensemble,155,86,0.49
+uPAM merging ensemble,169,92,0.48
+uPAM merging ensemble,186,101,0.47
+uPAM merging ensemble,194,103,0.46
+uPAM merging ensemble,216,109,0.45
+uPAM merging ensemble,238,122,0.44
+uPAM merging ensemble,247,126,0.43
+uPAM merging ensemble,252,127,0.42
+uPAM merging ensemble,272,135,0.41
+uPAM merging ensemble,288,140,0.4
+uPAM merging ensemble,304,148,0.39
+uPAM merging ensemble,316,152,0.38
+uPAM merging ensemble,327,155,0.37
+uPAM merging ensemble,345,161,0.36
+uPAM merging ensemble,362,165,0.35
+uPAM merging ensemble,374,168,0.34
+uPAM merging ensemble,394,177,0.33
+uPAM merging ensemble,416,185,0.32
+uPAM merging ensemble,436,195,0.31
+uPAM merging ensemble,466,206,0.3
+uPAM merging ensemble,496,211,0.29
+uPAM merging ensemble,532,221,0.28
+uPAM merging ensemble,564,230,0.27
+uPAM merging ensemble,590,234,0.26
+uPAM merging ensemble,618,243,0.25
+uPAM merging ensemble,637,247,0.24
+uPAM merging ensemble,695,257,0.23
+uPAM merging ensemble,737,265,0.22
+uPAM merging ensemble,782,272,0.21
+uPAM merging ensemble,834,280,0.2
+uPAM merging ensemble,883,289,0.19
+uPAM merging ensemble,950,296,0.18
+uPAM merging ensemble,1002,302,0.17
+uPAM merging ensemble,1066,310,0.16
+uPAM merging ensemble,1133,316,0.15
+uPAM merging ensemble,1218,325,0.14
+uPAM merging ensemble,1308,334,0.13
+uPAM merging ensemble,1425,344,0.12
+uPAM merging ensemble,1577,366,0.11
+uPAM merging ensemble,1719,376,0.1
+uPAM merging ensemble,1911,389,0.09
+uPAM merging ensemble,2137,400,0.08
+uPAM merging ensemble,2435,415,0.07
+uPAM merging ensemble,2780,435,0.0600000000000001
+uPAM merging ensemble,3231,448,0.05
+uPAM merging ensemble,3771,474,0.04
+uPAM merging ensemble,4335,503,0.03
+uPAM merging ensemble,4984,527,0.02
+uPAM merging ensemble,5833,557,0.01
+uPAM merging ensemble,6687,573,0
 Dinamica ensemble,0,0,Inf
-Dinamica ensemble,2,2,0.95
-Dinamica ensemble,4,4,0.94
-Dinamica ensemble,7,6,0.93
-Dinamica ensemble,8,7,0.92
-Dinamica ensemble,14,12,0.91
-Dinamica ensemble,16,14,0.9
-Dinamica ensemble,20,17,0.89
-Dinamica ensemble,22,19,0.88
-Dinamica ensemble,27,24,0.87
-Dinamica ensemble,30,26,0.86
-Dinamica ensemble,33,27,0.85
-Dinamica ensemble,35,29,0.84
-Dinamica ensemble,38,32,0.83
-Dinamica ensemble,41,34,0.82
-Dinamica ensemble,50,41,0.81
-Dinamica ensemble,55,43,0.8
-Dinamica ensemble,65,51,0.79
-Dinamica ensemble,67,53,0.78
-Dinamica ensemble,71,53,0.77
-Dinamica ensemble,76,54,0.76
-Dinamica ensemble,80,55,0.75
-Dinamica ensemble,89,61,0.74
-Dinamica ensemble,96,65,0.73
-Dinamica ensemble,99,65,0.72
-Dinamica ensemble,107,71,0.71
-Dinamica ensemble,119,77,0.7
-Dinamica ensemble,128,81,0.69
-Dinamica ensemble,136,84,0.68
-Dinamica ensemble,145,88,0.67
-Dinamica ensemble,153,91,0.66
-Dinamica ensemble,160,94,0.65
-Dinamica ensemble,171,98,0.64
-Dinamica ensemble,178,100,0.63
-Dinamica ensemble,187,105,0.62
-Dinamica ensemble,194,108,0.61
-Dinamica ensemble,208,116,0.6
-Dinamica ensemble,220,121,0.59
-Dinamica ensemble,229,127,0.58
-Dinamica ensemble,237,130,0.57
-Dinamica ensemble,246,134,0.56
-Dinamica ensemble,254,135,0.55
-Dinamica ensemble,267,138,0.54
-Dinamica ensemble,275,140,0.53
-Dinamica ensemble,287,143,0.52
-Dinamica ensemble,298,148,0.51
-Dinamica ensemble,306,152,0.5
-Dinamica ensemble,315,155,0.49
-Dinamica ensemble,323,158,0.48
-Dinamica ensemble,335,162,0.47
-Dinamica ensemble,343,165,0.46
-Dinamica ensemble,364,172,0.45
-Dinamica ensemble,375,176,0.44
-Dinamica ensemble,389,181,0.43
-Dinamica ensemble,399,183,0.42
-Dinamica ensemble,415,189,0.41
-Dinamica ensemble,424,194,0.4
-Dinamica ensemble,433,198,0.39
-Dinamica ensemble,448,201,0.38
-Dinamica ensemble,469,209,0.37
-Dinamica ensemble,489,214,0.36
-Dinamica ensemble,506,221,0.35
-Dinamica ensemble,523,224,0.34
-Dinamica ensemble,542,230,0.33
-Dinamica ensemble,566,237,0.32
-Dinamica ensemble,588,242,0.31
-Dinamica ensemble,615,250,0.3
-Dinamica ensemble,637,254,0.29
-Dinamica ensemble,670,260,0.28
-Dinamica ensemble,707,268,0.27
-Dinamica ensemble,739,270,0.26
-Dinamica ensemble,780,275,0.25
-Dinamica ensemble,811,278,0.24
-Dinamica ensemble,834,281,0.23
-Dinamica ensemble,885,291,0.22
-Dinamica ensemble,920,300,0.21
-Dinamica ensemble,953,303,0.2
-Dinamica ensemble,1005,315,0.19
-Dinamica ensemble,1046,317,0.18
-Dinamica ensemble,1081,317,0.17
-Dinamica ensemble,1137,320,0.16
-Dinamica ensemble,1204,328,0.15
-Dinamica ensemble,1253,333,0.14
-Dinamica ensemble,1319,337,0.13
-Dinamica ensemble,1396,341,0.12
-Dinamica ensemble,1484,352,0.11
-Dinamica ensemble,1574,357,0.1
-Dinamica ensemble,1696,364,0.09
-Dinamica ensemble,1824,380,0.08
-Dinamica ensemble,1962,390,0.07
-Dinamica ensemble,2115,398,0.0600000000000001
-Dinamica ensemble,2350,411,0.05
-Dinamica ensemble,2582,427,0.04
-Dinamica ensemble,2849,435,0.03
-Dinamica ensemble,3152,455,0.02
-Dinamica ensemble,3624,477,0.01
+Dinamica ensemble,3,2,0.95
+Dinamica ensemble,5,4,0.94
+Dinamica ensemble,6,5,0.93
+Dinamica ensemble,10,9,0.92
+Dinamica ensemble,11,10,0.91
+Dinamica ensemble,15,13,0.9
+Dinamica ensemble,21,17,0.89
+Dinamica ensemble,26,21,0.88
+Dinamica ensemble,32,26,0.87
+Dinamica ensemble,33,27,0.86
+Dinamica ensemble,36,30,0.85
+Dinamica ensemble,38,32,0.84
+Dinamica ensemble,44,36,0.83
+Dinamica ensemble,48,39,0.82
+Dinamica ensemble,57,45,0.81
+Dinamica ensemble,60,45,0.8
+Dinamica ensemble,70,50,0.79
+Dinamica ensemble,75,54,0.78
+Dinamica ensemble,79,58,0.77
+Dinamica ensemble,81,60,0.76
+Dinamica ensemble,90,65,0.75
+Dinamica ensemble,98,66,0.74
+Dinamica ensemble,102,67,0.73
+Dinamica ensemble,109,69,0.72
+Dinamica ensemble,113,72,0.71
+Dinamica ensemble,121,77,0.7
+Dinamica ensemble,129,79,0.69
+Dinamica ensemble,137,84,0.68
+Dinamica ensemble,150,89,0.67
+Dinamica ensemble,155,91,0.66
+Dinamica ensemble,162,93,0.65
+Dinamica ensemble,171,99,0.64
+Dinamica ensemble,177,100,0.63
+Dinamica ensemble,182,101,0.62
+Dinamica ensemble,190,105,0.61
+Dinamica ensemble,198,109,0.6
+Dinamica ensemble,209,114,0.59
+Dinamica ensemble,218,116,0.58
+Dinamica ensemble,230,121,0.57
+Dinamica ensemble,239,126,0.56
+Dinamica ensemble,248,130,0.55
+Dinamica ensemble,262,136,0.54
+Dinamica ensemble,273,137,0.53
+Dinamica ensemble,284,144,0.52
+Dinamica ensemble,292,148,0.51
+Dinamica ensemble,304,151,0.5
+Dinamica ensemble,319,160,0.49
+Dinamica ensemble,329,163,0.48
+Dinamica ensemble,345,170,0.47
+Dinamica ensemble,362,177,0.46
+Dinamica ensemble,369,178,0.45
+Dinamica ensemble,382,182,0.44
+Dinamica ensemble,389,186,0.43
+Dinamica ensemble,399,188,0.42
+Dinamica ensemble,411,194,0.41
+Dinamica ensemble,422,197,0.4
+Dinamica ensemble,432,200,0.39
+Dinamica ensemble,448,203,0.38
+Dinamica ensemble,460,205,0.37
+Dinamica ensemble,484,208,0.36
+Dinamica ensemble,501,212,0.35
+Dinamica ensemble,529,223,0.34
+Dinamica ensemble,552,228,0.33
+Dinamica ensemble,570,232,0.32
+Dinamica ensemble,592,235,0.31
+Dinamica ensemble,624,241,0.3
+Dinamica ensemble,656,246,0.29
+Dinamica ensemble,682,253,0.28
+Dinamica ensemble,713,260,0.27
+Dinamica ensemble,748,266,0.26
+Dinamica ensemble,783,271,0.25
+Dinamica ensemble,815,273,0.24
+Dinamica ensemble,852,282,0.23
+Dinamica ensemble,876,285,0.22
+Dinamica ensemble,914,290,0.21
+Dinamica ensemble,953,296,0.2
+Dinamica ensemble,1002,300,0.19
+Dinamica ensemble,1037,303,0.18
+Dinamica ensemble,1086,310,0.17
+Dinamica ensemble,1141,316,0.16
+Dinamica ensemble,1191,323,0.15
+Dinamica ensemble,1249,336,0.14
+Dinamica ensemble,1312,336,0.13
+Dinamica ensemble,1385,344,0.12
+Dinamica ensemble,1467,348,0.11
+Dinamica ensemble,1571,356,0.1
+Dinamica ensemble,1676,362,0.09
+Dinamica ensemble,1793,373,0.08
+Dinamica ensemble,1931,387,0.07
+Dinamica ensemble,2121,399,0.0600000000000001
+Dinamica ensemble,2351,414,0.05
+Dinamica ensemble,2584,423,0.04
+Dinamica ensemble,2838,440,0.03
+Dinamica ensemble,3130,455,0.02
+Dinamica ensemble,3631,473,0.01
 Dinamica ensemble,6687,573,0
 CLUE-S ensemble,0,0,Inf
 CLUE-S ensemble,188,108,1
@@ -308,9 +381,9 @@ adjusted potentials,1310,340,0.110014810475274
 adjusted potentials,1344,346,0.107233437485419
 adjusted potentials,1378,349,0.103791767067075
 adjusted potentials,1411,351,0.101306821842635
-adjusted potentials,1445,355,0.0983773351532139
+adjusted potentials,1445,355,0.0983773351532138
 adjusted potentials,1478,358,0.0959667078234532
-adjusted potentials,1512,362,0.0937898206579736
+adjusted potentials,1512,362,0.0937898206579735
 adjusted potentials,1546,365,0.0915082978228559
 adjusted potentials,1579,368,0.0896957718351454
 adjusted potentials,1613,372,0.0873956596393473
@@ -326,7 +399,7 @@ adjusted potentials,1915,391,0.0727152974762939
 adjusted potentials,1949,394,0.0714197986203642
 adjusted potentials,1982,395,0.0701477972622481
 adjusted potentials,2016,397,0.0688548605892008
-adjusted potentials,2049,398,0.067865564125812
+adjusted potentials,2049,398,0.0678655641258119
 adjusted potentials,2083,401,0.0665461896767614
 adjusted potentials,2117,405,0.0652191709514297
 adjusted potentials,2150,407,0.0642058559364278
@@ -337,14 +410,14 @@ adjusted potentials,2285,415,0.060165638947609
 adjusted potentials,2318,415,0.0590853589211753
 adjusted potentials,2352,416,0.0582171355033446
 adjusted potentials,2385,418,0.0573382924075839
-adjusted potentials,2419,418,0.0564680307889782
+adjusted potentials,2419,418,0.0564680307889781
 adjusted potentials,2453,418,0.0558338456445668
 adjusted potentials,2486,419,0.0550599802841292
 adjusted potentials,2520,421,0.0541745595992645
 adjusted potentials,2553,422,0.0534822457688891
 adjusted potentials,2587,425,0.0529478288381886
 adjusted potentials,2621,428,0.0519706925333023
-adjusted potentials,2654,431,0.0513204181050405
+adjusted potentials,2654,431,0.0513204181050404
 adjusted potentials,2688,433,0.0506343097207214
 adjusted potentials,2721,436,0.0498801570499014
 adjusted potentials,2755,437,0.0491516420393716
@@ -369,7 +442,7 @@ adjusted potentials,3360,457,0.0393915219729617
 adjusted potentials,3393,459,0.0388337512475283
 adjusted potentials,3427,459,0.0383527451189102
 adjusted potentials,3461,462,0.037911791820634
-adjusted potentials,3494,465,0.0372962443495047
+adjusted potentials,3494,465,0.0372962443495046
 adjusted potentials,3528,465,0.0368381377184176
 adjusted potentials,3561,466,0.0363056534802252
 adjusted potentials,3595,468,0.0357669638973975
@@ -405,7 +478,7 @@ adjusted potentials,4569,505,0.0222164788083202
 adjusted potentials,4603,506,0.0217952250049024
 adjusted potentials,4637,510,0.021327885746098
 adjusted potentials,4670,511,0.0209984442353973
-adjusted potentials,4704,513,0.0206539226135911
+adjusted potentials,4704,513,0.020653922613591
 adjusted potentials,4737,515,0.0202868239348764
 adjusted potentials,4771,517,0.0199247895559246
 adjusted potentials,4805,519,0.0195304538082375
