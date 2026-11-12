@@ -387,9 +387,9 @@ deterministic_by <- lapply(adjusted_by, greedy_map)
 
 #| label: allocators
 allocators <- data.table(
-  allocator = c("CLUMPY", "Dinamica", "CLUE-S", "CLUMondo"),
-  tool = c("evoland", "Dinamica EGO via evoland", "lulcc", "CLUinPy"),
-  offset = c(0L, 2000L, 3000L, 4000L)
+  allocator = c("CLUMPY", "uPAM", "Dinamica", "CLUE-S", "CLUMondo"),
+  tool = c("evoland", "evoland", "Dinamica EGO via evoland", "lulcc", "CLUinPy"),
+  offset = c(0L, 5000L, 2000L, 3000L, 4000L)
 )
 other_members <- allocators[
   allocator != "CLUMPY",
@@ -425,6 +425,29 @@ for (i in which(other_members$allocator == "Dinamica")) {
     update_neighbors = FALSE
   )
 }
+
+#' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.1-1.2
+#' cells on average) instead of single cells: what a modeller gets with the default patch
+#' estimates. The parameters are switched for these runs only and restored afterwards.
+
+#| label: alloc-upam
+#| output: false
+db$id_run <- NULL
+alloc_params_single <- db$alloc_params_t
+db$alloc_params_t <- as_alloc_params_t(copy(alloc_params_estimated))
+for (i in which(other_members$allocator == "uPAM")) {
+  db$id_run <- other_members$id_run[i]
+  set.seed(other_members$seed[i])
+  db$alloc_clumpy(
+    id_periods = 3,
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    use_parent_trans_pot = TRUE,
+    update_neighbors = FALSE
+  )
+}
+db$id_run <- NULL
+db$alloc_params_t <- alloc_params_single
 
 #| label: class-probabilities
 viable_trans <- db$trans_meta_t[
