@@ -294,41 +294,67 @@ theme_strip <- theme_minimal(base_size = 9) +
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
+# (a): one score on each axis. Small dots: every single realisation (its figure of merit, and its
+# Brier skill as a 0/1 forecast); large markers: the ensemble (its expected FoM, and the Brier
+# skill of its change frequency), joined to the median realisation by an arrow, which is what
+# drawing an ensemble instead of one map buys. Rank-and-fill is one map, so one diamond.
+brier_uniform <- brier[learner == "reference" & forecast == "uniform forecast", brier]
+per_run <- fread(file.path(res_dir, "metrics-per-run.csv"))[!allocator %in% c("observed")]
+per_run[allocator == "CLUMPY", allocator := "uSAM"]
+per_run[, skill := 1 - brier / brier_uniform]
+singles <- per_run[allocator %in% names(row_y) & allocator != "rank-and-fill"]
+single_median <- singles[, .(fom = median(figure_of_merit), skill = median(skill)), by = allocator]
+ensembles <- fom_ensemble[, .(allocator = as.character(allocator), fom = figure_of_merit)][
+  skill[, .(allocator, skill)], on = "allocator", nomatch = NULL
+]
+deterministic <- per_run[allocator == "rank-and-fill", .(allocator, fom = figure_of_merit, skill)]
+arrows <- single_median[ensembles, on = "allocator", .(allocator, x = fom, y = skill, xend = i.fom, yend = i.skill)]
+# labels next to the ensemble markers, nudged where markers crowd
+labels_dt <- rbind(ensembles, deterministic)
+labels_dt[, `:=`(dx = 0.004, dy = 0, hjust = 0)]
+labels_dt[allocator == "uSAM", `:=`(dy = 0.035)]
+labels_dt[allocator == "Dinamica", `:=`(dy = -0.035)]
+labels_dt[allocator == "uPAM", `:=`(dx = -0.005, dy = -0.03, hjust = 1)]
+labels_dt[allocator == "rank-and-fill", `:=`(dx = 0, dy = -0.055, hjust = 0.5)]
+labels_dt[allocator == "CLUMondo", `:=`(dy = -0.03)]
+labels_dt[allocator == "CLUE-S", `:=`(dy = -0.012)]
+
 set.seed(7)
-p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
-  null_label(0, "null: no change", "solid") +
-  null_label(fom_null, "null: random placement", "22") +
-  geom_jitter(aes(colour = allocator), height = 0.12, width = 0, size = 0.8, alpha = 0.5) +
-  geom_point(data = fom_ensemble, aes(shape = "ensemble expectation"), size = 2.6, fill = "#1a1a1a", colour = "white", stroke = 0.6) +
-  geom_point(
-    data = fom_deterministic, aes(shape = "deterministic allocation"),
-    size = 3, fill = allocator_cols[["rank-and-fill"]], colour = "white", stroke = 0.7
+p_d <- ggplot() +
+  # references: FoM nulls vertical, Brier null and potentials horizontal, labelled along the lines
+  geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  annotate("text", x = fom_null, y = -0.83, label = "FoM null: random placement", angle = 90, hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
+  geom_hline(yintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
+  annotate("text", x = 0.268, y = 0, label = "Brier null: uniform forecast", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
+  geom_hline(yintercept = skill_potentials, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  annotate("text", x = 0.268, y = skill_potentials, label = "potentials (no allocation)", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
+  geom_jitter(data = singles, aes(figure_of_merit, skill, colour = allocator), width = 0, height = 0.004, size = 0.7, alpha = 0.45) +
+  geom_segment(
+    data = arrows, aes(x, y, xend = xend, yend = yend, colour = allocator),
+    linewidth = 0.35, arrow = grid::arrow(length = unit(3, "pt"), type = "closed")
   ) +
+  geom_point(data = ensembles, aes(fom, skill, fill = allocator, shape = "ensemble"), size = 2.8, colour = "#1a1a1a", stroke = 0.5) +
+  geom_point(data = deterministic, aes(fom, skill, fill = allocator, shape = "single map"), size = 3, colour = "#1a1a1a", stroke = 0.5) +
+  geom_text(data = labels_dt, aes(fom + dx, skill + dy, label = allocator, colour = allocator, hjust = hjust), size = 2.5, fontface = "bold") +
   scale_colour_manual(values = allocator_cols, guide = "none") +
-  scale_shape_manual(values = c("ensemble expectation" = 21, "deterministic allocation" = 23), name = NULL) +
-  scale_y_continuous(breaks = row_y, labels = names(row_y), limits = y_lim, expand = c(0, 0)) +
-  scale_x_continuous(limits = c(0, NA), breaks = seq(0, 0.25, 0.05), expand = expansion(mult = c(0.02, 0.05))) +
+  scale_fill_manual(values = allocator_cols, guide = "none") +
+  scale_shape_manual(values = c("ensemble" = 21, "single map" = 23), name = NULL) +
+  scale_x_continuous(limits = c(0, 0.27), breaks = seq(0, 0.25, 0.05), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-0.85, 0.26), breaks = seq(-0.8, 0.2, 0.2), expand = c(0, 0)) +
+  coord_cartesian(clip = "off") +
   labs(
     title = "(a) Single maps vs. ensembles",
     subtitle = sprintf(
-      "left: figure of merit, one dot per realisation (n = %d each);\nright: Brier skill of each ensemble frequency",
+      "small dots: single realisations (n = %d each); markers: ensembles;\narrows: from the median realisation to its ensemble",
       n_realisations
     ),
     x = "figure of merit",
-    y = NULL
+    y = "Brier skill"
   ) +
-  theme_strip
-
-p_bs <- ggplot(skill, aes(x = skill, y = y)) +
-  null_label(0, "null: uniform forecast", "solid") +
-  null_label(skill_potentials, "potentials (no allocation)", "22", from = "bottom") +
-  geom_point(aes(fill = allocator), shape = 21, size = 2.6, colour = "white", stroke = 0.6) +
-  scale_fill_manual(values = allocator_cols, guide = "none") +
-  scale_y_continuous(breaks = row_y, labels = NULL, limits = y_lim, expand = c(0, 0)) +
-  scale_x_continuous(breaks = c(-0.3, 0, 0.2), labels = c("-0.3", "0", "0.2"), expand = expansion(mult = 0.12)) +
-  labs(x = "Brier skill", y = NULL) +
-  theme_strip +
-  theme(plot.margin = margin(2, 4, 2, 24))
+  theme_minimal(base_size = 9) +
+  theme_panel_text +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
+  guides(shape = guide_legend(override.aes = list(fill = "#9a9a9a")))
 
 # (b): colour = allocator; the observed change drawn last as a thin dashed black line, so the
 # allocator curves under it stay visible; bands: 5-95 % over realisations
@@ -366,9 +392,7 @@ p_e <- ggplot() +
 fig2a <- p_a + p_b + p_fom + plot_layout(widths = c(1, 1, 1.15))
 ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 
-fig2b <- (p_d + p_bs + plot_layout(widths = c(2.2, 1), guides = "collect") & theme(legend.position = "bottom")) |
-  p_e
-fig2b <- fig2b + plot_layout(widths = c(3.2, 2))
-ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.4)
+fig2b <- p_d + p_e + plot_layout(widths = c(1.25, 1))
+ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.6)
 fig2a
 fig2b
