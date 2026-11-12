@@ -259,6 +259,18 @@ skill <- rbind(
   brier[learner == "random forest" & forecast == "deterministic", .(allocator = "rank-and-fill", skill)]
 )
 skill[, y := row_y[allocator]]
+# the Brier references, in grey below the allocators: the potentials themselves as a forecast
+# (what an allocator can at best pass on) and the null model, the uniform forecast (skill 0 by
+# definition: every cell of a class gets the transition's demand divided by the class area)
+ref_y <- c("potentials (no allocation)" = 0.75, "uniform forecast (null)" = 0.3)
+ref_skill <- data.table(
+  what = names(ref_y),
+  y = unname(ref_y),
+  skill = c(
+    brier[learner == "random forest" & forecast == "adjusted potentials", skill],
+    brier[learner == "reference" & forecast == "uniform forecast", skill]
+  )
+)
 x_skill <- max(fom$figure_of_merit, fom_deterministic$figure_of_merit) + 0.03
 set.seed(7)
 p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
@@ -290,6 +302,8 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   geom_jitter(aes(colour = allocator), height = 0.12, width = 0, size = 0.8, alpha = 0.5) +
   annotate("text", x = x_skill, y = 4.95, label = "Brier skill", hjust = 0, vjust = 1, size = 2.4, fontface = "bold", colour = "#333333") +
   geom_text(data = skill, aes(x = x_skill, y = y, label = sprintf("%+.2f", skill)), hjust = 0, size = 2.6, colour = "#333333") +
+  annotate("segment", x = -Inf, xend = Inf, y = 1.02, yend = 1.02, colour = "#cfcfcf", linewidth = 0.3) +
+  geom_text(data = ref_skill, aes(x = x_skill, y = y, label = sprintf("%+.2f", round(skill, 2) + 0)), hjust = 0, size = 2.6, colour = "#777777") +
   geom_point(
     data = fom_ensemble,
     aes(shape = "ensemble expectation"),
@@ -311,7 +325,10 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
     values = c("ensemble expectation" = 21, "deterministic allocation" = 23),
     name = NULL
   ) +
-  scale_y_continuous(breaks = row_y, labels = names(row_y), limits = c(1.0, 5.0), expand = c(0, 0)) +
+  scale_y_continuous(breaks = row_y, labels = names(row_y), limits = c(0.05, 5.0), expand = c(0, 0)) +
+  # the references are labelled in grey where the axis labels would be
+  annotate("text", x = -Inf, y = ref_y, label = names(ref_y), hjust = 1.06, size = 2.6, colour = "#777777") +
+  coord_cartesian(clip = "off") +
   scale_x_continuous(limits = c(0, x_skill + 0.075), breaks = seq(0, 0.25, 0.05), expand = expansion(mult = c(0.02, 0))) +
   labs(
     title = "(b) Figure of merit of every realisation",
@@ -327,11 +344,14 @@ p_d <- ggplot(fom, aes(x = figure_of_merit, y = y)) +
   theme(
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
+    panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3),
+    # room on the left for the grey reference labels
+    plot.margin = margin(2, 4, 2, 58)
   )
 
-# (e): colour = allocator; black = observed change; band = CLUMPY's 5-95 % range
-cdf_lines <- cdf[, .(x, cdf = med, what)]
+# (c): colour = allocator; black = observed change, drawn last; bands: 5-95 % over realisations
+cdf_lines <- cdf[what != "observed change", .(x, cdf = med, what)]
+cdf_observed <- cdf[what == "observed change", .(x, cdf = med)]
 what_cols <- c("observed change" = "#1a1a1a", allocator_cols)
 cdf_lines[, what := factor(what, levels = names(what_cols))]
 p_e <- ggplot() +
@@ -346,19 +366,23 @@ p_e <- ggplot() +
     colour = "#555555"
   ) +
   geom_ribbon(
-    data = cdf[what == "uSAM"],
-    aes(x = x, ymin = lo, ymax = hi),
-    fill = allocator_cols[["uSAM"]],
-    alpha = 0.2
+    data = cdf[!is.na(lo)],
+    aes(x = x, ymin = lo, ymax = hi, fill = what),
+    alpha = 0.18,
+    show.legend = FALSE
   ) +
   geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.55) +
+  # the observed change last, on top of every allocator, with a white halo
+  geom_line(data = cdf_observed, aes(x, cdf), colour = "white", linewidth = 1.9) +
+  geom_line(data = cdf_observed, aes(x, cdf, colour = "observed change", linetype = "observed change"), linewidth = 1.0) +
+  scale_fill_manual(values = allocator_cols, guide = "none") +
   scale_colour_manual(values = what_cols, breaks = names(what_cols)) +
   scale_linetype_manual(values = allocator_linetypes, breaks = names(what_cols)) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
     title = "(c) Where change is placed",
-    subtitle = "changed cells by true probability;\nmedian realisation per allocator",
+    subtitle = "changed cells by true probability;\nline: median, band: 5 to 95 %",
     x = "percentile among candidate cells",
     y = "cumulative share of change"
   ) +
@@ -376,7 +400,7 @@ p_e <- ggplot() +
 fig2a <- p_a + p_b + p_fom + plot_layout(widths = c(1, 1, 1.15))
 ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 
-fig2b <- p_c + p_d + p_e + plot_layout(widths = c(0.85, 1.4, 1))
+fig2b <- p_c + p_d + p_e + plot_layout(widths = c(0.75, 1.3, 1))
 ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.3)
 fig2a
 fig2b
