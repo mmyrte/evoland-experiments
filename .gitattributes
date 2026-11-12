@@ -8,3 +8,4 @@
 # Results of the expensive steps, written for plotting elsewhere (e.g. on macOS): the maps of
 # every simulated run and the potentials, as Parquet. Small CSVs stay in git proper.
 **/results/**/*.parquet filter=lfs diff=lfs merge=lfs -text
+**/results-*/**/*.parquet filter=lfs diff=lfs merge=lfs -text
