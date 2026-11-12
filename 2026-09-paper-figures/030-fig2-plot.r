@@ -238,6 +238,7 @@ p_fom <- ggplot(decomp) +
 allocator_cols <- c(
   "uSAM" = "#0072B2",
   "uPAM" = "#56B4E9",
+  "uPAM merging" = "#882255",
   "Dinamica" = "#E69F00",
   "CLUE-S" = "#009E73",
   "CLUMondo" = "#CC79A7",
@@ -247,14 +248,16 @@ allocator_linetypes <- c(
   "observed change" = "22",
   "uSAM" = "solid",
   "uPAM" = "solid",
+  "uPAM merging" = "solid",
   "Dinamica" = "42",
   "CLUE-S" = "11",
   "CLUMondo" = "2212",
   "rank-and-fill" = "73"
 )
 # rows: the stochastic allocators a little apart, the (near-)deterministic ones close together
+# (names(row_y) also selects which allocators the scatter shows)
 row_y <- c(
-  "uSAM" = 5.0, "uPAM" = 4.3, "Dinamica" = 3.6,
+  "uSAM" = 5.0, "uPAM" = 4.3, "uPAM merging" = 3.95, "Dinamica" = 3.6,
   "CLUE-S" = 2.5, "CLUMondo" = 2.0, "rank-and-fill" = 1.5
 )
 y_lim <- c(1.1, 5.9)
@@ -275,6 +278,8 @@ skill <- rbind(
 )[allocator %in% names(row_y)]
 skill[, y := row_y[allocator]]
 skill_potentials <- brier[learner == "random forest" & forecast == "adjusted potentials", skill]
+# the true probabilities of the synthetic process: the skill no forecast can exceed here
+skill_true <- brier[learner == "reference" & forecast == "true probabilities", skill]
 
 # a reference line, labelled along it from the top (or, where points sit near the top, the bottom)
 null_label <- function(x, label, linetype, from = "top") {
@@ -327,7 +332,9 @@ p_d <- ggplot() +
   geom_hline(yintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
   annotate("text", x = 0.268, y = 0, label = "Brier null: uniform forecast", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
   geom_hline(yintercept = skill_potentials, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = 0.268, y = skill_potentials, label = "potentials (no allocation)", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
+  annotate("text", x = 0.268, y = skill_potentials, label = "potentials (no allocation)", hjust = 1, vjust = 1.5, size = 2.3, colour = "#555555") +
+  geom_hline(yintercept = skill_true, colour = "#9a9a9a", linewidth = 0.4, linetype = "11") +
+  annotate("text", x = 0.268, y = skill_true, label = "true process (maximum)", hjust = 1, vjust = -0.5, size = 2.3, colour = "#555555") +
   geom_jitter(data = singles, aes(figure_of_merit, skill, colour = allocator), width = 0, height = 0.004, size = 0.7, alpha = 0.45) +
   geom_segment(
     data = arrows, aes(x, y, xend = xend, yend = yend, colour = allocator),
@@ -340,7 +347,7 @@ p_d <- ggplot() +
   scale_fill_manual(values = allocator_cols, guide = "none") +
   scale_shape_manual(values = c("ensemble" = 21, "single map" = 23), name = NULL) +
   scale_x_continuous(limits = c(0, 0.27), breaks = seq(0, 0.25, 0.05), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-0.85, 0.26), breaks = seq(-0.8, 0.2, 0.2), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-0.85, 0.27), breaks = seq(-0.8, 0.2, 0.2), expand = c(0, 0)) +
   coord_cartesian(clip = "off") +
   labs(
     title = "(a) Single maps vs. ensembles",
@@ -354,7 +361,7 @@ p_d <- ggplot() +
   theme_minimal(base_size = 9) +
   theme_panel_text +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
-  guides(shape = guide_legend(override.aes = list(fill = "#9a9a9a")))
+  guides(shape = guide_legend(order = 2, override.aes = list(fill = "#9a9a9a")))
 
 # (b): colour = allocator; the observed change drawn last as a thin dashed black line, so the
 # allocator curves under it stay visible; bands: 5-95 % over realisations
@@ -366,7 +373,7 @@ what_cols <- c("observed change" = "#1a1a1a", allocator_cols)
 cdf_lines[, what := factor(what, levels = names(what_cols))]
 p_e <- ggplot() +
   geom_abline(slope = 1, intercept = 0, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = 0.6, y = 0.66, label = "random placement", angle = 45, size = 2.3, colour = "#555555") +
+  annotate("text", x = 0.62, y = 0.62, label = "random placement", angle = 45, vjust = -0.4, size = 2.3, colour = "#555555") +
   geom_ribbon(data = cdf[!is.na(lo)], aes(x = x, ymin = lo, ymax = hi, fill = what), alpha = 0.18, show.legend = FALSE) +
   geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.6) +
   geom_line(data = cdf_observed, aes(x, cdf, colour = "observed change", linetype = "observed change"), linewidth = 0.55) +
@@ -384,15 +391,18 @@ p_e <- ggplot() +
   theme_minimal(base_size = 9) +
   theme_panel_text +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
+  theme(aspect.ratio = 1) +
   guides(
-    colour = guide_legend(ncol = 2, override.aes = list(linewidth = 0.7)),
-    linetype = guide_legend(ncol = 2)
+    colour = guide_legend(order = 1, nrow = 2, byrow = TRUE, override.aes = list(linewidth = 0.7)),
+    linetype = guide_legend(order = 1, nrow = 2, byrow = TRUE)
   )
 
 fig2a <- p_a + p_b + p_fom + plot_layout(widths = c(1, 1, 1.15))
 ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 
-fig2b <- p_d + p_e + plot_layout(widths = c(1.25, 1))
-ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.6)
+# one legend for both panels, underneath: the colours mean the same allocators in both
+fig2b <- p_d + p_e + plot_layout(widths = c(1.35, 1), guides = "collect") &
+  theme(legend.position = "bottom", legend.box = "horizontal")
+ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.9)
 fig2a
 fig2b

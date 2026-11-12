@@ -387,9 +387,9 @@ deterministic_by <- lapply(adjusted_by, greedy_map)
 
 #| label: allocators
 allocators <- data.table(
-  allocator = c("CLUMPY", "uPAM", "Dinamica", "CLUE-S", "CLUMondo"),
-  tool = c("evoland", "evoland", "Dinamica EGO via evoland", "lulcc", "CLUinPy"),
-  offset = c(0L, 5000L, 2000L, 3000L, 4000L)
+  allocator = c("CLUMPY", "uPAM", "uPAM merging", "Dinamica", "CLUE-S", "CLUMondo"),
+  tool = c("evoland", "evoland", "evoland", "Dinamica EGO via evoland", "lulcc", "CLUinPy"),
+  offset = c(0L, 5000L, 6000L, 2000L, 3000L, 4000L)
 )
 other_members <- allocators[
   allocator != "CLUMPY",
@@ -429,13 +429,17 @@ for (i in which(other_members$allocator == "Dinamica")) {
 #' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.1-1.2
 #' cells on average) instead of single cells: what a modeller gets with the default patch
 #' estimates. The parameters are switched for these runs only and restored afterwards.
+#' "uPAM merging" is the same with `avoid_aggregation = FALSE`: by default (clumpy's
+#' `GaussianPatcher` semantics) a patch that would merge with an existing patch fails and is
+#' drawn elsewhere, which keeps change away from the target class where a neighbourhood-driven
+#' process makes it most likely.
 
 #| label: alloc-upam
 #| output: false
 db$id_run <- NULL
 alloc_params_single <- db$alloc_params_t
 db$alloc_params_t <- as_alloc_params_t(copy(alloc_params_estimated))
-for (i in which(other_members$allocator == "uPAM")) {
+for (i in which(other_members$allocator %in% c("uPAM", "uPAM merging"))) {
   db$id_run <- other_members$id_run[i]
   set.seed(other_members$seed[i])
   db$alloc_clumpy(
@@ -443,7 +447,8 @@ for (i in which(other_members$allocator == "uPAM")) {
     select_score = "no.crossval",
     select_maximize = TRUE,
     use_parent_trans_pot = TRUE,
-    update_neighbors = FALSE
+    update_neighbors = FALSE,
+    avoid_aggregation = other_members$allocator[i] == "uPAM"
   )
 }
 db$id_run <- NULL

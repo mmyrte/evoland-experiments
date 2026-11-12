@@ -145,8 +145,8 @@ uniform <- cells[, .(id_coord, from = anterior)][
 forecasts <- c(
   lapply(
     setNames(
-      c("CLUMPY", "uPAM", "Dinamica", "CLUE-S", "CLUMondo"),
-      paste(c("CLUMPY", "uPAM", "Dinamica", "CLUE-S", "CLUMondo"), "ensemble")
+      c("CLUMPY", "uPAM", "uPAM merging", "Dinamica", "CLUE-S", "CLUMondo"),
+      paste(c("CLUMPY", "uPAM", "uPAM merging", "Dinamica", "CLUE-S", "CLUMondo"), "ensemble")
     ),
     function(a) {
       list(p = class_frequencies(sims[as.character(runs[allocator == a, id_run])], n_classes), n = sum(runs$allocator == a))
