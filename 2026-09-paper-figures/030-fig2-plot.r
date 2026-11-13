@@ -239,9 +239,9 @@ p_fom <- ggplot(decomp) +
   theme(plot.margin = margin(2, 6, 2, 6)) +
   guides(fill = "none")  # same colours as (b), whose legend sits next to it
 
-# Fig. 2b: (a) every realisation's figure of merit, and beside it each ensemble's Brier skill, on
-# the same allocator rows; (b) where change is placed. The change-frequency map of an earlier
-# version is gone: the trade-off between the two scores does not need it.
+# Fig. 2b: (a) where change is placed, then (b) what that does to the figure of merit of each
+# realisation and to the Brier skill of each ensemble, one score on each axis. The
+# change-frequency map of an earlier version is gone: the argument does not need it.
 #
 # Okabe-Ito, in the same order as the metric figures (030-metric-relations-plot.r), so each
 # allocator keeps its colour across the paper; uPAM in the light blue of uSAM's family. CLUE-S and
@@ -309,7 +309,7 @@ theme_strip <- theme_minimal(base_size = 9) +
     panel.grid.major.x = element_line(colour = "#e6e6e6", linewidth = 0.3)
   )
 
-# (a): one score on each axis. Small dots: every single realisation (its figure of merit, and its
+# (b): one score on each axis. Small dots: every single realisation (its figure of merit, and its
 # Brier skill as a 0/1 forecast); large markers: the ensemble (its expected FoM, and the Brier
 # skill of its change frequency), joined to the median realisation by an arrow, which is what
 # drawing an ensemble instead of one map buys. Rank-and-fill is one map, so one diamond.
@@ -361,7 +361,7 @@ p_d <- ggplot() +
   scale_y_continuous(limits = c(-0.85, 0.27), breaks = seq(-0.8, 0.2, 0.2), expand = c(0, 0)) +
   coord_cartesian(clip = "off") +
   labs(
-    title = "(a) Single maps vs. ensembles",
+    title = "(b) Single maps vs. ensembles",
     subtitle = sprintf(
       "small dots: single realisations (n = %d each); markers: ensembles;\narrows: from the median realisation to its ensemble",
       n_realisations
@@ -374,7 +374,7 @@ p_d <- ggplot() +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
   guides(shape = guide_legend(order = 2, override.aes = list(fill = "#9a9a9a")))
 
-# (b): colour = allocator; the observed change drawn last as a thin dashed black line, so the
+# (a): colour = allocator; the observed change drawn last as a thin dashed black line, so the
 # allocator curves under it stay visible; bands: 5-95 % over realisations
 cdf <- cdf[what %in% c("observed change", names(allocator_cols))]
 cdf_lines <- cdf[what != "observed change", .(x, cdf = med, what)]
@@ -393,7 +393,7 @@ p_e <- ggplot() +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
-    title = "(b) Where change is placed",
+    title = "(a) Where change is placed",
     subtitle = "changed cells by true probability;\nline: median, band: 5 to 95 % of realisations",
     x = "percentile among candidate cells",
     y = "cumulative share of change"
@@ -411,7 +411,9 @@ fig2a <- p_a + p_b + p_fom + plot_layout(widths = c(1, 1, 1.15))
 ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 
 # one legend for both panels, underneath: the colours mean the same allocators in both
-fig2b <- p_d + p_e + plot_layout(widths = c(1.35, 1), guides = "collect") &
+# where change is placed first (overconcentration), then what it does to the FoM and to a
+# probabilistic score
+fig2b <- p_e + p_d + plot_layout(widths = c(1, 1.35), guides = "collect") &
   theme(legend.position = "bottom", legend.box = "horizontal")
 ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.9)
 fig2a
