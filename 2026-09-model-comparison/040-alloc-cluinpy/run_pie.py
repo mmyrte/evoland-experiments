@@ -31,9 +31,11 @@ import pandas as pd
 import rasterio
 
 PIE_DIR = "2026-09-model-comparison"
-# PIE_SCALE = k > 1: the tiled grids of 080-scaling, see common.r
+# PIE_SCALE = k > 1: the tiled grids of 080-scaling; PIE_DATASET = synthetic: the synthetic
+# landscape of 000-synthetic-data.r (the same suffixes as common.r)
 _SCALE = os.environ.get("PIE_SCALE", "")
-_SUFFIX = f"-k{_SCALE}" if _SCALE else ""
+_DATASET = os.environ.get("PIE_DATASET", "pie")
+_SUFFIX = ("-synthetic" if _DATASET == "synthetic" else "") + (f"-k{_SCALE}" if _SCALE else "")
 DATA_DIR = os.path.join(PIE_DIR, "data" + _SUFFIX)
 OUT_DIR = os.path.join(PIE_DIR, "outputs" + _SUFFIX)
 WORK_ROOT = os.path.abspath(os.path.join(OUT_DIR, "cluinpy-work"))
@@ -233,20 +235,27 @@ def main():
         suit_path = external_suitability(args.suitability, land_path)
 
     for i in range(1, args.n_realisations + 1):
-        out_dir = os.path.join(WORK_DIR, f"run_{i:02d}")
-        os.makedirs(out_dir)
-        config = os.path.join(out_dir, "config.txt")
-        # 0.1 % as shipped; 0.5 % in the crossing, where the binned Weights of Evidence surface
-        # (many cells tied) oscillates around 0.25 % and does not reach 0.1 %
-        write_config(config, land_path, suit_path, region_path, out_dir, 0.1 if native else 0.5)
-        # the allocation draws its demand-adjustment "speed" from Python's random module
-        random.seed(args.seed_base + i)
-        sys.argv = ["run_CLUinPy", "--config", config]
-        t0 = time.time()
-        runpy.run_module("scripts.run_CLUinPy", run_name="__main__")
-        record_timing("allocate", time.time() - t0, f"{tag} realisation={i}")
-        result = glob.glob(os.path.join(out_dir, "**", f"cov{END_YEAR}*.tif"), recursive=True)
-        if not result or "error" in os.path.basename(result[0]):
+        # CLUinPy's only randomness is its demand-adjustment speed; with some speeds the demand
+        # loop oscillates around a surface with many tied cells and never meets the tolerance.
+        # Such a realisation is redrawn with another speed (seed + 1000 per attempt), at most
+        # five times; the attempt is recorded with the timing.
+        for attempt in range(5):
+            out_dir = os.path.join(WORK_DIR, f"run_{i:02d}" + (f"_retry{attempt}" if attempt else ""))
+            os.makedirs(out_dir)
+            config = os.path.join(out_dir, "config.txt")
+            # 0.1 % as shipped; 0.5 % in the crossing, where the binned Weights of Evidence surface
+            # (many cells tied) oscillates around 0.25 % and does not reach 0.1 %
+            write_config(config, land_path, suit_path, region_path, out_dir, 0.1 if native else 0.5)
+            # the allocation draws its demand-adjustment "speed" from Python's random module
+            random.seed(args.seed_base + i + 1000 * attempt)
+            sys.argv = ["run_CLUinPy", "--config", config]
+            t0 = time.time()
+            runpy.run_module("scripts.run_CLUinPy", run_name="__main__")
+            record_timing("allocate", time.time() - t0, f"{tag} realisation={i} attempt={attempt + 1}")
+            result = glob.glob(os.path.join(out_dir, "**", f"cov{END_YEAR}*.tif"), recursive=True)
+            if result and "error" not in os.path.basename(result[0]):
+                break
+        else:
             raise RuntimeError(f"CLUinPy did not converge for {tag} realisation {i}: {result}")
         with rasterio.open(result[0]) as src:
             cov = src.read(1)

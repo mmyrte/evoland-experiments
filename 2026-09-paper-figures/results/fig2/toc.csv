@@ -1,0 +1,743 @@
+forecast,hits_false_alarms,hits,threshold
+CLUMPY ensemble,0,0,Inf
+CLUMPY ensemble,1,1,0.94
+CLUMPY ensemble,2,2,0.93
+CLUMPY ensemble,3,3,0.92
+CLUMPY ensemble,4,4,0.89
+CLUMPY ensemble,5,5,0.88
+CLUMPY ensemble,6,6,0.85
+CLUMPY ensemble,7,7,0.84
+CLUMPY ensemble,10,10,0.83
+CLUMPY ensemble,11,11,0.82
+CLUMPY ensemble,14,14,0.81
+CLUMPY ensemble,17,16,0.8
+CLUMPY ensemble,18,17,0.79
+CLUMPY ensemble,22,20,0.78
+CLUMPY ensemble,26,22,0.77
+CLUMPY ensemble,29,23,0.76
+CLUMPY ensemble,34,28,0.75
+CLUMPY ensemble,41,33,0.74
+CLUMPY ensemble,46,36,0.73
+CLUMPY ensemble,53,40,0.72
+CLUMPY ensemble,57,43,0.71
+CLUMPY ensemble,62,46,0.7
+CLUMPY ensemble,67,48,0.69
+CLUMPY ensemble,71,52,0.68
+CLUMPY ensemble,78,57,0.67
+CLUMPY ensemble,84,61,0.66
+CLUMPY ensemble,88,63,0.65
+CLUMPY ensemble,94,66,0.64
+CLUMPY ensemble,98,68,0.63
+CLUMPY ensemble,108,74,0.62
+CLUMPY ensemble,119,79,0.61
+CLUMPY ensemble,125,82,0.6
+CLUMPY ensemble,132,85,0.59
+CLUMPY ensemble,142,88,0.58
+CLUMPY ensemble,149,90,0.57
+CLUMPY ensemble,161,98,0.56
+CLUMPY ensemble,173,103,0.55
+CLUMPY ensemble,181,107,0.54
+CLUMPY ensemble,185,107,0.53
+CLUMPY ensemble,187,107,0.52
+CLUMPY ensemble,196,112,0.51
+CLUMPY ensemble,203,113,0.5
+CLUMPY ensemble,214,116,0.49
+CLUMPY ensemble,227,122,0.48
+CLUMPY ensemble,239,126,0.47
+CLUMPY ensemble,244,127,0.46
+CLUMPY ensemble,254,131,0.45
+CLUMPY ensemble,271,138,0.44
+CLUMPY ensemble,284,141,0.43
+CLUMPY ensemble,294,146,0.42
+CLUMPY ensemble,304,152,0.41
+CLUMPY ensemble,316,158,0.4
+CLUMPY ensemble,330,164,0.39
+CLUMPY ensemble,338,169,0.38
+CLUMPY ensemble,346,171,0.37
+CLUMPY ensemble,364,177,0.36
+CLUMPY ensemble,382,181,0.35
+CLUMPY ensemble,396,187,0.34
+CLUMPY ensemble,415,193,0.33
+CLUMPY ensemble,427,197,0.32
+CLUMPY ensemble,445,207,0.31
+CLUMPY ensemble,466,213,0.3
+CLUMPY ensemble,489,219,0.29
+CLUMPY ensemble,516,228,0.28
+CLUMPY ensemble,539,234,0.27
+CLUMPY ensemble,567,238,0.26
+CLUMPY ensemble,605,244,0.25
+CLUMPY ensemble,626,250,0.24
+CLUMPY ensemble,651,254,0.23
+CLUMPY ensemble,696,261,0.22
+CLUMPY ensemble,724,269,0.21
+CLUMPY ensemble,768,271,0.2
+CLUMPY ensemble,807,278,0.19
+CLUMPY ensemble,872,291,0.18
+CLUMPY ensemble,923,297,0.17
+CLUMPY ensemble,987,305,0.16
+CLUMPY ensemble,1051,309,0.15
+CLUMPY ensemble,1139,320,0.14
+CLUMPY ensemble,1219,327,0.13
+CLUMPY ensemble,1303,335,0.12
+CLUMPY ensemble,1408,345,0.11
+CLUMPY ensemble,1566,353,0.1
+CLUMPY ensemble,1742,372,0.09
+CLUMPY ensemble,1976,391,0.08
+CLUMPY ensemble,2247,405,0.07
+CLUMPY ensemble,2604,425,0.0600000000000001
+CLUMPY ensemble,3017,442,0.05
+CLUMPY ensemble,3564,466,0.04
+CLUMPY ensemble,4165,485,0.03
+CLUMPY ensemble,4853,516,0.02
+CLUMPY ensemble,5730,553,0.01
+CLUMPY ensemble,6687,573,0
+uPAM ensemble,0,0,Inf
+uPAM ensemble,2,2,0.75
+uPAM ensemble,4,4,0.72
+uPAM ensemble,5,5,0.69
+uPAM ensemble,7,7,0.68
+uPAM ensemble,8,8,0.67
+uPAM ensemble,10,9,0.66
+uPAM ensemble,11,10,0.63
+uPAM ensemble,12,11,0.62
+uPAM ensemble,13,12,0.61
+uPAM ensemble,15,13,0.59
+uPAM ensemble,18,15,0.58
+uPAM ensemble,19,16,0.57
+uPAM ensemble,24,21,0.56
+uPAM ensemble,26,22,0.55
+uPAM ensemble,27,22,0.54
+uPAM ensemble,31,23,0.53
+uPAM ensemble,36,25,0.52
+uPAM ensemble,44,30,0.51
+uPAM ensemble,50,33,0.5
+uPAM ensemble,58,39,0.49
+uPAM ensemble,67,43,0.48
+uPAM ensemble,75,49,0.47
+uPAM ensemble,81,51,0.46
+uPAM ensemble,91,56,0.45
+uPAM ensemble,105,63,0.44
+uPAM ensemble,119,72,0.43
+uPAM ensemble,130,76,0.42
+uPAM ensemble,150,89,0.41
+uPAM ensemble,172,100,0.4
+uPAM ensemble,183,103,0.39
+uPAM ensemble,208,107,0.38
+uPAM ensemble,222,115,0.37
+uPAM ensemble,245,126,0.36
+uPAM ensemble,270,137,0.35
+uPAM ensemble,292,144,0.34
+uPAM ensemble,316,148,0.33
+uPAM ensemble,340,157,0.32
+uPAM ensemble,377,171,0.31
+uPAM ensemble,402,177,0.3
+uPAM ensemble,438,187,0.29
+uPAM ensemble,481,198,0.28
+uPAM ensemble,517,212,0.27
+uPAM ensemble,550,220,0.26
+uPAM ensemble,594,229,0.25
+uPAM ensemble,626,235,0.24
+uPAM ensemble,680,245,0.23
+uPAM ensemble,726,254,0.22
+uPAM ensemble,788,265,0.21
+uPAM ensemble,837,271,0.2
+uPAM ensemble,893,282,0.19
+uPAM ensemble,948,294,0.18
+uPAM ensemble,1016,307,0.17
+uPAM ensemble,1095,314,0.16
+uPAM ensemble,1175,317,0.15
+uPAM ensemble,1274,322,0.14
+uPAM ensemble,1396,334,0.13
+uPAM ensemble,1525,343,0.12
+uPAM ensemble,1696,356,0.11
+uPAM ensemble,1884,370,0.1
+uPAM ensemble,2113,385,0.09
+uPAM ensemble,2422,409,0.08
+uPAM ensemble,2738,424,0.07
+uPAM ensemble,3144,443,0.0600000000000001
+uPAM ensemble,3552,461,0.05
+uPAM ensemble,4077,489,0.04
+uPAM ensemble,4626,514,0.03
+uPAM ensemble,5257,533,0.02
+uPAM ensemble,5973,553,0.01
+uPAM ensemble,6687,573,0
+uPAM merging ensemble,0,0,Inf
+uPAM merging ensemble,1,1,0.74
+uPAM merging ensemble,2,2,0.7
+uPAM merging ensemble,6,6,0.69
+uPAM merging ensemble,10,9,0.68
+uPAM merging ensemble,11,9,0.67
+uPAM merging ensemble,14,12,0.66
+uPAM merging ensemble,17,15,0.65
+uPAM merging ensemble,22,18,0.64
+uPAM merging ensemble,26,21,0.63
+uPAM merging ensemble,30,23,0.62
+uPAM merging ensemble,43,29,0.61
+uPAM merging ensemble,48,31,0.6
+uPAM merging ensemble,59,40,0.59
+uPAM merging ensemble,64,43,0.58
+uPAM merging ensemble,75,49,0.57
+uPAM merging ensemble,90,59,0.56
+uPAM merging ensemble,95,62,0.55
+uPAM merging ensemble,104,63,0.54
+uPAM merging ensemble,115,67,0.53
+uPAM merging ensemble,122,72,0.52
+uPAM merging ensemble,132,75,0.51
+uPAM merging ensemble,140,81,0.5
+uPAM merging ensemble,155,86,0.49
+uPAM merging ensemble,169,92,0.48
+uPAM merging ensemble,186,101,0.47
+uPAM merging ensemble,194,103,0.46
+uPAM merging ensemble,216,109,0.45
+uPAM merging ensemble,238,122,0.44
+uPAM merging ensemble,247,126,0.43
+uPAM merging ensemble,252,127,0.42
+uPAM merging ensemble,272,135,0.41
+uPAM merging ensemble,288,140,0.4
+uPAM merging ensemble,304,148,0.39
+uPAM merging ensemble,316,152,0.38
+uPAM merging ensemble,327,155,0.37
+uPAM merging ensemble,345,161,0.36
+uPAM merging ensemble,362,165,0.35
+uPAM merging ensemble,374,168,0.34
+uPAM merging ensemble,394,177,0.33
+uPAM merging ensemble,416,185,0.32
+uPAM merging ensemble,436,195,0.31
+uPAM merging ensemble,466,206,0.3
+uPAM merging ensemble,496,211,0.29
+uPAM merging ensemble,532,221,0.28
+uPAM merging ensemble,564,230,0.27
+uPAM merging ensemble,590,234,0.26
+uPAM merging ensemble,618,243,0.25
+uPAM merging ensemble,637,247,0.24
+uPAM merging ensemble,695,257,0.23
+uPAM merging ensemble,737,265,0.22
+uPAM merging ensemble,782,272,0.21
+uPAM merging ensemble,834,280,0.2
+uPAM merging ensemble,883,289,0.19
+uPAM merging ensemble,950,296,0.18
+uPAM merging ensemble,1002,302,0.17
+uPAM merging ensemble,1066,310,0.16
+uPAM merging ensemble,1133,316,0.15
+uPAM merging ensemble,1218,325,0.14
+uPAM merging ensemble,1308,334,0.13
+uPAM merging ensemble,1425,344,0.12
+uPAM merging ensemble,1577,366,0.11
+uPAM merging ensemble,1719,376,0.1
+uPAM merging ensemble,1911,389,0.09
+uPAM merging ensemble,2137,400,0.08
+uPAM merging ensemble,2435,415,0.07
+uPAM merging ensemble,2780,435,0.0600000000000001
+uPAM merging ensemble,3231,448,0.05
+uPAM merging ensemble,3771,474,0.04
+uPAM merging ensemble,4335,503,0.03
+uPAM merging ensemble,4984,527,0.02
+uPAM merging ensemble,5833,557,0.01
+uPAM merging ensemble,6687,573,0
+Dinamica ensemble,0,0,Inf
+Dinamica ensemble,3,2,0.95
+Dinamica ensemble,5,4,0.94
+Dinamica ensemble,6,5,0.93
+Dinamica ensemble,10,9,0.92
+Dinamica ensemble,11,10,0.91
+Dinamica ensemble,15,13,0.9
+Dinamica ensemble,21,17,0.89
+Dinamica ensemble,26,21,0.88
+Dinamica ensemble,32,26,0.87
+Dinamica ensemble,33,27,0.86
+Dinamica ensemble,36,30,0.85
+Dinamica ensemble,38,32,0.84
+Dinamica ensemble,44,36,0.83
+Dinamica ensemble,48,39,0.82
+Dinamica ensemble,57,45,0.81
+Dinamica ensemble,60,45,0.8
+Dinamica ensemble,70,50,0.79
+Dinamica ensemble,75,54,0.78
+Dinamica ensemble,79,58,0.77
+Dinamica ensemble,81,60,0.76
+Dinamica ensemble,90,65,0.75
+Dinamica ensemble,98,66,0.74
+Dinamica ensemble,102,67,0.73
+Dinamica ensemble,109,69,0.72
+Dinamica ensemble,113,72,0.71
+Dinamica ensemble,121,77,0.7
+Dinamica ensemble,129,79,0.69
+Dinamica ensemble,137,84,0.68
+Dinamica ensemble,150,89,0.67
+Dinamica ensemble,155,91,0.66
+Dinamica ensemble,162,93,0.65
+Dinamica ensemble,171,99,0.64
+Dinamica ensemble,177,100,0.63
+Dinamica ensemble,182,101,0.62
+Dinamica ensemble,190,105,0.61
+Dinamica ensemble,198,109,0.6
+Dinamica ensemble,209,114,0.59
+Dinamica ensemble,218,116,0.58
+Dinamica ensemble,230,121,0.57
+Dinamica ensemble,239,126,0.56
+Dinamica ensemble,248,130,0.55
+Dinamica ensemble,262,136,0.54
+Dinamica ensemble,273,137,0.53
+Dinamica ensemble,284,144,0.52
+Dinamica ensemble,292,148,0.51
+Dinamica ensemble,304,151,0.5
+Dinamica ensemble,319,160,0.49
+Dinamica ensemble,329,163,0.48
+Dinamica ensemble,345,170,0.47
+Dinamica ensemble,362,177,0.46
+Dinamica ensemble,369,178,0.45
+Dinamica ensemble,382,182,0.44
+Dinamica ensemble,389,186,0.43
+Dinamica ensemble,399,188,0.42
+Dinamica ensemble,411,194,0.41
+Dinamica ensemble,422,197,0.4
+Dinamica ensemble,432,200,0.39
+Dinamica ensemble,448,203,0.38
+Dinamica ensemble,460,205,0.37
+Dinamica ensemble,484,208,0.36
+Dinamica ensemble,501,212,0.35
+Dinamica ensemble,529,223,0.34
+Dinamica ensemble,552,228,0.33
+Dinamica ensemble,570,232,0.32
+Dinamica ensemble,592,235,0.31
+Dinamica ensemble,624,241,0.3
+Dinamica ensemble,656,246,0.29
+Dinamica ensemble,682,253,0.28
+Dinamica ensemble,713,260,0.27
+Dinamica ensemble,748,266,0.26
+Dinamica ensemble,783,271,0.25
+Dinamica ensemble,815,273,0.24
+Dinamica ensemble,852,282,0.23
+Dinamica ensemble,876,285,0.22
+Dinamica ensemble,914,290,0.21
+Dinamica ensemble,953,296,0.2
+Dinamica ensemble,1002,300,0.19
+Dinamica ensemble,1037,303,0.18
+Dinamica ensemble,1086,310,0.17
+Dinamica ensemble,1141,316,0.16
+Dinamica ensemble,1191,323,0.15
+Dinamica ensemble,1249,336,0.14
+Dinamica ensemble,1312,336,0.13
+Dinamica ensemble,1385,344,0.12
+Dinamica ensemble,1467,348,0.11
+Dinamica ensemble,1571,356,0.1
+Dinamica ensemble,1676,362,0.09
+Dinamica ensemble,1793,373,0.08
+Dinamica ensemble,1931,387,0.07
+Dinamica ensemble,2121,399,0.0600000000000001
+Dinamica ensemble,2351,414,0.05
+Dinamica ensemble,2584,423,0.04
+Dinamica ensemble,2838,440,0.03
+Dinamica ensemble,3130,455,0.02
+Dinamica ensemble,3631,473,0.01
+Dinamica ensemble,6687,573,0
+CLUE-S ensemble,0,0,Inf
+CLUE-S ensemble,188,108,1
+CLUE-S ensemble,6687,573,0
+CLUMondo ensemble,0,0,Inf
+CLUMondo ensemble,343,166,1
+CLUMondo ensemble,344,167,0.01
+CLUMondo ensemble,6687,573,0
+adjusted potentials,0,0,Inf
+adjusted potentials,34,31,0.739182790755544
+adjusted potentials,67,52,0.676250502007836
+adjusted potentials,101,68,0.623687307093049
+adjusted potentials,134,84,0.594120461597118
+adjusted potentials,168,100,0.53996788572421
+adjusted potentials,202,112,0.501405890742556
+adjusted potentials,235,125,0.467094811869449
+adjusted potentials,269,133,0.434158663634732
+adjusted potentials,302,147,0.40869764624377
+adjusted potentials,336,162,0.380157642661206
+adjusted potentials,370,180,0.354057632100816
+adjusted potentials,403,194,0.330178584246603
+adjusted potentials,437,205,0.310247688747832
+adjusted potentials,470,213,0.29358021057323
+adjusted potentials,504,222,0.278837219945549
+adjusted potentials,538,229,0.264937107126302
+adjusted potentials,571,236,0.254748384750949
+adjusted potentials,605,245,0.244693499760498
+adjusted potentials,638,250,0.23182432324601
+adjusted potentials,672,257,0.22136352586263
+adjusted potentials,706,262,0.210599126995536
+adjusted potentials,739,270,0.201473610281254
+adjusted potentials,773,276,0.193015071164701
+adjusted potentials,806,281,0.183830569227222
+adjusted potentials,840,285,0.177657760822771
+adjusted potentials,874,289,0.172633266458947
+adjusted potentials,907,294,0.166986121638507
+adjusted potentials,941,296,0.161893888593758
+adjusted potentials,974,301,0.155954735909656
+adjusted potentials,1008,308,0.147883849570157
+adjusted potentials,1042,311,0.142590876463111
+adjusted potentials,1075,317,0.13748846359198
+adjusted potentials,1109,319,0.133501984189288
+adjusted potentials,1142,322,0.128351079115255
+adjusted potentials,1176,324,0.124524683313903
+adjusted potentials,1210,327,0.120363656758885
+adjusted potentials,1243,331,0.117088867143814
+adjusted potentials,1277,334,0.112845902542141
+adjusted potentials,1310,340,0.110014810475274
+adjusted potentials,1344,346,0.107233437485419
+adjusted potentials,1378,349,0.103791767067075
+adjusted potentials,1411,351,0.101306821842635
+adjusted potentials,1445,355,0.0983773351532138
+adjusted potentials,1478,358,0.0959667078234532
+adjusted potentials,1512,362,0.0937898206579735
+adjusted potentials,1546,365,0.0915082978228559
+adjusted potentials,1579,368,0.0896957718351454
+adjusted potentials,1613,372,0.0873956596393473
+adjusted potentials,1646,375,0.0855539495423992
+adjusted potentials,1680,377,0.0833384832690488
+adjusted potentials,1713,380,0.0819134497913047
+adjusted potentials,1747,382,0.0805305158101356
+adjusted potentials,1781,384,0.0787535265454573
+adjusted potentials,1814,385,0.077010161058623
+adjusted potentials,1848,386,0.0756273037926905
+adjusted potentials,1881,388,0.0740731247014608
+adjusted potentials,1915,391,0.0727152974762939
+adjusted potentials,1949,394,0.0714197986203642
+adjusted potentials,1982,395,0.0701477972622481
+adjusted potentials,2016,397,0.0688548605892008
+adjusted potentials,2049,398,0.0678655641258119
+adjusted potentials,2083,401,0.0665461896767614
+adjusted potentials,2117,405,0.0652191709514297
+adjusted potentials,2150,407,0.0642058559364278
+adjusted potentials,2184,410,0.0630887139410473
+adjusted potentials,2217,412,0.0620558049691583
+adjusted potentials,2251,412,0.0611331281724115
+adjusted potentials,2285,415,0.060165638947609
+adjusted potentials,2318,415,0.0590853589211753
+adjusted potentials,2352,416,0.0582171355033446
+adjusted potentials,2385,418,0.0573382924075839
+adjusted potentials,2419,418,0.0564680307889781
+adjusted potentials,2453,418,0.0558338456445668
+adjusted potentials,2486,419,0.0550599802841292
+adjusted potentials,2520,421,0.0541745595992645
+adjusted potentials,2553,422,0.0534822457688891
+adjusted potentials,2587,425,0.0529478288381886
+adjusted potentials,2621,428,0.0519706925333023
+adjusted potentials,2654,431,0.0513204181050404
+adjusted potentials,2688,433,0.0506343097207214
+adjusted potentials,2721,436,0.0498801570499014
+adjusted potentials,2755,437,0.0491516420393716
+adjusted potentials,2789,439,0.0482731089125382
+adjusted potentials,2822,439,0.0477604340444685
+adjusted potentials,2856,440,0.0471705125364275
+adjusted potentials,2889,440,0.0466494726698323
+adjusted potentials,2923,441,0.0461520838290366
+adjusted potentials,2957,443,0.0454948400433362
+adjusted potentials,2990,443,0.0448790789005848
+adjusted potentials,3024,445,0.044346915006537
+adjusted potentials,3057,448,0.043849374944004
+adjusted potentials,3091,450,0.043423404317706
+adjusted potentials,3125,452,0.0429127511798924
+adjusted potentials,3158,454,0.0423682499245609
+adjusted potentials,3192,454,0.0418788831580997
+adjusted potentials,3225,455,0.0414861819409488
+adjusted potentials,3259,455,0.0409855971207448
+adjusted potentials,3293,455,0.0402921400751515
+adjusted potentials,3326,455,0.0398720724338255
+adjusted potentials,3360,457,0.0393915219729617
+adjusted potentials,3393,459,0.0388337512475283
+adjusted potentials,3427,459,0.0383527451189102
+adjusted potentials,3461,462,0.037911791820634
+adjusted potentials,3494,465,0.0372962443495046
+adjusted potentials,3528,465,0.0368381377184176
+adjusted potentials,3561,466,0.0363056534802252
+adjusted potentials,3595,468,0.0357669638973975
+adjusted potentials,3629,468,0.0352315395719903
+adjusted potentials,3662,469,0.0346890906851952
+adjusted potentials,3696,471,0.0340112725975784
+adjusted potentials,3729,472,0.0334197699834515
+adjusted potentials,3763,474,0.0329286977660148
+adjusted potentials,3797,476,0.0326532325300198
+adjusted potentials,3830,477,0.0322800044743584
+adjusted potentials,3864,477,0.0317872587582406
+adjusted potentials,3897,480,0.0313248197829694
+adjusted potentials,3931,482,0.0306882648662813
+adjusted potentials,3965,483,0.0300377744009376
+adjusted potentials,3998,484,0.029599059498427
+adjusted potentials,4032,484,0.0290793156304913
+adjusted potentials,4065,488,0.0286268796287329
+adjusted potentials,4099,488,0.0280949315922077
+adjusted potentials,4133,490,0.0276145469856222
+adjusted potentials,4166,492,0.0272004155738167
+adjusted potentials,4200,492,0.0267874091221492
+adjusted potentials,4233,494,0.0263767319634792
+adjusted potentials,4267,495,0.025990803341516
+adjusted potentials,4301,495,0.0254505041814829
+adjusted potentials,4334,497,0.025106803969877
+adjusted potentials,4368,497,0.0246633870389676
+adjusted potentials,4401,498,0.0243867997577875
+adjusted potentials,4435,499,0.024021518444954
+adjusted potentials,4469,501,0.0235492796794931
+adjusted potentials,4502,502,0.0230676458599827
+adjusted potentials,4536,504,0.0225742247451067
+adjusted potentials,4569,505,0.0222164788083202
+adjusted potentials,4603,506,0.0217952250049024
+adjusted potentials,4637,510,0.021327885746098
+adjusted potentials,4670,511,0.0209984442353973
+adjusted potentials,4704,513,0.020653922613591
+adjusted potentials,4737,515,0.0202868239348764
+adjusted potentials,4771,517,0.0199247895559246
+adjusted potentials,4805,519,0.0195304538082375
+adjusted potentials,4838,519,0.019027919948062
+adjusted potentials,4872,521,0.0185692465354249
+adjusted potentials,4905,522,0.0181716089228989
+adjusted potentials,4939,523,0.0178215165483141
+adjusted potentials,4973,523,0.0173447464545488
+adjusted potentials,5006,526,0.0168677165517525
+adjusted potentials,5040,529,0.0164768493276853
+adjusted potentials,5073,529,0.0161778181802208
+adjusted potentials,5107,531,0.0158180076675611
+adjusted potentials,5140,534,0.0154979677453572
+adjusted potentials,5174,535,0.0151556938656718
+adjusted potentials,5208,535,0.0148133419986147
+adjusted potentials,5241,536,0.0144720150556127
+adjusted potentials,5275,537,0.0141355184524498
+adjusted potentials,5308,537,0.0137191384833499
+adjusted potentials,5342,538,0.0133900779375825
+adjusted potentials,5376,538,0.0130458348278972
+adjusted potentials,5409,541,0.0126955827400796
+adjusted potentials,5443,541,0.0123663483534224
+adjusted potentials,5476,542,0.0120565079828211
+adjusted potentials,5510,542,0.0117290082301506
+adjusted potentials,5544,544,0.0114370860128944
+adjusted potentials,5577,546,0.0110774894583079
+adjusted potentials,5611,547,0.0105687305108967
+adjusted potentials,5644,549,0.0102105036202418
+adjusted potentials,5678,552,0.00987147249457165
+adjusted potentials,5712,553,0.00951423780958871
+adjusted potentials,5745,554,0.00916348461217953
+adjusted potentials,5779,554,0.0088443050105943
+adjusted potentials,5812,555,0.00849998989947709
+adjusted potentials,5846,556,0.00819564618191249
+adjusted potentials,5880,557,0.00787725695780617
+adjusted potentials,5913,557,0.00761705145152591
+adjusted potentials,5947,558,0.00736701462242539
+adjusted potentials,5980,560,0.00705098619482081
+adjusted potentials,6014,560,0.00676092036988329
+adjusted potentials,6048,560,0.0063901147262293
+adjusted potentials,6081,560,0.00609665770935752
+adjusted potentials,6115,561,0.00586636435842824
+adjusted potentials,6148,562,0.00548003179453771
+adjusted potentials,6182,564,0.0052408704098178
+adjusted potentials,6216,565,0.0049813789354578
+adjusted potentials,6249,568,0.00471751395257558
+adjusted potentials,6284,569,0.00431842910188807
+adjusted potentials,6317,569,0.00400650768734212
+adjusted potentials,6351,569,0.00370528566460848
+adjusted potentials,6385,569,0.00343921981980233
+adjusted potentials,6418,569,0.00313581977248001
+adjusted potentials,6452,570,0.00289333038867545
+adjusted potentials,6485,570,0.00252528123510032
+adjusted potentials,6519,572,0.00229792803073126
+adjusted potentials,6553,572,0.0019796322752702
+adjusted potentials,6586,573,0.00168824802835788
+adjusted potentials,6620,573,0.00123418020541488
+adjusted potentials,6653,573,0.000863784275188406
+adjusted potentials,6687,573,8.26530529666192e-05
+true probabilities,0,0,Inf
+true probabilities,34,30,0.738729502425841
+true probabilities,67,56,0.594348031953852
+true probabilities,101,75,0.518175555738453
+true probabilities,134,94,0.479867640655842
+true probabilities,168,111,0.449054079636977
+true probabilities,202,122,0.419616423605487
+true probabilities,235,132,0.381456588692515
+true probabilities,269,146,0.353399169028513
+true probabilities,302,160,0.328229101355055
+true probabilities,336,175,0.306312937106032
+true probabilities,370,188,0.28520436952885
+true probabilities,403,201,0.266490398397452
+true probabilities,437,211,0.252615010997574
+true probabilities,470,218,0.239670618351393
+true probabilities,504,226,0.229398044387386
+true probabilities,538,235,0.216462262300744
+true probabilities,571,241,0.206880697053108
+true probabilities,605,248,0.198842440985441
+true probabilities,638,261,0.189961384300519
+true probabilities,672,265,0.181639620335675
+true probabilities,706,272,0.174218440947019
+true probabilities,739,276,0.168408328383335
+true probabilities,773,281,0.16299908844879
+true probabilities,806,284,0.157181394871722
+true probabilities,840,291,0.151545623292059
+true probabilities,874,296,0.146367257804002
+true probabilities,907,301,0.140476509635981
+true probabilities,941,312,0.135987171359287
+true probabilities,974,321,0.129903793670029
+true probabilities,1008,325,0.125846603432939
+true probabilities,1042,329,0.121256471849586
+true probabilities,1075,332,0.117875126969075
+true probabilities,1109,335,0.113280259537783
+true probabilities,1143,339,0.110273517614888
+true probabilities,1176,345,0.107087968466839
+true probabilities,1210,349,0.103915682927596
+true probabilities,1243,351,0.101683796357251
+true probabilities,1277,353,0.0991210188643613
+true probabilities,1311,356,0.0963235548644312
+true probabilities,1344,359,0.094790494916086
+true probabilities,1378,364,0.0924011629916368
+true probabilities,1411,365,0.0901401134863045
+true probabilities,1445,370,0.0884856538800309
+true probabilities,1479,372,0.0862990117734858
+true probabilities,1512,373,0.0845277128783666
+true probabilities,1546,376,0.0827678541301317
+true probabilities,1579,379,0.0808519402248955
+true probabilities,1613,381,0.079150983028175
+true probabilities,1647,385,0.0775688287007156
+true probabilities,1680,388,0.0763532126702738
+true probabilities,1714,389,0.0750008259840069
+true probabilities,1747,391,0.0736142965562131
+true probabilities,1781,395,0.0724317743534665
+true probabilities,1815,397,0.0709513441375719
+true probabilities,1848,398,0.0696680966828579
+true probabilities,1882,405,0.0688514649068465
+true probabilities,1915,407,0.0678148509458707
+true probabilities,1949,410,0.0667139383978522
+true probabilities,1983,412,0.0656331495105144
+true probabilities,2016,414,0.0646266474645996
+true probabilities,2050,419,0.0636983262606908
+true probabilities,2083,421,0.0628129054135964
+true probabilities,2117,426,0.0619118338040607
+true probabilities,2151,427,0.0612101736593546
+true probabilities,2184,429,0.0603387290699106
+true probabilities,2218,431,0.0597721488782507
+true probabilities,2251,432,0.0590089936984085
+true probabilities,2285,436,0.0583334259621355
+true probabilities,2319,437,0.0574720847695378
+true probabilities,2352,439,0.0567970994084592
+true probabilities,2386,439,0.0561106578231274
+true probabilities,2419,440,0.0553603964934955
+true probabilities,2453,443,0.0545283467641131
+true probabilities,2487,444,0.0538338415753331
+true probabilities,2520,446,0.0528452139306477
+true probabilities,2554,447,0.052049169816722
+true probabilities,2587,448,0.0513040422961965
+true probabilities,2621,449,0.0504686116231321
+true probabilities,2655,451,0.0497310885914389
+true probabilities,2688,453,0.0492441891730121
+true probabilities,2722,455,0.0486799276965275
+true probabilities,2755,455,0.0479749094965338
+true probabilities,2789,456,0.0473984502506815
+true probabilities,2823,457,0.0468232292788351
+true probabilities,2856,459,0.0462454437473934
+true probabilities,2890,459,0.0457749298277972
+true probabilities,2923,459,0.0452734626150884
+true probabilities,2957,461,0.044865803210606
+true probabilities,2991,463,0.0444501054569864
+true probabilities,3024,463,0.0438355026008203
+true probabilities,3058,465,0.0435037513939729
+true probabilities,3091,466,0.0431220550354442
+true probabilities,3125,467,0.0426636124457431
+true probabilities,3159,469,0.0421879727738367
+true probabilities,3192,469,0.041721842985084
+true probabilities,3226,470,0.0413660044994511
+true probabilities,3259,471,0.0408475051342241
+true probabilities,3293,473,0.0404711558692694
+true probabilities,3327,476,0.0399951632699962
+true probabilities,3360,477,0.0395628100237658
+true probabilities,3394,477,0.0392323904077261
+true probabilities,3428,479,0.0387835926011186
+true probabilities,3461,479,0.0383632881692888
+true probabilities,3495,480,0.0379612652241782
+true probabilities,3528,481,0.0376057238418995
+true probabilities,3562,482,0.0372152561899353
+true probabilities,3596,485,0.036826182079519
+true probabilities,3629,487,0.0364466976564747
+true probabilities,3663,490,0.036110552112993
+true probabilities,3696,491,0.0358072248251334
+true probabilities,3730,493,0.0354881881444092
+true probabilities,3764,493,0.0352081738093828
+true probabilities,3797,493,0.0348988810845069
+true probabilities,3831,497,0.0345528911991948
+true probabilities,3864,497,0.0341938361055343
+true probabilities,3898,499,0.0339474650276987
+true probabilities,3932,502,0.0336166243537772
+true probabilities,3965,504,0.0332613673962053
+true probabilities,3999,506,0.0330237416555997
+true probabilities,4032,507,0.0327670953598986
+true probabilities,4066,507,0.0324353761874803
+true probabilities,4100,510,0.032222962506486
+true probabilities,4133,512,0.0319424220912388
+true probabilities,4167,514,0.0317022771647788
+true probabilities,4200,517,0.0314426338499128
+true probabilities,4234,518,0.0311643039087783
+true probabilities,4268,519,0.0308176503454105
+true probabilities,4301,520,0.0304847452465177
+true probabilities,4335,521,0.0302363954081799
+true probabilities,4368,522,0.0299525581719283
+true probabilities,4402,525,0.0296682104967061
+true probabilities,4436,525,0.0294541952619967
+true probabilities,4469,526,0.0291710257988288
+true probabilities,4503,527,0.0289489648170712
+true probabilities,4536,528,0.0286882683220184
+true probabilities,4570,529,0.0283499264193986
+true probabilities,4604,530,0.0280610588577415
+true probabilities,4637,530,0.0277754975397471
+true probabilities,4671,532,0.0275195021804535
+true probabilities,4704,533,0.0272947714579457
+true probabilities,4738,533,0.0270535610081117
+true probabilities,4772,533,0.0268069854727363
+true probabilities,4805,535,0.0265786273410418
+true probabilities,4839,537,0.0263396227185428
+true probabilities,4872,537,0.0261126012151488
+true probabilities,4906,537,0.0258324391501917
+true probabilities,4940,537,0.0255586945224342
+true probabilities,4973,537,0.02534466000181
+true probabilities,5007,537,0.0250633873029761
+true probabilities,5040,537,0.0248623055372482
+true probabilities,5074,538,0.0246345251837119
+true probabilities,5108,539,0.0243739332152776
+true probabilities,5141,541,0.0241802590726281
+true probabilities,5175,542,0.0239272508883358
+true probabilities,5208,544,0.0237385868069161
+true probabilities,5242,545,0.023521481270853
+true probabilities,5276,547,0.0232984555879918
+true probabilities,5309,550,0.023131973958507
+true probabilities,5343,550,0.0229133520765107
+true probabilities,5376,551,0.0227238554871493
+true probabilities,5410,552,0.0224831304049604
+true probabilities,5444,552,0.0222579201988343
+true probabilities,5477,552,0.0220415278282253
+true probabilities,5511,553,0.0217902536363568
+true probabilities,5544,553,0.0216043250984302
+true probabilities,5578,554,0.0213607817980201
+true probabilities,5612,554,0.0212412409225278
+true probabilities,5645,554,0.0211105983241332
+true probabilities,5679,555,0.0209423871927158
+true probabilities,5713,556,0.0207163086223384
+true probabilities,5746,556,0.0205256998527739
+true probabilities,5780,558,0.0203316303644221
+true probabilities,5813,559,0.0201586138695454
+true probabilities,5847,560,0.0199167741299543
+true probabilities,5881,560,0.0197333536127176
+true probabilities,5914,560,0.0195601856482898
+true probabilities,5948,560,0.0193516869490655
+true probabilities,5981,560,0.0191168019830253
+true probabilities,6015,561,0.0188426294437473
+true probabilities,6049,563,0.0186430863026301
+true probabilities,6082,563,0.0184365274674803
+true probabilities,6116,564,0.0182430908312388
+true probabilities,6149,565,0.0181194818221049
+true probabilities,6183,565,0.0179347346934222
+true probabilities,6217,565,0.0176263511274307
+true probabilities,6250,565,0.0174522060310442
+true probabilities,6284,565,0.0172486049820526
+true probabilities,6317,565,0.0168515830122592
+true probabilities,6351,565,0.0165088444570854
+true probabilities,6385,565,0.016179880886218
+true probabilities,6418,565,0.0157333167863521
+true probabilities,6452,565,0.0153261022120569
+true probabilities,6485,566,0.0147739856258708
+true probabilities,6519,566,0.0141951232231023
+true probabilities,6553,568,0.0136511230173053
+true probabilities,6586,569,0.012972137740365
+true probabilities,6620,569,0.0120997002955241
+true probabilities,6653,572,0.0112108470282414
+true probabilities,6687,573,0.00861495638487031
+uniform forecast,0,0,Inf
+uniform forecast,2810,247,0.0879003558718862
+uniform forecast,6687,573,0.084085633221563

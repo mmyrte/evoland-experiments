@@ -297,7 +297,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   }
 
   # feature sets: committed per configuration run (prediction reads them through
-  # pred_data_wide_v), never for the base run. Lineage reads resolve trans_preds_t per
+  # pred_wide_predict_v), never for the base run. Lineage reads resolve trans_preds_t per
   # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set.
   db$id_run <- 0L
   scored <- db$get_pred_filter_score(
@@ -392,10 +392,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
-        # append, not upsert: every column of trans_preds_t is a key column, and
-        # evoland's MERGE then has an empty `update set` (DuckDB parser error). Each
-        # configuration writes its own id_run slice, so append cannot duplicate rows.
-        db$commit(trans_preds, "trans_preds_t", method = "append")
+        db$commit(trans_preds, "trans_preds_t", method = "upsert")
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
           models <- db$fit_full_models(

@@ -94,8 +94,8 @@ nrow(db$coords_t)
 
 #| label: predictors
 db$pred_meta_t <- create_pred_meta_t(list(
-  ef_001 = list(pretty_name = "Elevation", data_type = "float"),
-  ef_002 = list(pretty_name = "Slope", data_type = "float"),
+  ef_001 = list(pretty_name = if (pie_dataset == "pie") "Elevation" else "Accessibility", data_type = "float"),
+  ef_002 = list(pretty_name = if (pie_dataset == "pie") "Slope" else "Site quality", data_type = "float"),
   ef_003 = list(pretty_name = "Distance to built land 1985", data_type = "float")
 ))
 db$pred_data_t <-

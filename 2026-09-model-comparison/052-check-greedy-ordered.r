@@ -148,4 +148,4 @@ result <-
     on = "estimator"
   ]
 result
-fwrite(result, file.path(pie_dir, "figures", "pie-greedy-ordered-vs-lulcc.csv"))
+fwrite(result, file.path(figures_dir, "pie-greedy-ordered-vs-lulcc.csv"))

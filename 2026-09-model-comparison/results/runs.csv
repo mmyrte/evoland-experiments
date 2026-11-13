@@ -1,0 +1,491 @@
+id_run,ensemble,estimator,estimator_label,allocator,allocator_label,member,as_shipped,id_run_parent
+1101,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,1,FALSE,1000
+1102,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,2,FALSE,1000
+1103,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,3,FALSE,1000
+1104,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,4,FALSE,1000
+1105,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,5,FALSE,1000
+1106,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,6,FALSE,1000
+1107,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,7,FALSE,1000
+1108,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,8,FALSE,1000
+1109,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,9,FALSE,1000
+1110,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,10,FALSE,1000
+1111,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,11,FALSE,1000
+1112,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,12,FALSE,1000
+1113,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,13,FALSE,1000
+1114,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,14,FALSE,1000
+1115,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,15,FALSE,1000
+1116,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,16,FALSE,1000
+1117,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,17,FALSE,1000
+1118,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,18,FALSE,1000
+1119,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,19,FALSE,1000
+1120,logistic regression <U+00D7> CLUMPY,log_reg,logistic regression,clumpy,CLUMPY,20,FALSE,1000
+1201,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,1,FALSE,1000
+1202,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,2,FALSE,1000
+1203,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,3,FALSE,1000
+1204,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,4,FALSE,1000
+1205,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,5,FALSE,1000
+1206,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,6,FALSE,1000
+1207,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,7,FALSE,1000
+1208,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,8,FALSE,1000
+1209,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,9,FALSE,1000
+1210,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,10,FALSE,1000
+1211,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,11,FALSE,1000
+1212,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,12,FALSE,1000
+1213,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,13,FALSE,1000
+1214,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,14,FALSE,1000
+1215,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,15,FALSE,1000
+1216,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,16,FALSE,1000
+1217,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,17,FALSE,1000
+1218,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,18,FALSE,1000
+1219,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,19,FALSE,1000
+1220,logistic regression <U+00D7> Dinamica,log_reg,logistic regression,dinamica,Dinamica,20,FALSE,1000
+1301,logistic regression <U+00D7> greedy,log_reg,logistic regression,greedy,greedy,1,FALSE,1000
+1401,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,1,FALSE,1000
+1402,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,2,FALSE,1000
+1403,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,3,FALSE,1000
+1404,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,4,FALSE,1000
+1405,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,5,FALSE,1000
+1406,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,6,FALSE,1000
+1407,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,7,FALSE,1000
+1408,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,8,FALSE,1000
+1409,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,9,FALSE,1000
+1410,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,10,FALSE,1000
+1411,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,11,FALSE,1000
+1412,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,12,FALSE,1000
+1413,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,13,FALSE,1000
+1414,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,14,FALSE,1000
+1415,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,15,FALSE,1000
+1416,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,16,FALSE,1000
+1417,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,17,FALSE,1000
+1418,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,18,FALSE,1000
+1419,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,19,FALSE,1000
+1420,logistic regression <U+00D7> CLUE-S,log_reg,logistic regression,clue-s,CLUE-S,20,FALSE,1000
+1501,logistic regression <U+00D7> Ordered,log_reg,logistic regression,ordered,Ordered,1,FALSE,1000
+1601,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,1,FALSE,1000
+1602,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,2,FALSE,1000
+1603,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,3,FALSE,1000
+1604,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,4,FALSE,1000
+1605,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,5,FALSE,1000
+1606,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,6,FALSE,1000
+1607,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,7,FALSE,1000
+1608,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,8,FALSE,1000
+1609,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,9,FALSE,1000
+1610,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,10,FALSE,1000
+1611,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,11,FALSE,1000
+1612,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,12,FALSE,1000
+1613,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,13,FALSE,1000
+1614,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,14,FALSE,1000
+1615,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,15,FALSE,1000
+1616,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,16,FALSE,1000
+1617,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,17,FALSE,1000
+1618,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,18,FALSE,1000
+1619,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,19,FALSE,1000
+1620,logistic regression <U+00D7> CLUMondo,log_reg,logistic regression,clumondo,CLUMondo,20,FALSE,1000
+2101,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,1,FALSE,2000
+2102,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,2,FALSE,2000
+2103,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,3,FALSE,2000
+2104,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,4,FALSE,2000
+2105,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,5,FALSE,2000
+2106,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,6,FALSE,2000
+2107,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,7,FALSE,2000
+2108,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,8,FALSE,2000
+2109,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,9,FALSE,2000
+2110,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,10,FALSE,2000
+2111,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,11,FALSE,2000
+2112,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,12,FALSE,2000
+2113,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,13,FALSE,2000
+2114,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,14,FALSE,2000
+2115,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,15,FALSE,2000
+2116,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,16,FALSE,2000
+2117,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,17,FALSE,2000
+2118,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,18,FALSE,2000
+2119,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,19,FALSE,2000
+2120,random forest <U+00D7> CLUMPY,ranger,random forest,clumpy,CLUMPY,20,FALSE,2000
+2201,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,1,FALSE,2000
+2202,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,2,FALSE,2000
+2203,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,3,FALSE,2000
+2204,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,4,FALSE,2000
+2205,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,5,FALSE,2000
+2206,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,6,FALSE,2000
+2207,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,7,FALSE,2000
+2208,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,8,FALSE,2000
+2209,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,9,FALSE,2000
+2210,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,10,FALSE,2000
+2211,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,11,FALSE,2000
+2212,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,12,FALSE,2000
+2213,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,13,FALSE,2000
+2214,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,14,FALSE,2000
+2215,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,15,FALSE,2000
+2216,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,16,FALSE,2000
+2217,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,17,FALSE,2000
+2218,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,18,FALSE,2000
+2219,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,19,FALSE,2000
+2220,random forest <U+00D7> Dinamica,ranger,random forest,dinamica,Dinamica,20,FALSE,2000
+2301,random forest <U+00D7> greedy,ranger,random forest,greedy,greedy,1,FALSE,2000
+2401,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,1,FALSE,2000
+2402,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,2,FALSE,2000
+2403,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,3,FALSE,2000
+2404,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,4,FALSE,2000
+2405,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,5,FALSE,2000
+2406,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,6,FALSE,2000
+2407,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,7,FALSE,2000
+2408,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,8,FALSE,2000
+2409,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,9,FALSE,2000
+2410,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,10,FALSE,2000
+2411,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,11,FALSE,2000
+2412,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,12,FALSE,2000
+2413,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,13,FALSE,2000
+2414,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,14,FALSE,2000
+2415,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,15,FALSE,2000
+2416,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,16,FALSE,2000
+2417,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,17,FALSE,2000
+2418,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,18,FALSE,2000
+2419,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,19,FALSE,2000
+2420,random forest <U+00D7> CLUE-S,ranger,random forest,clue-s,CLUE-S,20,FALSE,2000
+2501,random forest <U+00D7> Ordered,ranger,random forest,ordered,Ordered,1,FALSE,2000
+2601,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,1,FALSE,2000
+2602,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,2,FALSE,2000
+2603,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,3,FALSE,2000
+2604,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,4,FALSE,2000
+2605,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,5,FALSE,2000
+2606,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,6,FALSE,2000
+2607,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,7,FALSE,2000
+2608,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,8,FALSE,2000
+2609,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,9,FALSE,2000
+2610,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,10,FALSE,2000
+2611,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,11,FALSE,2000
+2612,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,12,FALSE,2000
+2613,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,13,FALSE,2000
+2614,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,14,FALSE,2000
+2615,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,15,FALSE,2000
+2616,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,16,FALSE,2000
+2617,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,17,FALSE,2000
+2618,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,18,FALSE,2000
+2619,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,19,FALSE,2000
+2620,random forest <U+00D7> CLUMondo,ranger,random forest,clumondo,CLUMondo,20,FALSE,2000
+3101,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,1,FALSE,3000
+3102,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,2,FALSE,3000
+3103,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,3,FALSE,3000
+3104,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,4,FALSE,3000
+3105,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,5,FALSE,3000
+3106,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,6,FALSE,3000
+3107,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,7,FALSE,3000
+3108,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,8,FALSE,3000
+3109,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,9,FALSE,3000
+3110,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,10,FALSE,3000
+3111,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,11,FALSE,3000
+3112,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,12,FALSE,3000
+3113,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,13,FALSE,3000
+3114,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,14,FALSE,3000
+3115,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,15,FALSE,3000
+3116,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,16,FALSE,3000
+3117,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,17,FALSE,3000
+3118,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,18,FALSE,3000
+3119,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,19,FALSE,3000
+3120,Weights of Evidence <U+00D7> CLUMPY,woe,Weights of Evidence,clumpy,CLUMPY,20,FALSE,3000
+3201,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,1,FALSE,3000
+3202,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,2,FALSE,3000
+3203,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,3,FALSE,3000
+3204,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,4,FALSE,3000
+3205,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,5,FALSE,3000
+3206,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,6,FALSE,3000
+3207,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,7,FALSE,3000
+3208,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,8,FALSE,3000
+3209,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,9,FALSE,3000
+3210,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,10,FALSE,3000
+3211,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,11,FALSE,3000
+3212,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,12,FALSE,3000
+3213,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,13,FALSE,3000
+3214,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,14,FALSE,3000
+3215,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,15,FALSE,3000
+3216,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,16,FALSE,3000
+3217,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,17,FALSE,3000
+3218,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,18,FALSE,3000
+3219,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,19,FALSE,3000
+3220,Weights of Evidence <U+00D7> Dinamica,woe,Weights of Evidence,dinamica,Dinamica,20,FALSE,3000
+3301,Weights of Evidence <U+00D7> greedy,woe,Weights of Evidence,greedy,greedy,1,FALSE,3000
+3401,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,1,FALSE,3000
+3402,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,2,FALSE,3000
+3403,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,3,FALSE,3000
+3404,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,4,FALSE,3000
+3405,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,5,FALSE,3000
+3406,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,6,FALSE,3000
+3407,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,7,FALSE,3000
+3408,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,8,FALSE,3000
+3409,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,9,FALSE,3000
+3410,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,10,FALSE,3000
+3411,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,11,FALSE,3000
+3412,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,12,FALSE,3000
+3413,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,13,FALSE,3000
+3414,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,14,FALSE,3000
+3415,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,15,FALSE,3000
+3416,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,16,FALSE,3000
+3417,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,17,FALSE,3000
+3418,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,18,FALSE,3000
+3419,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,19,FALSE,3000
+3420,Weights of Evidence <U+00D7> CLUE-S,woe,Weights of Evidence,clue-s,CLUE-S,20,FALSE,3000
+3501,Weights of Evidence <U+00D7> Ordered,woe,Weights of Evidence,ordered,Ordered,1,FALSE,3000
+3601,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,1,FALSE,3000
+3602,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,2,FALSE,3000
+3603,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,3,FALSE,3000
+3604,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,4,FALSE,3000
+3605,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,5,FALSE,3000
+3606,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,6,FALSE,3000
+3607,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,7,FALSE,3000
+3608,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,8,FALSE,3000
+3609,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,9,FALSE,3000
+3610,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,10,FALSE,3000
+3611,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,11,FALSE,3000
+3612,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,12,FALSE,3000
+3613,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,13,FALSE,3000
+3614,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,14,FALSE,3000
+3615,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,15,FALSE,3000
+3616,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,16,FALSE,3000
+3617,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,17,FALSE,3000
+3618,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,18,FALSE,3000
+3619,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,19,FALSE,3000
+3620,Weights of Evidence <U+00D7> CLUMondo,woe,Weights of Evidence,clumondo,CLUMondo,20,FALSE,3000
+4101,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,1,FALSE,4000
+4102,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,2,FALSE,4000
+4103,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,3,FALSE,4000
+4104,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,4,FALSE,4000
+4105,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,5,FALSE,4000
+4106,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,6,FALSE,4000
+4107,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,7,FALSE,4000
+4108,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,8,FALSE,4000
+4109,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,9,FALSE,4000
+4110,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,10,FALSE,4000
+4111,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,11,FALSE,4000
+4112,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,12,FALSE,4000
+4113,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,13,FALSE,4000
+4114,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,14,FALSE,4000
+4115,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,15,FALSE,4000
+4116,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,16,FALSE,4000
+4117,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,17,FALSE,4000
+4118,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,18,FALSE,4000
+4119,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,19,FALSE,4000
+4120,naive Bayes <U+00D7> CLUMPY,naive_bayes,naive Bayes,clumpy,CLUMPY,20,FALSE,4000
+4201,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,1,FALSE,4000
+4202,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,2,FALSE,4000
+4203,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,3,FALSE,4000
+4204,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,4,FALSE,4000
+4205,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,5,FALSE,4000
+4206,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,6,FALSE,4000
+4207,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,7,FALSE,4000
+4208,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,8,FALSE,4000
+4209,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,9,FALSE,4000
+4210,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,10,FALSE,4000
+4211,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,11,FALSE,4000
+4212,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,12,FALSE,4000
+4213,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,13,FALSE,4000
+4214,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,14,FALSE,4000
+4215,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,15,FALSE,4000
+4216,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,16,FALSE,4000
+4217,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,17,FALSE,4000
+4218,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,18,FALSE,4000
+4219,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,19,FALSE,4000
+4220,naive Bayes <U+00D7> Dinamica,naive_bayes,naive Bayes,dinamica,Dinamica,20,FALSE,4000
+4301,naive Bayes <U+00D7> greedy,naive_bayes,naive Bayes,greedy,greedy,1,FALSE,4000
+4401,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,1,FALSE,4000
+4402,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,2,FALSE,4000
+4403,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,3,FALSE,4000
+4404,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,4,FALSE,4000
+4405,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,5,FALSE,4000
+4406,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,6,FALSE,4000
+4407,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,7,FALSE,4000
+4408,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,8,FALSE,4000
+4409,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,9,FALSE,4000
+4410,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,10,FALSE,4000
+4411,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,11,FALSE,4000
+4412,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,12,FALSE,4000
+4413,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,13,FALSE,4000
+4414,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,14,FALSE,4000
+4415,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,15,FALSE,4000
+4416,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,16,FALSE,4000
+4417,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,17,FALSE,4000
+4418,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,18,FALSE,4000
+4419,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,19,FALSE,4000
+4420,naive Bayes <U+00D7> CLUE-S,naive_bayes,naive Bayes,clue-s,CLUE-S,20,FALSE,4000
+4501,naive Bayes <U+00D7> Ordered,naive_bayes,naive Bayes,ordered,Ordered,1,FALSE,4000
+4601,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,1,FALSE,4000
+4602,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,2,FALSE,4000
+4603,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,3,FALSE,4000
+4604,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,4,FALSE,4000
+4605,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,5,FALSE,4000
+4606,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,6,FALSE,4000
+4607,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,7,FALSE,4000
+4608,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,8,FALSE,4000
+4609,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,9,FALSE,4000
+4610,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,10,FALSE,4000
+4611,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,11,FALSE,4000
+4612,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,12,FALSE,4000
+4613,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,13,FALSE,4000
+4614,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,14,FALSE,4000
+4615,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,15,FALSE,4000
+4616,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,16,FALSE,4000
+4617,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,17,FALSE,4000
+4618,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,18,FALSE,4000
+4619,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,19,FALSE,4000
+4620,naive Bayes <U+00D7> CLUMondo,naive_bayes,naive Bayes,clumondo,CLUMondo,20,FALSE,4000
+5101,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,1,FALSE,5000
+5102,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,2,FALSE,5000
+5103,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,3,FALSE,5000
+5104,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,4,FALSE,5000
+5105,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,5,FALSE,5000
+5106,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,6,FALSE,5000
+5107,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,7,FALSE,5000
+5108,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,8,FALSE,5000
+5109,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,9,FALSE,5000
+5110,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,10,FALSE,5000
+5111,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,11,FALSE,5000
+5112,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,12,FALSE,5000
+5113,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,13,FALSE,5000
+5114,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,14,FALSE,5000
+5115,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,15,FALSE,5000
+5116,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,16,FALSE,5000
+5117,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,17,FALSE,5000
+5118,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,18,FALSE,5000
+5119,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,19,FALSE,5000
+5120,Bayes-eKDE <U+00D7> CLUMPY,kde,Bayes-eKDE,clumpy,CLUMPY,20,FALSE,5000
+5201,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,1,FALSE,5000
+5202,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,2,FALSE,5000
+5203,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,3,FALSE,5000
+5204,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,4,FALSE,5000
+5205,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,5,FALSE,5000
+5206,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,6,FALSE,5000
+5207,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,7,FALSE,5000
+5208,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,8,FALSE,5000
+5209,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,9,FALSE,5000
+5210,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,10,FALSE,5000
+5211,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,11,FALSE,5000
+5212,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,12,FALSE,5000
+5213,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,13,FALSE,5000
+5214,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,14,FALSE,5000
+5215,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,15,FALSE,5000
+5216,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,16,FALSE,5000
+5217,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,17,FALSE,5000
+5218,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,18,FALSE,5000
+5219,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,19,FALSE,5000
+5220,Bayes-eKDE <U+00D7> Dinamica,kde,Bayes-eKDE,dinamica,Dinamica,20,FALSE,5000
+5301,Bayes-eKDE <U+00D7> greedy,kde,Bayes-eKDE,greedy,greedy,1,FALSE,5000
+5401,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,1,FALSE,5000
+5402,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,2,FALSE,5000
+5403,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,3,FALSE,5000
+5404,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,4,FALSE,5000
+5405,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,5,FALSE,5000
+5406,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,6,FALSE,5000
+5407,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,7,FALSE,5000
+5408,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,8,FALSE,5000
+5409,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,9,FALSE,5000
+5410,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,10,FALSE,5000
+5411,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,11,FALSE,5000
+5412,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,12,FALSE,5000
+5413,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,13,FALSE,5000
+5414,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,14,FALSE,5000
+5415,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,15,FALSE,5000
+5416,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,16,FALSE,5000
+5417,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,17,FALSE,5000
+5418,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,18,FALSE,5000
+5419,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,19,FALSE,5000
+5420,Bayes-eKDE <U+00D7> CLUE-S,kde,Bayes-eKDE,clue-s,CLUE-S,20,FALSE,5000
+5501,Bayes-eKDE <U+00D7> Ordered,kde,Bayes-eKDE,ordered,Ordered,1,FALSE,5000
+5601,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,1,FALSE,5000
+5602,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,2,FALSE,5000
+5603,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,3,FALSE,5000
+5604,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,4,FALSE,5000
+5605,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,5,FALSE,5000
+5606,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,6,FALSE,5000
+5607,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,7,FALSE,5000
+5608,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,8,FALSE,5000
+5609,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,9,FALSE,5000
+5610,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,10,FALSE,5000
+5611,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,11,FALSE,5000
+5612,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,12,FALSE,5000
+5613,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,13,FALSE,5000
+5614,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,14,FALSE,5000
+5615,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,15,FALSE,5000
+5616,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,16,FALSE,5000
+5617,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,17,FALSE,5000
+5618,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,18,FALSE,5000
+5619,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,19,FALSE,5000
+5620,Bayes-eKDE <U+00D7> CLUMondo,kde,Bayes-eKDE,clumondo,CLUMondo,20,FALSE,5000
+7401,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,1,TRUE,7000
+7402,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,2,TRUE,7000
+7403,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,3,TRUE,7000
+7404,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,4,TRUE,7000
+7405,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,5,TRUE,7000
+7406,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,6,TRUE,7000
+7407,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,7,TRUE,7000
+7408,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,8,TRUE,7000
+7409,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,9,TRUE,7000
+7410,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,10,TRUE,7000
+7411,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,11,TRUE,7000
+7412,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,12,TRUE,7000
+7413,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,13,TRUE,7000
+7414,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,14,TRUE,7000
+7415,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,15,TRUE,7000
+7416,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,16,TRUE,7000
+7417,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,17,TRUE,7000
+7418,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,18,TRUE,7000
+7419,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,19,TRUE,7000
+7420,lulcc GLM <U+00D7> CLUE-S (as shipped),lulcc-clues,lulcc GLM,lulcc-clues,CLUE-S,20,TRUE,7000
+7501,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,1,TRUE,7000
+7502,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,2,TRUE,7000
+7503,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,3,TRUE,7000
+7504,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,4,TRUE,7000
+7505,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,5,TRUE,7000
+7506,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,6,TRUE,7000
+7507,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,7,TRUE,7000
+7508,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,8,TRUE,7000
+7509,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,9,TRUE,7000
+7510,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,10,TRUE,7000
+7511,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,11,TRUE,7000
+7512,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,12,TRUE,7000
+7513,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,13,TRUE,7000
+7514,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,14,TRUE,7000
+7515,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,15,TRUE,7000
+7516,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,16,TRUE,7000
+7517,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,17,TRUE,7000
+7518,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,18,TRUE,7000
+7519,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,19,TRUE,7000
+7520,lulcc GLM <U+00D7> Ordered (as shipped),lulcc-ordered,lulcc GLM,lulcc-ordered,Ordered,20,TRUE,7000
+8601,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,1,TRUE,8000
+8602,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,2,TRUE,8000
+8603,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,3,TRUE,8000
+8604,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,4,TRUE,8000
+8605,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,5,TRUE,8000
+8606,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,6,TRUE,8000
+8607,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,7,TRUE,8000
+8608,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,8,TRUE,8000
+8609,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,9,TRUE,8000
+8610,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,10,TRUE,8000
+8611,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,11,TRUE,8000
+8612,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,12,TRUE,8000
+8613,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,13,TRUE,8000
+8614,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,14,TRUE,8000
+8615,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,15,TRUE,8000
+8616,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,16,TRUE,8000
+8617,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,17,TRUE,8000
+8618,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,18,TRUE,8000
+8619,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,19,TRUE,8000
+8620,CLUinPy logistic <U+00D7> CLUMondo (as shipped),cluinpy,CLUinPy logistic,cluinpy,CLUMondo,20,TRUE,8000
+3701,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),1,TRUE,3000
+3702,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),2,TRUE,3000
+3703,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),3,TRUE,3000
+3704,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),4,TRUE,3000
+3705,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),5,TRUE,3000
+3706,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),6,TRUE,3000
+3707,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),7,TRUE,3000
+3708,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),8,TRUE,3000
+3709,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),9,TRUE,3000
+3710,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),10,TRUE,3000
+3711,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),11,TRUE,3000
+3712,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),12,TRUE,3000
+3713,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),13,TRUE,3000
+3714,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),14,TRUE,3000
+3715,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),15,TRUE,3000
+3716,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),16,TRUE,3000
+3717,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),17,TRUE,3000
+3718,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),18,TRUE,3000
+3719,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),19,TRUE,3000
+3720,Dinamica WoE <U+00D7> Dinamica (simulate.ego) (as shipped),dinamica-native,Dinamica WoE,dinamica-native,Dinamica (simulate.ego),20,TRUE,3000

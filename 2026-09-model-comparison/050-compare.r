@@ -18,17 +18,19 @@
 #' - **Variance decomposition** of the figure of merit over the estimator × allocator crossing
 #'   (stochastic allocators): estimator, allocator, interaction, and replicate variance.
 #' - **Wall time** per stage, from the `timings-*.csv` every step writes.
+#'
+#' Besides the tables in `figures/`, it writes every map and the estimators' potentials to
+#' `results/` (last section), so that the validation metrics (`051-validation-metrics.r`) and
+#' the figures (`060-*`) can be recomputed and redrawn without the database or the allocators.
 
 #| label: setup
 #| output: false
 library(evoland)
 library(data.table)
 library(terra)
-library(ggplot2)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
 maps_dir <- file.path(outputs_dir, "maps")
-figures_dir <- file.path(pie_dir, "figures")
 dir.create(figures_dir, showWarnings = FALSE)
 
 #' # Ensembles
@@ -440,116 +442,6 @@ timings_summary <-
   ]
 timings_summary
 
-#' # Figures
-
-#| label: fig-fom
-#| fig-width: 7
-#| fig-height: 5
-allocator_levels <- allocators$label
-allocator_colours <- setNames(
-  c("#2a78d6", "#eb6834", "#4a3aa7", "#1baf7a", "#eda100", "#e87ba4"),
-  allocator_levels
-)
-allocator_pch <- setNames(c(16, 17, 8, 15, 18, 6), allocator_levels)
-# rows: the crossing's estimators, then each tool as shipped
-fom[, row := fifelse(as_shipped, paste0(estimator_label, ", as shipped"), estimator_label)]
-fom[, allocator_key := sub(" (simulate.ego)", "", allocator_label, fixed = TRUE)]
-row_levels <- c(estimators$label, unique(fom[as_shipped == TRUE, row]))
-
-# rows top to bottom, the allocators side by side within a row
-fom[,
-  `:=`(
-    y = match(row, row_levels) + (match(allocator_key, allocator_levels) - 3.5) * 0.12,
-    allocator_f = factor(allocator_key, levels = allocator_levels)
-  )
-]
-fig_fom <- ggplot(fom, aes(figure_of_merit, y, colour = allocator_f, shape = allocator_f)) +
-  geom_hline(yintercept = seq_along(row_levels)[-1] - 0.5, colour = "grey90") +
-  geom_hline(yintercept = nrow(estimators) + 0.5, colour = "grey40") +
-  geom_vline(xintercept = mean(fom$figure_of_merit_null), linetype = 2, colour = "grey40") +
-  annotate(
-    "text",
-    x = mean(fom$figure_of_merit_null),
-    y = 0.45,
-    label = "random allocation",
-    hjust = 1.05,
-    size = 2.8,
-    colour = "grey30"
-  ) +
-  geom_point(size = 1.3) +
-  scale_colour_manual(values = allocator_colours, drop = FALSE) +
-  scale_shape_manual(values = allocator_pch, drop = FALSE) +
-  scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
-  scale_y_reverse(breaks = seq_along(row_levels), labels = row_levels) +
-  labs(
-    x = "Figure of merit, 1991 to 1999 (20 realisations each)",
-    y = NULL,
-    colour = "allocator",
-    shape = "allocator"
-  ) +
-  theme_minimal(base_size = 9) +
-  theme(
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    legend.position = "bottom"
-  )
-fig_fom
-ggsave(file.path(figures_dir, "pie-figure-of-merit.pdf"), fig_fom, width = 7, height = 5.5)
-
-#| label: fig-maps
-#| fig-width: 9
-#| fig-height: 6
-# one estimator (random forest) through every allocator: the median-FoM realisation of each,
-# coloured by outcome
-map_panels <- paste("random forest", "×", allocators$label)
-outcome_map <- function(id) {
-  simulated <- lulc_wide[[as.character(id)]]
-  obs_change <- observed_1999 != anterior_1991
-  sim_change <- simulated != anterior_1991
-  outcome <- fcase(
-    obs_change & sim_change & simulated == observed_1999 , 1L ,
-    obs_change & !sim_change                             , 2L ,
-    !obs_change & sim_change                             , 3L ,
-    obs_change & sim_change                              , 4L ,
-    default = 0L
-  )
-  tabular_to_raster(data.table(id_coord = lulc_wide$id_coord, id_lulc = outcome), db$coords_minimal)
-}
-outcome_levels <- c("persistence (both)", "hit", "miss", "false alarm", "wrong hit")
-outcome_colours <- setNames(
-  c("#ecebe6", "#1baf7a", "#2a78d6", "#e34948", "#eda100"),
-  outcome_levels
-)
-outcome_cells <- rbindlist(lapply(map_panels, function(e) {
-  runs_e <- fom[ensemble == e][order(figure_of_merit)]
-  id <- runs_e$id_run[ceiling(nrow(runs_e) / 2)]
-  cells <- as.data.table(terra::as.data.frame(outcome_map(id), xy = TRUE))
-  setnames(cells, 3, "outcome")
-  cells[,
-    panel := sprintf(
-      "%s\nFoM %.3f",
-      sub(" × ", " / ", e, fixed = TRUE),
-      runs_e[id_run == id, figure_of_merit]
-    )
-  ]
-}))
-outcome_cells[,
-  `:=`(
-    outcome = factor(outcome_levels[outcome + 1L], levels = outcome_levels),
-    panel = factor(panel, levels = unique(panel))
-  )
-]
-fig_maps <- ggplot(outcome_cells, aes(x, y, fill = outcome)) +
-  geom_raster() +
-  scale_fill_manual(values = outcome_colours, drop = FALSE) +
-  facet_wrap(~panel, ncol = 3) +
-  coord_equal() +
-  labs(fill = NULL) +
-  theme_void(base_size = 9) +
-  theme(legend.position = "bottom")
-fig_maps
-ggsave(file.path(figures_dir, "pie-outcome-maps.pdf"), fig_maps, width = 9, height = 6.4)
-
 #' # Tables written
 
 #| label: write
@@ -562,3 +454,60 @@ fwrite(fom_by_transition, file.path(figures_dir, "pie-fom-by-transition.csv"))
 fwrite(transitions_ensemble, file.path(figures_dir, "pie-simulated-transitions.csv"))
 fwrite(variance_shares, file.path(figures_dir, "pie-variance-shares.csv"))
 fwrite(timings_summary, file.path(figures_dir, "pie-timings.csv"))
+
+#' # Maps and potentials for the metrics and the plots
+#'
+#' Written to `results/` (Parquet, LFS-tracked):
+#'
+#' | file | content |
+#' | --- | --- |
+#' | `cells.parquet` | one row per cell of the study area: `id_coord`, centre `x`, `y`, grid `row`, `col`, class in 1991 (`anterior`) and observed 1999 (`observed`) |
+#' | `runs.csv` | every simulated map: `id_run`, `ensemble`, `estimator`, `allocator` (codes and labels), `member`, `as_shipped`, `id_run_parent` (the estimator's run) |
+#' | `changes.parquet` | the simulated 1999 maps, sparse: `id_run`, `id_coord`, `simulated` where the class differs from 1991 (every other cell keeps its 1991 class) |
+#' | `potentials.parquet` | each estimator's adjusted potentials of the viable transitions: `id_run_parent`, `id_coord`, `class` (posterior), `p` |
+#' | `viable.csv` | the viable transitions, `from`, `to` |
+
+#| label: write-results
+res_dir <- file.path(pie_dir, paste0("results", scale_suffix))
+dir.create(res_dir, showWarnings = FALSE)
+coords_res <- terra::res(read_lu(1991))[1]
+cells_out <- coords[, .(id_coord, x = lon, y = lat)][
+  data.table(id_coord = lulc_wide$id_coord, anterior = anterior_1991, observed = observed_1999),
+  on = "id_coord"
+]
+cells_out[, `:=`(
+  row = as.integer(round((max(y) - y) / coords_res)) + 1L,
+  col = as.integer(round((x - min(x)) / coords_res)) + 1L
+)]
+setcolorder(cells_out, c("id_coord", "x", "y", "row", "col", "anterior", "observed"))
+arrow::write_parquet(cells_out, file.path(res_dir, "cells.parquet"))
+fwrite(
+  members[, .(
+    id_run,
+    ensemble,
+    estimator,
+    estimator_label,
+    allocator,
+    allocator_label,
+    member,
+    as_shipped,
+    id_run_parent
+  )],
+  file.path(res_dir, "runs.csv")
+)
+changes_out <- rbindlist(lapply(members$id_run, function(id) {
+  sim <- lulc_wide[[as.character(id)]]
+  ch <- which(sim != anterior_1991)
+  data.table(id_run = id, id_coord = lulc_wide$id_coord[ch], simulated = sim[ch])
+}))
+arrow::write_parquet(changes_out, file.path(res_dir, "changes.parquet"))
+viable <- db$trans_meta_t[is_viable == TRUE, .(id_trans, id_lulc_anterior, id_lulc_posterior)]
+fwrite(viable[, .(from = id_lulc_anterior, to = id_lulc_posterior)], file.path(res_dir, "viable.csv"))
+potentials_out <- rbindlist(lapply(estimators$id_run, function(id) {
+  db$id_run <- id
+  db$adjusted_trans_pot_v(3L)[viable, on = "id_trans", nomatch = NULL][,
+    .(id_run_parent = id, id_coord, class = id_lulc_posterior, p = value)
+  ]
+}))
+db$id_run <- NULL
+arrow::write_parquet(potentials_out, file.path(res_dir, "potentials.parquet"))

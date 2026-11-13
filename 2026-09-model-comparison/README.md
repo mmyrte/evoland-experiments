@@ -119,6 +119,14 @@ CLUinPy 8601…, standalone Dinamica 3701….
 Run with `./execute-all.sh --workers 3 '2026-09-model-comparison/0*.r'` from the repo root.
 Steps sharing a number are independent.
 
+**Plotting elsewhere** (e.g. on macOS): `050-compare.r` writes every simulated map (sparse: the
+cells that differ from 1991), the 1991 and observed 1999 maps, and each estimator's potentials to
+`results/` (Parquet, LFS-tracked). `051-validation-metrics.r` reads only those (plus Rcpp for
+`validation-metrics.r`), and the `060` steps read only `figures/*.csv` and `results/`, with
+data.table, arrow, ggplot2 and patchwork. After `git lfs pull`,
+`Rscript 2026-09-model-comparison/060-metric-relations-plot.r` redraws without the database,
+Dinamica, lulcc or CLUinPy.
+
 | Step | What it does |
 | --- | --- |
 | [`000-pie-data.r`](000-pie-data.r) | Writes `data/` (git-ignored) from `lulcc::pie`, and the demand tables |
@@ -131,18 +139,24 @@ Steps sharing a number are independent.
 | [`030-alloc-evoland-greedy.r`](030-alloc-evoland-greedy.r) | evoland's deterministic rank-and-fill (`alloc_greedy()`, joint ranking) on every estimator |
 | [`040-alloc-lulcc.r`](040-alloc-lulcc.r) | lulcc 1.0.4: CLUE-S and Ordered on every estimator's class probabilities; as shipped, its GLMs on the 1991 map |
 | [`040-alloc-cluinpy.r`](040-alloc-cluinpy.r) | Calls [`040-alloc-cluinpy/run_pie.py`](040-alloc-cluinpy/run_pie.py): CLUMondo on every estimator's class probabilities; as shipped, CLUinPy's logistic suitability module |
-| [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/` |
+| [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/`, and every map and the potentials to `results/` |
 | [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
+| [`051-validation-metrics.r`](051-validation-metrics.r) | Every map and ensemble scored with the validation metrics of `validation-metrics.r` (repository root): KSim, Fuzzy Kappa Simulation, similarity of differences, TOC AUC, disagreement, Brier; concentration on the potentials; ANOVA per metric. Reads and writes `results/` only |
 | [`052-check-greedy-ordered.r`](052-check-greedy-ordered.r) | Check: evoland's `alloc_greedy(arbitration = "ordered")` against lulcc's Ordered model, cell by cell |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the crossing and the tools as shipped, ANOVA shares |
+| [`060-fom-outcome-maps-plot.r`](060-fom-outcome-maps-plot.r) | `figures/pie-figure-of-merit.pdf`, `figures/pie-outcome-maps.pdf` (formerly drawn by `050`) |
+| [`060-metric-relations-plot.r`](060-metric-relations-plot.r) | Appendix: `figures/pie-metric-relations.pdf` (metrics against allocation bias), `figures/pie-metric-agreement.pdf` (variance shares per metric, rank correlations, ensembles as forecasts) |
 | [`070d-lulcc-moulds2015.r`](070d-lulcc-moulds2015.r) | Diagnostic: lulcc's GMD demo as published (1985 → 1999), reproducing Moulds et al. (2015) Fig. 8 |
 | [`080-scaling/`](080-scaling/) | Scaling benchmark: `run.sh` runs each step on PIE tiled k × k (0.1–4.1 M cells) under `/usr/bin/time -v`; `collect.r` tabulates and plots (`figures/scaling*.{csv,pdf}`) |
 
 ## Environment
 
-The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6.1, 4 cores,
-15 GiB) against evoland-plus `develop` at `08aa38e`, as pinned in `rproject.toml` (it carries
-the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`).
+The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6, 4 cores,
+15 GiB) against evoland-plus `develop`, as pinned in `rproject.toml`: first `08aa38e` (the
+stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`),
+now `3bc7856` (renamed `pred_wide_train_v()`/`pred_wide_predict_v()`, period filters, upserts
+into key-only tables, ethzplus/evoland-plus#84, #116, #125). The results below are from a rerun
+from scratch on `3bc7856` (R 4.6.2), see Replay check.
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
@@ -168,7 +182,7 @@ the stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_r
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes,kde`) restricts the estimators.
 
-## Results: the 5 × 6 crossing (2026-10-22)
+## Results: the 5 × 6 crossing (2026-10-22, rerun 2026-11-01 on `3bc7856`)
 
 Figure of merit (FoM) is the ratio of the ensemble-mean counts. The null is the FoM expected
 from placing the same quantities at random within the anterior class (about 0.020);
@@ -179,14 +193,14 @@ crossing) are deterministic, one map each; all other ensembles have 20 realisati
 
 | estimator ↓ / allocator → | CLUMPY | Dinamica | greedy | CLUE-S | Ordered | CLUMondo |
 | --- | --- | --- | --- | --- | --- | --- |
-| random forest | 0.029 | 0.034 | 0.043 | 0.042 | **0.045** | 0.041 |
-| logistic regression | 0.026 | 0.034 | 0.038 | 0.039 | 0.039 | 0.037 |
-| Bayes-eKDE (clumpy) | 0.029 | 0.032 | 0.036 | 0.035 | 0.034 | 0.035 |
-| naive Bayes | **0.031** | 0.032 | 0.034 | 0.036 | 0.033 | 0.033 |
-| Weights of Evidence | 0.025 | 0.030 | 0.030 | 0.029 | 0.030 | 0.027 |
+| random forest | 0.029 | 0.035 | 0.043 | 0.042 | **0.045** | 0.041 |
+| logistic regression | 0.026 | 0.033 | 0.038 | 0.039 | 0.039 | 0.037 |
+| Bayes-eKDE (clumpy) | 0.029 | 0.033 | 0.036 | 0.035 | 0.034 | 0.035 |
+| naive Bayes | **0.031** | 0.031 | 0.034 | 0.036 | 0.033 | 0.033 |
+| Weights of Evidence | 0.025 | 0.028 | 0.030 | 0.029 | 0.030 | 0.027 |
 
 **Each tool as shipped**, for reference: lulcc GLM × CLUE-S 0.032, lulcc GLM × Ordered 0.029,
-CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.030.
+CLUinPy logistic × CLUMondo 0.034, Dinamica WoE × Dinamica (`simulate.ego`) 0.029.
 
 **Other scores** (`figures/pie-ensemble-summary.csv`, `pie-ensemble-brier.csv`), ranges over the
 five estimators:
@@ -194,7 +208,7 @@ five estimators:
 | allocator | gross change (cells) | allocation disagreement | fair Brier skill |
 | --- | --- | --- | --- |
 | CLUMPY | 4 753 | 0.077–0.079 | −0.03 to +0.00 |
-| Dinamica | 4 743 | 0.077–0.078 | −0.18 to −0.06 |
+| Dinamica | 4 743 | 0.077–0.078 | −0.18 to −0.07 |
 | greedy | 4 748 | 0.075–0.078 | −0.96 to −0.90 |
 | CLUE-S | 3 000–3 130 | 0.062–0.063 | −0.60 to −0.57 |
 | Ordered | 3 130–4 010 | 0.063–0.071 | −0.79 to −0.58 |
@@ -202,9 +216,11 @@ five estimators:
 | *lulcc GLM × CLUE-S, as shipped* | *15 883* | *0.166* | *−3.18* |
 
 **Variance of per-run FoM** over the crossing of the stochastic allocators (5 estimators ×
-CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 36 %, allocator 39 %,
-interaction 15 %, replicates 9 % (with the four estimators before Bayes-eKDE: 42, 37, 13 and
-8 %).
+CLUMPY, Dinamica, CLUE-S, CLUMondo; two-way ANOVA): estimator 40 %, allocator 38 %,
+interaction 13 %, replicates 9 %. Only the Dinamica maps changed in the rerun (fresh seed per
+run, see Replay check), and that alone moved the shares from 36, 39, 15 and 9 % in the run of
+2026-10-22 (with the four estimators before Bayes-eKDE: 42, 37, 13 and 8 %). The decomposition
+also depends on the metric; see Validation metrics.
 
 What these numbers say:
 
@@ -243,7 +259,7 @@ What these numbers say:
 6. **Scored as probabilistic forecasts, the order reverses**, as in the earlier rounds
    (`051-ensemble-scores.r`: fair Brier skill against random allocation of the same quantities).
    CLUMPY ensembles are about as good a forecast as the quantities alone (−0.03 to 0.00), Dinamica
-   ensembles slightly worse (−0.18 to −0.06), and the near-deterministic maps far worse: CLUE-S,
+   ensembles slightly worse (−0.18 to −0.07), and the near-deterministic maps far worse: CLUE-S,
    Ordered and CLUMondo −0.79 to −0.57, greedy −0.96 to −0.90, CLUE-S as shipped −3.2. FoM rises
    with greediness (CLUMPY < Dinamica < greedy, class totals) while the probabilistic score
    falls in the same order. The random forest has the highest FoM but a slightly worse Brier
@@ -255,9 +271,10 @@ What these numbers say:
    The two differ in predictors (neighbourhood counts vs. distances) and in density (Gaussian vs.
    binned ranges); separating those is in TODO.
 8. **Dinamica driven by evoland and Dinamica as shipped agree**: Weights of Evidence × Dinamica
-   0.0299 through `alloc_dinamica()`, 0.0300 through the standalone `simulate.ego`, with
-   identical transition counts. (Both moved by ~0.001 from the previous run: Dinamica draws a
-   fresh seed per run, see Replay check.)
+   0.0281 through `alloc_dinamica()`, 0.0293 through the standalone `simulate.ego`, with
+   identical transition counts. (Previous runs: 0.0299 and 0.0300. Dinamica draws a fresh seed
+   per run, see Replay check: with 20 realisations its ensemble FoM moves by up to 0.002 between
+   runs, as much as the difference between the two routes.)
 10. **clumpy's Bayes-eKDE**, the density-ratio estimator of the reference clumpy, on the same
     nine predictors as the evoland learners: FoM 0.029–0.036, between the logistic regression
     and naive Bayes, and second only to naive Bayes under CLUMPY (0.029, tied with the random
@@ -286,6 +303,68 @@ What these numbers say:
   maps (ranking by a fixed surface and filling in 8 instalments takes the same cells as
   filling at once), CLUE-S maps differ by ~140 cells, CLUMondo's by its tolerance, and no
   ensemble's FoM moved by more than 0.0013.
+
+## Validation metrics (051, appendix figures)
+
+[`051-validation-metrics.r`](051-validation-metrics.r) scores every map with the metrics of
+[`validation-metrics.r`](../validation-metrics.r) (repository root; described in
+`2026-09-paper-figures/README.md`, Validation metrics): KSim (Kappa Simulation, with KTransition
+and KTransloc), Fuzzy Kappa Simulation (FKS, radius 2 and 4 cells), similarity of differences (all
+viable transitions), TOC AUC per transition, allocation disagreement and Brier score, and the
+ensembles and potentials as forecasts. As there is no true probability on PIE, a map's bias is
+measured against its own input: the share of its change in the top 5 % of its estimator's
+potentials, minus the share an unbiased sampler of those potentials puts there (22 %). Output:
+`results/metrics-*.csv`, `results/toc.csv`; figures `figures/pie-metric-relations.pdf` and
+`figures/pie-metric-agreement.pdf` (`060-metric-relations-plot.r`).
+
+Means over the five estimators and all realisations of the crossing:
+
+| allocator | FoM | KSim | KTransloc | FKS (r = 4) | SoD | TOC AUC | alloc. disagreement | Brier | top 5 % (unbiased: 22 %) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CLUMPY | 0.028 | 0.019 | 0.019 | 0.051 | 0.160 | 0.508 | 0.078 | 0.156 | 17 % |
+| Dinamica | 0.032 | 0.027 | 0.027 | 0.061 | 0.160 | 0.512 | 0.077 | 0.154 | 37 % |
+| greedy | 0.036 | 0.037 | 0.037 | 0.066 | 0.153 | 0.516 | 0.076 | 0.153 | 100 % |
+| CLUE-S | 0.036 | 0.041 | 0.056 | 0.070 | 0.122 | 0.515 | 0.063 | 0.127 | 84 % |
+| Ordered | 0.036 | 0.039 | 0.051 | 0.070 | 0.130 | 0.515 | 0.066 | 0.131 | 96 % |
+| CLUMondo | 0.035 | 0.037 | 0.052 | 0.065 | 0.105 | 0.514 | 0.062 | 0.127 | 67 % |
+
+Variance shares by metric (estimators × CLUMPY, Dinamica, CLUE-S, CLUMondo, two-way ANOVA):
+
+| metric | estimator | allocator | interaction | replicates |
+| --- | --- | --- | --- | --- |
+| figure of merit | 40 % | 38 % | 12 % | 10 % |
+| KSim | 29 % | 56 % | 7 % | 7 % |
+| FKS, r = 2 / 4 | 54 % / 54 % | 21 % / 17 % | 16 % / 19 % | 10 % / 10 % |
+| similarity of differences | 24 % | 65 % | 9 % | 2 % |
+| TOC AUC | 39 % | 38 % | 11 % | 12 % |
+| allocation disagreement | 0 % | 99 % | 0 % | 0 % |
+| Brier score | 0 % | 99 % | 0 % | 0 % |
+
+As forecasts (fair Brier skill against the uniform forecast; TOC AUC per transition): the
+potentials −0.07 to +0.01, AUC 0.63; CLUMPY ensembles −0.03 to +0.00, AUC 0.57; Dinamica
+−0.18 to −0.07, AUC 0.57; CLUE-S, CLUMondo and Ordered −0.79 to −0.57, AUC 0.51–0.52; greedy
+−0.96 to −0.90, AUC 0.52.
+
+What these numbers say:
+
+1. **The location metrics agree with the figure of merit, and so share its bias.** FoM, KSim,
+   FKS and the single-map TOC AUC all rank CLUMPY < Dinamica < greedy and the class-total
+   allocators, in the order of how much change they put on the top potentials. Every allocator
+   places exactly the observed transitions (CLUMPY, Dinamica, greedy: KTransition = 1, so KSim =
+   KTransloc), so the ranking is about location alone.
+2. **CLUMPY with patches is not quite unbiased either**: 17 % of its change in the top 5 %
+   where an unbiased sampler of the potentials puts 22 %. uPAM grows patches onto less probable
+   neighbours, as in Fig. 2's synthetic case. Dinamica (37 %) and the rest concentrate.
+3. **The metric decides how substitutable the estimators look.** Under FoM and TOC AUC the
+   estimator and the allocator explain about as much (40 % and 38 %); under FKS the estimator
+   explains 54 %, three times the allocator; under KSim and the similarity of differences the
+   allocator dominates; and under allocation disagreement and the Brier score the allocator
+   explains 99 %, because those metrics mostly see the quantity difference between transition
+   and class-total allocators (gross change 4 750 vs. 3 000–4 000 cells).
+4. **Only the probabilistic scores of ensembles separate the unbiased allocator**, as in the
+   synthetic case: CLUMPY ensembles are as good a forecast as the potentials (Brier skill
+   −0.01 vs. −0.02 on average). With 20 members, their TOC AUC (0.57) stays below the potentials'
+   (0.63); ties in coarse frequencies cost ranking power.
 
 ## Scaling (080-scaling)
 
@@ -351,7 +430,7 @@ Memory is the peak of the largest process. For standalone Dinamica that is the R
 3. **DuckLake** (ethzplus/evoland-plus#85). Every catalog-resolving call costs a fixed
    20–70 ms: `get_read_expr()`, the table bindings, `.has_predictions()`. A plain DuckDB query
    costs 1 ms. On PIE that is 75 % of a prediction (11 s, of which the model's `predict()` takes
-   1.7 s), but the cost does not grow with the domain. The data-bound work in DuckDB (the `pred_data_wide_v()` PIVOT, the joins) scales
+   1.7 s), but the cost does not grow with the domain. The data-bound work in DuckDB (the `pred_wide_predict_v()` PIVOT, the joins) scales
    linearly here. Two side effects:
    - every realisation stores a full map (`lulc_data_t` held 25 M rows after the benchmark);
    - every commit makes a snapshot (283 after the benchmark).
@@ -431,8 +510,23 @@ actually took:
 
 ## Replay check
 
-Checked on the pipeline before the 2026-10-21 restructuring into the 4 × 6 crossing; the new
-pipeline has been run once from scratch so far (TODO).
+**2026-11-01, the 5 × 6 crossing on the new pin.** The whole pipeline was rerun from scratch
+(fresh container, fresh database, `execute-all.sh --workers 3`) on evoland-plus `3bc7856`
+(previous run: `08aa38e`, 2026-10-22), and the per-run FoM compared over all 490 maps:
+
+- **Bit-identical (hits and false alarms):** every map that is not Dinamica's, 369 of 370: all CLUMPY,
+  greedy, CLUE-S, Ordered and CLUMondo maps of all five estimators (random forest included), and
+  lulcc and CLUinPy as shipped. The pin change did not move any of them.
+- **One exception:** one of the 20 Bayes-eKDE × CLUMPY realisations differs, by 0.0003 FoM
+  (ensemble FoM unchanged at 0.0295). Not yet investigated: the eKDE potentials (Python, `015`)
+  are the suspect.
+- **Different, by design:** all 100 Dinamica maps of the crossing and the 20 standalone ones. Ensemble FoM moved
+  by up to 0.002 (WoE × Dinamica 0.0299 → 0.0281), which moved the ANOVA shares by up to 4
+  points.
+- Steps: all ran; `070d` needed `Hmisc` (another package lulcc calls without declaring it), now
+  in `rproject.toml`.
+
+**Earlier check,** on the pipeline before the 2026-10-21 restructuring into the 4 × 6 crossing:
 
 The whole pipeline was run twice from scratch (`execute-all.sh`, fresh database), and the
 per-run FoM of the two runs compared:

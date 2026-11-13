@@ -1,0 +1,18 @@
+learner,forecast,brier,skill
+CLUMPY,ensemble frequency (fair),0.132493108141381,0.16434147412235
+CLUMPY,single realisation (median),0.256318229400329,-0.616646456113668
+uPAM,ensemble frequency (fair),0.135399214214827,0.146012125890981
+uPAM,single realisation (median),0.274263496336175,-0.729830572060949
+uPAM merging,ensemble frequency (fair),0.134014286728508,0.154747119566495
+uPAM merging,single realisation (median),0.266188126215044,-0.678897719884672
+Dinamica,ensemble frequency (fair),0.137549776212854,0.132448133814033
+Dinamica,single realisation (median),0.243606998654105,-0.536474373984343
+CLUE-S,ensemble frequency (fair),0.163900104680724,-0.0337482589851692
+CLUE-S,single realisation (median),0.163900104680724,-0.0337482589851692
+CLUMondo,ensemble frequency (fair),0.187103757781192,-0.1800979885441
+CLUMondo,single realisation (median),0.187228951697323,-0.180887609716635
+random forest,adjusted potentials,0.133188569398314,0.159955071411097
+random forest,deterministic,0.206071481979961,-0.29973093146128
+reference,true probabilities,0.128211749399584,0.191344795163814
+reference,uniform forecast,0.158549340476399,0
+reference,persistence,0.171377299237326,-0.0809083072965362
