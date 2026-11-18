@@ -16,8 +16,11 @@ metrics, and the `030` steps only draw:
 ./execute-all.sh --workers 3 '2026-09-paper-figures/0*'
 ```
 
-renders `000`, the three `010` steps in parallel, then `020` and `030`.
-`010-learner-comparison` additionally runs its cases on its own PSOCK cluster.
+renders `000`, the `010` steps in parallel, then `020` and `030`.
+`010-learner-comparison` additionally runs its cases on its own PSOCK cluster. The two
+`010-verify-*` steps (see [Verification](#verification-the-allocators-against-their-reference-implementations))
+load evoland.plus from a source checkout (`EVOLAND_PLUS_SRC`, default `../evoland.plus`)
+rather than the pinned `evoland` package, because they test the version the paper describes.
 
 **Plotting elsewhere** (e.g. on macOS, for its PDF rendering): the expensive step
 `010-fig2-ensembles` writes its maps and scores to `results/fig2/` (Parquet, LFS-tracked, and
@@ -33,9 +36,152 @@ root).
 | [`010-fig2-ensembles.r`](010-fig2-ensembles.r) | `results/fig2/` | Allocates and scores the ensembles of Fig. 2 on a backcast; writes the maps and scores |
 | [`010-skill-attribution.r`](010-skill-attribution.r) | `figures/skill-attribution.csv` | Where the skill is lost: potentials or allocation |
 | [`010-learner-comparison.r`](010-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
+| [`010-verify-clumpy.r`](010-verify-clumpy.r) | `results/verification/clumpy-*.csv` | Verification: evoland's uSAM and uPAM grower against the reference clumpy (Python), via [`010-verify-clumpy/`](010-verify-clumpy/) |
+| [`010-verify-greedy-lulcc.r`](010-verify-greedy-lulcc.r) | `results/verification/greedy-lulcc*.csv` | Verification: evoland's greedy allocator against lulcc's Ordered model |
+| [`020-verify-placement.r`](020-verify-placement.r) | `results/verification/placement-*.csv` | Verification on Fig. 2's maps: does each allocator place change where its potentials say (Kolmogorov-Smirnov, quantity, cell-wise frequencies) |
 | [`020-validation-metrics.r`](020-validation-metrics.r) | `results/fig2/metrics-*.csv`, `toc.csv` | Every map of Fig. 2 scored with the validation metrics in common use (below) |
 | [`030-fig2-plot.r`](030-fig2-plot.r) | Figs. 2a and 2b, `figures/fig2a-fom.pdf`, `figures/fig2b-ensembles.pdf` | (2a) conventional validation: observed map, one realisation scored cell by cell, its figure of merit; (2b) why ensembles: change frequency, FoM of every realisation with each allocator's Brier skill, where change is placed |
 | [`030-metric-relations-plot.r`](030-metric-relations-plot.r) | `figures/metric-relations.pdf`, `figures/metric-agreement.pdf` | How the metrics relate to each other and to allocation bias |
+
+## Verification: the allocators against their reference implementations
+
+GMD asks for verification (the code does what the method says) apart from evaluation (the model
+is fit for purpose). Three steps build that evidence for the allocators the paper discusses. All
+run in under two minutes. Results from the last run, on evoland.plus `develop` at `d1d7794`, clumpy
+0.1.0 (mmyrte/clumpy, package code as pinned in `pyproject.toml`; the comparison scripts of the
+fork's branch `claude/upbeat-mayer-2ik3ux` are the starting point), lulcc 1.0.4, R 4.6.2.
+
+### uSAM: bit-identical to clumpy, end to end
+
+[`010-verify-clumpy.r`](010-verify-clumpy.r) builds 20 random 60 × 60 landscapes (four classes,
+a block without data, two anterior classes with two transitions each, random potentials), runs
+clumpy's pivot test (`generalized_allocation_rejection_test`) per anterior class, records the
+uniforms numpy draws, and replays them into evoland through R's user-supplied random number
+generator ([`010-verify-clumpy/replay_rng.c`](010-verify-clumpy/replay_rng.c)). evoland allocates
+through its allocator specification, `alloc_clumpy_spec()$one_period(ctx)`, the code
+`allocate()` runs, with the context built in memory. evoland itself is not modified.
+
+| cases | cells | changed | cells differing | uniforms drawn by clumpy / used by evoland |
+| --- | --- | --- | --- | --- |
+| 20 | 69 600 | 5 028 | **0** | 52 021 / 52 021 |
+
+The earlier check on the fork matched `must_cpp` alone; this one covers the R layer (sparse
+potentials, grid cells, method selection) and the C++ allocator as well, and shows that evoland
+consumes exactly one uniform per eligible cell, in clumpy's order.
+
+### uPAM: the patch grower, with the known differences isolated
+
+uPAM is uSAM's pivot test, a patch grower and an iteration over the shrinking pool (Mazy 2022,
+Fig. 3.2). The iteration cannot be replayed against clumpy: clumpy's iterative allocator
+(`clumpy.allocation.Unbiased.allocate`) does not run (it refers to the undefined names
+`features`, `tm`, `mask`), and it iterates differently from the thesis (it re-estimates the
+potentials between passes and does not stop a transition at its quota). evoland follows the
+thesis. The grower is checked directly: 2000 random 16 × 16 scenarios with a prescribed patch area
+(1–16 cells) and elongation (0.31, 0.57, 0.83), other patches of the same step nearby, half with
+aggregation avoidance; a fifth with equal potentials everywhere.
+
+Share of scenarios where clumpy's patch is evoland's, cell by cell (`results/verification/clumpy-patch-summary.csv`):
+
+| clumpy variant | avoidance off | avoidance on |
+| --- | --- | --- |
+| as shipped | 0.575 | 0.727 |
+| without the connectedness ("hollow-fill") step | 0.618 | 0.763 |
+| with the thesis' elongation moments | 0.771 | 0.864 |
+| both | 0.893 | 0.937 |
+
+The differences are those of the re-implementation, documented on the fork
+(`scripts/comparison/PIXEL_PERFECT_PLAN.md`):
+
+1. **Connectedness step.** Mazy's step (iv)–(v) adds a neighbour that is almost enclosed by the
+   patch first, at random. evoland does not implement it.
+2. **Elongation moments.** Mazy (2022, eqs. 3.I.6–3.I.12) takes a patch's second moments about
+   its own centroid. To score a candidate, clumpy takes the moments of patch-plus-candidate about
+   the centroid of the patch *without* the candidate. evoland follows the thesis. The variant
+   "thesis moments" ([`_allocate_thesis_moments`](010-verify-clumpy/clumpy_reference.py)) is
+   clumpy's function with only those lines changed.
+3. **No neighbour left.** Without aggregation avoidance, clumpy fails a patch that runs out of
+   neighbours of its class; evoland keeps what it has grown (8 of 1000 scenarios).
+4. **Ties.** Candidates that tie in exact arithmetic (mirror images with equal potential) get
+   elongations that differ in the last bits, differently in the two codes, so round-off decides
+   the tie. Mazy's algorithm leaves ties open.
+
+With distinct potentials and aggregation avoidance on, clumpy with (1) and (2) aligned gives
+evoland's patch in **800 of 800** scenarios. The decisive check covers all 2000: an exact
+enumeration (integer moments, exact fractions) of every patch Mazy's grower can produce when each
+exact tie may go either way finds evoland's patch among them in **every scenario** (up to 63
+possible patches per scenario when all potentials are equal; `clumpy-patch-ties.csv`).
+
+**Patch areas.** clumpy's `GaussianPatcher` grows a patch while it is smaller than the drawn
+real-valued area, so it gets `ceiling(area)` cells, half a cell more than the prescribed mean on
+average. evoland rounds to the nearest integer (`clumpy-areas.csv`):
+
+| mean, sd | clumpy mean cells | evoland mean cells |
+| --- | --- | --- |
+| 3, 1 | 3.51 | 3.00 |
+| 10, 1 | 10.51 | 10.00 |
+| 10, 3 | 10.52 | 10.00 |
+
+### Greedy: identical to lulcc's Ordered model where they are the same procedure
+
+[`010-verify-greedy-lulcc.r`](010-verify-greedy-lulcc.r): lulcc's Ordered model fills class
+*totals* in a fixed class order; evoland's greedy allocator fills *transition counts*. They are
+the same procedure when each growing class has one source class. Ten random 50 × 50 landscapes
+per case, the same potentials (lulcc gets them as class probabilities), lulcc both through its
+core (`lulcc:::.ordered`) and its full interface (`OrderedModel`, `allocate`, with GLMs fixed to
+return the probabilities, as in `2026-09-model-comparison`):
+
+| case | maps identical (evoland ordered / joint) | cells differing |
+| --- | --- | --- |
+| one transition (1 → 2) | 10 / 10 | 0 of 694 changed |
+| two disjoint transitions | 10 / 10 | 0 of 1346 |
+| ties (potentials rounded to 0.01) | 10 / 10 | 0 of 1346 |
+| two sources (1 → 2, 3 → 2) | 0 / 0 | 24 % of changed cells differ (by design) |
+| swap (1 → 2, 2 → 1) | 0 / 0 | 65 % (lulcc sees net change only) |
+
+lulcc's full interface gives the same maps as its core in all identical cases. Ties at the
+quota cut-off (14–35 tied cells in a typical landscape) are taken in cell order by both.
+
+### Placement on Fig. 2: Kolmogorov-Smirnov against the potentials
+
+[`020-verify-placement.r`](020-verify-placement.r) reads `results/fig2/` only. Every allocator
+gets the same adjusted potentials p; an unbiased one changes cell j by transition k with
+probability p_jk, so the changed cells' percentiles of p (within each transition, as in panel (e))
+follow the distribution F0(x) = share of the potential mass up to percentile x. The KS distance D
+of each map to F0 is tested against D's null distribution simulated from exactly that model
+(independent multinomial draws per cell: 2000 single maps, 400 pooled ensembles of 100).
+
+| allocator | median D per map | maps rejected at 5 % | D of the pooled ensemble | p |
+| --- | --- | --- | --- | --- |
+| CLUMPY (uSAM) | 0.029 | **0.05** | 0.002 | **0.79** |
+| uPAM, merging allowed | 0.063 | 0.79 | 0.049 | < 0.003 |
+| uPAM | 0.118 | 1.00 | 0.109 | < 0.003 |
+| Dinamica | 0.151 | 1.00 | 0.139 | < 0.003 |
+| CLUMondo | 0.465 | 1.00 | 0.465 | < 0.003 |
+| rank-and-fill | 0.530 | (one map) | | < 0.001 |
+| CLUE-S | 0.741 | 1.00 | 0.741 | < 0.003 |
+| null: median, 95 % quantile | 0.029, 0.049 | | 0.003, 0.005 | |
+
+(p < 0.003 is the resolution of 400 simulated ensembles.) uSAM is rejected at the nominal rate
+and its pooled 57 000 changed cells are indistinguishable from F0; every other allocator is
+rejected. Two further checks of the ensembles against p:
+
+- **Quantity per transition** (mean over 100 members against the sum of p): uSAM z = −1.7 to
+  +1.0; uPAM within ±0.5 (quota); Dinamica fixes the count; CLUE-S and CLUMondo miss by 54–180
+  standard errors (they allocate net class totals).
+- **Cell-wise frequencies** (Pearson's X² over 6687 cells and their three outcomes, df 13 151):
+  uSAM z = **−0.64**; uPAM merging 26, Dinamica 48, uPAM 78, CLUE-S 348, CLUMondo 7997.
+
+Against the true probabilities q (panel (e) as drawn; evaluation, not verification), CLUMPY's
+maps are rejected in 11 % of cases and its pooled ensemble with p < 0.003: the ensemble
+reproduces the potentials, and the potentials carry the estimation error.
+
+**A caveat on the observed map.** Against q, the observed change has D = 0.013, below every one
+of 2000 simulated draws of the true process (null median 0.031; also below all of 300 draws in a
+separate check). The landscape seed is fixed (`set.seed(1337)`), so it is either chance (roughly
+1 in 10⁴ for a KS statistic this small) or an unintended consequence of tuning the case over many
+iterations. It does not affect the verification above, which does not use the observed map, but
+the paper should not read the observed curve's closeness to the expectation as evidence. The open
+item "replicate over several landscape seeds" (TODO) would settle it.
 
 ## Figure 2: ensembles vs. single maps
 

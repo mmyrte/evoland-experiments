@@ -57,6 +57,31 @@ Open:
       blue, errors warm); land cover stepped in lightness, apart from the other panels' hues;
       outlines with a white halo.
 
+## Verification
+
+Done (see README § Verification):
+
+- [x] uSAM bit-identical to clumpy end to end (`010-verify-clumpy`), by replaying clumpy's
+      uniforms through R's user-supplied RNG.
+- [x] uPAM grower against clumpy's `Patcher` (2000 scenarios); evoland's patch is a possible
+      outcome of Mazy's grower in every scenario.
+- [x] Greedy identical to lulcc's Ordered model where they are the same procedure
+      (`010-verify-greedy-lulcc`).
+- [x] KS, quantity and cell-wise frequency tests of Fig. 2's maps against the potentials
+      (`020-verify-placement`).
+
+Open:
+
+- [ ] uPAM's iteration (quota, pool without replacement) is checked only through its outcome
+      (quantity z-scores, placement); clumpy's own iterative allocator does not run. A Python
+      transcription of Mazy's Fig. 3.2 on clumpy's GART and `Patcher` would allow an exact
+      replay, at the cost of the reference being ours.
+- [ ] The observed map of Fig. 2 fits the true probabilities better than any of 2000 simulated
+      draws (KS D = 0.013, null median 0.031). Replicating over landscape seeds (below) settles
+      whether this is chance.
+- [ ] The `010-verify-*` steps load evoland.plus from a source checkout; switch to the pinned
+      package once the experiments move to the renamed `evoland.plus`.
+
 ## Experiments
 
 - [ ] Replicate `010-skill-attribution` over several landscape seeds per domain size; size and

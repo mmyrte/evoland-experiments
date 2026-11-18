@@ -1,0 +1,9 @@
+variant,avoid_aggregation,scenarios,identical,share_identical,success_clumpy,success_evoland,only_success_differs
+clumpy,FALSE,1000,575,0.575,992,1000,8
+clumpy,TRUE,1000,727,0.727,635,646,55
+"clumpy, no hollow-fill",FALSE,1000,618,0.618,992,1000,8
+"clumpy, no hollow-fill",TRUE,1000,763,0.763,630,646,54
+"clumpy, no hollow-fill, thesis moments",FALSE,1000,893,0.893,992,1000,8
+"clumpy, no hollow-fill, thesis moments",TRUE,1000,937,0.937,648,646,14
+"clumpy, thesis moments",FALSE,1000,771,0.771,992,1000,8
+"clumpy, thesis moments",TRUE,1000,864,0.864,647,646,19
