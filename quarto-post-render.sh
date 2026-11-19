@@ -29,11 +29,16 @@ while IFS= read -r out; do
   base="$(basename "$out")"
 
   # Nothing to do for a report that is already in place.
-  if [[ "$(basename "$dir")" == "html-reports" ]]; then
+  if [[ "$(basename "$dir")" == html-reports* ]]; then
     continue
   fi
 
+  # 2026-09-model-comparison runs one pipeline on two datasets (PIE_DATASET); the reports of
+  # the synthetic one go to their own folder, so the two runs do not overwrite each other
   dest="$dir/html-reports"
+  if [[ "${PIE_DATASET:-pie}" != "pie" ]]; then
+    dest="$dir/html-reports-$PIE_DATASET"
+  fi
   mkdir -p "$dest"
   mv -f "$out" "$dest/$base"
 
