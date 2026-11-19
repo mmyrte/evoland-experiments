@@ -70,3 +70,6 @@ __pycache__/
 
 # stray default graphics device output
 Rplots.pdf
+
+# quarto render intermediates of .r scripts
+*.rmarkdown
