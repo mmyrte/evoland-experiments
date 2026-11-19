@@ -106,7 +106,7 @@ ks_distance <- function(sample_rank, nc) {
 #' probability p (or q) and stays with the rest. Simulated for one map and for a pooled
 #' ensemble of `n_members` maps.
 
-#| label: null
+#| label: null-distribution
 # every cell can make exactly two transitions; slot 1 and 2 are them, in class order
 by_slot <- pairs[order(id_coord, class)][, slot := seq_len(.N), by = id_coord]
 first <- by_slot[slot == 1L]
