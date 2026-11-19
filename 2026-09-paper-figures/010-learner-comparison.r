@@ -42,7 +42,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(ggplot2)
@@ -296,18 +296,19 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     ]
   }
 
-  # feature sets: committed per configuration run (prediction reads them through
-  # pred_wide_predict_v), never for the base run. Lineage reads resolve trans_preds_t per
-  # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set.
+  # feature sets: each configuration run holds every candidate pair, with is_selected marking
+  # its set, so the base run's pairs (which it inherits through the lineage) cannot leak in.
+  # The base run holds the available predictors for scoring.
   db$id_run <- 0L
+  db$trans_preds_t <- as_trans_preds_t(CJ(
+    id_run = 0L,
+    id_pred = available_preds,
+    id_trans = viable$id_trans
+  ))
   scored <- db$get_pred_filter_score(
-    filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart")),
-    trans_preds = as_trans_preds_t(CJ(
-      id_run = 0L,
-      id_pred = available_preds,
-      id_trans = viable$id_trans
-    ))
+    filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart"))
   )
+  all_pairs <- CJ(id_trans = viable$id_trans, id_pred = union(available_preds, process_preds))
   feature_sets <- list(
     "available, rpart top 4" = scored[order(-importance)][,
       head(.SD, 4L),
@@ -384,21 +385,22 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     message(glue::glue(
       "n_grid={n_grid} seed={landscape_seed} n_calib={n_calib}: {cfg$learner} / {cfg$feature_set}"
     ))
-    trans_preds <- as_trans_preds_t(feature_sets[[cfg$feature_set]][, .(
-      id_run = cfg$id_run,
-      id_pred,
-      id_trans
-    )])
+    chosen <- feature_sets[[cfg$feature_set]][, .(id_trans, id_pred, is_selected = TRUE)]
+    trans_preds <- as_trans_preds_t(
+      chosen[all_pairs, on = .(id_trans, id_pred)][, .(
+        id_run = cfg$id_run,
+        id_pred,
+        id_trans,
+        is_selected = !is.na(is_selected)
+      )]
+    )
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
         db$commit(trans_preds, "trans_preds_t", method = "upsert")
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
-          models <- db$fit_full_models(
-            learner = learner_specs[[cfg$learner]]$make(),
-            trans_preds = trans_preds
-          )
+          models <- db$fit_full_models(learner = learner_specs[[cfg$learner]]$make())
         })[["elapsed"]]
         failed <- models[vapply(learner_full, is.null, logical(1L)), id_trans]
         if (length(failed) > 0L) {
@@ -478,7 +480,7 @@ parallel::clusterCall(
 )
 parallel::clusterEvalQ(cl, {
   suppressPackageStartupMessages({
-    library(evoland)
+    library(evoland.plus)
     library(data.table)
     library(terra)
     library(mlr3learners)

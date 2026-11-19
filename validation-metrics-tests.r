@@ -68,7 +68,7 @@ check(
 # --- Similarity of differences against evoland -------------------------------------------------
 r <- function(v) terra::rast(matrix(v, nr, nc, byrow = TRUE))
 for (tr in list(c(1L, 2L), c(2L, 3L))) {
-  ev <- evoland::calc_transition_similarity(
+  ev <- evoland.plus::calc_transition_similarity(
     r(anterior),
     r(observed),
     r(simulated),

@@ -34,7 +34,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 reset_timings("dinamica-native")

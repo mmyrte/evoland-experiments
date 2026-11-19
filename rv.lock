@@ -567,16 +567,16 @@ force_source = false
 dependencies = []
 
 [[packages]]
-name = "evoland"
-version = "0.1.0.9000"
-source = { git = "https://github.com/ethzplus/evoland-plus/", sha = "3bc78561d938efcb5698cfbbc52466ddcb3e1f4f" }
+name = "evoland.plus"
+version = "0.1.1.9000"
+source = { git = "https://github.com/ethzplus/evoland.plus/", sha = "d1d77946f135e85adb4a9b19f84cc356519fa212" }
 force_source = true
 dependencies = [
     "DBI",
     "R6",
     "Rcpp",
     "curl",
-    "data.table",
+    { name = "data.table", requirement = "(>= 1.15.0)" },
     { name = "duckdb", requirement = "(>= 1.5.5)" },
     "glue",
     "mlr3",

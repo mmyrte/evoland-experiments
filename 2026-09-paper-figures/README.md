@@ -13,7 +13,7 @@ share one stage; `020` scores the maps of `010-fig2-ensembles` with the further 
 metrics, and the `030` steps only draw:
 
 ```bash
-./execute-all.sh --workers 3 '2026-09-paper-figures/0*'
+./execute-all.sh --workers 3 '2026-09-paper-figures/0*.r'
 ```
 
 renders `000`, the `010` steps in parallel, then `020` and `030`.

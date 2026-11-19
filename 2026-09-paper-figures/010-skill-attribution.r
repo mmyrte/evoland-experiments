@@ -36,7 +36,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(ggplot2)
@@ -165,11 +165,9 @@ run_experiment <- function(n_grid, seed = 1337L) {
       learner = mlr3::lrn("classif.rpart")
     )
   )
-  db$commit(
-    trans_pred_scored[order(-importance)][, head(.SD, 4), by = id_trans],
-    "trans_preds_t",
-    method = "overwrite"
-  )
+  # keep each transition's four most important predictors
+  trans_pred_scored[, is_selected := frank(-importance, ties.method = "first") <= 4L, by = id_trans]
+  db$trans_preds_t <- trans_pred_scored
   trans_models <- db$fit_full_models(
     learner = mlr3::lrn("classif.ranger", num.trees = 200)
   )
@@ -306,11 +304,13 @@ run_experiment <- function(n_grid, seed = 1337L) {
   for (r in seq_len(nrow(members))) {
     db$id_run <- members[r, id_run]
     set.seed(seed + members[r, id_run])
-    db$alloc_clumpy(
+    allocate(
+      db,
       id_periods = 3,
+      allocator = alloc_clumpy_spec(avoid_aggregation = TRUE),
       select_score = "no.crossval",
       select_maximize = TRUE,
-      use_parent_trans_pot = TRUE,
+      potentials_ancestor = 1L,
       update_neighbors = FALSE
     )
   }

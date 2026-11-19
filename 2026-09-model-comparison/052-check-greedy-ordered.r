@@ -24,7 +24,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
@@ -74,13 +74,13 @@ priority[, .(id_trans, id_lulc_anterior, id_lulc_posterior)]
 #| output: false
 for (i in seq_len(nrow(checks))) {
   db$id_run <- checks$id_run_greedy[i]
-  db$alloc_greedy(
+  allocate(
+    db,
     id_periods = 3L,
+    allocator = alloc_greedy_spec(arbitration = "ordered", order = priority$id_trans),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    arbitration = "ordered",
-    order = priority$id_trans,
-    use_parent_trans_pot = TRUE,
+    potentials_ancestor = 1L,
     update_neighbors = FALSE
   )
 }

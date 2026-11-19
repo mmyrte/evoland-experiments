@@ -19,7 +19,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(mlr3learners)
@@ -254,13 +254,14 @@ modeled_by <- list()
 for (i in seq_len(nrow(evoland_estimators))) {
   db$id_run <- evoland_estimators$id_run[i]
   learner_id <- evoland_estimators$estimator[i]
+  # the estimator's run holds the base run's selection; fit_full_models() reads the active run's
+  db$trans_preds_t <- as_trans_preds_t(
+    trans_preds_base[is_selected == TRUE, .(id_run = db$id_run, id_pred, id_trans)]
+  )
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),
-    db$fit_full_models(
-      learner = learner_by[[learner_id]],
-      trans_preds = as_trans_preds_t(trans_preds_base[, .(id_run = db$id_run, id_pred, id_trans)])
-    )
+    db$fit_full_models(learner = learner_by[[learner_id]])
   )
   modeled_by[[learner_id]] <- unique(trans_models$id_trans[
     !vapply(trans_models$learner_full, is.null, logical(1L))

@@ -25,7 +25,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 source("2026-09-model-comparison/common.r")

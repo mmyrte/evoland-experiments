@@ -15,7 +15,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 db <- evoland_db$new(path = db_path)
@@ -31,12 +31,13 @@ for (i in seq_len(nrow(members))) {
   timed(
     "evoland-greedy",
     "allocate",
-    db$alloc_greedy(
+    allocate(
+      db,
       id_periods = 3L,
+      allocator = alloc_greedy_spec(arbitration = "joint"),
       select_score = "no.crossval",
       select_maximize = TRUE,
-      arbitration = "joint",
-      use_parent_trans_pot = TRUE,
+      potentials_ancestor = 1L,
       update_neighbors = FALSE
     ),
     note = paste0("id_run=", members$id_run[i])

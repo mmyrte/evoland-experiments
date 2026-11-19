@@ -26,7 +26,7 @@
 
 #| label: setup
 #| output: false
-library(evoland)
+library(evoland.plus)
 library(data.table)
 source("2026-09-model-comparison/common.r")
 stopifnot("kde is not among PIE_ESTIMATORS" = "kde" %in% estimators$estimator)
@@ -40,7 +40,7 @@ python <- project_python()
 
 db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE]
-trans_preds <- db$trans_preds_t[id_run == 0L]
+trans_preds <- db$trans_preds_t[id_run == 0L & is_selected == TRUE]
 
 #' # Calibration and prediction data
 #'

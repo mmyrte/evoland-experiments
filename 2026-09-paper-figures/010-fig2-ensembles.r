@@ -43,7 +43,7 @@
 #| label: setup
 #| output: false
 set.seed(1337)
-library(evoland)
+library(evoland.plus)
 library(data.table)
 library(terra)
 library(mlr3learners)
@@ -307,11 +307,13 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
 for (i in seq_len(nrow(members))) {
   db$id_run <- members$id_run[i]
   set.seed(members$seed[i])
-  db$alloc_clumpy(
+  allocate(
+    db,
     id_periods = 3,
+    allocator = alloc_clumpy_spec(avoid_aggregation = TRUE),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    use_parent_trans_pot = TRUE,
+    potentials_ancestor = 1L,
     update_neighbors = FALSE
   )
 }
@@ -417,11 +419,13 @@ db$commit(
 for (i in which(other_members$allocator == "Dinamica")) {
   db$id_run <- other_members$id_run[i]
   set.seed(other_members$seed[i])
-  db$alloc_dinamica(
+  allocate(
+    db,
     id_periods = 3L,
+    allocator = alloc_dinamica_spec(),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    use_parent_trans_pot = TRUE,
+    potentials_ancestor = 1L,
     update_neighbors = FALSE
   )
 }
@@ -442,13 +446,14 @@ db$alloc_params_t <- as_alloc_params_t(copy(alloc_params_estimated))
 for (i in which(other_members$allocator %in% c("uPAM", "uPAM merging"))) {
   db$id_run <- other_members$id_run[i]
   set.seed(other_members$seed[i])
-  db$alloc_clumpy(
+  allocate(
+    db,
     id_periods = 3,
+    allocator = alloc_clumpy_spec(avoid_aggregation = other_members$allocator[i] == "uPAM"),
     select_score = "no.crossval",
     select_maximize = TRUE,
-    use_parent_trans_pot = TRUE,
-    update_neighbors = FALSE,
-    avoid_aggregation = other_members$allocator[i] == "uPAM"
+    potentials_ancestor = 1L,
+    update_neighbors = FALSE
   )
 }
 db$id_run <- NULL
