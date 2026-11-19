@@ -314,6 +314,13 @@ Panels, on a 3 × 2 grid with a legend each:
   each allocator (band: CLUMPY's 5–95 %) and the deterministic map; the diagonal is random
   placement
 
+**Rerun on evoland.plus `d1d7794` (2026-11-19).** Every step reruns; every allocator reproduces
+the numbers below exactly except Dinamica EGO, which draws a fresh seed per run (ensemble FoM
+0.163, fair Brier skill 0.138, pooled KS distance to the potentials 0.134; the verification
+section below gives the earlier run's 0.139). Dinamica comes from the `ghcr.io/mmyrte/evoland`
+image (see `2026-09-model-comparison/README.md`, Environment). The verify steps load the same
+commit from a source checkout (`EVOLAND_PLUS_SRC`).
+
 ### What the numbers say (last render)
 
 All four transitions are viable; none of the 573 observed changes on the 6687 forest and arable

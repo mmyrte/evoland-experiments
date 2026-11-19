@@ -155,17 +155,33 @@ The steps were developed in a Claude Code cloud container (Ubuntu 24.04, R 4.6, 
 15 GiB) against evoland-plus `develop`, as pinned in `rproject.toml`: first `08aa38e` (the
 stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_expr(id_run =)`),
 now `3bc7856` (renamed `pred_wide_train_v()`/`pred_wide_predict_v()`, period filters, upserts
-into key-only tables, ethzplus/evoland-plus#84, #116, #125). The results below are from a rerun
-from scratch on `3bc7856` (R 4.6.2), see Replay check.
+into key-only tables, ethzplus/evoland-plus#84, #116, #125), now `evoland.plus` `d1d7794`
+(the renamed package; allocation through `allocate()` and allocator specifications, predictor
+sets through `is_selected`, ethzplus/evoland.plus#118, #124). The results below are from a
+rerun from scratch on `3bc7856` (R 4.6.2), see Replay check; the rerun on `d1d7794` changed
+them only where the allocator or estimator is stochastic, see Rerun on `d1d7794`.
+
+- **Locale.** Run under a UTF-8 locale (`LC_ALL=C.UTF-8`). Under POSIX, R writes the `×` of
+  the ensemble labels as `<U+00D7>` into the CSVs and figures (the run on `3bc7856` did).
+- **CLUMPY's `avoid_aggregation`** is set explicitly to `TRUE` in `030-alloc-evoland-clumpy.r`,
+  the default of `3bc7856`; `d1d7794`'s default is `FALSE` until ethzplus/evoland.plus#147.
+- **Reports** of `PIE_DATASET=synthetic` runs go to `html-reports-synthetic/`
+  (`quarto-post-render.sh`), so the two datasets no longer overwrite each other's reports.
 
 - **Dinamica EGO 8.11.2.** Extracted from `ghcr.io/mmyrte/evoland:latest` instead of
   downloading the AppImage:
   `docker create --name x ghcr.io/mmyrte/evoland:latest; docker cp x:/opt/dinamica /opt/dinamica`.
+  Without a Docker daemon, fetch only the layer that holds `/opt/dinamica` (the image history's
+  `COPY /opt/dinamica/squashfs-root/ /opt/dinamica`, ~500 MB) through the registry API
+  (`https://ghcr.io/token?scope=repository:mmyrte/evoland:pull`, then
+  `/v2/mmyrte/evoland/manifests/latest` and `/v2/mmyrte/evoland/blobs/<digest>`) and untar it.
   Then install the bundled R package (`/opt/dinamica/usr/bin/Data/R/Dinamica_1.0.8.tar.gz`,
   which needs `RcppProgress`) and set the variables from the `install-dinamica` vignette.
   **Do not** set `DINAMICA_EGO_8_TEMP_DIR` in `~/.Renviron`: Dinamica hands the R processes it
   spawns a per-run temp dir through that variable, and an `.Renviron` override breaks every
-  `CalculateRExpression` with "Failed to send message, session is closed".
+  `CalculateRExpression` with "Failed to send message, session is closed". If it must be there,
+  write it as `DINAMICA_EGO_8_TEMP_DIR=${DINAMICA_EGO_8_TEMP_DIR-/tmp/dinamica}`, so an inherited
+  value wins.
 - **lulcc 1.0.4** from apt (`r-cran-lulcc`, c2d4u). It also needs `gsubfn` and `caret`, which
   it only *suggests* but calls in `ExpVarRasterList()` and `glmModels()`.
 - **CLUinPy** (<https://github.com/nomisthomsen/CLUinPy>, commit `7d18dfe`). Its dependencies are
@@ -181,6 +197,23 @@ from scratch on `3bc7856` (R 4.6.2), see Replay check.
   `numpy<2`.
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes,kde`) restricts the estimators.
+
+## Rerun on `d1d7794` (2026-11-19)
+
+Both datasets rerun from scratch (`./execute-all.sh --workers 2 '2026-09-model-comparison/0*.r'`,
+once with `PIE_DATASET=synthetic`) on evoland.plus `d1d7794`, Dinamica EGO 8.11.2, lulcc 1.0.4,
+CLUinPy `7d18dfe`, R 4.6.2, under `LC_ALL=C.UTF-8`. Every step ran. Against the run on `3bc7856`:
+
+- **PIE:** 27 of 34 ensembles reproduce exactly. The 7 that move all involve Dinamica EGO (a
+  fresh seed per run) or Bayes-eKDE; the largest move in FoM is 0.0014 (Dinamica standalone, as
+  shipped: 0.0293 → 0.0307; logistic regression × Dinamica 0.0328 → 0.0341). Variance shares:
+  estimator 40.4 % (39.8 %), allocator 37.8 % (38.2 %), interaction 12.6 % (12.6 %). The greedy
+  vs. lulcc Ordered check (`052`) is unchanged.
+- **Synthetic:** the same pattern; only the Dinamica and Bayes-eKDE pairings move. Variance
+  shares: estimator 68.8 % (68.4 %), allocator 14.8 % (14.9 %).
+
+The tables further down still give the numbers of `3bc7856`; the CSVs in `figures/`,
+`figures-synthetic/`, `results/` and `results-synthetic/` are those of `d1d7794`.
 
 ## Results: the 5 × 6 crossing (2026-10-22, rerun 2026-11-01 on `3bc7856`)
 
