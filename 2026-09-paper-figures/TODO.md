@@ -72,13 +72,13 @@ Done (see README § Verification):
 
 Open:
 
-- [ ] uPAM's iteration (quota, pool without replacement) is checked only through its outcome
-      (quantity z-scores, placement); clumpy's own iterative allocator does not run. A Python
-      transcription of Mazy's Fig. 3.2 on clumpy's GART and `Patcher` would allow an exact
-      replay, at the cost of the reference being ours.
-- [ ] The observed map of Fig. 2 fits the true probabilities better than any of 2000 simulated
-      draws (KS D = 0.013, null median 0.031). Replicating over landscape seeds (below) settles
-      whether this is chance.
+- [ ] uPAM's iteration re-draws pivots from fixed potentials over the shrinking pool, which
+      flattens inclusion towards less probable cells (`010-verify-upam-bias`, deciles). clumpy
+      avoids it by re-estimating P(z|u) on the remaining pool. Decide whether evoland should
+      correct for it (issue on evoland.plus) or document it.
+- [x] The observed map of Fig. 2 fits the true probabilities better than any of 199 other
+      seeds (`010d-observed-fit-seeds`): chance, the process is fine. Consider a band of
+      true-process draws in panel (a) or a more typical seed.
 - [ ] The `010-verify-*` steps load evoland.plus from a source checkout; switch to the pinned
       package once the experiments move to the renamed `evoland.plus`.
 

@@ -8,8 +8,9 @@ reproduce. Three subcommands, one per check:
           so that the R step can replay them through evoland's allocator.
   patch   clumpy's single-patch grower (Patcher.allocate) on a battery of scenarios, in four
           variants: as shipped, with the connectedness (hollow-fill) step switched off, and
-          each of those with the elongation moments taken about the centroid of the patch
-          including the candidate cell (Mazy 2022, eqs. 3.I.6-3.I.8).
+          each of those with exact elongation moments, about the centroid of the patch
+          including the candidate cell (Mazy 2022, eqs. 3.I.6-3.I.8), where clumpy and the
+          thesis (sec. 3.I.3.3) keep the centroid of the patch without it.
   areas   GaussianPatcher's patch-area draws and the number of cells a patch then gets.
 
 The clumpy code is used verbatim; only the random draws of patch area and elongation are
@@ -105,13 +106,14 @@ def run_usam(in_dir: Path, out_dir: Path) -> None:
 # --------------------------------------------------------------------------------------------
 
 
-def _allocate_thesis_moments(self, lul, lul_origin, j, proba_layer):
+def _allocate_exact_moments(self, lul, lul_origin, j, proba_layer):
     """
     clumpy's Patcher.allocate, copied line for line, except for the second-order moments of
     the candidate patch. clumpy takes them about the centroid of the current patch (xc, yc,
-    without the candidate); Mazy (2022, eqs. 3.I.6-3.I.8) defines them about the centroid of
-    the patch whose elongation is computed, i.e. including the candidate. Lines changed are
-    marked CHANGED.
+    without the candidate), the approximation of Mazy (2022, sec. 3.I.3.3); the definition
+    (eqs. 3.I.6-3.I.8) takes them about the centroid of the patch whose elongation is
+    computed, i.e. including the candidate, as evoland does. Lines changed are marked
+    CHANGED.
     """
     structures = patcher_module.structures
     _convolve = patcher_module._convolve
@@ -204,7 +206,7 @@ def _allocate_thesis_moments(self, lul, lul_origin, j, proba_layer):
     return (len(J_allocated), J_allocated)
 
 
-def _grow(sc, land, ant, proba, hollow_fill: bool, thesis_moments: bool, seed: int):
+def _grow(sc, land, ant, proba, hollow_fill: bool, exact_moments: bool, seed: int):
     patcher = GaussianPatcher(
         area_mean=float(sc["area"]),
         area_cov=0.0,
@@ -224,8 +226,8 @@ def _grow(sc, land, ant, proba, hollow_fill: bool, thesis_moments: bool, seed: i
     elong = float(sc["elongation"])
     # the scenario fixes the patch's area and elongation (no random draw)
     patcher._sample = types.MethodType(lambda self, n: (np.full(n, area), np.full(n, elong)), patcher)
-    if thesis_moments:
-        patcher.allocate = types.MethodType(_allocate_thesis_moments, patcher)
+    if exact_moments:
+        patcher.allocate = types.MethodType(_allocate_exact_moments, patcher)
     lul = LandUseLayer(land.copy())
     lul_origin = LandUseLayer(ant.copy())
     proba_layer = Layer(proba.copy(), label="proba")
@@ -249,8 +251,8 @@ def run_patch(in_dir: Path, out_dir: Path) -> None:
     variants = {
         "clumpy": (True, False),
         "clumpy, no hollow-fill": (False, False),
-        "clumpy, thesis moments": (True, True),
-        "clumpy, no hollow-fill, thesis moments": (False, True),
+        "clumpy, exact moments": (True, True),
+        "clumpy, no hollow-fill, exact moments": (False, True),
     }
     with open(out_dir / "patches.csv", "w", newline="") as f:
         w = csv.writer(f)
@@ -260,15 +262,15 @@ def run_patch(in_dir: Path, out_dir: Path) -> None:
             land = np.array(sc["land"], dtype=np.int64).reshape(shape)
             ant = np.array(sc["ant"], dtype=np.int64).reshape(shape)
             proba = np.array(sc["proba"], dtype=np.float64).reshape(shape)
-            for name, (hollow, thesis) in variants.items():
-                s, cells = _grow(sc, land, ant, proba, hollow, thesis, seed=int(sc["id"]))
+            for name, (hollow, exact) in variants.items():
+                s, cells = _grow(sc, land, ant, proba, hollow, exact, seed=int(sc["id"]))
                 w.writerow([sc["id"], name, s, " ".join(map(str, cells))])
 
 
 def _exact_outcomes(sc, max_states=200000):
     """
     Every patch the grower can produce if ties are resolved in exact arithmetic and each tie
-    may go either way: the grower of `_allocate_thesis_moments` without hollow-fill, but with
+    may go either way: the grower of `_allocate_exact_moments` without hollow-fill, but with
     integer moments. Two candidates tie when they have the same potential and the same
     elongation; the elongation depends on the moments only through D / T^2 (T the trace and D
     the squared eigenvalue gap of the moment matrix, both integers once scaled by m^2), so
@@ -370,7 +372,7 @@ def run_ties(in_dir: Path, out_dir: Path) -> None:
     """
     For the scenarios in in_dir/scenarios.json listed in in_dir/evoland.csv (scenario, cells:
     evoland's patch, 1-based, space-separated), whether evoland's patch is among the patches
-    Mazy's grower can produce under exact-arithmetic ties (`_exact_outcomes`).
+    the grower (exact moments) can produce under exact-arithmetic ties (`_exact_outcomes`).
     """
     scenarios = {int(sc["id"]): sc for sc in json.loads((in_dir / "scenarios.json").read_text())}
     with open(in_dir / "evoland.csv") as f:

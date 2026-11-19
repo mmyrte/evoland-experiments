@@ -27,11 +27,14 @@
 #'    from evoland's normal area draw, for the same mean and standard deviation.
 #'
 #' The iteration of uPAM itself cannot be replayed against clumpy: clumpy's iterative
-#' allocator (`clumpy.allocation.Unbiased.allocate`) does not run (it refers to the undefined
-#' names `features`, `tm` and `mask`), and it differs from Mazy's Fig. 3.2 in what it
-#' iterates (it re-estimates the potentials between passes and does not stop a transition at
-#' its quota). evoland follows the thesis there. Fig. 2 checks the iteration's outcome
-#' statistically (`020-verify-placement.r`).
+#' allocator (`clumpy.allocation.Unbiased.allocate`) does not run in its last version (Mazy's
+#' commit `be4c505` of 2022-11-19 changed its signature to `(luc_layer, Z, tpe_func, ...)` in
+#' an unfinished refactor, while the body still uses the old arguments `features`, `tm` and
+#' `mask`; the version of 2022-10-23, `0497ce4`, runs). The two iterations also differ by
+#' design: clumpy re-estimates the transition probabilities on the remaining pool before every
+#' pass (by default one pivot per pass, at most 1000 passes), evoland keeps the potentials of
+#' its fitted model and only stops exhausted transitions. `010-verify-upam-bias.r` measures
+#' what that costs, `020-verify-placement.r` checks the outcome on Fig. 2.
 #'
 #' **Requirements.** An evoland.plus source checkout (`EVOLAND_PLUS_SRC`, default
 #' `../evoland.plus`; loaded with `pkgload`, its commit is recorded), the repository's uv
@@ -193,10 +196,11 @@ stopifnot(
 #'   neighbours already in the patch is added first, picked at random. evoland does not
 #'   implement it. clumpy is run with and without it (`nb_of_missing_to_fill = -1` disables it).
 #' - **Elongation moments.** Mazy (2022, eqs. 3.I.6-3.I.12) defines the elongation of a patch
-#'   from its second moments about its own centroid. To score a candidate cell, clumpy computes
-#'   the moments of patch-plus-candidate about the centroid of the patch *without* the
-#'   candidate; evoland about the centroid *with* it, as the thesis defines. clumpy is run as
-#'   shipped and with the thesis' moments (`_allocate_thesis_moments` in
+#'   from its second moments about its own centroid. To score a candidate cell, the thesis
+#'   (sec. 3.I.3.3) and clumpy approximate: they take the moments of patch-plus-candidate about
+#'   the centroid of the patch *without* the candidate, "for efficiency". evoland computes the
+#'   exact moments, about the centroid *with* the candidate (running sums make that as cheap).
+#'   clumpy is run as shipped and with exact moments (`_allocate_exact_moments` in
 #'   `clumpy_reference.py`: the shipped function with only those lines changed).
 #' - **No neighbour left.** Without aggregation avoidance, clumpy fails a patch that runs out
 #'   of neighbours of its class; evoland keeps the patch it has grown. With avoidance on, both
@@ -214,7 +218,7 @@ stopifnot(
 #'
 #' Because of the ties, cell-by-cell equality with one implementation is not the right
 #' criterion. The decisive check is therefore exact: `clumpy_reference.py ties` enumerates
-#' every patch Mazy's grower (thesis moments, no hollow-fill) can produce when each exact tie
+#' every patch the grower (exact moments, no hollow-fill) can produce when each exact tie
 #' may go either way, using integer moments and exact fractions, and asks whether evoland's
 #' patch is one of them. Without aggregation avoidance, where evoland keeps a patch that runs
 #' out of neighbours, the enumeration does the same.
@@ -299,7 +303,7 @@ patch_summary <- patches[,
 fwrite(patch_summary, file.path(res_dir, "clumpy-patch-summary.csv"))
 knitr::kable(patch_summary, digits = 3)
 
-#' Is evoland's patch one that Mazy's grower can produce, with ties resolved exactly? Every
+#' Is evoland's patch one that the grower can produce, with ties resolved exactly? Every
 #' scenario, both aggregation settings.
 
 #| label: ties
@@ -309,7 +313,7 @@ ties <- fread(file.path(patch_dir, "ties.csv"))
 patches <- patches[ties, on = "scenario"]
 fwrite(patches, file.path(res_dir, "clumpy-patches.csv"))
 
-thesis_variant <- "clumpy, no hollow-fill, thesis moments"
+thesis_variant <- "clumpy, no hollow-fill, exact moments"
 ties_summary <- patches[variant == thesis_variant,
   .(
     scenarios = .N,
@@ -329,7 +333,7 @@ fwrite(ties_summary, file.path(res_dir, "clumpy-patch-ties.csv"))
 knitr::kable(ties_summary)
 stopifnot(
   "uPAM grower: the tie enumeration was cut off" = patches[, !anyNA(evoland_reachable)],
-  "uPAM grower: evoland grew a patch that Mazy's grower cannot produce" = patches[, all(evoland_reachable)]
+  "uPAM grower: evoland grew a patch that the grower cannot produce" = patches[, all(evoland_reachable)]
 )
 
 #' # Patch areas

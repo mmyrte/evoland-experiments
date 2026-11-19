@@ -38,6 +38,8 @@ root).
 | [`010-learner-comparison.r`](010-learner-comparison.r) | `figures/learner-comparison.{csv,pdf}` | Which learner, feature set and number of calibration periods close the estimation gap |
 | [`010-verify-clumpy.r`](010-verify-clumpy.r) | `results/verification/clumpy-*.csv` | Verification: evoland's uSAM and uPAM grower against the reference clumpy (Python), via [`010-verify-clumpy/`](010-verify-clumpy/) |
 | [`010-verify-greedy-lulcc.r`](010-verify-greedy-lulcc.r) | `results/verification/greedy-lulcc*.csv` | Verification: evoland's greedy allocator against lulcc's Ordered model |
+| [`010-verify-upam-bias.r`](010-verify-upam-bias.r) | `results/verification/upam-bias.csv` | Verification: when uPAM places change in proportion to the potentials (white vs. smooth potentials, patch sizes, aggregation avoidance) |
+| [`010d-observed-fit-seeds.r`](010d-observed-fit-seeds.r) | `results/verification/observed-fit-seeds.csv` | Diagnostic: the fit of Fig. 2's observed change to its true probabilities, over 200 landscape seeds |
 | [`020-verify-placement.r`](020-verify-placement.r) | `results/verification/placement-*.csv` | Verification on Fig. 2's maps: does each allocator place change where its potentials say (Kolmogorov-Smirnov, quantity, cell-wise frequencies) |
 | [`020-validation-metrics.r`](020-validation-metrics.r) | `results/fig2/metrics-*.csv`, `toc.csv` | Every map of Fig. 2 scored with the validation metrics in common use (below) |
 | [`030-fig2-plot.r`](030-fig2-plot.r) | Figs. 2a and 2b, `figures/fig2a-fom.pdf`, `figures/fig2b-ensembles.pdf` | (2a) conventional validation: observed map, one realisation scored cell by cell, its figure of merit; (2b) why ensembles: change frequency, FoM of every realisation with each allocator's Brier skill, where change is placed |
@@ -72,11 +74,16 @@ consumes exactly one uniform per eligible cell, in clumpy's order.
 ### uPAM: the patch grower, with the known differences isolated
 
 uPAM is uSAM's pivot test, a patch grower and an iteration over the shrinking pool (Mazy 2022,
-Fig. 3.2). The iteration cannot be replayed against clumpy: clumpy's iterative allocator
-(`clumpy.allocation.Unbiased.allocate`) does not run (it refers to the undefined names
-`features`, `tm`, `mask`), and it iterates differently from the thesis (it re-estimates the
-potentials between passes and does not stop a transition at its quota). evoland follows the
-thesis. The grower is checked directly: 2000 random 16 × 16 scenarios with a prescribed patch area
+Fig. 3.2). The iteration cannot be replayed against clumpy. clumpy's iterative allocator
+(`clumpy.allocation.Unbiased.allocate`) does not run in its last version: Mazy's commit
+`be4c505` (2022-11-19, in the archived repository) changed its signature to
+`(luc_layer, Z, tpe_func, ...)` in an unfinished refactor, while the body still uses the old
+arguments `features`, `tm` and `mask`; the fork inherited that. The last working version
+(`0497ce4`, 2022-10-23) re-estimates the transition probabilities on the remaining pool before
+every pass, through its Bayes estimator, with one pivot per pass by default and at most 1000
+passes (`n_try`), so it silently stops after 1000 patches per anterior class. evoland keeps the
+potentials of its fitted model and only stops transitions whose quota is met; what that costs is
+measured below (uPAM: when is it unbiased?). The grower is checked directly: 2000 random 16 × 16 scenarios with a prescribed patch area
 (1–16 cells) and elongation (0.31, 0.57, 0.83), other patches of the same step nearby, half with
 aggregation avoidance; a fifth with equal potentials everywhere.
 
@@ -86,7 +93,7 @@ Share of scenarios where clumpy's patch is evoland's, cell by cell (`results/ver
 | --- | --- | --- |
 | as shipped | 0.575 | 0.727 |
 | without the connectedness ("hollow-fill") step | 0.618 | 0.763 |
-| with the thesis' elongation moments | 0.771 | 0.864 |
+| with exact elongation moments | 0.771 | 0.864 |
 | both | 0.893 | 0.937 |
 
 The differences are those of the re-implementation, documented on the fork
@@ -94,11 +101,13 @@ The differences are those of the re-implementation, documented on the fork
 
 1. **Connectedness step.** Mazy's step (iv)–(v) adds a neighbour that is almost enclosed by the
    patch first, at random. evoland does not implement it.
-2. **Elongation moments.** Mazy (2022, eqs. 3.I.6–3.I.12) takes a patch's second moments about
-   its own centroid. To score a candidate, clumpy takes the moments of patch-plus-candidate about
-   the centroid of the patch *without* the candidate. evoland follows the thesis. The variant
-   "thesis moments" ([`_allocate_thesis_moments`](010-verify-clumpy/clumpy_reference.py)) is
-   clumpy's function with only those lines changed.
+2. **Elongation moments.** Mazy (2022, eqs. 3.I.6–3.I.12) defines a patch's elongation from
+   its second moments about its own centroid. To score a candidate, the thesis (sec. 3.I.3.3)
+   and clumpy approximate, "for efficiency": they take the moments of patch-plus-candidate about
+   the centroid of the patch *without* the candidate. evoland computes the exact moments (its
+   running sums make that as cheap). The variant "exact moments"
+   ([`_allocate_exact_moments`](010-verify-clumpy/clumpy_reference.py)) is clumpy's function with
+   only those lines changed.
 3. **No neighbour left.** Without aggregation avoidance, clumpy fails a patch that runs out of
    neighbours of its class; evoland keeps what it has grown (8 of 1000 scenarios).
 4. **Ties.** Candidates that tie in exact arithmetic (mirror images with equal potential) get
@@ -107,7 +116,8 @@ The differences are those of the re-implementation, documented on the fork
 
 With distinct potentials and aggregation avoidance on, clumpy with (1) and (2) aligned gives
 evoland's patch in **800 of 800** scenarios. The decisive check covers all 2000: an exact
-enumeration (integer moments, exact fractions) of every patch Mazy's grower can produce when each
+enumeration (integer moments, exact fractions) of every patch the grower (exact moments, no
+connectedness step) can produce when each
 exact tie may go either way finds evoland's patch among them in **every scenario** (up to 63
 possible patches per scenario when all potentials are equal; `clumpy-patch-ties.csv`).
 
@@ -175,13 +185,67 @@ Against the true probabilities q (panel (e) as drawn; evaluation, not verificati
 maps are rejected in 11 % of cases and its pooled ensemble with p < 0.003: the ensemble
 reproduces the potentials, and the potentials carry the estimation error.
 
-**A caveat on the observed map.** Against q, the observed change has D = 0.013, below every one
-of 2000 simulated draws of the true process (null median 0.031; also below all of 300 draws in a
-separate check). The landscape seed is fixed (`set.seed(1337)`), so it is either chance (roughly
-1 in 10⁴ for a KS statistic this small) or an unintended consequence of tuning the case over many
-iterations. It does not affect the verification above, which does not use the observed map, but
-the paper should not read the observed curve's closeness to the expectation as evidence. The open
-item "replicate over several landscape seeds" (TODO) would settle it.
+**The observed map is a lucky draw, not a bug.** Against q, the observed change has D = 0.013,
+below every one of 2000 simulated draws of the true process (null median 0.031).
+[`010d-observed-fit-seeds.r`](010d-observed-fit-seeds.r) regenerates the landscape for 199
+further seeds (seed 1337 reproduces Fig. 2's observed map exactly). Over those seeds the p-values
+are uniform (KS against the uniform distribution: p = 0.36; 4 % of seeds fall in the upper 5 %
+tail, 5.5 % in the lower), so the process and its true probabilities are consistent. Seed 1337
+has a smaller D than all 199 others (lower-tail p = 0.0025): Fig. 2's observed change happens to
+sit unusually close to its expectation. The verification does not use the observed map, but the
+figure should not suggest that observed change typically looks that close to the expectation: a
+band of draws of the true process in panel (a), or a more typical seed, would show it fairly.
+
+### uPAM: when is it unbiased with respect to the potentials?
+
+uPAM is rejected on Fig. 2. Mazy (2022) proves less than cell-by-cell unbiasedness: the pivot cells
+are unbiased (App. 3.B.2), and so are the patch sizes and elongations if same-step patches do not
+merge (App. 3.D.1.2). The other cells of a patch are not drawn from the potentials: the grower
+adds the best-scoring neighbour, a deterministic choice among the cells next to the patch. That
+the allocated cells as a whole still follow the transition probabilities rests on App. 3.A.2: the
+patch scale Lp = E(σ)^½ is small against the scale Lz over which the explanatory variables change,
+so the potentials are nearly uniform over a patch. The unbiasedness is one in explanatory-variable
+space, at the scale Lz.
+
+[`010-verify-upam-bias.r`](010-verify-upam-bias.r) tests this on a 100 × 100 grid with one
+transition and potentials of the same marginal distribution, either independent per cell
+("white", Lz = 1 cell, Fig. 2's situation in the extreme) or a smooth Gaussian field (correlation
+length ≈ 15 cells); 100 realisations each, KS of the pooled changed cells against the potential
+mass (as in `020-verify-placement.r`), cell by cell and on the potentials averaged over 7 × 7
+cells. Null 95 % quantile of D ≈ 0.008.
+
+| potentials | allocator | D, cell | D, 7 × 7 neighbourhood |
+| --- | --- | --- | --- |
+| white | uSAM | 0.004 (p = 0.51) | 0.005 |
+| white | uPAM, area 1 | 0.011 | 0.008 |
+| white | uPAM, area 4 / 9, merging allowed | 0.130 / 0.206 | 0.008 / 0.011 |
+| white | uPAM, area 4 / 9, avoidance | 0.120 / 0.200 | 0.011 / 0.009 |
+| smooth | uSAM | 0.003 (p = 0.93) | 0.004 |
+| smooth | uPAM, area 1 | 0.016 | 0.016 |
+| smooth | uPAM, area 4 / 9, merging allowed | 0.045 / 0.083 | 0.035 / 0.071 |
+| smooth | uPAM, area 4 / 9, avoidance | 0.046 / 0.030 | 0.052 / 0.035 |
+
+What it shows:
+
+1. **Patches on cell-scale potentials are biased cell by cell, by construction**, and the bias
+   grows with the patch size (white: D 0.13 at area 4, 0.21 at area 9). At the scale of the
+   neighbourhood the same allocations are almost unbiased (D ≈ 0.01): change is placed where the
+   potentials are high *around* a cell. This is the thesis' assumption Lp ≪ Lz at work, and it is
+   why uPAM fails on Fig. 2, whose process changes cells independently.
+2. **The iteration itself has a small bias** that clumpy avoids. Without patches (area 1), uPAM
+   is still rejected (D 0.011–0.016), uSAM is not. By decile of the potential
+   (`upam-bias-deciles.csv`, 300 realisations), uPAM with several passes (batch auto or 1)
+   includes the top decile 3 % below its potential and the middle deciles 2–6 % above; one pass
+   over all candidates (`batch_size = -1`) shows no systematic deviation. Re-drawing pivots from fixed potentials over a shrinking pool is successive sampling,
+   whose inclusion probabilities flatten towards the less probable cells. clumpy counteracts
+   exactly that by re-estimating P(z|u) on the remaining pool before every pass; evoland's
+   documentation says the re-estimation is unnecessary with a fixed fitted model, which this
+   contradicts. The effect is small against the patch effect, but it is an implementation
+   difference in the iteration, not a property of the method.
+3. **Smooth potentials reduce, but do not remove, the patch bias** at this correlation length
+   (Lp/Lz ≈ 0.15–0.2 here): D 0.03–0.08, partly the iteration's (2). Aggregation avoidance helps
+   for large patches (0.030 vs. 0.083 at area 9), where merging otherwise moves change around.
+
 
 ## Figure 2: ensembles vs. single maps
 
