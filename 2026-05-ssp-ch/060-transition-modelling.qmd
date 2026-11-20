@@ -69,31 +69,29 @@ transition, which is what makes `060d` possible.
 
 ```{r}
 #| label: transition-modelling-partial
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+# the fits map the transitions over the daemons while they are set; n_workers = NULL fits serially
+if (!is.null(n_workers)) mirai::daemons(n_workers)
 
 # too naive
 # db$trans_models_t <- db$fit_partial_models(
 #   learner = mlr3::lrn("classif.rpart", predict_type = "prob"),
 #   measures = c("classif.auc", "classif.acc"),
 #   sample_frac = sample_frac,
-#   seed = seed,
-#   cluster = cluster
+#   seed = seed
 # )
 
 db$trans_models_t <- db$fit_partial_models(
   learner = mlr3::lrn("classif.naive_bayes", predict_type = "prob"),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
+  seed = seed
 )
 
 db$trans_models_t <- db$fit_partial_models(
   learner = mlr3::lrn("classif.log_reg", predict_type = "prob"),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
+  seed = seed
 )
 
 db$trans_models_t <- db$fit_partial_models(
@@ -105,13 +103,10 @@ db$trans_models_t <- db$fit_partial_models(
   ),
   measures = c("classif.auc", "classif.acc"),
   sample_frac = sample_frac,
-  seed = seed,
-  cluster = cluster
+  seed = seed
 )
 
-if (!is.null(cluster)) {
-  mirai::stop_cluster(cluster)
-}
+mirai::daemons(0)
 ```
 
 ## Does the forest beat the baseline?
@@ -125,7 +120,7 @@ is worth catching here rather than inferring it from an odd-looking map in `090d
 #| label: transition-modelling-compare
 # crossval_score is a MAP column: one named list per row, e.g. list(classif.auc = 0.83, ...),
 # not a long-format (measure_id, score) pair.
-partial <- db$trans_models_t
+partial <- db$fetch("trans_models_t", id_run = 0L)
 partial[, auc := vapply(
   crossval_score,
   function(s) if (is.null(s[["classif.auc"]])) NA_real_ else as.numeric(s[["classif.auc"]]),
@@ -176,16 +171,14 @@ partial model per transition and refits it on all available data.
 
 ```{r}
 #| label: transition-modelling-full
-cluster <- if (is.null(n_workers)) NULL else mirai::make_cluster(n = n_workers)
+# the fits map the transitions over the daemons while they are set; n_workers = NULL fits serially
+if (!is.null(n_workers)) mirai::daemons(n_workers)
 trans_models_full <- db$fit_full_models(
   select_score = "classif.auc",
-  select_maximize = TRUE,
-  cluster = cluster
+  select_maximize = TRUE
 )
 
-if (!is.null(cluster)) {
-  mirai::stop_cluster(cluster)
-}
+mirai::daemons(0)
 
 db$trans_models_t <- trans_models_full
 ```

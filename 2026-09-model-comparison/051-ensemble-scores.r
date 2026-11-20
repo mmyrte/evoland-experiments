@@ -30,7 +30,6 @@ fom <- fread(file.path(figures_dir, "pie-fom-per-run.csv"))
 members <- unique(fom[, .(id_run, ensemble)])
 
 #| label: data
-db$id_run <- NULL
 anterior <-
   db$fetch("lulc_data_t", where = "id_run = 0 and id_period = 2")[,
     .(id_coord, anterior = id_lulc)

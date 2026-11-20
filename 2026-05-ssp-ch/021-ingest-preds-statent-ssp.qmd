@@ -277,7 +277,12 @@ pred_ids <- db$pred_meta_t[name %in% c("fte_sec1", "fte_sec2", "fte_sec3"), .(id
 stopifnot("run 020-ingest-preds-statent.qmd first" = nrow(pred_ids) == 3L)
 
 observed <-
-  db$pred_data_t[id_run == 0L & id_period == id_period_obs & id_pred %in% pred_ids$id_pred][
+  db$fetch(
+    "pred_data_t",
+    where = glue::glue(
+      "id_run = 0 and id_period = {id_period_obs} and id_pred in ({toString(pred_ids$id_pred)})"
+    )
+  )[
     pred_ids,
     on = "id_pred"
   ][

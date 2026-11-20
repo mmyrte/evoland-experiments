@@ -238,7 +238,7 @@ violation would mean the aggregation or the NoData handling went wrong.
 #| label: ingest-soil-check
 soil_wide <-
   db$pred_meta_t[grepl("^soil_(sand|clay)_", name), .(id_pred, name)][
-    db$pred_data_t[id_period == 0L],
+    db$fetch("pred_data_t", id_run = 0L, where = "id_period = 0"),
     on = "id_pred",
     nomatch = NULL
   ] |>

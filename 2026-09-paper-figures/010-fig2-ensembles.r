@@ -195,7 +195,7 @@ db$generate_neighbor_predictors()
 
 #| label: calibrate
 db$trans_meta_t <- create_trans_meta_t(
-  db$trans_v,
+  db$trans_v(),
   min_cardinality_abs = 10,
   exclude_anterior = 4
 )
@@ -285,13 +285,17 @@ runs <- rbind(
       "calibration base, random forest potentials",
       "observed period 3 (validation only)"
     ),
-    seed = NA_integer_
+    rng_seed = NA_integer_,
+    id_period_eval_start = NA_integer_
   ),
   members[, .(
     id_run,
     parent_id_run = id_run_parent,
     description = paste(label, "realisation", member),
-    seed
+    # allocate() seeds each realisation from rng_seed, and lets it branch off its parent at
+    # period 3, on the parent's potentials and context
+    rng_seed = seed,
+    id_period_eval_start = 3L
   )]
 )
 db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
@@ -303,19 +307,15 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
 
 #| label: allocate
 #| output: false
-for (i in seq_len(nrow(members))) {
-  db$id_run <- members$id_run[i]
-  set.seed(members$seed[i])
-  allocate(
-    db,
-    id_periods = 3,
-    allocator = alloc_clumpy_spec(),
-    select_score = "no.crossval",
-    select_maximize = TRUE,
-    potentials_ancestor = 1L,
-    update_neighbors = FALSE
-  )
-}
+allocate(
+  db,
+  id_periods = 3L,
+  allocator = alloc_clumpy_spec(),
+  select_score = "no.crossval",
+  select_maximize = TRUE,
+  id_run = members$id_run,
+  update_neighbors = FALSE
+)
 
 #' # A deterministic comparator on the same potentials
 #'
@@ -327,8 +327,7 @@ for (i in seq_len(nrow(members))) {
 
 #| label: deterministic
 adjusted_by <- lapply(setNames(learners$id_run_parent, learners$learner), function(id) {
-  db$id_run <- id
-  db$adjusted_trans_pot_v(3L)
+  db$adjusted_trans_pot_v(3L, id_run = id)
 })
 
 greedy_map <- function(adjusted) {
@@ -398,7 +397,6 @@ other_members <- allocators[
   by = .(allocator, offset)
 ][, `:=`(id_run = offset + member, seed = 10000L + offset + member)]
 members[, allocator := "CLUMPY"]
-db$id_run <- NULL
 db$commit(
   as_runs_t(rbind(
     db$runs_t[!id_run %in% other_members$id_run],
@@ -406,8 +404,10 @@ db$commit(
       id_run,
       parent_id_run = 0L,
       description = paste("random forest x", allocator, "realisation", member),
-      seed
-    )]
+      rng_seed = seed,
+      id_period_eval_start = 3L
+    )],
+    fill = TRUE
   )),
   "runs_t",
   method = "overwrite"
@@ -415,19 +415,15 @@ db$commit(
 
 #| label: alloc-dinamica
 #| output: false
-for (i in which(other_members$allocator == "Dinamica")) {
-  db$id_run <- other_members$id_run[i]
-  set.seed(other_members$seed[i])
-  allocate(
-    db,
-    id_periods = 3L,
-    allocator = alloc_dinamica_spec(),
-    select_score = "no.crossval",
-    select_maximize = TRUE,
-    potentials_ancestor = 1L,
-    update_neighbors = FALSE
-  )
-}
+allocate(
+  db,
+  id_periods = 3L,
+  allocator = alloc_dinamica_spec(),
+  select_score = "no.crossval",
+  select_maximize = TRUE,
+  id_run = other_members[allocator == "Dinamica", id_run],
+  update_neighbors = FALSE
+)
 
 #| label: class-probabilities
 viable_trans <- db$trans_meta_t[
@@ -612,7 +608,6 @@ members[, .N, by = allocator]
 #' # Validation
 
 #| label: fom
-db$id_run <- NULL
 fom <- db$figure_of_merit_v(
   id_period_anterior = 2L,
   id_period_post = 3L,

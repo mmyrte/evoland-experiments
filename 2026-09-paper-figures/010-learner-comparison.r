@@ -159,7 +159,6 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   )
   unlink(db_path, recursive = TRUE)
   db <- evoland_db$new(path = db_path)
-  on.exit(db$id_run <- NULL, add = TRUE)
 
   db$lulc_meta_t <- create_lulc_meta_t(list(
     forest = list(pretty_name = "Forest"),
@@ -246,7 +245,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   available_preds <- c(available_static, neighbour_preds)
 
   db$trans_meta_t <- create_trans_meta_t(
-    db$trans_v,
+    db$trans_v(),
     min_cardinality_abs = 10,
     exclude_anterior = 4
   )
@@ -300,7 +299,6 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   # the database), not for the base run. Lineage reads resolve trans_preds_t per
   # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set:
   # the base run holds the available predictors only while they are scored
-  db$id_run <- 0L
   db$trans_preds_t <- as_trans_preds_t(CJ(
     id_run = 0L,
     id_pred = available_preds,
@@ -342,7 +340,6 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
 
   # references: the truth (ceiling), the oracle restricted to viable transitions,
   # the uniform forecast over all four transitions, persistence
-  db$id_run <- id_run_oracle
   db$trans_pot_t <- as_trans_pot_t(
     truth_all[viable, on = .(id_lulc_anterior, class = id_lulc_posterior), nomatch = NULL][,
       .(id_run = id_run_oracle, id_trans, id_period_post = target, id_coord, value = q)
@@ -357,7 +354,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     cbind(
       learner = "oracle, viable transitions",
       stage = "adjusted",
-      score(persist(long_of(db$adjusted_trans_pot_v(target))), bt)
+      score(persist(long_of(db$adjusted_trans_pot_v(target, id_run = id_run_oracle))), bt)
     ),
     cbind(
       learner = "uniform forecast",
@@ -382,7 +379,6 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
 
   results <- rbindlist(lapply(seq_len(nrow(configs)), function(i) {
     cfg <- configs[i]
-    db$id_run <- cfg$id_run
     message(glue::glue(
       "n_grid={n_grid} seed={landscape_seed} n_calib={n_calib}: {cfg$learner} / {cfg$feature_set}"
     ))
@@ -397,7 +393,10 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
         db$trans_preds_t <- trans_preds
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
-          models <- db$fit_full_models(learner = learner_specs[[cfg$learner]]$make())
+          models <- db$fit_full_models(
+            learner = learner_specs[[cfg$learner]]$make(),
+            id_run = cfg$id_run
+          )
         })[["elapsed"]]
         failed <- models[vapply(learner_full, is.null, logical(1L)), id_trans]
         if (length(failed) > 0L) {
@@ -407,12 +406,18 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
         db$predict_trans_pot(
           id_period_post = target,
           select_score = "no.crossval",
-          select_maximize = TRUE
+          select_maximize = TRUE,
+          id_run = cfg$id_run
         )
-        raw <- db$trans_pot_t[id_period_post == target]
+        raw <- db$fetch(
+          "trans_pot_t",
+          id_run = cfg$id_run,
+          where = glue::glue("id_period_post = {target}")
+        )
+        adjusted <- db$adjusted_trans_pot_v(target, id_run = cfg$id_run)
         rbind(
           cbind(stage = "raw", score(persist(long_of(raw)), bt)),
-          cbind(stage = "adjusted", score(persist(long_of(db$adjusted_trans_pot_v(target))), bt))
+          cbind(stage = "adjusted", score(persist(long_of(adjusted)), bt))
         )[, status := "ok"]
       },
       error = function(e) {

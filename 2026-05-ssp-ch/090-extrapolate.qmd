@@ -36,7 +36,6 @@ select_score <- "classif.auc" # must match 06 and 08
 select_maximize <- TRUE
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-db$id_run <- 0L
 
 # Summaries derived from an evoland table inherit its class and print with the wrong header
 # ("Run metadata table" over an area table); strip it. Same helper as in 080.
@@ -45,21 +44,21 @@ plain <- function(x) {
 }
 
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
-lulc_anchor <- db$lulc_data_t[id_period == anchor_period]
+lulc_anchor <- as_lulc_data_t(
+  db$fetch("lulc_data_t", id_run = 0L, where = glue::glue("id_period = {anchor_period}"))
+)
 
 # proof of concept - run extrapolation at the same time as backcast
-db$id_run <- 2100
-d <- db$alloc_params_t
-d[, id_run := 0]
-db$id_run <- 0
-db$alloc_params_t <- d
+d <- db$fetch("alloc_params_t", id_run = 2100L)
+d[, id_run := 0L]
+db$alloc_params_t <- as_alloc_params_t(d)
 stopifnot(
   "no allocation parameters on run 0 - run 080-validate-backcasting.qmd first" =
-    nrow(db$alloc_params_t) > 0L,
+    db$row_count("alloc_params_t", where = "id_run = 0") > 0L,
   "no viable transitions - run 040 and 06" =
     nrow(db$trans_meta_t[is_viable == TRUE]) > 0L,
   "no fitted models - run 060-transition-modelling.qmd first" =
-    nrow(db$trans_models_t) > 0L
+    db$row_count("trans_models_t") > 0L
 )
 ```
 
@@ -105,12 +104,11 @@ that period (it inner-joins potentials to rates) and the transition simply does 
 
 ```{r}
 #| label: extrapolate-periods
-db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
+# without a run, fetch() reads every run's rows as stored
 rates_available <- db$fetch(
   "trans_rates_t",
   where = glue::glue("id_run in ({toString(scenario_runs$id_run)})")
 )
-db$id_run <- 0L
 
 extrap_periods <- sort(db$periods_t[is_extrapolated == TRUE, id_period])
 viable_trans <- db$trans_meta_t[is_viable == TRUE]
@@ -165,7 +163,7 @@ realisation_runs <- scenario_runs[, .(replicate = seq_len(n_replicates)), by = .
   ssp,
   climate_framing,
   replicate,
-  seed = seed + replicate
+  rng_seed = seed + replicate
 )]
 
 # As in 080: re-running replaces this step's own realisations, but never anything else.
@@ -190,7 +188,7 @@ db$commit(
   "overwrite" # adding columns
 )
 realisations <- plain(realisation_runs)[, .(id_run, parent_id_run, ssp, replicate)]
-realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
+realisation_runs[, .(id_run, parent_id_run, ssp, replicate, rng_seed)]
 ```
 
 ## Allocate
@@ -201,21 +199,16 @@ realisation_runs[, .(id_run, parent_id_run, ssp, replicate, seed)]
 realisation_runs <- db$runs_t[kind == "extrapolation realisation"]
 options("evoland.plus.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 10)
-for (i in seq_len(nrow(realisation_runs))) {
-  db$id_run <- realisation_runs$id_run[i]
-
-  set.seed(realisation_runs$seed[i])
-
-  allocate(
-    db,
-    id_periods = alloc_periods,
-    allocator = alloc_clumpy_spec(),
-    select_score = select_score,
-    select_maximize = select_maximize
-  )
-}
+# every realisation in one call: allocate() seeds each period of a run from its rng_seed
+allocate(
+  db,
+  id_periods = alloc_periods,
+  allocator = alloc_clumpy_spec(),
+  select_score = select_score,
+  select_maximize = select_maximize,
+  id_run = realisation_runs$id_run
+)
 future::plan("sequential")
-db$id_run <- 0L
 ```
 
 <!--
@@ -283,7 +276,6 @@ before the quota is met. The scenario under-delivers its own demand, silently.
 
 ```{r}
 #| label: extrapolate-verify
-db$id_run <- NULL
 realised_areas <- db$fetch(
   "lulc_data_t",
   where = glue::glue(
@@ -291,7 +283,6 @@ realised_areas <- db$fetch(
     "and id_period in ({toString(alloc_periods)})"
   )
 )[, .(area_realised = as.numeric(.N)), by = .(id_run, id_period, id_lulc)]
-db$id_run <- 0L
 
 predicted_areas <- rbindlist(lapply(scenario_runs$id_run, function(r) {
   replay <- trans_rate_areas(

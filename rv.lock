@@ -533,7 +533,7 @@ dependencies = [
 
 [[packages]]
 name = "duckdb"
-version = "1.5.5"
+version = "2.0.0"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = [
@@ -569,7 +569,7 @@ dependencies = []
 [[packages]]
 name = "evoland.plus"
 version = "0.1.1.9000"
-source = { git = "https://github.com/ethzplus/evoland.plus/", sha = "ae5c0dd098081b5275ed3784e1d447179ea49b41" }
+source = { git = "https://github.com/ethzplus/evoland.plus/", sha = "2ca273c6f92308999f53029f01b7f457ed458fae" }
 force_source = true
 dependencies = [
     "DBI",
@@ -577,9 +577,10 @@ dependencies = [
     "Rcpp",
     "curl",
     { name = "data.table", requirement = "(>= 1.15.0)" },
-    { name = "duckdb", requirement = "(>= 1.5.5)" },
+    { name = "duckdb", requirement = "(>= 2.0.0)" },
     "glue",
     "mlr3",
+    { name = "mirai", requirement = "(>= 2.3.0)" },
     "mlr3filters",
     "paradox",
     "qs2",

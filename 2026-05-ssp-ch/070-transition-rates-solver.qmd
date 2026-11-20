@@ -20,7 +20,9 @@ db <- evoland_db$new(path = "ssp-ch.evolanddb")
 # not from the spreadsheet's init_area.
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 step_periods <- db$periods_t[is_extrapolated == TRUE, id_period]
-lulc_data <- db$lulc_data_t[id_period == anchor_period]
+lulc_data <- as_lulc_data_t(
+  db$fetch("lulc_data_t", id_run = 0L, where = glue::glue("id_period = {anchor_period}"))
+)
 
 stopifnot(
   "no extrapolated periods" = length(step_periods) > 0L,
@@ -110,7 +112,7 @@ ssp5  glacier         102992    60817       20598       "constant change"
 
 init_area <- db$get_query(glue::glue(
   "select id_lulc, count(*) as area
-     from {db$get_read_expr('lulc_data_t')}
+     from {db$get_read_expr('lulc_data_t', id_run = 0L)}
      where id_period = {anchor_period}
      group by id_lulc"
 ))
@@ -277,7 +279,6 @@ for (s in ssp_list) {
     db$trans_rates_t <- solutions[[s]]$trans_rates_t(run)[id_trans != deglaciation_id]
   }
 }
-db$id_run <- NULL
 db$trans_rates_t
 ```
 

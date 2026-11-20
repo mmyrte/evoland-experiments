@@ -38,7 +38,6 @@ dir.create(work_dir, recursive = TRUE)
 source("python-env.r")
 python <- project_python()
 
-db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE]
 trans_preds <- db$trans_preds_t[id_run == 0L & is_selected == TRUE]
 
@@ -115,7 +114,6 @@ kde_pot <-
     on = .(id_lulc_anterior, id_lulc_posterior),
     nomatch = NULL
   ]
-db$id_run <- id_run_kde
 db$commit(
   as_trans_pot_t(kde_pot[, .(
     id_run = id_run_kde,

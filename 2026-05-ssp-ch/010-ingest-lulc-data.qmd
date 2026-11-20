@@ -254,7 +254,8 @@ db$lulc_data_t <- lulc_data_t
 
 id_coord_keep <- lulc_data_t[, id_coord]
 db$commit(
-  x = db$coords_t[id_coord %in% id_coord_keep],
+  # $fetch(): a table binding would time out on the full grid
+  x = as_coords_t(db$fetch("coords_t"))[id_coord %in% id_coord_keep],
   table_name = "coords_t",
   method = "overwrite"
 )

@@ -10,7 +10,7 @@
 #' allocator, but with the run set up by evoland; `015` runs it as shipped for reference.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (`potentials_ancestor = 1L`), the allocation parameters and the demand, so the estimators
+#' (it branches off at period 3, `id_period_eval_start`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials; the realisations differ only in the allocator's randomness.
 
 #| label: setup
@@ -25,24 +25,23 @@ members[, .N, by = estimator]
 
 #| label: allocate
 #| output: false
-for (i in seq_len(nrow(members))) {
-  db$id_run <- members$id_run[i]
-  set.seed(members$seed[i])
-  timed(
-    "evoland-dinamica",
-    "allocate",
-    allocate(
-      db,
-      id_periods = 3L,
-      allocator = alloc_dinamica_spec(),
-      select_score = "no.crossval",
-      select_maximize = TRUE,
-      potentials_ancestor = 1L,
-      update_neighbors = FALSE
-    ),
-    note = paste0("id_run=", members$id_run[i])
-  )
-}
+# all realisations in one call: each branches off its estimator run at period 3 (its
+# id_period_eval_start), so it allocates on the estimator's potentials and context, seeded from
+# its rng_seed; see 010-evoland-calibrate.r
+timed(
+  "evoland-dinamica",
+  "allocate",
+  allocate(
+    db,
+    id_periods = 3L,
+    allocator = alloc_dinamica_spec(),
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    id_run = members$id_run,
+    update_neighbors = FALSE
+  ),
+  note = paste0(nrow(members), " realisations")
+)
 # one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
 db$checkpoint()
 
@@ -51,7 +50,6 @@ db$checkpoint()
 #' Quick look; `050-compare` tabulates all pairings together.
 
 #| label: fom
-db$id_run <- NULL
 db$figure_of_merit_v(
   id_period_anterior = 2L,
   id_period_post = 3L,

@@ -51,7 +51,6 @@ select_maximize <- TRUE
 id_run_backcast_base <- 2000L # 2000-2999 is free: 001 uses 0/100/1xxx, 071 uses max+n
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-db$id_run <- 0L
 
 # evoland's table classes carry print methods that assume their own columns; a summary derived
 # from one inherits the class and prints nonsense ("Rate range: [Inf, -Inf]"). Strip it.
@@ -137,7 +136,6 @@ as parameter sensitivity here. Widening the sweep is a change to `perturb_alloc_
 
 ```{r}
 #| label: backcast-alloc-params
-db$id_run <- 0L
 best_estimate <- db$create_alloc_params_t()
 
 perturb_alloc_params <- function(params, sd) {
@@ -302,7 +300,6 @@ only needs a table of `id_coord` and the class to impose.
 #| label: backcast-glacier
 id_lulc_glacier <- db$lulc_meta_t[name == "glacier", id_lulc]
 
-db$id_run <- 0L
 glacier_change <- db$get_query(
   "select post.id_period, post.id_coord, post.id_lulc
   from {lulc_read_expr} ant
@@ -311,7 +308,7 @@ glacier_change <- db$get_query(
   where post.id_period in ({backcast_periods*})
     and ant.id_lulc != post.id_lulc
     and (ant.id_lulc in ({id_lulc_glacier*}) or post.id_lulc in ({id_lulc_glacier*}))",
-  lulc_read_expr = db$get_read_expr("lulc_data_t")
+  lulc_read_expr = db$get_read_expr("lulc_data_t", id_run = 0L)
 )
 
 # impose `assignments` (id_coord, id_lulc) on an allocated lulc_data_t, by reference
@@ -342,7 +339,7 @@ replicate_runs <- db$runs_t[kind == "backcast replicate", .(id_run, seed)]
 options("evoland.plus.use_prefetch_predict" = TRUE)
 future::plan(future.mirai::mirai_multisession, workers = 20)
 for (i in seq_len(nrow(replicate_runs))) {
-  db$id_run <- replicate_runs$id_run[i]
+  id_run_replicate <- replicate_runs$id_run[i]
   set.seed(replicate_runs$seed[i])
 
   for (id_period_post in backcast_periods) {
@@ -352,6 +349,7 @@ for (i in seq_len(nrow(replicate_runs))) {
       allocator = alloc_clumpy_spec(),
       select_score = select_score,
       select_maximize = select_maximize,
+      id_run = id_run_replicate,
       potentials_ancestor = as.integer(id_period_post == min(backcast_periods))
     )
     apply_deterministic_change(
@@ -361,12 +359,11 @@ for (i in seq_len(nrow(replicate_runs))) {
     db$commit(lulc_simulated, "lulc_data_t", method = "upsert")
     # the next period's prediction reads the neighbour predictors of this one
     if (id_period_post != max(backcast_periods)) {
-      db$upsert_new_neighbors(id_period_post)
+      db$upsert_new_neighbors(id_period_post, id_run = id_run_replicate)
     }
   }
 }
 future::plan("sequential")
-db$id_run <- 0L
 ```
 
 Each replicate still writes its own `trans_pot_t` slice for every period after the first (one
@@ -383,17 +380,16 @@ from there. Here we only check that every allocated run covers the observed grid
 allocated_runs <- db$runs_t[kind == "backcast replicate", .(id_run)]
 run_param_set <- member_runs[, .(id_run, param_set)] # parameter set of each replicate
 
-db$id_run <- NULL # the lineage-free read expression spans all runs
+# without a run, the read expression spans every run's rows as stored
 simulated_cells <- db$get_query(
   "select id_run, count(*)::integer as n_cells from {lulc_read_expr}
   where id_run in ({allocated_runs$id_run*}) and id_period = {id_period_final}
   group by id_run",
   lulc_read_expr = db$get_read_expr("lulc_data_t")
 )
-db$id_run <- 0L
 n_observed_cells <- db$get_query(
   "select count(*)::integer from {lulc_read_expr} where id_period = {id_period_final}",
-  lulc_read_expr = db$get_read_expr("lulc_data_t"),
+  lulc_read_expr = db$get_read_expr("lulc_data_t", id_run = 0L),
   as_atomic = TRUE
 )
 
@@ -417,13 +413,11 @@ scenario rates, where it is worse because the LP pushes rates above the historic
 ```{r}
 #| label: backcast-quantity
 realised_counts <- rbindlist(lapply(allocated_runs$id_run, function(r) {
-  db$id_run <- r
-  db$get_obs_trans_rates()[
+  db$get_obs_trans_rates(id_run = r)[
     id_period %in% backcast_periods,
     .(id_run = r, id_period, id_trans, count_realised = count)
   ]
 }))
-db$id_run <- 0L
 
 quantity <- merge(
   CJ(
@@ -465,13 +459,11 @@ simulation cannot score well by placing much more or much less change than was o
 
 ```{r}
 #| label: backcast-fuzzy
-db$id_run <- 0L
 rast_initial <- db$lulc_data_as_rast(id_period = id_period_initial)
 rast_obs_final <- db$lulc_data_as_rast(id_period = id_period_final)
 
 fuzzy_one_run <- function(id_run_member) {
-  db$id_run <- id_run_member
-  rast_sim <- db$lulc_data_as_rast(id_period = id_period_final)
+  rast_sim <- db$lulc_data_as_rast(id_period = id_period_final, id_run = id_run_member)
 
   res <- mapply(
     FUN = calc_transition_similarity,
@@ -498,8 +490,6 @@ fuzzy_one_run <- function(id_run_member) {
 }
 
 fuzzy_dt <- rbindlist(lapply(allocated_runs$id_run, fuzzy_one_run))
-
-db$id_run <- 0L
 
 fuzzy_by_param <- run_param_set[fuzzy_dt, on = "id_run"][, .(
   similarity_sd = sd(similarity, na.rm = TRUE),
@@ -696,14 +686,13 @@ for (p in param_sets) {
   ))
 }
 
-db$id_run <- 0L
 db$alloc_params_t <- as_alloc_params_t(merge(
   copy(alloc_params[id_run == best_param])[, id_run := 0L][, -"similarity"],
   fuzzy_by_param[param_set == best_param, .(id_trans, similarity)],
   by = "id_trans",
   all.x = TRUE
 ))
-db$alloc_params_t
+db$fetch("alloc_params_t", id_run = 0L)
 ```
 
 > **Why not `eval_alloc_params_t()`?** The upstream helper does exactly this loop —

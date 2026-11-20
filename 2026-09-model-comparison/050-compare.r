@@ -91,7 +91,6 @@ ensembles
 #' CLUinPy parents are registered here), so every map is read through the same lineage machinery.
 
 #| label: import
-db$id_run <- NULL
 runs <- db$runs_t
 imported <- members[!is.na(maps)]
 parents_missing <- setdiff(imported$id_run_parent, runs$id_run)
@@ -114,7 +113,7 @@ db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
 # The maps share the grid of the input rasters, so their values are read by cell index rather
 # than through extract_using_coords_t()'s point geometries (ethzplus/evoland-plus#86), and each
 # ensemble is committed at once: one snapshot per ensemble instead of one per map.
-coords <- db$coords_t
+coords <- as_coords_t(db$fetch("coords_t"))
 cells <- terra::cellFromXY(read_lu(1991), as.matrix(coords[, .(lon, lat)]))
 for (dir_maps in unique(imported$maps)) {
   ensemble_maps <- imported[maps == dir_maps]
@@ -136,7 +135,6 @@ for (dir_maps in unique(imported$maps)) {
 #' # Figure of merit
 
 #| label: fom
-db$id_run <- NULL
 fom <-
   db$figure_of_merit_v(
     id_period_anterior = 2L,
@@ -221,7 +219,6 @@ dcast(
 #' Every run stores its complete 1999 map, so the query reads the runs' own rows.
 
 #| label: disagreement
-db$id_run <- NULL
 crosstab <- function(id_run_anterior, id_run_post, id_period_anterior) {
   db$lulc_crosstab_v(
     id_period_anterior = id_period_anterior,

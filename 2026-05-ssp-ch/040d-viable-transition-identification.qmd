@@ -20,7 +20,7 @@ lulc_meta <- db$lulc_meta_t
 
 trans_investigate <-
   create_trans_meta_t(
-    db$trans_v,
+    db$trans_v(),
     # min_frequency_rel = 0.005, # this is what ben used: the change rate relative
     # to the other change rates
     # min_cardinality_abs = 5000, # what might be appropriate value?

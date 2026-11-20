@@ -82,11 +82,11 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
 
 #| label: prune-coords
 db$commit(
-  x = db$coords_t[id_coord %in% lulc_long[, unique(id_coord)]],
+  x = as_coords_t(db$fetch("coords_t"))[id_coord %in% lulc_long[, unique(id_coord)]],
   table_name = "coords_t",
   method = "overwrite"
 )
-nrow(db$coords_t)
+db$row_count("coords_t")
 
 #' The three explanatory factors of the lulcc case are static (period 0). evoland adds its
 #' neighbourhood predictors on top: the number of cells of each class within 150 m (the eight
@@ -119,7 +119,7 @@ db$pred_meta_t
 #' # Calibration on 1985 → 1991
 
 #| label: trans-meta
-db$trans_meta_t <- create_trans_meta_t(db$trans_v, min_cardinality_abs = 20)
+db$trans_meta_t <- create_trans_meta_t(db$trans_v(), min_cardinality_abs = 20)
 db$trans_meta_t
 db$set_full_trans_preds()
 
@@ -138,19 +138,24 @@ runs <- rbind(
     id_run = c(0L, id_run_observed),
     parent_id_run = c(NA_integer_, 0L),
     description = c("calibration base: observed 1985, 1991", "observed 1999 (validation only)"),
-    seed = NA_integer_
+    rng_seed = NA_integer_,
+    id_period_eval_start = NA_integer_
   ),
   estimators[, .(
     id_run,
     parent_id_run = 0L,
     description = paste(label, "potentials"),
-    seed = NA_integer_
+    rng_seed = NA_integer_,
+    id_period_eval_start = NA_integer_
   )],
   members[, .(
     id_run,
     parent_id_run = id_run_parent,
     description = paste(estimator_label, "x", allocator_label, "realisation", member),
-    seed
+    # allocate() seeds each realisation from rng_seed, and lets it branch off its estimator
+    # run where it starts allocating
+    rng_seed = seed,
+    id_period_eval_start = 3L
   )]
 )
 db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
@@ -168,7 +173,6 @@ db$lulc_data_t <- as_lulc_data_t(lulc_long[
 #' run 0 and inherited by every realisation.
 
 #| label: alloc-params
-db$id_run <- 0L
 db$alloc_params_t <- timed("evoland", "alloc_params", db$create_alloc_params_t())
 db$alloc_params_t
 
@@ -251,14 +255,14 @@ learner_by <- list(
 evoland_estimators <- estimators[estimator %in% names(learner_by)]
 modeled_by <- list()
 for (i in seq_len(nrow(evoland_estimators))) {
-  db$id_run <- evoland_estimators$id_run[i]
+  id_run_estimator <- evoland_estimators$id_run[i]
   learner_id <- evoland_estimators$estimator[i]
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),
-    # the estimator runs inherit run 0's predictor sets; the models are written under the
-    # active run
-    db$fit_full_models(learner = learner_by[[learner_id]])
+    # the estimator runs inherit run 0's predictor sets; the models are written under
+    # id_run_estimator
+    db$fit_full_models(learner = learner_by[[learner_id]], id_run = id_run_estimator)
   )
   modeled_by[[learner_id]] <- unique(trans_models$id_trans[
     !vapply(trans_models$learner_full, is.null, logical(1L))
@@ -271,7 +275,8 @@ for (i in seq_len(nrow(evoland_estimators))) {
       id_period_post = 3L,
       select_score = "no.crossval",
       select_maximize = TRUE,
-      force = TRUE
+      force = TRUE,
+      id_run = id_run_estimator
     )
   )
 }

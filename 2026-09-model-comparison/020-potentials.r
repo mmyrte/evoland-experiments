@@ -32,7 +32,6 @@ maps_dir <- file.path(outputs_dir, "maps")
 suitability_dir <- file.path(outputs_dir, "suitability")
 dir.create(suitability_dir, recursive = TRUE, showWarnings = FALSE)
 
-db$id_run <- 0L
 viable <- db$trans_meta_t[is_viable == TRUE][order(id_lulc_anterior, id_lulc_posterior)]
 viable
 anterior <-
@@ -50,7 +49,7 @@ if ("woe" %in% estimators$estimator) {
   # numeric layer names do not survive extraction, hence the prefixes
   names(woe) <- paste0("trans_", viable$id_trans)
   woe_pot <-
-    extract_using_coords_t(woe, db$coords_t)[,
+    extract_using_coords_t(woe, as_coords_t(db$fetch("coords_t")))[,
       .(
         id_trans = as.integer(sub("trans_", "", as.character(layer))),
         id_coord,
@@ -70,7 +69,6 @@ if ("woe" %in% estimators$estimator) {
       !is.na(value)
     ]
   id_run_woe <- estimators[estimator == "woe", id_run]
-  db$id_run <- id_run_woe
   db$commit(
     as_trans_pot_t(woe_pot[, .(
       id_run = id_run_woe,
@@ -90,9 +88,8 @@ if ("woe" %in% estimators$estimator) {
 #| label: class-probabilities
 #| fig-asp: 0.35
 class_probabilities <- function(id_run) {
-  db$id_run <- id_run
   adjusted <-
-    db$adjusted_trans_pot_v(3L)[
+    db$adjusted_trans_pot_v(3L, id_run = id_run)[
       viable[, .(id_trans, id_lulc_anterior, id_lulc_posterior)],
       on = "id_trans",
       nomatch = NULL

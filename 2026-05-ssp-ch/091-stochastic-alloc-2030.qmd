@@ -39,7 +39,6 @@ member_id_factor <- 1000L # id_run = scenario * factor + member
 member_kind <- "stochastic single-period member"
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
-db$id_run <- 0L
 
 anchor_period <- max(db$periods_t[is_extrapolated == FALSE & id_period > 0, id_period])
 target_period <- min(db$periods_t[is_extrapolated == TRUE, id_period])
@@ -116,9 +115,7 @@ stopifnot(
 )
 
 alloc_param_run <- min(runs[kind == "backcast parameters", id_run])
-db$id_run <- alloc_param_run
-unperturbed_params <- db$alloc_params_t
-db$id_run <- 0L
+unperturbed_params <- as_alloc_params_t(db$fetch("alloc_params_t", id_run = alloc_param_run))
 
 stopifnot(
   "the unperturbed parameter run carries no rows" = nrow(unperturbed_params) > 0L,
@@ -129,7 +126,6 @@ stopifnot(
 for (r in scenario_runs$id_run) {
   db$alloc_params_t <- as_alloc_params_t(copy(unperturbed_params)[, id_run := r])
 }
-db$id_run <- 0L
 
 message("Using allocation parameters from run ", alloc_param_run)
 unperturbed_params[, .(id_trans, mean_patch_size, patch_elongation, frac_expander)]
@@ -143,14 +139,13 @@ simply does not happen. `070` writes these.
 
 ```{r}
 #| label: alloc2030-rates
-db$id_run <- NULL # fetch() is lineage-filtered; NULL reads across runs
+# without a run, fetch() reads every run's rows as stored
 rates <- db$fetch(
   "trans_rates_t",
   where = glue::glue(
     "id_run in ({toString(scenario_runs$id_run)}) and id_period = {target_period}"
   )
 )
-db$id_run <- 0L
 
 viable_trans <- db$trans_meta_t[is_viable == TRUE]
 
@@ -161,7 +156,7 @@ viable_trans <- db$trans_meta_t[is_viable == TRUE]
 # the potentials so their mean over the anterior class equals it.
 anchor_class_sizes <- db$get_query(glue::glue(
   "select id_lulc as id_lulc_anterior, count(*) as n_ant
-     from {db$get_read_expr('lulc_data_t')}
+     from {db$get_read_expr('lulc_data_t', id_run = 0L)}
      where id_period = {anchor_period}
      group by id_lulc"
 ))
@@ -254,8 +249,6 @@ once merged.
 #| output: false
 options("evoland.plus.use_prefetch_predict" = TRUE)
 for (i in seq_len(nrow(members))) {
-  db$id_run <- members$id_run[i]
-
   # The `seed` argument was removed upstream in abc8bca; CLUMPY draws through R's RNG
   # (src/alloc_clumpy.cpp), so seeding here is exact and per-member reproducible.
   set.seed(members$seed[i])
@@ -266,12 +259,12 @@ for (i in seq_len(nrow(members))) {
     allocator = alloc_clumpy_spec(),
     select_score = select_score,
     select_maximize = select_maximize,
+    id_run = members$id_run[i],
     potentials_ancestor = 1L
   )
 
   db$commit(lulc_member, "lulc_data_t", method = "upsert")
 }
-db$id_run <- 0L
 ```
 
 ## Gather the ensemble into change intensity
@@ -282,8 +275,7 @@ against the observed anchor and returns one row per (SSP, cell).
 
 ```{r}
 #| label: alloc2030-gather
-db$id_run <- NULL # read across runs
-
+# the read expressions below carry no run, so they span every run's rows as stored
 intensity <- db$get_query(glue::glue(
   r"{
   with sim as (
@@ -313,7 +305,6 @@ intensity <- db$get_query(glue::glue(
   group by m.ssp, s.id_coord
   }"
 ))
-db$id_run <- 0L
 
 intensity[, p_changed := n_changed / n_members]
 

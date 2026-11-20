@@ -155,7 +155,7 @@ run_experiment <- function(n_grid, seed = 1337L) {
   db$generate_neighbor_predictors()
 
   db$trans_meta_t <- create_trans_meta_t(
-    db$trans_v,
+    db$trans_v(),
     min_cardinality_abs = 10,
     exclude_anterior = 4
   )
@@ -239,8 +239,13 @@ run_experiment <- function(n_grid, seed = 1337L) {
     members[, .(
       id_run,
       parent_id_run = id_parent,
-      description = paste("member of", id_parent)
-    )]
+      description = paste("member of", id_parent),
+      # allocate() seeds each member from rng_seed, and lets it branch off its group at
+      # period 3, on the group's potentials and allocation parameters
+      rng_seed = seed + id_run,
+      id_period_eval_start = 3L
+    )],
+    fill = TRUE
   )
   db$commit(as_runs_t(runs), "runs_t", method = "overwrite")
   db$lulc_data_t <- as_lulc_data_t(lulc_long[
@@ -249,20 +254,24 @@ run_experiment <- function(n_grid, seed = 1337L) {
   ])
 
   # potentials per group parent: estimated ones predicted once, oracle ones injected
-  db$id_run <- groups[1, id_parent]
   db$predict_trans_pot(
     id_period_post = 3L,
     select_score = "no.crossval",
-    select_maximize = TRUE
+    select_maximize = TRUE,
+    id_run = groups[1, id_parent]
   )
-  estimated_raw <- db$trans_pot_t[id_period_post == 3L]
+  estimated_raw <- db$fetch(
+    "trans_pot_t",
+    id_run = groups[1, id_parent],
+    where = "id_period_post = 3"
+  )
   oracle_raw <- truth_viable[, .(
     id_trans,
     id_period_post = 3L,
     id_coord,
     value = q
   )]
-  params_base <- db$alloc_params_t
+  params_base <- db$fetch("alloc_params_t", id_run = groups[1, id_parent])
   for (g in seq_len(nrow(groups))) {
     id_g <- groups[g, id_parent]
     raw <- if (groups[g, potentials] == "estimated") {
@@ -290,8 +299,7 @@ run_experiment <- function(n_grid, seed = 1337L) {
 
   # adjusted (allocation-ready) potentials per potential source
   adjusted_of <- function(id_g) {
-    db$id_run <- id_g
-    db$adjusted_trans_pot_v(3L)[
+    db$adjusted_trans_pot_v(3L, id_run = id_g)[
       viable,
       on = "id_trans",
       nomatch = NULL
@@ -303,20 +311,15 @@ run_experiment <- function(n_grid, seed = 1337L) {
   )
 
   # allocate the ensembles
-  for (r in seq_len(nrow(members))) {
-    db$id_run <- members[r, id_run]
-    set.seed(seed + members[r, id_run])
-    allocate(
-      db,
-      id_periods = 3,
-      allocator = alloc_clumpy_spec(),
-      select_score = "no.crossval",
-      select_maximize = TRUE,
-      potentials_ancestor = 1L,
-      update_neighbors = FALSE
-    )
-  }
-  db$id_run <- NULL
+  allocate(
+    db,
+    id_periods = 3L,
+    allocator = alloc_clumpy_spec(),
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    id_run = members$id_run,
+    update_neighbors = FALSE
+  )
   simulated <- db$fetch(
     "lulc_data_t",
     where = glue::glue("id_run > 1000 and id_period = 3")

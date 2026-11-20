@@ -40,7 +40,6 @@ checks <-
     )
   ]
 
-db$id_run <- NULL
 runs <- db$runs_t
 db$commit(
   as_runs_t(rbind(
@@ -49,8 +48,10 @@ db$commit(
       id_run = id_run_greedy,
       parent_id_run = id_run_parent,
       description = paste(label, "x greedy, ordered (check against lulcc Ordered)"),
-      seed = NA_integer_
-    )]
+      # branches off its estimator run at period 3, to allocate on its potentials and context
+      id_period_eval_start = 3L
+    )],
+    fill = TRUE
   )),
   "runs_t",
   method = "overwrite"
@@ -62,7 +63,6 @@ db$commit(
 #' into other; within a class by anterior class.
 
 #| label: order
-db$id_run <- 0L
 priority <- db$trans_meta_t[is_viable == TRUE]
 priority <-
   priority[
@@ -72,18 +72,15 @@ priority[, .(id_trans, id_lulc_anterior, id_lulc_posterior)]
 
 #| label: allocate
 #| output: false
-for (i in seq_len(nrow(checks))) {
-  db$id_run <- checks$id_run_greedy[i]
-  allocate(
-    db,
-    id_periods = 3L,
-    allocator = alloc_greedy_spec(arbitration = "ordered", order = priority$id_trans),
-    select_score = "no.crossval",
-    select_maximize = TRUE,
-    potentials_ancestor = 1L,
-    update_neighbors = FALSE
-  )
-}
+allocate(
+  db,
+  id_periods = 3L,
+  allocator = alloc_greedy_spec(arbitration = "ordered", order = priority$id_trans),
+  select_score = "no.crossval",
+  select_maximize = TRUE,
+  id_run = checks$id_run_greedy,
+  update_neighbors = FALSE
+)
 
 #' # Comparison
 #'
@@ -91,7 +88,6 @@ for (i in seq_len(nrow(checks))) {
 #' the share of all cells, and of the cells either of them changed, in the same class.
 
 #| label: compare
-db$id_run <- NULL
 fom <-
   db$figure_of_merit_v(
     id_period_anterior = 2L,
@@ -104,11 +100,12 @@ fom <-
 
 # a run's 1999 map, read through its lineage
 map_1999 <- function(id_run) {
-  db$id_run <- id_run
-  db$fetch("lulc_data_t", where = "id_period = 3")[, .(id_coord, id_lulc)]
+  db$fetch("lulc_data_t", id_run = id_run, where = "id_period = 3")[, .(id_coord, id_lulc)]
 }
-db$id_run <- 0L
-anterior <- db$fetch("lulc_data_t", where = "id_period = 2")[, .(id_coord, anterior = id_lulc)]
+anterior <- db$fetch("lulc_data_t", id_run = 0L, where = "id_period = 2")[, .(
+  id_coord,
+  anterior = id_lulc
+)]
 agreement <- rbindlist(lapply(seq_len(nrow(checks)), function(i) {
   maps <-
     anterior[

@@ -45,15 +45,15 @@ grrf_learner$param_set$values <- list(
 #   importance = "impurity"
 # )
 
-cluster <- mirai::make_cluster(n = 21) # roughly ceiling(n_viable/2)
+# get_pred_filter_score() maps the transitions over the daemons while they are set
+mirai::daemons(21) # roughly ceiling(n_viable/2)
 
 imp_scored <- db$get_pred_filter_score(
   filter = mlr3filters::FilterImportance$new(learner = grrf_learner),
-  cluster = cluster,
   ordered_pred_data = TRUE # deterministic across re-runs,
 )
 
-mirai::stop_cluster(cluster)
+mirai::daemons(0)
 
 imp_scored[, importance_rel := importance / max(importance, na.rm = TRUE), by = id_trans]
 ```

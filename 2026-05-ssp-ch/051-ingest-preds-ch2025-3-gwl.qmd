@@ -145,7 +145,7 @@ pred_names <-
   if (!is.null(pred_names_override)) {
     pred_names_override
   } else {
-    selected <- db$trans_preds_t[is_selected == TRUE]
+    selected <- db$fetch("trans_preds_t", id_run = 0L)[is_selected == TRUE]
     if (nrow(selected) == 0L) {
       stop(
         "trans_preds_t is empty - run 050-covariate-selection.qmd first, or set ",
