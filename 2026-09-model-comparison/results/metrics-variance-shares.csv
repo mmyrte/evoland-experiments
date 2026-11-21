@@ -1,33 +1,33 @@
 metric,component,share
-figure_of_merit,estimator,0.402297534707169
-figure_of_merit,allocator,0.38063970012988
-figure_of_merit,interaction,0.124438580167607
-figure_of_merit,replicate (stochastic),0.0926241849953434
-ksim,estimator,0.301781816880593
-ksim,allocator,0.551117595862591
-ksim,interaction,0.0728705247219243
-ksim,replicate (stochastic),0.0742300625348916
-fks_r2,estimator,0.530059331744485
-fks_r2,allocator,0.208282693517278
-fks_r2,interaction,0.164331129979125
-fks_r2,replicate (stochastic),0.0973268447591125
-fks_r4,estimator,0.531751136879894
-fks_r4,allocator,0.176255950205426
-fks_r4,interaction,0.201815431054298
-fks_r4,replicate (stochastic),0.0901774818603819
-similarity_of_differences,estimator,0.226064678037467
-similarity_of_differences,allocator,0.66394962150272
-similarity_of_differences,interaction,0.0938239163752368
-similarity_of_differences,replicate (stochastic),0.0161617840845764
-allocation_disagreement,estimator,0.00210236415188317
-allocation_disagreement,allocator,0.99059187095403
-allocation_disagreement,interaction,0.00464600530122384
-allocation_disagreement,replicate (stochastic),0.0026597595928628
-auc_transition,estimator,0.392759460399223
-auc_transition,allocator,0.381829124686052
-auc_transition,interaction,0.107736696668001
-auc_transition,replicate (stochastic),0.117674718246725
-brier,estimator,0.0034823955032328
-brier,allocator,0.991966608419531
-brier,interaction,0.00195598742479029
-brier,replicate (stochastic),0.00259500865244557
+figure_of_merit,estimator,0.393615740134015
+figure_of_merit,allocator,0.37289213623274
+figure_of_merit,interaction,0.126453484632977
+figure_of_merit,replicate (stochastic),0.107038639000267
+ksim,estimator,0.292512969320083
+ksim,allocator,0.543424402890101
+ksim,interaction,0.074770532324131
+ksim,replicate (stochastic),0.0892920954656845
+fks_r2,estimator,0.547947752750419
+fks_r2,allocator,0.18494010206782
+fks_r2,interaction,0.154359933340131
+fks_r2,replicate (stochastic),0.112752211841629
+fks_r4,estimator,0.575916432701327
+fks_r4,allocator,0.137905596260762
+fks_r4,interaction,0.188722040524864
+fks_r4,replicate (stochastic),0.0974559305130477
+similarity_of_differences,estimator,0.218476169202476
+similarity_of_differences,allocator,0.674602990352189
+similarity_of_differences,interaction,0.0896718171469689
+similarity_of_differences,replicate (stochastic),0.0172490232983667
+allocation_disagreement,estimator,0.00205339836742342
+allocation_disagreement,allocator,0.9904835496118
+allocation_disagreement,interaction,0.00458116358793037
+allocation_disagreement,replicate (stochastic),0.00288188843284632
+auc_transition,estimator,0.38460385854599
+auc_transition,allocator,0.37062172488989
+auc_transition,interaction,0.108722512833803
+auc_transition,replicate (stochastic),0.136051903730317
+brier,estimator,0.00337644441861924
+brier,allocator,0.991850379775025
+brier,interaction,0.00193827845590005
+brier,replicate (stochastic),0.00283489735045549
