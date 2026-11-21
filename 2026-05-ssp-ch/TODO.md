@@ -111,7 +111,7 @@ http, which some proxies refuse; if `evoland_db$new()` fails with a 403 on
 
 ## Feature selection
 
-- [ ] **Sensitivity-check the parameters.** `grrf_gamma`, `num.trees`, `max.depth` and
+- [ ] **Sensitivity-check the parameters.** `grrf_gamma`, `grrf_lambda`, `num.trees`, `max.depth` and
       `importance_rel_cut` (currently 0.2) are reasoned but not justified against this data.
       Re-run across a small grid and report how far the retained set moves.
       (`050-covariate-selection.qmd`)
