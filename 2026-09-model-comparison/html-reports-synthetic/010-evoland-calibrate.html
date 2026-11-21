@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: evoland-plus set-up and calibration</title>
 <style>
@@ -2236,7 +2236,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2342,14 +2342,14 @@ Index: &lt;is_extrapolated&gt;
 <p>As in <code>2026-05-ssp-ch/010-ingest-lulc-data.qmd</code>, <code>coords_t</code> is restricted to the coordinates that carry land use: the PIE study area covers 53 % of its bounding rectangle, and the rest would only carry empty neighbourhoods and predictors along.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> db<span class="sc">$</span>coords_t[id_coord <span class="sc">%in%</span> lulc_long[, <span class="fu">unique</span>(id_coord)]],</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">as_coords_t</span>(db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;coords_t&quot;</span>))[id_coord <span class="sc">%in%</span> lulc_long[, <span class="fu">unique</span>(id_coord)]],</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_name =</span> <span class="st">&quot;coords_t&quot;</span>,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 98181</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(db<span class="sc">$</span>coords_t)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">row_count</span>(<span class="st">&quot;coords_t&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 98181</code></pre>
 </div>
@@ -2357,26 +2357,32 @@ Index: &lt;is_extrapolated&gt;
 <p>The three explanatory factors of the lulcc case are static (period 0). evoland adds its neighbourhood predictors on top: the number of cells of each class within 150 m (the eight adjacent cells) and between 150 and 500 m.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>pred_meta_t <span class="ot">&lt;-</span> <span class="fu">create_pred_meta_t</span>(<span class="fu">list</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_001 =</span> <span class="fu">list</span>(<span class="at">pretty_name =</span> <span class="cf">if</span> (pie_dataset <span class="sc">==</span> <span class="st">&quot;pie&quot;</span>) <span class="st">&quot;Elevation&quot;</span> <span class="cf">else</span> <span class="st">&quot;Accessibility&quot;</span>, <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span>),</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_002 =</span> <span class="fu">list</span>(<span class="at">pretty_name =</span> <span class="cf">if</span> (pie_dataset <span class="sc">==</span> <span class="st">&quot;pie&quot;</span>) <span class="st">&quot;Slope&quot;</span> <span class="cf">else</span> <span class="st">&quot;Site quality&quot;</span>, <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span>),</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_003 =</span> <span class="fu">list</span>(<span class="at">pretty_name =</span> <span class="st">&quot;Distance to built land 1985&quot;</span>, <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span>)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>pred_data_t <span class="ot">&lt;-</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extract_using_coords_t</span>(ef, db<span class="sc">$</span>coords_minimal)[,</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    .(</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>      id_coord,</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_run =</span> <span class="dv">0</span>L,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_period =</span> <span class="dv">0</span>L,</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_pred =</span> <span class="fu">match</span>(<span class="fu">as.character</span>(layer), <span class="fu">names</span>(ef)),</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>      value</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  ] <span class="sc">|&gt;</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_pred_data_t</span>()</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="fu">timed</span>(<span class="st">&quot;evoland&quot;</span>, <span class="st">&quot;neighbours&quot;</span>, {</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">set_neighbors</span>(<span class="at">max_distance =</span> <span class="dv">500</span>, <span class="at">distance_breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">150</span>, <span class="dv">500</span>), <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">generate_neighbor_predictors</span>()</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_001 =</span> <span class="fu">list</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">pretty_name =</span> <span class="cf">if</span> (pie_dataset <span class="sc">==</span> <span class="st">&quot;pie&quot;</span>) <span class="st">&quot;Elevation&quot;</span> <span class="cf">else</span> <span class="st">&quot;Accessibility&quot;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_002 =</span> <span class="fu">list</span>(</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">pretty_name =</span> <span class="cf">if</span> (pie_dataset <span class="sc">==</span> <span class="st">&quot;pie&quot;</span>) <span class="st">&quot;Slope&quot;</span> <span class="cf">else</span> <span class="st">&quot;Site quality&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">ef_003 =</span> <span class="fu">list</span>(<span class="at">pretty_name =</span> <span class="st">&quot;Distance to built land 1985&quot;</span>, <span class="at">data_type =</span> <span class="st">&quot;float&quot;</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>pred_data_t <span class="ot">&lt;-</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extract_using_coords_t</span>(ef, db<span class="sc">$</span>coords_minimal)[,</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    .(</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>      id_coord,</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_run =</span> <span class="dv">0</span>L,</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_period =</span> <span class="dv">0</span>L,</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_pred =</span> <span class="fu">match</span>(<span class="fu">as.character</span>(layer), <span class="fu">names</span>(ef)),</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>      value</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  ] <span class="sc">|&gt;</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_pred_data_t</span>()</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="fu">timed</span>(<span class="st">&quot;evoland&quot;</span>, <span class="st">&quot;neighbours&quot;</span>, {</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">set_neighbors</span>(<span class="at">max_distance =</span> <span class="dv">500</span>, <span class="at">distance_breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">150</span>, <span class="dv">500</span>), <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">generate_neighbor_predictors</span>()</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Computed 7738700 neighbor relationships in 1 chunk(s)</code></pre>
 </div>
@@ -2388,8 +2394,6 @@ Index: &lt;is_extrapolated&gt;
  | Catalog: sqlite:2026-09-model-comparison/pie-synthetic.evolanddb/catalog.sqlite
  | Data Path: 2026-09-model-comparison/pie-synthetic.evolanddb/data/
  | Read Only: FALSE
- | Active Run: 0
- | Lineage: 0
 
 Tables Present:
   coords_t, lulc_data_t, lulc_meta_t, neighbors_t, periods_t, pred_data_t,
@@ -2397,19 +2401,19 @@ Tables Present:
 
 DB Methods:
   checkpoint, commit, delete_from, execute, fetch, get_query, get_read_expr,
-  get_table_metadata, list_tables, next_id, row_count, transaction
+  get_table_metadata, interpolate_sql, list_tables, next_id, row_count,
+  transaction
 
 Public Methods:
-  add_predictor, adjusted_trans_pot_v, create_alloc_params_t, figure_of_merit_v,
-  fit_full_models, fit_partial_models, generate_neighbor_predictors,
-  get_crossval_plots, get_obs_trans_rates, get_pred_filter_score,
-  lulc_crosstab_v, lulc_data_as_rast, pred_wide_predict_v, pred_wide_train_v,
-  predict_trans_pot, set_full_trans_preds, set_neighbors, set_report,
-  upsert_new_neighbors
+  add_predictor, adjusted_trans_pot_v, brier_score_v, create_alloc_params_t,
+  figure_of_merit_v, fit_full_models, fit_partial_models,
+  generate_neighbor_predictors, get_crossval_plots, get_obs_trans_rates,
+  get_pred_filter_score, lulc_crosstab_v, lulc_data_as_rast, pred_wide_predict_v,
+  pred_wide_train_v, predict_trans_pot, set_full_trans_preds, set_neighbors,
+  set_report, trans_v, upsert_new_neighbors
 
 Active Bindings:
-  coords_minimal, extent, id_run, lulc_meta_long_v, pred_sources_v, run_lineage,
-  trans_v</code></pre>
+  coords_minimal, extent, lulc_meta_long_v, pred_sources_v</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>pred_meta_t</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -2434,7 +2438,7 @@ Key: &lt;name&gt;
 <section id="calibration-on-1985-1991" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Calibration on 1985 → 1991</h1>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>trans_meta_t <span class="ot">&lt;-</span> <span class="fu">create_trans_meta_t</span>(db<span class="sc">$</span>trans_v, <span class="at">min_cardinality_abs =</span> <span class="dv">20</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>trans_meta_t <span class="ot">&lt;-</span> <span class="fu">create_trans_meta_t</span>(db<span class="sc">$</span><span class="fu">trans_v</span>(), <span class="at">min_cardinality_abs =</span> <span class="dv">20</span>)</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>trans_meta_t</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Transition Metadata Table
@@ -2471,22 +2475,27 @@ Key: &lt;id_lulc_anterior, id_lulc_posterior&gt;
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run =</span> <span class="fu">c</span>(<span class="dv">0</span>L, id_run_observed),</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> <span class="fu">c</span>(<span class="cn">NA_integer_</span>, <span class="dv">0</span>L),</span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">c</span>(<span class="st">&quot;calibration base: observed 1985, 1991&quot;</span>, <span class="st">&quot;observed 1999 (validation only)&quot;</span>),</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">seed =</span> <span class="cn">NA_integer_</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  estimators[, .(</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> <span class="dv">0</span>L,</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(label, <span class="st">&quot;potentials&quot;</span>),</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">seed =</span> <span class="cn">NA_integer_</span></span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>  )],</span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>  members[, .(</span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> id_run_parent,</span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(estimator_label, <span class="st">&quot;x&quot;</span>, allocator_label, <span class="st">&quot;realisation&quot;</span>, member),</span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>    seed</span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>  )]</span>
-<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(<span class="fu">as_runs_t</span>(runs), <span class="st">&quot;runs_t&quot;</span>, <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">rng_seed =</span> <span class="cn">NA_integer_</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_eval_start =</span> <span class="cn">NA_integer_</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>  estimators[, .(</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> <span class="dv">0</span>L,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(label, <span class="st">&quot;potentials&quot;</span>),</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">rng_seed =</span> <span class="cn">NA_integer_</span>,</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_eval_start =</span> <span class="cn">NA_integer_</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>  )],</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>  members[, .(</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> id_run_parent,</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(estimator_label, <span class="st">&quot;x&quot;</span>, allocator_label, <span class="st">&quot;realisation&quot;</span>, member),</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># allocate() seeds each realisation from rng_seed, and lets it branch off its estimator</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># run where it starts allocating</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">rng_seed =</span> seed,</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_eval_start =</span> <span class="dv">3</span>L</span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>  )]</span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(<span class="fu">as_runs_t</span>(runs), <span class="st">&quot;runs_t&quot;</span>, <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 417</code></pre>
 </div>
@@ -2538,8 +2547,7 @@ Key: &lt;id_lulc_anterior, id_lulc_posterior&gt;
 <h1 data-number="5"><span class="header-section-number">5</span> Allocation parameters</h1>
 <p>Patch size, variance and isometry, and the expander fraction, estimated on 1985 → 1991 at run 0 and inherited by every realisation.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="dv">0</span>L</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>alloc_params_t <span class="ot">&lt;-</span> <span class="fu">timed</span>(<span class="st">&quot;evoland&quot;</span>, <span class="st">&quot;alloc_params&quot;</span>, db<span class="sc">$</span><span class="fu">create_alloc_params_t</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>alloc_params_t <span class="ot">&lt;-</span> <span class="fu">timed</span>(<span class="st">&quot;evoland&quot;</span>, <span class="st">&quot;alloc_params&quot;</span>, db<span class="sc">$</span><span class="fu">create_alloc_params_t</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Computing allocation parameters for 4 transitions across 1 periods...</code></pre>
 </div>
@@ -2561,9 +2569,9 @@ Key: &lt;id_run, id_trans&gt;
    id_run id_trans mean_patch_size patch_size_variance patch_elongation
     &lt;int&gt;    &lt;int&gt;           &lt;num&gt;               &lt;num&gt;            &lt;num&gt;
 1:      0        1        1.005714         0.005714286      0.005714286
-2:      0        2        1.121315         0.152121764      0.098015519
-3:      0        3        1.020408         0.020197770      0.020408163
-4:      0        4        1.082988         0.087286353      0.075227980
+2:      0        2        1.066882         0.081915000      0.056566398
+3:      0        3        1.010101         0.010101010      0.010101010
+4:      0        4        1.045394         0.048738782      0.041181975
    patch_isometry frac_expander frac_patcher
             &lt;num&gt;         &lt;num&gt;        &lt;num&gt;
 1:              2     0.5014164    0.4985836
@@ -2666,19 +2674,19 @@ Key: &lt;id_run, id_period, id_trans&gt;
 <span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="co"># the estimators fitted in evoland; Weights of Evidence comes from Dinamica (015, 020)</span></span>
 <span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>evoland_estimators <span class="ot">&lt;-</span> estimators[estimator <span class="sc">%in%</span> <span class="fu">names</span>(learner_by)]</span>
-<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>trans_preds_base <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_preds_t</span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>trans_preds_base <span class="ot">&lt;-</span> db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;trans_preds_t&quot;</span>, <span class="at">id_run =</span> <span class="dv">0</span>L)</span>
 <span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>modeled_by <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(evoland_estimators))) {</span>
-<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> evoland_estimators<span class="sc">$</span>id_run[i]</span>
+<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a>  id_run_estimator <span class="ot">&lt;-</span> evoland_estimators<span class="sc">$</span>id_run[i]</span>
 <span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a>  learner_id <span class="ot">&lt;-</span> evoland_estimators<span class="sc">$</span>estimator[i]</span>
-<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># the estimator&#39;s run holds the base run&#39;s selection; fit_full_models() reads the active run&#39;s</span></span>
+<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># the estimator&#39;s run holds the base run&#39;s selection; fit_full_models() reads that run&#39;s</span></span>
 <span id="cb38-24"><a href="#cb38-24" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span>trans_preds_t <span class="ot">&lt;-</span> <span class="fu">as_trans_preds_t</span>(</span>
-<span id="cb38-25"><a href="#cb38-25" aria-hidden="true" tabindex="-1"></a>    trans_preds_base[is_selected <span class="sc">==</span> <span class="cn">TRUE</span>, .(<span class="at">id_run =</span> db<span class="sc">$</span>id_run, id_pred, id_trans)]</span>
+<span id="cb38-25"><a href="#cb38-25" aria-hidden="true" tabindex="-1"></a>    trans_preds_base[is_selected <span class="sc">==</span> <span class="cn">TRUE</span>, .(<span class="at">id_run =</span> id_run_estimator, id_pred, id_trans)]</span>
 <span id="cb38-26"><a href="#cb38-26" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb38-27"><a href="#cb38-27" aria-hidden="true" tabindex="-1"></a>  trans_models <span class="ot">&lt;-</span> <span class="fu">timed</span>(</span>
 <span id="cb38-28"><a href="#cb38-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;evoland&quot;</span>,</span>
 <span id="cb38-29"><a href="#cb38-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">&quot;fit_&quot;</span>, learner_id),</span>
-<span id="cb38-30"><a href="#cb38-30" aria-hidden="true" tabindex="-1"></a>    db<span class="sc">$</span><span class="fu">fit_full_models</span>(<span class="at">learner =</span> learner_by[[learner_id]])</span>
+<span id="cb38-30"><a href="#cb38-30" aria-hidden="true" tabindex="-1"></a>    db<span class="sc">$</span><span class="fu">fit_full_models</span>(<span class="at">learner =</span> learner_by[[learner_id]], <span class="at">id_run =</span> id_run_estimator)</span>
 <span id="cb38-31"><a href="#cb38-31" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb38-32"><a href="#cb38-32" aria-hidden="true" tabindex="-1"></a>  modeled_by[[learner_id]] <span class="ot">&lt;-</span> <span class="fu">unique</span>(trans_models<span class="sc">$</span>id_trans[</span>
 <span id="cb38-33"><a href="#cb38-33" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">vapply</span>(trans_models<span class="sc">$</span>learner_full, is.null, <span class="fu">logical</span>(<span class="dv">1</span>L))</span>
@@ -2691,12 +2699,34 @@ Key: &lt;id_run, id_period, id_trans&gt;
 <span id="cb38-40"><a href="#cb38-40" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
 <span id="cb38-41"><a href="#cb38-41" aria-hidden="true" tabindex="-1"></a>      <span class="at">select_score =</span> <span class="st">&quot;no.crossval&quot;</span>,</span>
 <span id="cb38-42"><a href="#cb38-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">select_maximize =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb38-43"><a href="#cb38-43" aria-hidden="true" tabindex="-1"></a>      <span class="at">force =</span> <span class="cn">TRUE</span></span>
-<span id="cb38-44"><a href="#cb38-44" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb38-45"><a href="#cb38-45" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb38-46"><a href="#cb38-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb38-43"><a href="#cb38-43" aria-hidden="true" tabindex="-1"></a>      <span class="at">force =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb38-44"><a href="#cb38-44" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_run =</span> id_run_estimator</span>
+<span id="cb38-45"><a href="#cb38-45" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb38-46"><a href="#cb38-46" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb38-47"><a href="#cb38-47" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Fitting full models for 4 transitions...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Predicting transition potential for 4 transitions</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Predicting transition 1/4 (id_trans=1)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Predicting transition 2/4 (id_trans=2)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Predicting transition 3/4 (id_trans=3)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Predicting transition 4/4 (id_trans=4)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Fitting full models for 4 transitions...</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Growing trees.. Progress: 95%. Estimated remaining time: 1 seconds.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Predicting transition potential for 4 transitions</code></pre>
@@ -2731,25 +2761,7 @@ Key: &lt;id_run, id_period, id_trans&gt;
 <div class="cell-output cell-output-stderr">
 <pre><code>Predicting transition 4/4 (id_trans=4)</code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Fitting full models for 4 transitions...</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Predicting transition potential for 4 transitions</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Predicting transition 1/4 (id_trans=1)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Predicting transition 2/4 (id_trans=2)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Predicting transition 3/4 (id_trans=3)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Predicting transition 4/4 (id_trans=4)</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>modeled_by</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>modeled_by</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$log_reg
 [1] 1 2 3 4
