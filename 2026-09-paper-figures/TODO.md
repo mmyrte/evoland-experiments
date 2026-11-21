@@ -31,8 +31,12 @@ Open:
       Suspects: ranger threading, tie-breaking in the ranking, RNG state consumed by set-up code.
       On the current pin (`3bc7856`), two runs of `010-learner-comparison` are bit-identical, and
       Fig. 2's CLUMPY, CLUE-S and CLUMondo numbers reproduce the last render; only Dinamica
-      (fresh seed per run) moves. Not yet checked: two runs of `010-fig2-ensembles` against each
-      other.
+      (fresh seed per run) moves. Two runs of `010-fig2-ensembles` (main's code on `2ca273c`,
+      this branch on `a9236fb`) give identical CLUMPY, CLUE-S, CLUMondo and rank-and-fill maps.
+- [ ] Rerun `010-fig2-ensembles` with Dinamica EGO: the render on `a9236fb` reused the
+      Dinamica maps of `d1d7794` (`FIG2_REUSE_DINAMICA`, `scalars.csv`).
+- [ ] `rv.lock` still locks evoland.plus `2ca273c`: regenerate it for the pin `a9236fb`
+      (`rv` was not available where the pin was moved).
 - [ ] Decide whether the mock-up stays synthetic or moves to a real Arealstatistik extent once
       the comparison pipeline exists.
 - [ ] Decide how to present the patch finding: estimated patch sizes from a neighbourhood-driven
@@ -74,8 +78,8 @@ Open:
 
 - [ ] uPAM's iteration re-draws pivots from fixed potentials over the shrinking pool, which
       flattens inclusion towards less probable cells (`010-verify-upam-bias`, deciles). clumpy
-      avoids it by re-estimating P(z|u) on the remaining pool. Decide whether evoland should
-      correct for it (issue on evoland.plus) or document it.
+      avoids it by re-estimating P(z|u) on the remaining pool. evoland documents it since
+      `a9236fb` (`alloc_clumpy_spec()`, "not yet implemented"); decide whether to correct it.
 - [x] The observed map of Fig. 2 fits the true probabilities better than any of 199 other
       seeds (`010d-observed-fit-seeds`): chance, the process is fine. Consider a band of
       true-process draws in panel (a) or a more typical seed.

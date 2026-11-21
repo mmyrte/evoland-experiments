@@ -218,7 +218,7 @@ db$trans_meta_t <- trans_meta
 alloc_params_estimated <- db$create_alloc_params_t()
 alloc_params_estimated
 # The synthetic process changes cells independently, so single-cell allocation (uSAM) is the
-# allocator that matches it. The estimated "patches" (mean 1.1-1.2 cells) are clusters induced
+# allocator that matches it. The estimated "patches" (mean 1.0-1.1 cells by rook adjacency) are clusters induced
 # by the neighbourhood terms of the process. Allocating with them (uPAM) moves change onto
 # less probable neighbours: a logistic-regression ensemble (nearly true potentials) then put
 # 28 % of its change in the top 5 % of true probabilities instead of the 36 % a sampler of the
@@ -414,19 +414,75 @@ db$commit(
   method = "overwrite"
 )
 
+#' Dinamica EGO draws its own seed and cannot be replayed, so its realisations differ from render
+#' to render. Where Dinamica EGO is not installed (`check_dinamica()`), setting
+#' `FIG2_REUSE_DINAMICA=true` imports the Dinamica maps of the previous render from
+#' `results/fig2/` instead of allocating them, so that the other allocators can be rerun; it
+#' stops if the landscape differs from the one those maps were allocated on. The import is
+#' reported below; without the variable the step stops.
+
 #| label: alloc-dinamica
 #| output: false
-allocate(
-  db,
-  id_periods = 3L,
-  allocator = alloc_dinamica_spec(),
-  select_score = "no.crossval",
-  select_maximize = TRUE,
-  id_run = other_members[allocator == "Dinamica", id_run],
-  update_neighbors = FALSE
-)
+dinamica_members <- other_members[allocator == "Dinamica"]
+dinamica_missing <- check_dinamica(quiet = TRUE)$required
+reuse_dinamica <- length(dinamica_missing) > 0L &&
+  tolower(Sys.getenv("FIG2_REUSE_DINAMICA")) %in% c("true", "1", "yes")
+if (length(dinamica_missing) > 0L && !reuse_dinamica) {
+  stop(
+    "Dinamica EGO cannot run: ", toString(dinamica_missing),
+    "; set FIG2_REUSE_DINAMICA=true to reuse the Dinamica maps in results/fig2/",
+    call. = FALSE
+  )
+}
+if (reuse_dinamica) {
+  prev_dir <- "2026-09-paper-figures/results/fig2"
+  prev_cells <- as.data.table(arrow::read_parquet(file.path(prev_dir, "cells.parquet")))
+  prev_runs <- fread(file.path(prev_dir, "runs.csv"))[allocator == "Dinamica"]
+  stopifnot(
+    "the previous Dinamica maps were allocated on another landscape" = {
+      identical(
+        prev_cells[order(id_coord), as.integer(anterior)],
+        lulc_long[id_period == 2L][order(id_coord), as.integer(id_lulc)]
+      )
+    },
+    "the previous render has other Dinamica runs" = setequal(prev_runs$id_run, dinamica_members$id_run)
+  )
+  prev_changes <- as.data.table(arrow::read_parquet(file.path(prev_dir, "changes.parquet")))[
+    id_run %in% dinamica_members$id_run
+  ]
+  db$commit(
+    as_lulc_data_t(
+      CJ(id_run = dinamica_members$id_run, id_coord = prev_cells$id_coord)[
+        prev_cells[, .(id_coord, anterior)],
+        on = "id_coord"
+      ][prev_changes, on = .(id_run, id_coord), anterior := i.simulated][,
+        .(id_run, id_coord, id_period = 3L, id_lulc = as.integer(anterior))
+      ]
+    ),
+    "lulc_data_t",
+    method = "upsert"
+  )
+} else {
+  allocate(
+    db,
+    id_periods = 3L,
+    allocator = alloc_dinamica_spec(),
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    id_run = dinamica_members$id_run,
+    update_neighbors = FALSE
+  )
+}
 
-#' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.1-1.2
+#| label: dinamica-source
+if (reuse_dinamica) {
+  cat(
+    "Dinamica EGO not installed (", toString(dinamica_missing), "): its", nrow(dinamica_members),
+    "maps were imported from the previous render in results/fig2/, not allocated.\n"
+  )
+}
+
+#' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.0-1.1
 #' cells on average) instead of single cells: what a modeller gets with the default patch
 #' estimates. The parameters are switched for these runs only and restored afterwards.
 #' "uPAM merging" is the same with `avoid_aggregation = FALSE`: by default (clumpy's
@@ -679,9 +735,7 @@ fom_null <- mean(fom$figure_of_merit_null)
 
 simulated_all <- db$fetch(
   "lulc_data_t",
-  where = glue::glue(
-    "id_run in ({paste(members$id_run, collapse = ', ')}) and id_period = 3"
-  )
+  where = db$interpolate_sql("id_run in ({members$id_run*}) and id_period = 3")
 )[, .(id_run, id_coord, simulated = id_lulc)][
   members[, .(id_run, learner, allocator)],
   on = "id_run"
@@ -711,7 +765,10 @@ knitr::kable(
 #'
 #' Forecasts compared, per learner: the ensemble frequency (with the fair
 #' correction for a finite ensemble, Ferro 2014), the adjusted potentials the
-#' allocator samples from, the deterministic map and single realisations.
+#' allocator samples from, the deterministic map and single realisations. The
+#' ensembles and single realisations are runs in the database and are scored by
+#' evoland's `db$brier_score_v()`; the other forecasts are not runs and are scored
+#' here, with the same definition.
 #' References: the true probabilities, persistence, and the uniform forecast.
 #' The latter knows the quantity of change but not its location: every cell of
 #' an anterior class gets the same probability for each transition, the
@@ -756,16 +813,11 @@ persist <- function(trans_p) {
 observed_p <- complete_p(maps[, .(id_coord, class = observed, p = 1)])[,
   .(id_coord, class, o = p)
 ]
-brier <- function(f, n_members = NA_integer_) {
+# the forecasts that are not runs in the database (potentials, the deterministic map, the
+# references) are scored here; the ensembles of runs by evoland's brier_score_v() below
+brier <- function(f) {
   d <- complete_p(f)[observed_p, on = .(id_coord, class)]
-  cell <- d[,
-    .(
-      multi = sum((p - o)^2),
-      noise = if (is.na(n_members)) 0 else sum(p * (1 - p)) / (n_members - 1)
-    ),
-    by = id_coord
-  ]
-  cell[, mean(multi - noise)]
+  d[, .(multi = sum((p - o)^2)), by = id_coord][, mean(multi)]
 }
 potentials_long <- function(adjusted) {
   adjusted[viable, on = "id_trans", nomatch = NULL][,
@@ -773,19 +825,37 @@ potentials_long <- function(adjusted) {
   ]
 }
 
+# Every allocator's realisations are runs with a map of their own for period 3: evoland scores
+# their ensemble frequency (fair Brier score, Ferro 2014) and each realisation on its own (an
+# ensemble of one), over the cells whose class has a viable transition, against the observed
+# map in run `id_run_observed`.
+ensemble_runs <- lapply(split(members$id_run, members$allocator), as.integer)
+brier_ensembles <- db$brier_score_v(
+  id_period_anterior = 2L,
+  id_period_post = 3L,
+  id_run_reference = id_run_observed,
+  ensembles = ensemble_runs
+)
+brier_single <- db$brier_score_v(
+  id_period_anterior = 2L,
+  id_period_post = 3L,
+  id_run_reference = id_run_observed,
+  ensembles = setNames(as.list(members$id_run), members$id_run)
+)[, id_run := as.integer(ensemble)][members[, .(id_run, allocator)], on = "id_run"]
+stopifnot(
+  "brier_score_v() scored other cells than the local forecasts" = {
+    all(c(brier_ensembles$n_cells, brier_single$n_cells) == length(eligible))
+  }
+)
+
 scores <- rbindlist(c(
   lapply(levels(members$allocator), function(a) {
-    sims <- simulated_all[allocator == a]
-    draws <- sims[, .(bs = brier(.SD[, .(id_coord, class = simulated, p = 1)])), by = id_run]
     data.table(
       learner = a,
       forecast = c("ensemble frequency (fair)", "single realisation (median)"),
       brier = c(
-        brier(
-          sims[, .(p = .N / n_realisations), by = .(id_coord, class = simulated)],
-          n_realisations
-        ),
-        median(draws$bs)
+        brier_ensembles[ensemble == a, brier_fair],
+        brier_single[allocator == a, median(brier)]
       )
     )
   }),
@@ -814,7 +884,16 @@ scores <- rbindlist(c(
     )
   ))
 ))
-scores[, skill := 1 - brier / scores[forecast == "uniform forecast", brier]]
+brier_uniform <- scores[forecast == "uniform forecast", brier]
+# brier_score_v()'s reference is the same uniform forecast (the observed shares of each class's
+# transitions), as long as every observed transition is viable
+stopifnot(
+  "the uniform forecast differs from brier_score_v()'s reference" = {
+    unmodelled_change > 0 ||
+      isTRUE(all.equal(brier_ensembles$brier_reference, rep(brier_uniform, nrow(brier_ensembles))))
+  }
+)
+scores[, skill := 1 - brier / brier_uniform]
 knitr::kable(scores, digits = 4)
 
 #' # Where change is placed: the bias of a deterministic map
@@ -935,9 +1014,9 @@ knitr::kable(bias_tab, digits = 3)
 #' | `viable.csv` | the modelled transitions, `from`, `to` |
 #' | `fom.csv` | figure of merit and components per run (evoland's `figure_of_merit_v()`) |
 #' | `fom-ensemble.csv` | per allocator, from the mean counts |
-#' | `brier.csv` | the multiclass Brier scores and skills above |
+#' | `brier.csv` | the multiclass Brier scores and skills above (ensembles and realisations from `db$brier_score_v()`) |
 #' | `bias.csv`, `cdf.csv` | panel (e): shares in the top 5 %, and the curves (median, 5 % and 95 % per allocator, observed, rank-and-fill) |
-#' | `scalars.csv` | `n_realisations`, `fom_null`, `unmodelled_change` |
+#' | `scalars.csv` | `n_realisations`, `fom_null`, `unmodelled_change`, `dinamica_maps` (`allocated`, or `reused` from the previous render) |
 
 #| label: write-results
 res_dir <- "2026-09-paper-figures/results/fig2"
@@ -1045,7 +1124,9 @@ fwrite(
     n_realisations = n_realisations,
     n_window = n_window,
     fom_null = fom_null,
-    unmodelled_change = unmodelled_change
+    unmodelled_change = unmodelled_change,
+    # "reused": the Dinamica maps come from the previous render (FIG2_REUSE_DINAMICA)
+    dinamica_maps = if (reuse_dinamica) "reused" else "allocated"
   ),
   file.path(res_dir, "scalars.csv")
 )

@@ -4,10 +4,8 @@
 #' number-sections: true
 #' ---
 #'
-#' Sourced by `010-skill-attribution.r` and `010-learner-comparison.r`, so that
-#' the process is defined in one place. Rendered on its own, it shows one
-#' synthetic landscape and its first two steps. `010-fig2-ensembles.r` still
-#' carries its own copy of the same process; keep the two in step.
+#' Sourced by the `010` steps, so that the process is defined in one place.
+#' Rendered on its own, it shows one synthetic landscape and its first two steps.
 
 #| label: shared-setup
 #| output: false
@@ -145,6 +143,12 @@ make_landscape <- function(template_rast, drivers) {
 #'
 #' A forecast is a long table (id_coord, class, p) over the cells that can
 #' change; omitted classes get p = 0, and persistence is the remainder.
+#' `score()` gives the realised Brier score against the observed map and, since
+#' the true probabilities `q` are known, the distance to the truth and the
+#' expected score. The realised score of an ensemble of runs in the database
+#' is evoland's `db$brier_score_v()`; `score()` is for the forecasts that are
+#' not runs (potentials, true probabilities, references), and for the
+#' distance and expected score, which need `q`.
 
 #| label: scores
 brier_tables <- function(maps, eligible, classes, truth) {

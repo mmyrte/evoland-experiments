@@ -1,238 +1,241 @@
 forecast,hits_false_alarms,hits,threshold
 CLUMPY ensemble,0,0,Inf
-CLUMPY ensemble,1,1,0.94
-CLUMPY ensemble,2,2,0.93
+CLUMPY ensemble,1,1,0.95
+CLUMPY ensemble,2,2,0.94
 CLUMPY ensemble,3,3,0.92
-CLUMPY ensemble,4,4,0.89
+CLUMPY ensemble,4,4,0.9
 CLUMPY ensemble,5,5,0.88
-CLUMPY ensemble,6,6,0.85
-CLUMPY ensemble,7,7,0.84
+CLUMPY ensemble,8,8,0.84
 CLUMPY ensemble,10,10,0.83
-CLUMPY ensemble,11,11,0.82
+CLUMPY ensemble,12,12,0.82
 CLUMPY ensemble,14,14,0.81
 CLUMPY ensemble,17,16,0.8
 CLUMPY ensemble,18,17,0.79
-CLUMPY ensemble,22,20,0.78
-CLUMPY ensemble,26,22,0.77
-CLUMPY ensemble,29,23,0.76
+CLUMPY ensemble,21,19,0.78
+CLUMPY ensemble,25,22,0.77
+CLUMPY ensemble,31,25,0.76
 CLUMPY ensemble,34,28,0.75
-CLUMPY ensemble,41,33,0.74
-CLUMPY ensemble,46,36,0.73
-CLUMPY ensemble,53,40,0.72
-CLUMPY ensemble,57,43,0.71
-CLUMPY ensemble,62,46,0.7
-CLUMPY ensemble,67,48,0.69
-CLUMPY ensemble,71,52,0.68
-CLUMPY ensemble,78,57,0.67
-CLUMPY ensemble,84,61,0.66
-CLUMPY ensemble,88,63,0.65
-CLUMPY ensemble,94,66,0.64
-CLUMPY ensemble,98,68,0.63
-CLUMPY ensemble,108,74,0.62
-CLUMPY ensemble,119,79,0.61
+CLUMPY ensemble,39,30,0.74
+CLUMPY ensemble,45,34,0.73
+CLUMPY ensemble,52,39,0.72
+CLUMPY ensemble,55,41,0.71
+CLUMPY ensemble,61,45,0.7
+CLUMPY ensemble,68,49,0.69
+CLUMPY ensemble,73,52,0.68
+CLUMPY ensemble,80,59,0.67
+CLUMPY ensemble,86,63,0.66
+CLUMPY ensemble,90,63,0.65
+CLUMPY ensemble,91,64,0.64
+CLUMPY ensemble,102,70,0.63
+CLUMPY ensemble,108,73,0.62
+CLUMPY ensemble,116,77,0.61
 CLUMPY ensemble,125,82,0.6
 CLUMPY ensemble,132,85,0.59
-CLUMPY ensemble,142,88,0.58
-CLUMPY ensemble,149,90,0.57
-CLUMPY ensemble,161,98,0.56
-CLUMPY ensemble,173,103,0.55
-CLUMPY ensemble,181,107,0.54
-CLUMPY ensemble,185,107,0.53
-CLUMPY ensemble,187,107,0.52
-CLUMPY ensemble,196,112,0.51
-CLUMPY ensemble,203,113,0.5
-CLUMPY ensemble,214,116,0.49
-CLUMPY ensemble,227,122,0.48
-CLUMPY ensemble,239,126,0.47
-CLUMPY ensemble,244,127,0.46
-CLUMPY ensemble,254,131,0.45
-CLUMPY ensemble,271,138,0.44
-CLUMPY ensemble,284,141,0.43
-CLUMPY ensemble,294,146,0.42
-CLUMPY ensemble,304,152,0.41
-CLUMPY ensemble,316,158,0.4
-CLUMPY ensemble,330,164,0.39
-CLUMPY ensemble,338,169,0.38
-CLUMPY ensemble,346,171,0.37
-CLUMPY ensemble,364,177,0.36
-CLUMPY ensemble,382,181,0.35
-CLUMPY ensemble,396,187,0.34
-CLUMPY ensemble,415,193,0.33
-CLUMPY ensemble,427,197,0.32
-CLUMPY ensemble,445,207,0.31
-CLUMPY ensemble,466,213,0.3
-CLUMPY ensemble,489,219,0.29
-CLUMPY ensemble,516,228,0.28
-CLUMPY ensemble,539,234,0.27
-CLUMPY ensemble,567,238,0.26
-CLUMPY ensemble,605,244,0.25
-CLUMPY ensemble,626,250,0.24
-CLUMPY ensemble,651,254,0.23
-CLUMPY ensemble,696,261,0.22
-CLUMPY ensemble,724,269,0.21
-CLUMPY ensemble,768,271,0.2
-CLUMPY ensemble,807,278,0.19
-CLUMPY ensemble,872,291,0.18
-CLUMPY ensemble,923,297,0.17
-CLUMPY ensemble,987,305,0.16
-CLUMPY ensemble,1051,309,0.15
-CLUMPY ensemble,1139,320,0.14
-CLUMPY ensemble,1219,327,0.13
-CLUMPY ensemble,1303,335,0.12
-CLUMPY ensemble,1408,345,0.11
-CLUMPY ensemble,1566,353,0.1
-CLUMPY ensemble,1742,372,0.09
-CLUMPY ensemble,1976,391,0.08
-CLUMPY ensemble,2247,405,0.07
-CLUMPY ensemble,2604,425,0.0600000000000001
-CLUMPY ensemble,3017,442,0.05
-CLUMPY ensemble,3564,466,0.04
-CLUMPY ensemble,4165,485,0.03
-CLUMPY ensemble,4853,516,0.02
-CLUMPY ensemble,5730,553,0.01
+CLUMPY ensemble,145,91,0.58
+CLUMPY ensemble,154,95,0.57
+CLUMPY ensemble,164,100,0.56
+CLUMPY ensemble,171,102,0.55
+CLUMPY ensemble,178,105,0.54
+CLUMPY ensemble,182,105,0.53
+CLUMPY ensemble,189,108,0.52
+CLUMPY ensemble,195,111,0.51
+CLUMPY ensemble,202,113,0.5
+CLUMPY ensemble,212,118,0.49
+CLUMPY ensemble,230,123,0.48
+CLUMPY ensemble,237,126,0.47
+CLUMPY ensemble,243,128,0.46
+CLUMPY ensemble,257,133,0.45
+CLUMPY ensemble,268,135,0.44
+CLUMPY ensemble,281,139,0.43
+CLUMPY ensemble,294,142,0.42
+CLUMPY ensemble,305,151,0.41
+CLUMPY ensemble,312,155,0.4
+CLUMPY ensemble,326,162,0.39
+CLUMPY ensemble,340,170,0.38
+CLUMPY ensemble,350,174,0.37
+CLUMPY ensemble,366,178,0.36
+CLUMPY ensemble,380,180,0.35
+CLUMPY ensemble,400,187,0.34
+CLUMPY ensemble,418,196,0.33
+CLUMPY ensemble,428,200,0.32
+CLUMPY ensemble,441,208,0.31
+CLUMPY ensemble,460,212,0.3
+CLUMPY ensemble,486,219,0.29
+CLUMPY ensemble,511,225,0.28
+CLUMPY ensemble,540,231,0.27
+CLUMPY ensemble,565,236,0.26
+CLUMPY ensemble,601,243,0.25
+CLUMPY ensemble,628,251,0.24
+CLUMPY ensemble,654,255,0.23
+CLUMPY ensemble,689,258,0.22
+CLUMPY ensemble,723,266,0.21
+CLUMPY ensemble,756,269,0.2
+CLUMPY ensemble,816,281,0.19
+CLUMPY ensemble,859,288,0.18
+CLUMPY ensemble,922,297,0.17
+CLUMPY ensemble,978,303,0.16
+CLUMPY ensemble,1056,310,0.15
+CLUMPY ensemble,1141,321,0.14
+CLUMPY ensemble,1215,328,0.13
+CLUMPY ensemble,1301,338,0.12
+CLUMPY ensemble,1416,347,0.11
+CLUMPY ensemble,1565,361,0.1
+CLUMPY ensemble,1747,372,0.09
+CLUMPY ensemble,1972,392,0.08
+CLUMPY ensemble,2251,405,0.07
+CLUMPY ensemble,2598,425,0.0600000000000001
+CLUMPY ensemble,3025,444,0.05
+CLUMPY ensemble,3578,467,0.04
+CLUMPY ensemble,4165,484,0.03
+CLUMPY ensemble,4858,520,0.02
+CLUMPY ensemble,5710,554,0.01
 CLUMPY ensemble,6687,573,0
 uPAM ensemble,0,0,Inf
-uPAM ensemble,2,2,0.75
-uPAM ensemble,4,4,0.72
-uPAM ensemble,5,5,0.69
-uPAM ensemble,7,7,0.68
-uPAM ensemble,8,8,0.67
-uPAM ensemble,10,9,0.66
-uPAM ensemble,11,10,0.63
-uPAM ensemble,12,11,0.62
-uPAM ensemble,13,12,0.61
-uPAM ensemble,15,13,0.59
-uPAM ensemble,18,15,0.58
-uPAM ensemble,19,16,0.57
-uPAM ensemble,24,21,0.56
-uPAM ensemble,26,22,0.55
-uPAM ensemble,27,22,0.54
-uPAM ensemble,31,23,0.53
-uPAM ensemble,36,25,0.52
-uPAM ensemble,44,30,0.51
-uPAM ensemble,50,33,0.5
-uPAM ensemble,58,39,0.49
-uPAM ensemble,67,43,0.48
-uPAM ensemble,75,49,0.47
-uPAM ensemble,81,51,0.46
-uPAM ensemble,91,56,0.45
-uPAM ensemble,105,63,0.44
-uPAM ensemble,119,72,0.43
-uPAM ensemble,130,76,0.42
-uPAM ensemble,150,89,0.41
-uPAM ensemble,172,100,0.4
-uPAM ensemble,183,103,0.39
-uPAM ensemble,208,107,0.38
-uPAM ensemble,222,115,0.37
-uPAM ensemble,245,126,0.36
-uPAM ensemble,270,137,0.35
-uPAM ensemble,292,144,0.34
-uPAM ensemble,316,148,0.33
-uPAM ensemble,340,157,0.32
-uPAM ensemble,377,171,0.31
-uPAM ensemble,402,177,0.3
-uPAM ensemble,438,187,0.29
-uPAM ensemble,481,198,0.28
-uPAM ensemble,517,212,0.27
-uPAM ensemble,550,220,0.26
-uPAM ensemble,594,229,0.25
-uPAM ensemble,626,235,0.24
-uPAM ensemble,680,245,0.23
-uPAM ensemble,726,254,0.22
-uPAM ensemble,788,265,0.21
-uPAM ensemble,837,271,0.2
-uPAM ensemble,893,282,0.19
-uPAM ensemble,948,294,0.18
-uPAM ensemble,1016,307,0.17
-uPAM ensemble,1095,314,0.16
-uPAM ensemble,1175,317,0.15
-uPAM ensemble,1274,322,0.14
-uPAM ensemble,1396,334,0.13
-uPAM ensemble,1525,343,0.12
-uPAM ensemble,1696,356,0.11
-uPAM ensemble,1884,370,0.1
-uPAM ensemble,2113,385,0.09
-uPAM ensemble,2422,409,0.08
-uPAM ensemble,2738,424,0.07
-uPAM ensemble,3144,443,0.0600000000000001
-uPAM ensemble,3552,461,0.05
-uPAM ensemble,4077,489,0.04
-uPAM ensemble,4626,514,0.03
-uPAM ensemble,5257,533,0.02
-uPAM ensemble,5973,553,0.01
+uPAM ensemble,1,1,0.77
+uPAM ensemble,3,3,0.73
+uPAM ensemble,6,6,0.71
+uPAM ensemble,7,7,0.7
+uPAM ensemble,9,9,0.68
+uPAM ensemble,10,10,0.67
+uPAM ensemble,12,12,0.64
+uPAM ensemble,13,13,0.63
+uPAM ensemble,14,13,0.62
+uPAM ensemble,15,13,0.61
+uPAM ensemble,16,14,0.6
+uPAM ensemble,18,16,0.59
+uPAM ensemble,20,17,0.58
+uPAM ensemble,21,17,0.57
+uPAM ensemble,25,20,0.56
+uPAM ensemble,27,22,0.55
+uPAM ensemble,32,25,0.54
+uPAM ensemble,39,29,0.53
+uPAM ensemble,45,31,0.52
+uPAM ensemble,53,34,0.51
+uPAM ensemble,60,40,0.5
+uPAM ensemble,68,41,0.49
+uPAM ensemble,75,46,0.48
+uPAM ensemble,83,51,0.47
+uPAM ensemble,90,57,0.46
+uPAM ensemble,103,64,0.45
+uPAM ensemble,117,71,0.44
+uPAM ensemble,127,75,0.43
+uPAM ensemble,139,79,0.42
+uPAM ensemble,161,89,0.41
+uPAM ensemble,174,96,0.4
+uPAM ensemble,190,104,0.39
+uPAM ensemble,212,113,0.38
+uPAM ensemble,228,124,0.37
+uPAM ensemble,251,130,0.36
+uPAM ensemble,276,140,0.35
+uPAM ensemble,299,146,0.34
+uPAM ensemble,323,155,0.33
+uPAM ensemble,357,164,0.32
+uPAM ensemble,391,179,0.31
+uPAM ensemble,424,188,0.3
+uPAM ensemble,456,196,0.29
+uPAM ensemble,487,206,0.28
+uPAM ensemble,519,217,0.27
+uPAM ensemble,548,222,0.26
+uPAM ensemble,592,230,0.25
+uPAM ensemble,633,235,0.24
+uPAM ensemble,677,240,0.23
+uPAM ensemble,736,257,0.22
+uPAM ensemble,785,266,0.21
+uPAM ensemble,833,273,0.2
+uPAM ensemble,887,282,0.19
+uPAM ensemble,958,296,0.18
+uPAM ensemble,1016,304,0.17
+uPAM ensemble,1080,308,0.16
+uPAM ensemble,1162,316,0.15
+uPAM ensemble,1279,327,0.14
+uPAM ensemble,1382,338,0.13
+uPAM ensemble,1514,353,0.12
+uPAM ensemble,1686,370,0.11
+uPAM ensemble,1887,385,0.1
+uPAM ensemble,2095,397,0.09
+uPAM ensemble,2381,406,0.08
+uPAM ensemble,2695,420,0.07
+uPAM ensemble,3067,436,0.0600000000000001
+uPAM ensemble,3492,457,0.05
+uPAM ensemble,3998,474,0.04
+uPAM ensemble,4620,506,0.03
+uPAM ensemble,5291,531,0.02
+uPAM ensemble,5999,552,0.01
 uPAM ensemble,6687,573,0
 uPAM merging ensemble,0,0,Inf
-uPAM merging ensemble,1,1,0.74
-uPAM merging ensemble,2,2,0.7
-uPAM merging ensemble,6,6,0.69
-uPAM merging ensemble,10,9,0.68
-uPAM merging ensemble,11,9,0.67
-uPAM merging ensemble,14,12,0.66
-uPAM merging ensemble,17,15,0.65
-uPAM merging ensemble,22,18,0.64
-uPAM merging ensemble,26,21,0.63
-uPAM merging ensemble,30,23,0.62
-uPAM merging ensemble,43,29,0.61
-uPAM merging ensemble,48,31,0.6
-uPAM merging ensemble,59,40,0.59
-uPAM merging ensemble,64,43,0.58
-uPAM merging ensemble,75,49,0.57
-uPAM merging ensemble,90,59,0.56
-uPAM merging ensemble,95,62,0.55
-uPAM merging ensemble,104,63,0.54
-uPAM merging ensemble,115,67,0.53
-uPAM merging ensemble,122,72,0.52
-uPAM merging ensemble,132,75,0.51
-uPAM merging ensemble,140,81,0.5
-uPAM merging ensemble,155,86,0.49
+uPAM merging ensemble,1,1,0.77
+uPAM merging ensemble,2,2,0.76
+uPAM merging ensemble,4,4,0.71
+uPAM merging ensemble,5,4,0.7
+uPAM merging ensemble,6,5,0.69
+uPAM merging ensemble,9,8,0.68
+uPAM merging ensemble,12,11,0.67
+uPAM merging ensemble,17,16,0.66
+uPAM merging ensemble,21,20,0.65
+uPAM merging ensemble,24,21,0.64
+uPAM merging ensemble,27,24,0.63
+uPAM merging ensemble,32,26,0.62
+uPAM merging ensemble,36,28,0.61
+uPAM merging ensemble,42,30,0.6
+uPAM merging ensemble,51,33,0.59
+uPAM merging ensemble,56,35,0.58
+uPAM merging ensemble,66,39,0.57
+uPAM merging ensemble,78,45,0.56
+uPAM merging ensemble,89,52,0.55
+uPAM merging ensemble,101,60,0.54
+uPAM merging ensemble,108,65,0.53
+uPAM merging ensemble,119,70,0.52
+uPAM merging ensemble,126,73,0.51
+uPAM merging ensemble,141,79,0.5
+uPAM merging ensemble,159,86,0.49
 uPAM merging ensemble,169,92,0.48
-uPAM merging ensemble,186,101,0.47
-uPAM merging ensemble,194,103,0.46
-uPAM merging ensemble,216,109,0.45
-uPAM merging ensemble,238,122,0.44
-uPAM merging ensemble,247,126,0.43
-uPAM merging ensemble,252,127,0.42
-uPAM merging ensemble,272,135,0.41
-uPAM merging ensemble,288,140,0.4
-uPAM merging ensemble,304,148,0.39
-uPAM merging ensemble,316,152,0.38
-uPAM merging ensemble,327,155,0.37
-uPAM merging ensemble,345,161,0.36
-uPAM merging ensemble,362,165,0.35
-uPAM merging ensemble,374,168,0.34
-uPAM merging ensemble,394,177,0.33
-uPAM merging ensemble,416,185,0.32
-uPAM merging ensemble,436,195,0.31
-uPAM merging ensemble,466,206,0.3
-uPAM merging ensemble,496,211,0.29
-uPAM merging ensemble,532,221,0.28
-uPAM merging ensemble,564,230,0.27
-uPAM merging ensemble,590,234,0.26
-uPAM merging ensemble,618,243,0.25
-uPAM merging ensemble,637,247,0.24
-uPAM merging ensemble,695,257,0.23
-uPAM merging ensemble,737,265,0.22
-uPAM merging ensemble,782,272,0.21
-uPAM merging ensemble,834,280,0.2
-uPAM merging ensemble,883,289,0.19
-uPAM merging ensemble,950,296,0.18
-uPAM merging ensemble,1002,302,0.17
-uPAM merging ensemble,1066,310,0.16
-uPAM merging ensemble,1133,316,0.15
-uPAM merging ensemble,1218,325,0.14
-uPAM merging ensemble,1308,334,0.13
-uPAM merging ensemble,1425,344,0.12
-uPAM merging ensemble,1577,366,0.11
-uPAM merging ensemble,1719,376,0.1
-uPAM merging ensemble,1911,389,0.09
-uPAM merging ensemble,2137,400,0.08
-uPAM merging ensemble,2435,415,0.07
-uPAM merging ensemble,2780,435,0.0600000000000001
-uPAM merging ensemble,3231,448,0.05
-uPAM merging ensemble,3771,474,0.04
-uPAM merging ensemble,4335,503,0.03
-uPAM merging ensemble,4984,527,0.02
-uPAM merging ensemble,5833,557,0.01
+uPAM merging ensemble,184,100,0.47
+uPAM merging ensemble,197,105,0.46
+uPAM merging ensemble,209,111,0.45
+uPAM merging ensemble,223,116,0.44
+uPAM merging ensemble,239,120,0.43
+uPAM merging ensemble,258,125,0.42
+uPAM merging ensemble,273,131,0.41
+uPAM merging ensemble,288,135,0.4
+uPAM merging ensemble,300,144,0.39
+uPAM merging ensemble,318,150,0.38
+uPAM merging ensemble,326,150,0.37
+uPAM merging ensemble,346,160,0.36
+uPAM merging ensemble,364,167,0.35
+uPAM merging ensemble,381,173,0.34
+uPAM merging ensemble,406,184,0.33
+uPAM merging ensemble,428,194,0.32
+uPAM merging ensemble,447,201,0.31
+uPAM merging ensemble,475,206,0.3
+uPAM merging ensemble,497,211,0.29
+uPAM merging ensemble,535,218,0.28
+uPAM merging ensemble,562,225,0.27
+uPAM merging ensemble,585,232,0.26
+uPAM merging ensemble,613,237,0.25
+uPAM merging ensemble,659,248,0.24
+uPAM merging ensemble,691,261,0.23
+uPAM merging ensemble,723,266,0.22
+uPAM merging ensemble,765,271,0.21
+uPAM merging ensemble,808,276,0.2
+uPAM merging ensemble,866,285,0.19
+uPAM merging ensemble,919,294,0.18
+uPAM merging ensemble,990,300,0.17
+uPAM merging ensemble,1066,312,0.16
+uPAM merging ensemble,1148,322,0.15
+uPAM merging ensemble,1224,332,0.14
+uPAM merging ensemble,1314,339,0.13
+uPAM merging ensemble,1422,344,0.12
+uPAM merging ensemble,1556,361,0.11
+uPAM merging ensemble,1698,368,0.1
+uPAM merging ensemble,1902,383,0.09
+uPAM merging ensemble,2149,397,0.08
+uPAM merging ensemble,2418,418,0.07
+uPAM merging ensemble,2777,434,0.0600000000000001
+uPAM merging ensemble,3226,453,0.05
+uPAM merging ensemble,3731,477,0.04
+uPAM merging ensemble,4382,497,0.03
+uPAM merging ensemble,5071,527,0.02
+uPAM merging ensemble,5856,554,0.01
 uPAM merging ensemble,6687,573,0
 Dinamica ensemble,0,0,Inf
 Dinamica ensemble,1,1,0.96
@@ -376,7 +379,7 @@ adjusted potentials,1142,322,0.128351079115255
 adjusted potentials,1176,324,0.124524683313903
 adjusted potentials,1210,327,0.120363656758885
 adjusted potentials,1243,331,0.117088867143814
-adjusted potentials,1277,334,0.112845902542141
+adjusted potentials,1277,334,0.112845902542142
 adjusted potentials,1310,340,0.110014810475274
 adjusted potentials,1344,346,0.107233437485419
 adjusted potentials,1378,349,0.103791767067075
@@ -386,10 +389,10 @@ adjusted potentials,1478,358,0.0959667078234532
 adjusted potentials,1512,362,0.0937898206579736
 adjusted potentials,1546,365,0.0915082978228559
 adjusted potentials,1579,368,0.0896957718351454
-adjusted potentials,1613,372,0.0873956596393473
+adjusted potentials,1613,372,0.0873956596393474
 adjusted potentials,1646,375,0.0855539495423992
-adjusted potentials,1680,377,0.0833384832690488
-adjusted potentials,1713,380,0.0819134497913047
+adjusted potentials,1680,377,0.0833384832690489
+adjusted potentials,1713,380,0.0819134497913048
 adjusted potentials,1747,382,0.0805305158101356
 adjusted potentials,1781,384,0.0787535265454573
 adjusted potentials,1814,385,0.077010161058623
@@ -401,11 +404,11 @@ adjusted potentials,1982,395,0.0701477972622481
 adjusted potentials,2016,397,0.0688548605892008
 adjusted potentials,2049,398,0.067865564125812
 adjusted potentials,2083,401,0.0665461896767614
-adjusted potentials,2117,405,0.0652191709514297
-adjusted potentials,2150,407,0.0642058559364278
+adjusted potentials,2117,405,0.0652191709514298
+adjusted potentials,2150,407,0.0642058559364279
 adjusted potentials,2184,410,0.0630887139410473
 adjusted potentials,2217,412,0.0620558049691583
-adjusted potentials,2251,412,0.0611331281724115
+adjusted potentials,2251,412,0.0611331281724116
 adjusted potentials,2285,415,0.060165638947609
 adjusted potentials,2318,415,0.0590853589211753
 adjusted potentials,2352,416,0.0582171355033446
@@ -416,12 +419,12 @@ adjusted potentials,2486,419,0.0550599802841292
 adjusted potentials,2520,421,0.0541745595992645
 adjusted potentials,2553,422,0.0534822457688891
 adjusted potentials,2587,425,0.0529478288381886
-adjusted potentials,2621,428,0.0519706925333023
+adjusted potentials,2621,428,0.0519706925333025
 adjusted potentials,2654,431,0.0513204181050405
 adjusted potentials,2688,433,0.0506343097207214
 adjusted potentials,2721,436,0.0498801570499014
 adjusted potentials,2755,437,0.0491516420393716
-adjusted potentials,2789,439,0.0482731089125382
+adjusted potentials,2789,439,0.0482731089125383
 adjusted potentials,2822,439,0.0477604340444685
 adjusted potentials,2856,440,0.0471705125364275
 adjusted potentials,2889,440,0.0466494726698323
@@ -433,7 +436,7 @@ adjusted potentials,3057,448,0.043849374944004
 adjusted potentials,3091,450,0.043423404317706
 adjusted potentials,3125,452,0.0429127511798924
 adjusted potentials,3158,454,0.0423682499245609
-adjusted potentials,3192,454,0.0418788831580997
+adjusted potentials,3192,454,0.0418788831580998
 adjusted potentials,3225,455,0.0414861819409488
 adjusted potentials,3259,455,0.0409855971207448
 adjusted potentials,3293,455,0.0402921400751515
@@ -463,21 +466,21 @@ adjusted potentials,4065,488,0.0286268796287329
 adjusted potentials,4099,488,0.0280949315922077
 adjusted potentials,4133,490,0.0276145469856222
 adjusted potentials,4166,492,0.0272004155738167
-adjusted potentials,4200,492,0.0267874091221492
+adjusted potentials,4200,492,0.0267874091221493
 adjusted potentials,4233,494,0.0263767319634792
 adjusted potentials,4267,495,0.025990803341516
 adjusted potentials,4301,495,0.0254505041814829
 adjusted potentials,4334,497,0.025106803969877
 adjusted potentials,4368,497,0.0246633870389676
-adjusted potentials,4401,498,0.0243867997577875
+adjusted potentials,4401,498,0.0243867997577876
 adjusted potentials,4435,499,0.024021518444954
 adjusted potentials,4469,501,0.0235492796794931
 adjusted potentials,4502,502,0.0230676458599827
 adjusted potentials,4536,504,0.0225742247451067
 adjusted potentials,4569,505,0.0222164788083202
-adjusted potentials,4603,506,0.0217952250049024
+adjusted potentials,4603,506,0.0217952250049025
 adjusted potentials,4637,510,0.021327885746098
-adjusted potentials,4670,511,0.0209984442353973
+adjusted potentials,4670,511,0.0209984442353974
 adjusted potentials,4704,513,0.0206539226135911
 adjusted potentials,4737,515,0.0202868239348764
 adjusted potentials,4771,517,0.0199247895559246
@@ -487,16 +490,16 @@ adjusted potentials,4872,521,0.0185692465354249
 adjusted potentials,4905,522,0.0181716089228989
 adjusted potentials,4939,523,0.0178215165483141
 adjusted potentials,4973,523,0.0173447464545488
-adjusted potentials,5006,526,0.0168677165517525
+adjusted potentials,5006,526,0.0168677165517526
 adjusted potentials,5040,529,0.0164768493276853
 adjusted potentials,5073,529,0.0161778181802208
-adjusted potentials,5107,531,0.0158180076675611
+adjusted potentials,5107,531,0.0158180076675613
 adjusted potentials,5140,534,0.0154979677453572
 adjusted potentials,5174,535,0.0151556938656718
 adjusted potentials,5208,535,0.0148133419986147
 adjusted potentials,5241,536,0.0144720150556127
 adjusted potentials,5275,537,0.0141355184524498
-adjusted potentials,5308,537,0.0137191384833499
+adjusted potentials,5308,537,0.01371913848335
 adjusted potentials,5342,538,0.0133900779375825
 adjusted potentials,5376,538,0.0130458348278972
 adjusted potentials,5409,541,0.0126955827400796
