@@ -211,7 +211,11 @@ decomp[, `:=`(xmax = cumsum(n), xmin = cumsum(n) - n)]
 total <- decomp[, sum(n)]
 p_fom <- ggplot(decomp) +
   geom_rect(aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, fill = status), colour = "white", linewidth = 0.4) +
-  geom_text(aes(x = (xmin + xmax) / 2, y = 1.18, label = n), size = 2.5, colour = "#333333") +
+  # each segment named with its count, alternating in height so narrow segments stay legible
+  geom_text(
+    aes(x = (xmin + xmax) / 2, y = ifelse(as.integer(status) %% 2L == 1L, 1.2, 1.65), label = paste0(status, "\n", n)),
+    size = 2.4, colour = "#333333", lineheight = 0.85
+  ) +
   annotate("segment", x = 0, xend = decomp[status == "hit", xmax], y = -0.18, yend = -0.18, colour = "#1a1a1a", linewidth = 0.5) +
   annotate("segment", x = 0, xend = total, y = -0.42, yend = -0.42, colour = "#1a1a1a", linewidth = 0.5) +
   annotate("text", x = decomp[status == "hit", xmax] + 8, y = -0.18, label = "hits", hjust = 0, size = 2.5) +
@@ -223,13 +227,10 @@ p_fom <- ggplot(decomp) +
       fom_shown$hits, total, fom_shown$figure_of_merit
     )
   ) +
-  annotate(
-    "text", x = 0, y = -1.75, hjust = 0, size = 2.5, colour = "#555555",
-    label = sprintf("random placement of the same quantities: %.2f", fom_null)
-  ) +
+  # the FoM of random placement is given in the text and caption, not drawn (Overleaf C034)
   scale_fill_manual(values = outcome_cols[-1]) +
   scale_x_continuous(expand = expansion(mult = c(0.01, 0.02))) +
-  scale_y_continuous(limits = c(-2.05, 1.35)) +
+  scale_y_continuous(limits = c(-1.45, 2.0)) +
   labs(
     title = "(c) Figure of merit",
     subtitle = "cells of the whole domain by outcome;\npersistent cells do not count"
@@ -255,6 +256,10 @@ allocator_cols <- c(
   "CLUMondo" = "#CC79A7",
   "rank-and-fill" = "#D55E00"
 )
+# allocators implemented in evoland.plus, marked with an asterisk (Overleaf C035); Dinamica EGO is
+# driven through evoland.plus but not implemented in it
+evoland_allocators <- c("uSAM", "uPAM", "rank-and-fill")
+display_name <- function(x) ifelse(x %in% evoland_allocators, paste0(x, "*"), x)
 allocator_linetypes <- c(
   "observed change" = "22",
   "uSAM" = "solid",
@@ -346,7 +351,7 @@ p_d <- ggplot() +
   geom_point(data = ensembles, aes(fom, skill, fill = allocator, shape = "ensemble"), size = 2.8, colour = "#1a1a1a", stroke = 0.5) +
   geom_point(data = deterministic, aes(fom, skill, fill = allocator, shape = "single map"), size = 3, colour = "#1a1a1a", stroke = 0.5) +
   ggrepel::geom_text_repel(
-    data = labels_dt, aes(fom, skill, label = allocator, colour = allocator),
+    data = labels_dt, aes(fom, skill, label = display_name(allocator), colour = allocator),
     # CLUE-S to the right of its marker, clear of uSAM's arrow
     nudge_x = ifelse(labels_dt$allocator == "CLUE-S", 0.02, 0),
     size = 2.5, fontface = "bold", seed = 3, box.padding = 0.35, point.padding = 0.3,
@@ -388,8 +393,8 @@ p_e <- ggplot() +
   geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.6) +
   geom_line(data = cdf_observed, aes(x, cdf, colour = "observed change", linetype = "observed change"), linewidth = 0.55) +
   scale_fill_manual(values = allocator_cols, guide = "none") +
-  scale_colour_manual(values = what_cols, breaks = names(what_cols)) +
-  scale_linetype_manual(values = allocator_linetypes, breaks = names(what_cols)) +
+  scale_colour_manual(values = what_cols, breaks = names(what_cols), labels = display_name(names(what_cols))) +
+  scale_linetype_manual(values = allocator_linetypes, breaks = names(what_cols), labels = display_name(names(what_cols))) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
