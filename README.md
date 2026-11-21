@@ -68,6 +68,12 @@ set up on Euler.
   `validation-metrics-tests.r`) at the root is sourced by the 2026-09 experiments: figure of merit,
   disagreement, Kappa Simulation, Fuzzy Kappa Simulation, similarity of differences, TOC AUC,
   Brier. To move into evoland-plus once settled.
+- **Custom mlr3 learners.** [`mlr3-custom-learners/`](mlr3-custom-learners/README.md) holds
+  mlr3 learners that are out of scope for evoland-plus, as plain R files that a step sources
+  from the repository root and then uses by key, like a stock learner; each comes with a test
+  script. Currently the guided regularized random forest `classif.grrf`, used by
+  `2026-05-ssp-ch/050-covariate-selection.qmd`, which replaces the learner evoland-plus used to
+  ship.
 - **Results for plotting elsewhere.** Expensive steps write their maps and scores to a
   `results/` folder beside them (Parquet via git-LFS, CSV), and plot steps read only those, so
   figures can be redrawn on another machine (e.g. macOS) without rerunning the models.

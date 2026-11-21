@@ -15,6 +15,11 @@ GRRF should handle redundancy: the first (unregularised) forest splits importanc
 predictors, and the regularisation penalty then suppresses the weaker ones, see if that actually
 carries a stronger signal.
 
+The learner is `classif.grrf` from [`mlr3-custom-learners/grrf.r`](../mlr3-custom-learners/README.md),
+which replaces the package's `LearnerClassifGrrf`. It implements the coefficient of Deng & Runger
+(2013), so importances differ from the committed report and CSV, which were computed with the
+package's learner; see that README for the differences.
+
 ## Score
 
 ```{r}
@@ -22,20 +27,25 @@ carries a stronger signal.
 library(data.table)
 library(evoland.plus)
 library(ggplot2)
+source("mlr3-custom-learners/grrf.r")
 
 db <- evoland_db$new(path = "ssp-ch.evolanddb")
 
 db$set_full_trans_preds()
 
 grrf_gamma <- 0.5
+grrf_lambda <- 1
 grrf_num_trees <- 100L
 grrf_max_depth <- 20L
 
-grrf_learner <- LearnerClassifGrrf$new()
-grrf_learner$param_set$values <- list(
+grrf_learner <- mlr3::lrn(
+  "classif.grrf",
   gamma = grrf_gamma,
+  lambda = grrf_lambda,
   num.trees = grrf_num_trees,
-  max.depth = grrf_max_depth
+  max.depth = grrf_max_depth,
+  # the package's learner always weighted classes equally; transitions are rare
+  balance_classes = TRUE
 )
 #
 # ranger_lrn <- mlr3::lrn(
@@ -184,6 +194,7 @@ db$reporting_t <- as_reporting_t(data.table::rowwiseDT(
   "covsel_importance_rel_cut", as.character(0.2),
   "covsel_max_preds_per_trans", as.character(max_preds_per_trans),
   "covsel_grrf_gamma", as.character(grrf_gamma),
+  "covsel_grrf_lambda", as.character(grrf_lambda),
   "covsel_grrf_num_trees", as.character(grrf_num_trees),
   "covsel_grrf_max_depth", as.character(grrf_max_depth)
 ))
