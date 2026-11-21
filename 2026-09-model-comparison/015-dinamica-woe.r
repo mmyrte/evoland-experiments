@@ -59,8 +59,12 @@ file.copy(file.path(model_dir, c("calibrate.ego", "probabilities.ego", "simulate
 run_dinamica_serial <- function(script) {
   exec_dinamica(
     file.path(work_dir, script),
-    disable_parallel = TRUE,
-    additional_args = c("-processors=1", "-disable-parallel-functors", "-disable-parallel-map-load")
+    additional_args = c(
+      "-processors=1",
+      "-disable-parallel-functors",
+      "-disable-parallel-map-load",
+      "-disable-parallel-steps"
+    )
   )
 }
 
