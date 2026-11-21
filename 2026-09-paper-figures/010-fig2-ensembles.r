@@ -218,7 +218,7 @@ db$trans_meta_t <- trans_meta
 alloc_params_estimated <- db$create_alloc_params_t()
 alloc_params_estimated
 # The synthetic process changes cells independently, so single-cell allocation (uSAM) is the
-# allocator that matches it. The estimated "patches" (mean 1.1-1.2 cells) are clusters induced
+# allocator that matches it. The estimated "patches" (mean 1.0-1.1 cells by rook adjacency) are clusters induced
 # by the neighbourhood terms of the process. Allocating with them (uPAM) moves change onto
 # less probable neighbours: a logistic-regression ensemble (nearly true potentials) then put
 # 28 % of its change in the top 5 % of true probabilities instead of the 36 % a sampler of the
@@ -482,7 +482,7 @@ if (reuse_dinamica) {
   )
 }
 
-#' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.1-1.2
+#' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.0-1.1
 #' cells on average) instead of single cells: what a modeller gets with the default patch
 #' estimates. The parameters are switched for these runs only and restored afterwards.
 #' "uPAM merging" is the same with `avoid_aggregation = FALSE`: by default (clumpy's

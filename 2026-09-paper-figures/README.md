@@ -17,10 +17,25 @@ metrics, and the `030` steps only draw:
 ```
 
 renders `000`, the `010` steps in parallel, then `020` and `030`.
-`010-learner-comparison` additionally runs its cases on its own PSOCK cluster. The two
+`010-learner-comparison` additionally runs its cases on its own PSOCK cluster. The
 `010-verify-*` steps (see [Verification](#verification-the-allocators-against-their-reference-implementations))
 load evoland.plus from a source checkout (`EVOLAND_PLUS_SRC`, default `../evoland.plus`)
-rather than the pinned `evoland` package, because they test the version the paper describes.
+rather than the installed package, because they call its internal functions; the other steps
+use the installed `evoland.plus` (pinned in `rproject.toml`). To run against another copy,
+install it into a library of its own and put that first with `R_LIBS`, e.g.
+`R_LIBS=<lib> EVOLAND_PLUS_SRC=<checkout> ./execute-all.sh ...`.
+
+Without Dinamica EGO, `010-fig2-ensembles` stops; with `FIG2_REUSE_DINAMICA=true` it imports
+the Dinamica maps of the previous render from `results/fig2/` instead (recorded in
+`scalars.csv`, `dinamica_maps`), so that the other allocators can be rerun.
+
+The ensemble scores of runs in a database (Brier score, fair Brier score and skill of
+Fig. 2's ensembles and realisations, the realised score of `010-skill-attribution`'s
+ensembles) come from evoland's `db$brier_score_v()`. Local code remains for what evoland does
+not offer: the scores of forecasts that are not runs (potentials, true probabilities, the
+deterministic map, the reference forecasts), the distance to the truth and expected scores
+(which need the true probabilities), and the other validation metrics
+(`validation-metrics.r`, which `020` applies to the files in `results/fig2/`).
 
 **Plotting elsewhere** (e.g. on macOS, for its PDF rendering): the expensive step
 `010-fig2-ensembles` writes its maps and scores to `results/fig2/` (Parquet, LFS-tracked, and
@@ -49,7 +64,9 @@ root).
 
 GMD asks for verification (the code does what the method says) apart from evaluation (the model
 is fit for purpose). Three steps build that evidence for the allocators the paper discusses. All
-run in under two minutes. Results from the last run, on evoland.plus `develop` at `d1d7794`, clumpy
+run in under two minutes. Results from the last run, on evoland.plus `develop` at `a9236fb` (the clumpy,
+lulcc and uPAM-bias tables are identical to the run on `d1d7794`; the placement tests follow the
+rerun of Fig. 2), clumpy
 0.1.0 (mmyrte/clumpy, package code as pinned in `pyproject.toml`; the comparison scripts of the
 fork's branch `claude/upbeat-mayer-2ik3ux` are the starting point), lulcc 1.0.4, R 4.6.2.
 
@@ -162,10 +179,10 @@ of each map to F0 is tested against D's null distribution simulated from exactly
 
 | allocator | median D per map | maps rejected at 5 % | D of the pooled ensemble | p |
 | --- | --- | --- | --- | --- |
-| CLUMPY (uSAM) | 0.029 | **0.05** | 0.002 | **0.79** |
-| uPAM, merging allowed | 0.063 | 0.79 | 0.049 | < 0.003 |
-| uPAM | 0.118 | 1.00 | 0.109 | < 0.003 |
-| Dinamica | 0.151 | 1.00 | 0.139 | < 0.003 |
+| CLUMPY (uSAM) | 0.028 | **0.06** | 0.003 | **0.48** |
+| uPAM, merging allowed | 0.060 | 0.74 | 0.046 | < 0.003 |
+| uPAM | 0.112 | 1.00 | 0.100 | < 0.003 |
+| Dinamica | 0.145 | 1.00 | 0.134 | < 0.003 |
 | CLUMondo | 0.465 | 1.00 | 0.465 | < 0.003 |
 | rank-and-fill | 0.530 | (one map) | | < 0.001 |
 | CLUE-S | 0.741 | 1.00 | 0.741 | < 0.003 |
@@ -176,13 +193,14 @@ and its pooled 57 000 changed cells are indistinguishable from F0; every other a
 rejected. Two further checks of the ensembles against p:
 
 - **Quantity per transition** (mean over 100 members against the sum of p): uSAM z = −1.7 to
-  +1.0; uPAM within ±0.5 (quota); Dinamica fixes the count; CLUE-S and CLUMondo miss by 54–180
+  +0.9; uPAM meets its quota (z 0 to +0.24: exactly where the last patch fits, at most a patch
+  above); Dinamica fixes the count; CLUE-S and CLUMondo miss by 54–180
   standard errors (they allocate net class totals).
 - **Cell-wise frequencies** (Pearson's X² over 6687 cells and their three outcomes, df 13 151):
-  uSAM z = **−0.64**; uPAM merging 26, Dinamica 48, uPAM 78, CLUE-S 348, CLUMondo 7997.
+  uSAM z = **−0.44**; uPAM merging 19, Dinamica 49, uPAM 70, CLUE-S 348, CLUMondo 7997.
 
 Against the true probabilities q (panel (e) as drawn; evaluation, not verification), CLUMPY's
-maps are rejected in 11 % of cases and its pooled ensemble with p < 0.003: the ensemble
+maps are rejected in 13 % of cases and its pooled ensemble with p < 0.003: the ensemble
 reproduces the potentials, and the potentials carry the estimation error.
 
 **The observed map is a lucky draw, not a bug.** Against q, the observed change has D = 0.013,
@@ -238,9 +256,9 @@ What it shows:
    includes the top decile 3 % below its potential and the middle deciles 2–6 % above; one pass
    over all candidates (`batch_size = -1`) shows no systematic deviation. Re-drawing pivots from fixed potentials over a shrinking pool is successive sampling,
    whose inclusion probabilities flatten towards the less probable cells. clumpy counteracts
-   exactly that by re-estimating P(z|u) on the remaining pool before every pass; evoland's
-   documentation says the re-estimation is unnecessary with a fixed fitted model, which this
-   contradicts. The effect is small against the patch effect, but it is an implementation
+   exactly that by re-estimating P(z|u) on the remaining pool before every pass. evoland's
+   documentation used to call the re-estimation unnecessary with a fixed fitted model; since
+   `a9236fb` (`alloc_clumpy_spec()`) it lists it as not yet implemented and quotes this bias. The effect is small against the patch effect, but it is an implementation
    difference in the iteration, not a property of the method.
 3. **Smooth potentials reduce, but do not remove, the patch bias** at this correlation length
    (Lp/Lz ≈ 0.15–0.2 here): D 0.03–0.08, partly the iteration's (2). Aggregation avoidance helps
@@ -253,7 +271,7 @@ What it shows:
 with merging allowed (`avoid_aggregation = FALSE`). With clumpy's default (`TRUE`), a patch that
 would merge with an existing patch fails and is drawn elsewhere, which keeps change away from the
 target class, exactly where this neighbourhood-driven process makes it most likely: Brier skill
-+0.146 instead of +0.155 (uSAM +0.164), 25 % of change in the top 5 % of true probabilities
++0.149 instead of +0.154 (uSAM +0.165), 26 % of change in the top 5 % of true probabilities
 instead of 30 % (uSAM 34 %, observed 36 %). `010` still computes both ensembles; the plot shows
 the one with merging allowed. The remaining gap to uSAM comes from growing patches into less
 probable neighbours.
@@ -273,7 +291,7 @@ change), set up like the evoland-plus vignette
   curves overlapped the random forest's so much that the panels were hard to read, so it was
   dropped.
 - **Allocation:** single-cell (uSAM). The process changes cells independently; the estimated
-  1.1–1.2-cell "patches" are clusters induced by its neighbourhood terms, and allocating with
+  1.0–1.1-cell "patches" (rook adjacency) are clusters induced by its neighbourhood terms, and allocating with
   them (uPAM) moves change onto less probable neighbours (see below).
 
 The backcast works as follows:
@@ -314,12 +332,17 @@ Panels, on a 3 × 2 grid with a legend each:
   each allocator (band: CLUMPY's 5–95 %) and the deterministic map; the diagonal is random
   placement
 
-**Rerun on evoland.plus `d1d7794` (2026-11-19).** Every step reruns; every allocator reproduces
-the numbers below exactly except Dinamica EGO, which draws a fresh seed per run (ensemble FoM
-0.163, fair Brier skill 0.138, pooled KS distance to the potentials 0.134; the verification
-section below gives the earlier run's 0.139). Dinamica comes from the `ghcr.io/mmyrte/evoland`
-image (see `2026-09-model-comparison/README.md`, Environment). The verify steps load the same
-commit from a source checkout (`EVOLAND_PLUS_SRC`).
+**Rerun on evoland.plus `a9236fb` (2026-11-21).** Every step reran except Dinamica EGO, which was
+not installed: its 100 maps are those of the render on `d1d7794` (2026-11-19, from the
+`ghcr.io/mmyrte/evoland` image, see `2026-09-model-comparison/README.md`, Environment), imported
+with `FIG2_REUSE_DINAMICA=true` onto the same potentials (identical to 7e-16). CLUE-S, CLUMondo,
+the potentials and rank-and-fill reproduce the `d1d7794` render exactly. CLUMPY's realisations
+differ from it since `2ca273c` seeds each run from `rng_seed` (main's code on `2ca273c` gives
+the same maps as on `a9236fb`). uPAM changes with `a9236fb` (ethzplus/evoland.plus#150): it
+meets its quota, and patch sizes are estimated by rook adjacency (arable -> urban 1.23 -> 1.09
+cells, arable -> forest 1.07 -> 1.04); its skill rises by 0.003 with aggregation avoidance and
+falls by 0.001 with merging allowed. The ensemble and realisation Brier scores come from
+`db$brier_score_v()`; the local code it replaced agrees to 2e-16.
 
 ### What the numbers say (last render)
 
@@ -330,8 +353,8 @@ Random-forest potentials, 100 realisations per allocator:
 
 | allocator | FoM median (5–95 %) | FoM ensemble | Brier skill, ensemble (fair) | Brier skill, single map (median) | change in top 5 % |
 | --- | --- | --- | --- | --- | --- |
-| CLUMPY | 0.138 (0.123–0.152) | 0.137 | 0.164 | −0.62 | 0.339 |
-| Dinamica | 0.166 (0.148–0.178) | 0.165 | 0.138 | −0.53 | 0.428 |
+| CLUMPY | 0.139 (0.123–0.152) | 0.137 | 0.165 | −0.62 | 0.338 |
+| Dinamica | 0.163 (0.149–0.179) | 0.163 | 0.138 | −0.54 | 0.425 |
 | CLUE-S | 0.161 (no spread) | 0.161 | −0.034 | −0.034 | 0.957 |
 | CLUMondo | 0.165 (no spread) | 0.165 | −0.180 | −0.181 | 0.706 |
 | rank-and-fill (deterministic) | 0.245 | | −0.30 | | 0.660 |
@@ -357,8 +380,8 @@ the cells that could make the same transition:
 | --- | --- | --- |
 | expected under the true probabilities | 0.361 | — |
 | observed | 0.361 | 0.909 |
-| CLUMPY realisations (median) | 0.339 | 0.902 |
-| Dinamica realisations (median) | 0.428 | 0.937 |
+| CLUMPY realisations (median) | 0.338 | 0.901 |
+| Dinamica realisations (median) | 0.425 | 0.936 |
 | CLUMondo realisations (median) | 0.706 | 0.974 |
 | CLUE-S realisations (median) | 0.957 | 0.984 |
 | rank-and-fill (deterministic) | 0.660 | 0.965 |
@@ -369,10 +392,10 @@ What the figure argues:
    they concentrate change: rank-and-fill highest, then CLUMondo, Dinamica and CLUE-S, CLUMPY
    lowest. Panel (e) shows that observed change does not concentrate: only a third of it falls
    in the top 5 %, exactly what the true probabilities predict. CLUMPY's realisations reproduce
-   this; Dinamica is slightly biased towards the top (43 %); rank-and-fill, CLUMondo and CLUE-S
+   this; Dinamica is slightly biased towards the top (42 %); rank-and-fill, CLUMondo and CLUE-S
    put two thirds to almost all of their change there.
 2. **The unbiased ensemble loses nothing.** The CLUMPY ensemble frequency is as good a
-   probabilistic forecast as the potentials it samples from (skill 0.164 vs. 0.160), Dinamica's
+   probabilistic forecast as the potentials it samples from (skill 0.165 vs. 0.160), Dinamica's
    is close (0.138). CLUE-S and CLUMondo are near-deterministic: their 100 realisations barely
    differ, so their ensembles are no better than single maps and score below the uniform
    forecast, as does rank-and-fill.
@@ -418,14 +441,14 @@ share of the simulated change in the top 5 % of the true probabilities (observed
 
 | allocator | FoM | KSim | KTransloc | FKS (r = 4) | SoD | TOC AUC | alloc. disagreement | Brier | top 5 % |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| CLUMPY | 0.138 | 0.191 | 0.195 | 0.313 | 0.470 | 0.594 | 0.104 | 0.256 | 0.339 |
-| Dinamica | 0.166 | 0.235 | 0.235 | 0.380 | 0.491 | 0.616 | 0.100 | 0.242 | 0.428 |
+| CLUMPY | 0.139 | 0.191 | 0.196 | 0.313 | 0.470 | 0.594 | 0.104 | 0.256 | 0.338 |
+| Dinamica | 0.163 | 0.229 | 0.230 | 0.380 | 0.488 | 0.614 | 0.100 | 0.244 | 0.425 |
 | CLUE-S | 0.161 | 0.251 | 0.529 | 0.305 | 0.243 | 0.586 | 0.047 | 0.164 | 0.957 |
 | CLUMondo | 0.165 | 0.281 | 0.452 | 0.323 | 0.270 | 0.601 | 0.075 | 0.187 | 0.706 |
 | rank-and-fill | 0.245 | 0.350 | 0.350 | 0.453 | 0.476 | 0.674 | 0.085 | 0.206 | 0.660 |
 
 As forecasts (TOC AUC per transition; Brier skill against the uniform forecast, fair for the
-ensembles): CLUMPY ensemble 0.779, 0.164; Dinamica ensemble 0.781, 0.138; CLUE-S 0.586, −0.034;
+ensembles): CLUMPY ensemble 0.781, 0.165; Dinamica ensemble 0.776, 0.138; CLUE-S 0.586, −0.034;
 CLUMondo 0.601, −0.180; adjusted potentials 0.789, 0.160; true probabilities 0.819, 0.191.
 
 Figures: `figures/metric-relations.pdf` (each metric against the share in the top 5 %, one dot
@@ -444,7 +467,7 @@ ensembles as forecasts). What they show:
    Which allocator "wins" depends on the metric, not on how faithfully it reproduces the process.
 3. **Only the ensemble-level scores reward an unbiased allocator.** As probabilistic forecasts,
    the CLUMPY and Dinamica ensembles reach the TOC AUC and Brier skill of the potentials they
-   sample from (0.78 vs. 0.79; 0.164 vs. 0.160), and the near-deterministic CLUE-S and CLUMondo
+   sample from (0.78 vs. 0.79; 0.165 vs. 0.160), and the near-deterministic CLUE-S and CLUMondo
    ensembles fall back to the level of their single maps. No single-map metric recovers this.
 
 ## Skill attribution: potentials or allocation?
@@ -460,26 +483,33 @@ mean of sum_k q_k (1 − q_k). The distance no longer depends on the single obse
 | quantity (distance to truth, expected skill vs. the uniform forecast) | 30 × 30 | 90 × 90 |
 | --- | --- | --- |
 | uniform forecast | 0.021, 0 | 0.027, 0 |
-| estimated potentials (adjusted) | 0.0125, 0.050 | 0.0137, 0.087 |
-| ensemble on estimated potentials, uSAM | 0.0124, 0.051 | 0.0138, 0.087 |
-| ensemble on estimated potentials, uPAM | 0.0148, 0.036 | 0.0140, 0.085 |
-| oracle potentials (adjusted) | 0.0040, 0.100 | 0.0004, 0.177 |
+| estimated potentials (adjusted) | 0.0125, 0.050 | 0.0134, 0.089 |
+| ensemble on estimated potentials, uSAM | 0.0125, 0.050 | 0.0136, 0.088 |
+| ensemble on estimated potentials, uPAM | 0.0142, 0.040 | 0.0132, 0.090 |
+| oracle potentials (adjusted) | 0.0040, 0.100 | 0.0004, 0.176 |
 | ensemble on oracle potentials, uSAM | 0.0040, 0.100 | 0.0003, 0.177 |
-| ensemble on oracle potentials, uPAM | 0.0063, 0.087 | 0.0030, 0.159 |
+| ensemble on oracle potentials, uPAM | 0.0059, 0.089 | 0.0025, 0.162 |
 | truth, all four transitions (ceiling) | 0, 0.124 | 0, 0.179 |
 
 Viable transitions: 2 at 30 × 30 (7 of 56 observed changes unmodelled), all 4 at 90 × 90 (573
-changes, none unmodelled).
+changes, none unmodelled). Estimated mean patch sizes (rook adjacency, evoland.plus `a9236fb`):
+1.10 and 1 at 30 × 30; 1.09, 1.11, 1 and 1.04 at 90 × 90 (by queen adjacency, before: up to
+1.23). The realised Brier score of the ensembles comes from `db$brier_score_v()`; the realised
+skills stay against the uniform forecast of the viable transitions, which at 30 × 30 differs
+from `brier_score_v()`'s reference (it also knows the 7 unmodelled changes: Brier 0.1374 against
+0.1376).
 
 What it shows:
 
 1. **Allocation loses nothing with uSAM.** The ensemble frequency reproduces the potentials it
    samples from, at both sizes and for both potential sources. This verifies that the C++ uSAM is
-   unbiased. uPAM adds a small, consistent loss (distance +0.002–0.003) because it places change
-   in patches while the synthetic process changes single cells.
-2. **The loss is in estimation.** The estimated potentials capture only 40 % (30 × 30) and 49 %
+   unbiased. On the oracle potentials uPAM adds a small loss (distance +0.002) because it places
+   change in patches while the synthetic process changes single cells; on the estimated
+   potentials it loses 0.002 at 30 × 30 and gains 0.0002 at 90 × 90, where its patches add some
+   of the clustering the estimated potentials miss.
+2. **The loss is in estimation.** The estimated potentials capture only 40 % (30 × 30) and 50 %
    (90 × 90) of the attainable skill. Their distance to the truth does not shrink with nine times
-   the data (0.0125 → 0.0137), so a larger domain alone does not fix it. Suspects: a single
+   the data (0.0125 → 0.0134), so a larger domain alone does not fix it. Suspects: a single
    calibration period, ranger's poorly calibrated probabilities for rare events, and the
    predictor set (top 4 by rpart importance; distance-band neighbourhood shares that only
    approximate the process's 5 × 5 window).
@@ -490,7 +520,7 @@ What it shows:
    Caveat: each size uses one landscape, so size and landscape are confounded; the higher
    ceiling at 90 × 90 reflects that landscape, not the size.
 4. **FoM tells another story.** The FoM spread narrows with size (estimated, uSAM: 0.05–0.13 at
-   30 × 30, 0.10–0.13 at 90 × 90), and uSAM scores higher than uPAM throughout.
+   30 × 30, 0.11–0.13 at 90 × 90), and uSAM scores higher than uPAM throughout.
 
 ## Learner comparison: the learner closes the gap
 
@@ -498,8 +528,11 @@ What it shows:
 sets, one vs. two calibration periods (paired: same target transition), 30 × 30 vs. 90 × 90 and
 three landscape seeds. It scores the adjusted potentials only, since `010-skill-attribution` showed that uSAM
 passes them through unchanged. Run: 12 min on 3 workers, no failed configurations; two runs on
-the current pin are bit-identical (the stochastic learners moved by up to 0.07 per configuration,
-0.02 in the means below, against the previous pin `08aa38e`). Output:
+`3bc7856` were bit-identical (the stochastic learners moved by up to 0.07 per configuration,
+0.02 in the means below, against the previous pin `08aa38e`). The rerun on `a9236fb` reproduces
+every configuration except the rpart-top-4 feature set of cv_glmnet, ranger, ranger with large
+leaves and xgboost (up to 0.31 per configuration, 0.11 in the means below; the predictors rpart
+selects moved, which allocation does not touch; cause not isolated). Output:
 `figures/learner-comparison.{csv,pdf}`.
 
 Share of attainable skill (1 = as good as the true probabilities, 0 = the uniform forecast), mean over
@@ -508,10 +541,10 @@ three seeds, one calibration period:
 | learner | 30 × 30, rpart top 4 | 30 × 30, all available | 90 × 90, rpart top 4 | 90 × 90, all available | 90 × 90, process features |
 | --- | --- | --- | --- | --- | --- |
 | log_reg | 0.76 | 0.48 | 0.95 | 0.95 | 0.97 |
-| ranger_large_leaves | 0.61 | 0.69 | 0.75 | 0.82 | 0.84 |
-| xgboost | −0.02 | −0.07 | 0.76 | 0.76 | 0.80 |
-| cv_glmnet | 0.33 | 0.19 | 0.73 | 0.75 | 0.74 |
-| ranger (Fig. 2 setting) | 0.27 | 0.49 | 0.57 | 0.72 | 0.65 |
+| ranger_large_leaves | 0.61 | 0.69 | 0.74 | 0.82 | 0.84 |
+| xgboost | −0.06 | −0.07 | 0.76 | 0.76 | 0.80 |
+| cv_glmnet | 0.22 | 0.19 | 0.74 | 0.75 | 0.74 |
+| ranger (Fig. 2 setting) | 0.28 | 0.49 | 0.58 | 0.72 | 0.65 |
 | naive_bayes | 0.24 | 0.14 | 0.41 | 0.36 | 0.48 |
 | featureless | −0.01 | −0.01 | 0.00 | 0.00 | 0.00 |
 | oracle, viable transitions | 0.92 | | 0.99 | | |
@@ -520,13 +553,13 @@ What it shows:
 
 1. **The learner is the main factor.** Logistic regression reaches 95–97 % of the attainable skill
    at 90 × 90, even with only the predictors a modeller has. Ranger as configured for Fig. 2
-   reaches 57 %; the same forest with larger leaves (`min.node.size = 50`) reaches 75–84 %. The
+   reaches 58 %; the same forest with larger leaves (`min.node.size = 50`) reaches 74–84 %. The
    gap is in calibration: small leaves give overconfident probabilities, and a proper score
    punishes that.
 2. **More data helps the flexible learners, not the fixed one.** From 30 × 30 to 90 × 90, xgboost
    goes from no skill to 0.76–0.80, and cv_glmnet and ranger roughly double. A second calibration
    period helps at 30 × 30 (more data again) and little at 90 × 90. The seeds agree at 90 × 90
-   (ranger: 0.57–0.58; log_reg: 0.92–0.97). At 30 × 30 they do not (ranger: 0.07–0.46).
+   (ranger: 0.56–0.60; log_reg: 0.92–0.97). At 30 × 30 they do not (ranger: 0.10–0.46).
 3. **The feature set matters little** once the learner is right. Process features gain at most a
    few points; rpart's top 4 hurt ranger at 90 × 90.
 4. **Naive Bayes, the closest to Dinamica's weights of evidence, stays poor** (0.36–0.49 at
