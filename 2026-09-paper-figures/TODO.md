@@ -29,19 +29,65 @@ Open:
 - [ ] **Run-to-run nondeterminism:** two runs of the same script on the same machine gave FoM
       medians of 0.105 and 0.104 (earlier: Rscript vs. `quarto render`, 0.093 vs. 0.102).
       Suspects: ranger threading, tie-breaking in the ranking, RNG state consumed by set-up code.
+      On the current pin (`3bc7856`), two runs of `010-learner-comparison` are bit-identical, and
+      Fig. 2's CLUMPY, CLUE-S and CLUMondo numbers reproduce the last render; only Dinamica
+      (fresh seed per run) moves. Not yet checked: two runs of `010-fig2-ensembles` against each
+      other.
 - [ ] Decide whether the mock-up stays synthetic or moves to a real Arealstatistik extent once
       the comparison pipeline exists.
 - [ ] Decide how to present the patch finding: estimated patch sizes from a neighbourhood-driven
       process are spurious clusters, and uPAM on them biases where change goes. Discussion
       point for the paper, or a panel in the appendix?
 
+- [x] Fig. 2 split into two figures (Overleaf comment, 2026-10-23): 2a explains the figure of
+      merit on a typical CLUMPY draw that shows wrong hits in the map window; 2b keeps the
+      stochastic allocators apart and the (near-)deterministic ones close together, with each
+      allocator's Brier skill next to its FoM row.
+
+## Validation metrics
+
+- [x] Fig. 2 split into compute (`010`, writes `results/fig2/`) and plot (`030-fig2-plot.r`).
+- [x] Further metrics on every map (`020-validation-metrics.r`): KSim, Fuzzy Kappa Simulation,
+      similarity of differences, TOC AUC, disagreement, Brier; relations in
+      `figures/metric-{relations,agreement}.pdf`.
+- [ ] Decide which of the metric figures goes into the paper (main text or appendix), and whether
+      Fig. 2 (d) should show a kappa next to the FoM.
+- [x] Fig. 2 palette: validated, CVD-safe scales. Allocators in Okabe-Ito order, shared with the
+      metric figures (linetypes as second encoding in (e)); outcomes in two hue families (hits
+      blue, errors warm); land cover stepped in lightness, apart from the other panels' hues;
+      outlines with a white halo.
+
+## Verification
+
+Done (see README § Verification):
+
+- [x] uSAM bit-identical to clumpy end to end (`010-verify-clumpy`), by replaying clumpy's
+      uniforms through R's user-supplied RNG.
+- [x] uPAM grower against clumpy's `Patcher` (2000 scenarios); evoland's patch is a possible
+      outcome of Mazy's grower in every scenario.
+- [x] Greedy identical to lulcc's Ordered model where they are the same procedure
+      (`010-verify-greedy-lulcc`).
+- [x] KS, quantity and cell-wise frequency tests of Fig. 2's maps against the potentials
+      (`020-verify-placement`).
+
+Open:
+
+- [ ] uPAM's iteration re-draws pivots from fixed potentials over the shrinking pool, which
+      flattens inclusion towards less probable cells (`010-verify-upam-bias`, deciles). clumpy
+      avoids it by re-estimating P(z|u) on the remaining pool. Decide whether evoland should
+      correct for it (issue on evoland.plus) or document it.
+- [x] The observed map of Fig. 2 fits the true probabilities better than any of 199 other
+      seeds (`010d-observed-fit-seeds`): chance, the process is fine. Consider a band of
+      true-process draws in panel (a) or a more typical seed.
+- [ ] The `010-verify-*` steps load evoland.plus from a source checkout; switch to the pinned
+      package once the experiments move to the renamed `evoland.plus`.
+
 ## Experiments
 
 - [ ] Replicate `010-skill-attribution` over several landscape seeds per domain size; size and
       landscape are confounded with one seed each (`010-learner-comparison` already uses three).
-- [ ] evoland: the fix for upserts into all-key tables (`trans_preds_t`) is on the evoland-plus
-      branch `claude/elegant-cerf-w44s45` (`aa148e2`). Once it is merged and the pin moves,
-      `010-learner-comparison` can return from `method = "append"` to upsert.
+- [x] evoland: upserts into all-key tables (`trans_preds_t`) work on the current pin (`develop`
+      at `3bc7856`, ethzplus/evoland-plus#84); `010-learner-comparison` upserts again.
 - [ ] evoland `runs_t`: proposal for standard columns (`seed`, `kind`, `member`,
       `created_by`/`created_at`, an attributes map) pending a decision; the scripts here add
       `seed` ad hoc.

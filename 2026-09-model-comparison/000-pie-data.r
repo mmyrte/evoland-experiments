@@ -30,6 +30,7 @@ library(terra)
 data("pie", package = "lulcc")
 
 source("2026-09-model-comparison/common.r")
+only_for_dataset("pie")
 out_dir <- data_dir
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 

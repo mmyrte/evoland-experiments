@@ -50,6 +50,7 @@ suppressPackageStartupMessages(library(lulcc))
 library(data.table)
 source("2026-09-model-comparison/common.r")
 reset_timings("lulcc")
+unlink(file.path(outputs_dir, "lulcc-unallocated.csv"))
 
 lu <- raster::stack(lapply(c(1991, 1999), \(y) {
   raster::raster(file.path(data_dir, paste0("lu_", y, ".tif")))
@@ -101,6 +102,18 @@ viable_rules
 write_final <- function(model, dir, i) {
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   final <- model@output[[raster::nlayers(model@output)]]
+  # lulcc's stochastic Ordered mode gives up after 1000 iterations and marks the cells it could
+  # not place with -1 (it happens on the synthetic landscape, as shipped). They keep their 1991
+  # class, i.e. stay unallocated, and their number is recorded.
+  unallocated <- which(raster::values(final) == -1)
+  if (length(unallocated)) {
+    final[unallocated] <- lu$lu_1991[unallocated]
+    path <- file.path(outputs_dir, "lulcc-unallocated.csv")
+    utils::write.table(
+      data.frame(map = file.path(basename(dir), sprintf("r%02d.tif", i)), cells = length(unallocated)),
+      path, sep = ",", append = file.exists(path), col.names = !file.exists(path), row.names = FALSE
+    )
+  }
   stopifnot(
     "allocation left cells without a class" = all(raster::values(final) %in% c(1, 2, 3, NA))
   )

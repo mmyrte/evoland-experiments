@@ -165,11 +165,9 @@ run_experiment <- function(n_grid, seed = 1337L) {
       learner = mlr3::lrn("classif.rpart")
     )
   )
-  db$commit(
-    trans_pred_scored[order(-importance)][, head(.SD, 4), by = id_trans],
-    "trans_preds_t",
-    method = "overwrite"
-  )
+  # keep each transition's four most important predictors
+  trans_pred_scored[, is_selected := frank(-importance, ties.method = "first") <= 4L, by = id_trans]
+  db$trans_preds_t <- trans_pred_scored
   trans_models <- db$fit_full_models(
     learner = mlr3::lrn("classif.ranger", num.trees = 200)
   )
@@ -314,7 +312,7 @@ run_experiment <- function(n_grid, seed = 1337L) {
   allocate(
     db,
     id_periods = 3L,
-    allocator = alloc_clumpy_spec(),
+    allocator = alloc_clumpy_spec(avoid_aggregation = TRUE),
     select_score = "no.crossval",
     select_maximize = TRUE,
     id_run = members$id_run,

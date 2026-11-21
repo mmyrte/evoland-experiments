@@ -9,7 +9,7 @@
 #' realisation.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (it branches off at period 3, `id_period_eval_start`), the allocation parameters and the demand, so the estimators
+#' (`use_parent_trans_pot = TRUE`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials; the realisations differ only in the allocator's randomness.
 
 #| label: setup
@@ -33,7 +33,7 @@ timed(
   allocate(
     db,
     id_periods = 3L,
-    allocator = alloc_clumpy_spec(),
+    allocator = alloc_clumpy_spec(avoid_aggregation = TRUE),
     select_score = "no.crossval",
     select_maximize = TRUE,
     id_run = members$id_run,
@@ -41,8 +41,6 @@ timed(
   ),
   note = paste0(nrow(members), " realisations")
 )
-# one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
-db$checkpoint()
 
 #' # Figure of merit
 #'

@@ -51,7 +51,7 @@ library(mlr3learners)
 options(synthetic_process.source_only = TRUE)
 source("2026-09-paper-figures/000-synthetic-process.r")
 
-options(evoland.plus.ducklake_db_append_warning = FALSE)
+options(evoland.ducklake_db_append_warning = FALSE)
 
 grid_sizes <- c(30L, 90L)
 landscape_seeds <- c(1337L, 2024L, 4711L)
@@ -295,10 +295,9 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     ]
   }
 
-  # feature sets: committed per configuration run (fitting and prediction read them from
-  # the database), not for the base run. Lineage reads resolve trans_preds_t per
-  # (id_trans, id_pred) slice, so base-run rows would leak into every configuration's set:
-  # the base run holds the available predictors only while they are scored
+  # feature sets: each configuration run holds every candidate pair, with is_selected marking
+  # its set, so the base run's pairs (which it inherits through the lineage) cannot leak in.
+  # The base run holds the available predictors for scoring.
   db$trans_preds_t <- as_trans_preds_t(CJ(
     id_run = 0L,
     id_pred = available_preds,
@@ -307,7 +306,7 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
   scored <- db$get_pred_filter_score(
     filter = mlr3filters::FilterImportance$new(learner = mlr3::lrn("classif.rpart"))
   )
-  db$delete_from("trans_preds_t", where = "id_run = 0")
+  all_pairs <- CJ(id_trans = viable$id_trans, id_pred = union(available_preds, process_preds))
   feature_sets <- list(
     "available, rpart top 4" = scored[order(-importance)][,
       head(.SD, 4L),
@@ -382,15 +381,19 @@ run_case <- function(n_grid, landscape_seed, n_calib) {
     message(glue::glue(
       "n_grid={n_grid} seed={landscape_seed} n_calib={n_calib}: {cfg$learner} / {cfg$feature_set}"
     ))
-    trans_preds <- as_trans_preds_t(feature_sets[[cfg$feature_set]][, .(
-      id_run = cfg$id_run,
-      id_pred,
-      id_trans
-    )])
+    chosen <- feature_sets[[cfg$feature_set]][, .(id_trans, id_pred, is_selected = TRUE)]
+    trans_preds <- as_trans_preds_t(
+      chosen[all_pairs, on = .(id_trans, id_pred)][, .(
+        id_run = cfg$id_run,
+        id_pred,
+        id_trans,
+        is_selected = !is.na(is_selected)
+      )]
+    )
     fit_seconds <- NA_real_
     outcome <- tryCatch(
       {
-        db$trans_preds_t <- trans_preds
+        db$commit(trans_preds, "trans_preds_t", method = "upsert")
         set.seed(landscape_seed + i)
         fit_seconds <- system.time({
           models <- db$fit_full_models(
@@ -491,7 +494,7 @@ parallel::clusterEvalQ(cl, {
   data.table::setDTthreads(1L)
   options(
     synthetic_process.source_only = TRUE,
-    evoland.plus.ducklake_db_append_warning = FALSE
+    evoland.ducklake_db_append_warning = FALSE
   )
   source("2026-09-paper-figures/000-synthetic-process.r")
   NULL

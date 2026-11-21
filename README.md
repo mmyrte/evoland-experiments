@@ -10,7 +10,7 @@ and `TODO.md` (open work).
 | Status    | Sub-project                                              | Purpose                                                                                                                                  |
 | --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | active    | [`2026-05-ssp-ch/`](2026-05-ssp-ch/)                     | Re-implementation of the [SSP-CH scenarios](https://ssp-ch-szenarien.wsl.ch/en/) on the new evoland-plus. Empirical/statistical transition model, reproducible data sources, elicited SSP land-use demand. [README](2026-05-ssp-ch/README.md) · [TODO](2026-05-ssp-ch/TODO.md) |
-| active    | [`2026-09-paper-figures/`](2026-09-paper-figures/)       | Figure mock-ups for the evoland-plus model description paper, on small synthetic cases. Fig. 2: ensembles vs. single maps on a backcast. [README](2026-09-paper-figures/README.md) · [TODO](2026-09-paper-figures/TODO.md) |
+| active    | [`2026-09-paper-figures/`](2026-09-paper-figures/)       | Figure mock-ups for the evoland-plus model description paper, on small synthetic cases. Fig. 2: ensembles vs. single maps on a backcast. Verification of the allocators against clumpy and lulcc. [README](2026-09-paper-figures/README.md) · [TODO](2026-09-paper-figures/TODO.md) |
 | active    | [`2026-09-model-comparison/`](2026-09-model-comparison/) | Plum Island Ecosystems benchmark (lulcc's case): evoland-plus against lulcc (CLUE-S, Ordered), Dinamica EGO (native Weights of Evidence and as evoland's allocator) and CLUinPy, as an estimator × allocator matrix. [README](2026-09-model-comparison/README.md) · [TODO](2026-09-model-comparison/TODO.md) |
 | dormant   | [`2026-07-ssp-rsofun/`](2026-07-ssp-rsofun/)             | Process-based land-use-suitability predictors from [rsofun](https://github.com/mmyrte/rsofun) (P-model + SPLASH) as an interim stand-in for WASIM coupling. Forcing steps written, nothing consumes them. Kept as a design record. [README](2026-07-ssp-rsofun/README.md) · [TODO](2026-07-ssp-rsofun/TODO.md) |
 | reference | [`2025-10-valparish/`](2025-10-valparish/)               | Stub that co-evolved with early evoland-plus development. Not expected to run against any current commit. [README](2025-10-valparish/README.md) |
@@ -64,6 +64,13 @@ set up on Euler.
   - Rendered HTML with embedded graphics and richer visualisations (e.g. leaflet) is
     LFS-tracked (`.gitattributes`) and committed ad-hoc; the `_freeze/` cache is git-ignored.
 - **State lives in a DuckLake.** Each experiment builds a git-ignored `*.evolanddb`.
+- **Shared validation metrics.** `validation-metrics.r` (with its C++ kernel and
+  `validation-metrics-tests.r`) at the root is sourced by the 2026-09 experiments: figure of merit,
+  disagreement, Kappa Simulation, Fuzzy Kappa Simulation, similarity of differences, TOC AUC,
+  Brier. To move into evoland-plus once settled.
+- **Results for plotting elsewhere.** Expensive steps write their maps and scores to a
+  `results/` folder beside them (Parquet via git-LFS, CSV), and plot steps read only those, so
+  figures can be redrawn on another machine (e.g. macOS) without rerunning the models.
 - **Data provenance.** Ingest scripts ideally download from public sources and verify
   md5sums via `evoland::download_and_verify()` into the evoland cache, ensuring maximum
   reproducibility.

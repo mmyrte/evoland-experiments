@@ -5,12 +5,12 @@
 #' ---
 #'
 #' Allocates the observed 1991 → 1999 demand with Dinamica's Expander and Patcher, driven by
-#' evoland's `alloc_dinamica_spec()`, on the potentials of each estimator (`010`, `020`), once per
+#' evoland's `alloc_dinamica()`, on the potentials of each estimator (`010`, `020`), once per
 #' registered realisation. For the Weights of Evidence row this is Dinamica's own estimator and
 #' allocator, but with the run set up by evoland; `015` runs it as shipped for reference.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (it branches off at period 3, `id_period_eval_start`), the allocation parameters and the demand, so the estimators
+#' (`use_parent_trans_pot = TRUE`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials; the realisations differ only in the allocator's randomness.
 
 #| label: setup
@@ -42,8 +42,6 @@ timed(
   ),
   note = paste0(nrow(members), " realisations")
 )
-# one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
-db$checkpoint()
 
 #' # Figure of merit
 #'

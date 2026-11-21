@@ -94,8 +94,14 @@ db$row_count("coords_t")
 
 #| label: predictors
 db$pred_meta_t <- create_pred_meta_t(list(
-  ef_001 = list(pretty_name = "Elevation", data_type = "float"),
-  ef_002 = list(pretty_name = "Slope", data_type = "float"),
+  ef_001 = list(
+    pretty_name = if (pie_dataset == "pie") "Elevation" else "Accessibility",
+    data_type = "float"
+  ),
+  ef_002 = list(
+    pretty_name = if (pie_dataset == "pie") "Slope" else "Site quality",
+    data_type = "float"
+  ),
   ef_003 = list(pretty_name = "Distance to built land 1985", data_type = "float")
 ))
 db$pred_data_t <-
@@ -253,15 +259,18 @@ learner_by <- list(
 
 # the estimators fitted in evoland; Weights of Evidence comes from Dinamica (015, 020)
 evoland_estimators <- estimators[estimator %in% names(learner_by)]
+trans_preds_base <- db$fetch("trans_preds_t", id_run = 0L)
 modeled_by <- list()
 for (i in seq_len(nrow(evoland_estimators))) {
   id_run_estimator <- evoland_estimators$id_run[i]
   learner_id <- evoland_estimators$estimator[i]
+  # the estimator's run holds the base run's selection; fit_full_models() reads that run's
+  db$trans_preds_t <- as_trans_preds_t(
+    trans_preds_base[is_selected == TRUE, .(id_run = id_run_estimator, id_pred, id_trans)]
+  )
   trans_models <- timed(
     "evoland",
     paste0("fit_", learner_id),
-    # the estimator runs inherit run 0's predictor sets; the models are written under
-    # id_run_estimator
     db$fit_full_models(learner = learner_by[[learner_id]], id_run = id_run_estimator)
   )
   modeled_by[[learner_id]] <- unique(trans_models$id_trans[

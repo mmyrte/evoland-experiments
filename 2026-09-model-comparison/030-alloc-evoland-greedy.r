@@ -5,12 +5,12 @@
 #' ---
 #'
 #' Allocates the observed 1991 → 1999 demand with evoland's deterministic greedy allocator
-#' (`alloc_greedy_spec()`, joint ranking): each transition's demand goes to the cells of highest
+#' (`alloc_greedy()`, joint ranking): each transition's demand goes to the cells of highest
 #' adjusted potential, every cell changes at most once. This is the allocator behind lulcc's
 #' Ordered model and SEALS' rank-and-fill. One map per estimator.
 #'
 #' Every realisation is a child of its estimator's run (`common.r`) and inherits its potentials
-#' (it branches off at period 3, `id_period_eval_start`), the allocation parameters and the demand, so the estimators
+#' (`use_parent_trans_pot = TRUE`), the allocation parameters and the demand, so the estimators
 #' differ only in their potentials.
 
 #| label: setup
@@ -42,8 +42,6 @@ timed(
   ),
   note = paste0(nrow(members), " realisations")
 )
-# one snapshot per realisation: compact once the batch is done (ethzplus/evoland.plus#88)
-db$checkpoint()
 
 #' # Figure of merit
 #'

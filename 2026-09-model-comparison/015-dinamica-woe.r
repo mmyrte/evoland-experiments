@@ -80,6 +80,31 @@ viable <- alloc_params[, .(id_lulc_anterior, id_lulc_posterior)]
 demand <- fread(file.path(outputs_dir, "demand_transitions_1991_1999.csv"))
 n_anterior <- fread(file.path(outputs_dir, "demand_class_totals.csv"))[year == 1991]
 
+# The scripts list PIE's five transitions and bin PIE's factors (elevation in 5 m, slope in 1
+# degree steps). Fit them to the case at hand: keep only the viable transitions, and on the
+# synthetic landscape, whose two drivers lie in [0, 1], bin those in steps of 0.02.
+viable_keys <- viable[, paste0(id_lulc_anterior, "->", id_lulc_posterior)]
+for (script in c("calibrate.ego", "probabilities.ego", "simulate.ego")) {
+  path <- file.path(work_dir, script)
+  txt <- paste(readLines(path), collapse = "\n")
+  # a skeleton block per transition: "        1->2 [ ... ]," or the last one without the comma
+  for (key in setdiff(c("1->2", "1->3", "2->3", "3->1", "3->2"), viable_keys)) {
+    txt <- gsub(sprintf("\\n *%s \\[[^]]*\\],?", key), "", txt)
+  }
+  txt <- gsub("\\],(\\n *\\];)", "]\\1", txt) # a trailing comma left by removing the last block
+  # transition lists such as [1->2, 1->3, 2->3, 3->1, 3->2]
+  txt <- gsub(
+    "\\[1->2, 1->3, 2->3, 3->1, 3->2\\]",
+    paste0("[", paste(viable_keys, collapse = ", "), "]"),
+    txt
+  )
+  if (pie_dataset == "synthetic") {
+    txt <- gsub('"static_var/ef_001" 5 ', '"static_var/ef_001" 0.02 ', txt, fixed = TRUE)
+    txt <- gsub('"static_var/ef_002" 1 ', '"static_var/ef_002" 0.02 ', txt, fixed = TRUE)
+  }
+  writeLines(txt, path)
+}
+
 trans_rates <-
   viable[,
     .(id_lulc_anterior, id_lulc_posterior)

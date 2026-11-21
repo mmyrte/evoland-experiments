@@ -1,0 +1,5 @@
+avoid_aggregation,equal_potentials,scenarios,identical_to_clumpy_variant,differ_no_neighbour_left,differ_by_exact_ties,not_reachable,with_exact_ties,max_outcomes
+FALSE,FALSE,800,793,7,0,0,0,1
+FALSE,TRUE,200,100,1,99,0,182,41
+TRUE,FALSE,800,800,0,0,0,0,1
+TRUE,TRUE,200,137,0,63,0,147,63
