@@ -140,7 +140,7 @@ Dinamica, lulcc or CLUinPy.
 | [`040-alloc-lulcc.r`](040-alloc-lulcc.r) | lulcc 1.0.4: CLUE-S and Ordered on every estimator's class probabilities; as shipped, its GLMs on the 1991 map |
 | [`040-alloc-cluinpy.r`](040-alloc-cluinpy.r) | Calls [`040-alloc-cluinpy/run_pie.py`](040-alloc-cluinpy/run_pie.py): CLUMondo on every estimator's class probabilities; as shipped, CLUinPy's logistic suitability module |
 | [`050-compare.r`](050-compare.r) | Imports the maps made outside the DB as runs and computes: figure of merit (with random-allocation null), quantity/allocation disagreement and simulated transitions (`lulc_crosstab_v()`), fuzzy similarity, ANOVA decomposition, timings. Writes `figures/`, and every map and the potentials to `results/` |
-| [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation |
+| [`051-ensemble-scores.r`](051-ensemble-scores.r) | Each ensemble as a probabilistic forecast: multi-category (fair) Brier score of per-cell class frequencies, skill against random allocation, all through evoland's `brier_score_v()` (every ensemble is a set of runs in the database) |
 | [`051-validation-metrics.r`](051-validation-metrics.r) | Every map and ensemble scored with the validation metrics of `validation-metrics.r` (repository root): KSim, Fuzzy Kappa Simulation, similarity of differences, TOC AUC, disagreement, Brier; concentration on the potentials; ANOVA per metric. Reads and writes `results/` only |
 | [`052-check-greedy-ordered.r`](052-check-greedy-ordered.r) | Check: evoland's `alloc_greedy(arbitration = "ordered")` against lulcc's Ordered model, cell by cell |
 | [`060-fig3-matrix.r`](060-fig3-matrix.r) | Paper Fig. 3 (`figures/fig3-pie-matrix.pdf`): FoM/null over the crossing and the tools as shipped, ANOVA shares |
@@ -157,14 +157,26 @@ stacked fixes ethzplus/evoland-plus#59–#66, `lulc_crosstab_v()` and `get_read_
 now `3bc7856` (renamed `pred_wide_train_v()`/`pred_wide_predict_v()`, period filters, upserts
 into key-only tables, ethzplus/evoland-plus#84, #116, #125), now `evoland.plus` `d1d7794`
 (the renamed package; allocation through `allocate()` and allocator specifications, predictor
-sets through `is_selected`, ethzplus/evoland.plus#118, #124). The results below are from a
-rerun from scratch on `3bc7856` (R 4.6.2), see Replay check; the rerun on `d1d7794` changed
-them only where the allocator or estimator is stochastic, see Rerun on `d1d7794`.
+sets through `is_selected`, ethzplus/evoland.plus#118, #124), then `2ca273c` (no active run on
+the database, ethzplus/evoland.plus#134–#136), now `develop` at `a9236fb` (CLUMPY uPAM fixes
+and rook-adjacency patch statistics #150, `must_cpp()` without replay #146, Dinamica through
+its bundled loader #141, `brier_score_v()` #156). The results below are from a
+rerun from scratch on `3bc7856` (R 4.6.2), see Replay check; the reruns on `d1d7794` and
+`a9236fb` changed them only where the allocator or estimator is stochastic, see Rerun on
+`a9236fb` and Rerun on `d1d7794`.
+
+- **Running against another evoland.plus.** The scripts load evoland.plus with
+  `library(evoland.plus)` from whatever library the session has: the rv library of
+  `rproject.toml` when rv is installed (root `.Rprofile`), otherwise R's default libraries.
+  To run on a private build (e.g. a develop checkout), install it into a library of its own,
+  `R CMD INSTALL --library=<lib> <checkout>`, and put that library first with
+  `R_LIBS=<lib> ./execute-all.sh ...`; no file in the repository needs to change.
 
 - **Locale.** Run under a UTF-8 locale (`LC_ALL=C.UTF-8`). Under POSIX, R writes the `×` of
   the ensemble labels as `<U+00D7>` into the CSVs and figures (the run on `3bc7856` did).
-- **CLUMPY's `avoid_aggregation`** is set explicitly to `TRUE` in `030-alloc-evoland-clumpy.r`,
-  the default of `3bc7856`; `d1d7794`'s default is `FALSE` until ethzplus/evoland.plus#147.
+- **CLUMPY's `avoid_aggregation`** is set explicitly to `TRUE` in `030-alloc-evoland-clumpy.r`.
+  That is the default again from `a9236fb` on (ethzplus/evoland.plus#150), as it was in
+  `3bc7856`; `d1d7794` and `2ca273c` defaulted to `FALSE`.
 - **Reports** of `PIE_DATASET=synthetic` runs go to `html-reports-synthetic/`
   (`quarto-post-render.sh`), so the two datasets no longer overwrite each other's reports.
 
@@ -177,6 +189,10 @@ them only where the allocator or estimator is stochastic, see Rerun on `d1d7794`
   `/v2/mmyrte/evoland/manifests/latest` and `/v2/mmyrte/evoland/blobs/<digest>`) and untar it.
   Then install the bundled R package (`/opt/dinamica/usr/bin/Data/R/Dinamica_1.0.8.tar.gz`,
   which needs `RcppProgress`) and set the variables from the `install-dinamica` vignette.
+  From `a9236fb` on, evoland starts `DinamicaConsole` through the AppImage's bundled loader
+  (`chmod +x $DINAMICA_EGO_8_HOME/usr/lib/ld-linux-x86-64.so.2`), so `LD_LIBRARY_PATH` must not
+  point at Dinamica's libraries, and `exec_dinamica()` has no `disable_parallel` argument any
+  more (`015-dinamica-woe.r` passes `-disable-parallel-steps` itself).
   **Do not** set `DINAMICA_EGO_8_TEMP_DIR` in `~/.Renviron`: Dinamica hands the R processes it
   spawns a per-run temp dir through that variable, and an `.Renviron` override breaks every
   `CalculateRExpression` with "Failed to send message, session is closed". If it must be there,
@@ -198,6 +214,52 @@ them only where the allocator or estimator is stochastic, see Rerun on `d1d7794`
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes,kde`) restricts the estimators.
 
+## Rerun on `a9236fb` (2026-11-21)
+
+Both datasets rerun from scratch on evoland.plus `develop` at `a9236fb` (`R_LIBS` pointing at
+a private build, see Environment), lulcc 1.0.4, CLUinPy `7d18dfe`, clumpy `e9f73b9`, R 4.6.2,
+under `LC_ALL=C.UTF-8`, with quarto 1.10. **Not run: the two Dinamica steps**
+(`015-dinamica-woe.r`, `030-alloc-evoland-dinamica.r`): Dinamica EGO was not installed in
+that container, and running it from the image layer was not permitted there. They are adapted to develop by reading only. Their outputs come from the
+`d1d7794` run: the Weights of Evidence potentials of run 3000 were rebuilt from that run's
+`results/potentials.parquet` (adjusted potentials, which `020` re-ingests unchanged to 4e-9),
+and the Dinamica maps of the crossing and of Dinamica as shipped were imported from its
+`results/changes.parquet`. So the Dinamica column, the standalone Dinamica row and the HTML
+reports of those two steps are `d1d7794`'s (with the queen-adjacency patch parameters, see
+TODO), and `pie-timings.csv` has no Dinamica rows. Every other step ran.
+
+`051-ensemble-scores.r` now scores the ensembles with `brier_score_v()`; on this run's output it
+agrees with the former R code to 1.5e-15 in the (fair) Brier score and 1.3e-13 in the skill, over
+all 34 ensembles, and with the ensemble Brier scores of `051-validation-metrics.r` to 1e-15.
+`051-validation-metrics.r` keeps its own figure of merit and disagreement (it reads only
+`results/`, without the database); they equal `figure_of_merit_v()` exactly on all 490 maps and
+`lulc_crosstab_v()` on the maps checked.
+
+On PIE, against the run on `d1d7794`, **only the CLUMPY column moves** (ethzplus/evoland.plus#150: uPAM
+quota `round(rate * n)`, no stop at a pass without pivots, patches of exactly the mean area where
+there is no variance, and patch statistics by rook adjacency). Every other map of the crossing and
+of the tools as shipped is bit-identical, but for one Weights of Evidence × CLUE-S realisation
+with one false alarm more (the rebuilt potentials).
+
+- **PIE, FoM under CLUMPY:** random forest 0.0292 → 0.0300, Bayes-eKDE 0.0295 → 0.0291,
+  logistic regression 0.0264 → 0.0262, naive Bayes 0.0311 → 0.0312, Weights of Evidence 0.0246
+  (unchanged); the ranking under CLUMPY stays naive Bayes first, logistic regression fourth.
+  Gross change 4 752–4 754 cells, as before.
+- **PIE, fair Brier skill under CLUMPY:** −0.035 to +0.004 (was −0.033 to +0.002); random
+  forest −0.006 → −0.003, logistic regression +0.002 → +0.004, Bayes-eKDE −0.030 → −0.034,
+  naive Bayes −0.033 → −0.035. The other allocators are unchanged.
+- **PIE, variance shares of FoM:** estimator 41.4 % (40.4 %), allocator 36.5 % (37.8 %),
+  interaction 11.9 % (12.6 %), replicates 10.2 % (9.1 %). Per metric (`051`): FKS r = 4
+  estimator 58 % (53 %), allocator 14 % (18 %); KSim, similarity of differences, TOC AUC,
+  allocation disagreement and Brier within 1–2 points.
+- **PIE, CLUMPY concentration:** 17.8 % of its change in the top 5 % of the potentials (17.2 %).
+- **Synthetic:** the same pattern. FoM under CLUMPY 0.069–0.136 → 0.070–0.139, fair Brier skill
+  under CLUMPY +0.006 to +0.144 → +0.006 to +0.147; variance shares of FoM: estimator 69.7 %
+  (68.8 %), allocator 13.9 % (14.8 %), interaction 16.3 % (16.3 %). Besides CLUMPY, the
+  Bayes-eKDE maps under greedy, CLUE-S, Ordered and CLUMondo move (FoM by at most 0.0001): on
+  the synthetic landscape, clumpy's eKDE potentials (`015-clumpy-kde`) differ from the previous
+  run's by up to 0.26, so they do not replay there (on PIE they do, to 2e-15; TODO).
+
 ## Rerun on `d1d7794` (2026-11-19)
 
 Both datasets rerun from scratch (`./execute-all.sh --workers 2 '2026-09-model-comparison/0*.r'`,
@@ -213,7 +275,7 @@ CLUinPy `7d18dfe`, R 4.6.2, under `LC_ALL=C.UTF-8`. Every step ran. Against the 
   shares: estimator 68.8 % (68.4 %), allocator 14.8 % (14.9 %).
 
 The tables further down still give the numbers of `3bc7856`; the CSVs in `figures/`,
-`figures-synthetic/`, `results/` and `results-synthetic/` are those of `d1d7794`.
+`figures-synthetic/`, `results/` and `results-synthetic/` are now those of `a9236fb` (above).
 
 ## Results: the 5 × 6 crossing (2026-10-22, rerun 2026-11-01 on `3bc7856`)
 
@@ -528,7 +590,8 @@ actually took:
     the community effects of an R or Python package.
   - **Exact replay.** Only single-threaded and with `-predefined-seed` (see Replay check:
     WoE probability maps differ between parallel runs, and without `-predefined-seed` every run
-    draws a fresh seed).
+    draws a fresh seed). evoland.plus `a9236fb` (#141) reports that as of Dinamica 8.14.1 even
+    that does not reproduce an allocation.
   - **Auditability.** Medium to high.
 - **IDRISI TerrSet liberaGIS LCM.** Not attempted. It is GUI-driven and Windows-only, and its
   licence forbids reverse engineering; Mazy et al. have reproduced the LCM logic. It is useful

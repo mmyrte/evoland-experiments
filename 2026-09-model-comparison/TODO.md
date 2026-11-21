@@ -9,11 +9,23 @@ Open work only. Design rationale and results are in [`README.md`](README.md).
       devcontainer (mmyrte/evoland-experiments#3).
 - [ ] **Bayes-eKDE × CLUMPY**: one realisation of 20 differed between the two runs (0.0003 FoM);
       check whether the eKDE potentials (`015-clumpy-kde`) replay bit for bit.
+      On PIE they do (rerun on `a9236fb`: to 2e-15); on the synthetic landscape they do not
+      (up to 0.26 apart between the `d1d7794` and `a9236fb` runs), so look for an unseeded draw
+      in `015-clumpy-kde/fit_predict.py` or ekde.
+- [ ] **Dinamica steps on `a9236fb`.** `015-dinamica-woe.r` and `030-alloc-evoland-dinamica.r`
+      were adapted to develop (`exec_dinamica()` without `disable_parallel`) but not run: the
+      cloud container of the 2026-11-21 rerun had no Dinamica. Their maps and the WoE potentials
+      in `figures/`, `results/` (and `-synthetic`) are carried over from the `d1d7794` run, with
+      patch parameters estimated by queen adjacency; `a9236fb` estimates them by rook adjacency
+      (smaller patches), which `015`'s standalone run and `030`'s Dinamica column also read.
+      Rerun both where Dinamica is installed, then `050` onwards.
 - [ ] **Paper:** `main.tex` cites the ANOVA shares 36/39/15/9 %; the rerun gives 40/38/13/9 %,
-      moved by Dinamica's seeds alone. Either report a range over reruns, or find a way to give
-      each Dinamica member its own replayable seed (`-predefined-seed` gives every run the same).
+      moved by Dinamica's seeds alone, and the rerun on `a9236fb` (CLUMPY fixes) 41/37/12/10 %.
+      Either report a range over reruns, or find a way to give each Dinamica member its own
+      replayable seed (`-predefined-seed` gives every run the same).
 - [ ] **Render via quarto** (`execute-all.sh`) and commit the HTML reports from a machine with
-      LFS push access (the cloud container gets 403 from lfs.github.com).
+      LFS push access (the cloud container gets 403 from lfs.github.com). The reports of the
+      2026-11-21 rerun on `a9236fb` are committed; their LFS objects still have to be pushed.
 - [ ] **Rerun the scaling benchmark** (`080-scaling/`) on the current pin, once the evoland
       performance issues below are settled; the README table predates the crossing.
 - [ ] **Tool versions** in a table for the paper.
