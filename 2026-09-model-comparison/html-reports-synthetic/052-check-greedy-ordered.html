@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: evoland’s greedy allocator, ordered, against lulcc’s Ordered model</title>
 <style>
@@ -2231,7 +2231,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2266,33 +2266,33 @@ vertical-align: -.125em;
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  ]</span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> db<span class="sc">$</span>runs_t</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_runs_t</span>(<span class="fu">rbind</span>(</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    runs[<span class="sc">!</span>id_run <span class="sc">%in%</span> checks<span class="sc">$</span>id_run_greedy],</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    checks[, .(</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_run =</span> id_run_greedy,</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">parent_id_run =</span> id_run_parent,</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">description =</span> <span class="fu">paste</span>(label, <span class="st">&quot;x greedy, ordered (check against lulcc Ordered)&quot;</span>),</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">seed =</span> <span class="cn">NA_integer_</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    )]</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  )),</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;runs_t&quot;</span>,</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> db<span class="sc">$</span>runs_t</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_runs_t</span>(<span class="fu">rbind</span>(</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    runs[<span class="sc">!</span>id_run <span class="sc">%in%</span> checks<span class="sc">$</span>id_run_greedy],</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    checks[, .(</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_run =</span> id_run_greedy,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">parent_id_run =</span> id_run_parent,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">description =</span> <span class="fu">paste</span>(label, <span class="st">&quot;x greedy, ordered (check against lulcc Ordered)&quot;</span>),</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>      <span class="co"># branches off its estimator run at period 3, to allocate on its potentials and context</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">id_period_eval_start =</span> <span class="dv">3</span>L</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    )],</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">fill =</span> <span class="cn">TRUE</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  )),</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;runs_t&quot;</span>,</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="priority" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Priority</h1>
 <p>lulcc’s <code>order = c(2, 1, 3)</code> in transitions: those into built first, then into forest, then into other; within a class by anterior class.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="dv">0</span>L</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>priority <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_meta_t[is_viable <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>priority <span class="ot">&lt;-</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  priority[</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">order</span>(<span class="fu">match</span>(id_lulc_posterior, <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">1</span>L, <span class="dv">3</span>L)), id_lulc_anterior)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>priority[, .(id_trans, id_lulc_anterior, id_lulc_posterior)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>priority <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_meta_t[is_viable <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>priority <span class="ot">&lt;-</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  priority[</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">order</span>(<span class="fu">match</span>(id_lulc_posterior, <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">1</span>L, <span class="dv">3</span>L)), id_lulc_anterior)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>priority[, .(id_trans, id_lulc_anterior, id_lulc_posterior)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Transition Metadata Table
 Total transition types: 4
@@ -2307,42 +2307,39 @@ Total observed transitions: 0
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(checks))) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> checks<span class="sc">$</span>id_run_greedy[i]</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">allocate</span>(</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    db,</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_periods =</span> <span class="dv">3</span>L,</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">allocator =</span> <span class="fu">alloc_greedy_spec</span>(<span class="at">arbitration =</span> <span class="st">&quot;ordered&quot;</span>, <span class="at">order =</span> priority<span class="sc">$</span>id_trans),</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">select_score =</span> <span class="st">&quot;no.crossval&quot;</span>,</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">select_maximize =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">potentials_ancestor =</span> <span class="dv">1</span>L,</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">update_neighbors =</span> <span class="cn">FALSE</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">allocate</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  db,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">id_periods =</span> <span class="dv">3</span>L,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">allocator =</span> <span class="fu">alloc_greedy_spec</span>(<span class="at">arbitration =</span> <span class="st">&quot;ordered&quot;</span>, <span class="at">order =</span> priority<span class="sc">$</span>id_trans),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">select_score =</span> <span class="st">&quot;no.crossval&quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">select_maximize =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">id_run =</span> checks<span class="sc">$</span>id_run_greedy,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">update_neighbors =</span> <span class="cn">FALSE</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="comparison" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Comparison</h1>
 <p>Figure of merit of both against the observation, and the agreement of the two 1999 maps: the share of all cells, and of the cells either of them changed, in the same class.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>fom <span class="ot">&lt;-</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">figure_of_merit_v</span>(</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> <span class="dv">2</span>L,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_reference =</span> id_run_observed,</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_simulated =</span> <span class="fu">c</span>(checks<span class="sc">$</span>id_run_greedy, checks<span class="sc">$</span>id_run_lulcc)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  )[,</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    .(id_run, figure_of_merit)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># a run&#39;s 1999 map, read through its lineage</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>map_1999 <span class="ot">&lt;-</span> <span class="cf">function</span>(id_run) {</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> id_run</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> <span class="st">&quot;id_period = 3&quot;</span>)[, .(id_coord, id_lulc)]</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="dv">0</span>L</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>anterior <span class="ot">&lt;-</span> db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> <span class="st">&quot;id_period = 2&quot;</span>)[, .(id_coord, <span class="at">anterior =</span> id_lulc)]</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fom <span class="ot">&lt;-</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">figure_of_merit_v</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> <span class="dv">2</span>L,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_reference =</span> id_run_observed,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_simulated =</span> <span class="fu">c</span>(checks<span class="sc">$</span>id_run_greedy, checks<span class="sc">$</span>id_run_lulcc)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  )[,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    .(id_run, figure_of_merit)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># a run&#39;s 1999 map, read through its lineage</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>map_1999 <span class="ot">&lt;-</span> <span class="cf">function</span>(id_run) {</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">id_run =</span> id_run, <span class="at">where =</span> <span class="st">&quot;id_period = 3&quot;</span>)[, .(id_coord, id_lulc)]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>anterior <span class="ot">&lt;-</span> db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">id_run =</span> <span class="dv">0</span>L, <span class="at">where =</span> <span class="st">&quot;id_period = 2&quot;</span>)[, .(</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  id_coord,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">anterior =</span> id_lulc</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>)]</span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>agreement <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(checks)), <span class="cf">function</span>(i) {</span>
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  maps <span class="ot">&lt;-</span></span>
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    anterior[</span>
@@ -2389,21 +2386,21 @@ Total observed transitions: 0
 2:       random forest          2801         2501          0.2232150
 3: Weights of Evidence          3801         3501          0.1715023
 4:         naive Bayes          4801         4501          0.2196131
-5:          Bayes-eKDE          5801         5501          0.1542265
+5:          Bayes-eKDE          5801         5501          0.1542142
    fom_lulcc_ordered cells_same changed_greedy changed_lulcc changed_either
                &lt;num&gt;      &lt;num&gt;          &lt;int&gt;         &lt;int&gt;          &lt;int&gt;
 1:         0.2314832  0.9823897           7294          5905           7435
 2:         0.2199870  0.9824202           7294          5871           7428
 3:         0.1720017  0.9804035           7294          6160           7689
 4:         0.2012134  0.9706053           7294          6160           7993
-5:         0.1432849  0.9843860           7294          5791           7309
+5:         0.1433856  0.9844165           7294          5792           7308
    changed_same built_gain_same
           &lt;num&gt;           &lt;num&gt;
 1:    0.7674512       0.9616130
 2:    0.7676360       0.9747964
 3:    0.7497724       0.8627375
 4:    0.6389341       0.8627375
-5:    0.7902586       0.9941838</code></pre>
+5:    0.7906404       0.9945715</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fwrite</span>(result, <span class="fu">file.path</span>(figures_dir, <span class="st">&quot;pie-greedy-ordered-vs-lulcc.csv&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

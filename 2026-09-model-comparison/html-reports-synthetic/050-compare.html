@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: comparison across tools</title>
 <style>
@@ -2238,7 +2238,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2406,32 +2406,31 @@ vertical-align: -.125em;
 <h1 data-number="2"><span class="header-section-number">2</span> Import the maps made outside the database</h1>
 <p>Runs <code>parent + offset + i</code>, children of their estimator’s run (the as-shipped lulcc and CLUinPy parents are registered here), so every map is read through the same lineage machinery.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> db<span class="sc">$</span>runs_t</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>imported <span class="ot">&lt;-</span> members[<span class="sc">!</span><span class="fu">is.na</span>(maps)]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>parents_missing <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(imported<span class="sc">$</span>id_run_parent, runs<span class="sc">$</span>id_run)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  runs[<span class="sc">!</span>id_run <span class="sc">%in%</span> imported<span class="sc">$</span>id_run],</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.table</span>(</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run =</span> parents_missing,</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> <span class="dv">0</span>L,</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(<span class="st">&quot;parent of the as-shipped runs&quot;</span>, parents_missing)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  ),</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  imported[, .(</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> id_run_parent,</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(ensemble, <span class="st">&quot;realisation&quot;</span>, member)</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  )],</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">fill =</span> <span class="cn">TRUE</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(<span class="fu">as_runs_t</span>(runs), <span class="st">&quot;runs_t&quot;</span>, <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> db<span class="sc">$</span>runs_t</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>imported <span class="ot">&lt;-</span> members[<span class="sc">!</span><span class="fu">is.na</span>(maps)]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>parents_missing <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(imported<span class="sc">$</span>id_run_parent, runs<span class="sc">$</span>id_run)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>runs <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  runs[<span class="sc">!</span>id_run <span class="sc">%in%</span> imported<span class="sc">$</span>id_run],</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.table</span>(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run =</span> parents_missing,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> <span class="dv">0</span>L,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(<span class="st">&quot;parent of the as-shipped runs&quot;</span>, parents_missing)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  imported[, .(</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    id_run,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">parent_id_run =</span> id_run_parent,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">description =</span> <span class="fu">paste</span>(ensemble, <span class="st">&quot;realisation&quot;</span>, member)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  )],</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">fill =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(<span class="fu">as_runs_t</span>(runs), <span class="st">&quot;runs_t&quot;</span>, <span class="at">method =</span> <span class="st">&quot;overwrite&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 499</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The maps share the grid of the input rasters, so their values are read by cell index rather</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># than through extract_using_coords_t()&#39;s point geometries (ethzplus/evoland-plus#86), and each</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ensemble is committed at once: one snapshot per ensemble instead of one per map.</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> db<span class="sc">$</span>coords_t</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">as_coords_t</span>(db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;coords_t&quot;</span>))</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">cellFromXY</span>(<span class="fu">read_lu</span>(<span class="dv">1991</span>), <span class="fu">as.matrix</span>(coords[, .(lon, lat)]))</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (dir_maps <span class="cf">in</span> <span class="fu">unique</span>(imported<span class="sc">$</span>maps)) {</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  ensemble_maps <span class="ot">&lt;-</span> imported[maps <span class="sc">==</span> dir_maps]</span>
@@ -2454,54 +2453,53 @@ vertical-align: -.125em;
 <section id="figure-of-merit" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Figure of merit</h1>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>fom <span class="ot">&lt;-</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">figure_of_merit_v</span>(</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> <span class="dv">2</span>L,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_reference =</span> id_run_observed,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_simulated =</span> members<span class="sc">$</span>id_run</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  )[</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    members,</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ensemble expectation: ratio of the mean counts, not the mean of the ratios</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>fom_ensemble <span class="ot">&lt;-</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  fom[,</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">lapply</span>(.SD, mean),</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>      .(</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_sd =</span> <span class="fu">sd</span>(figure_of_merit),</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_min =</span> <span class="fu">min</span>(figure_of_merit),</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_max =</span> <span class="fu">max</span>(figure_of_merit),</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">figure_of_merit_null =</span> <span class="fu">mean</span>(figure_of_merit_null)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> .(ensemble, estimator_label, allocator_label, as_shipped),</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    .SDcols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;hits&quot;</span>, <span class="st">&quot;wrong_hits&quot;</span>, <span class="st">&quot;misses&quot;</span>, <span class="st">&quot;false_alarms&quot;</span>)</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  ][,</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">figure_of_merit =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> misses <span class="sc">+</span> false_alarms),</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">producers_accuracy =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> misses),</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">users_accuracy =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> false_alarms)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  ][,</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    skill_over_null <span class="sc">:</span><span class="er">=</span> figure_of_merit <span class="sc">/</span> figure_of_merit_null</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  ][</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">order</span>(<span class="sc">-</span>figure_of_merit)</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>fom_ensemble[,</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  .(</span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    ensemble,</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">figure_of_merit =</span> <span class="fu">round</span>(figure_of_merit, <span class="dv">4</span>),</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">fom_sd =</span> <span class="fu">round</span>(fom_sd, <span class="dv">4</span>),</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">null =</span> <span class="fu">round</span>(figure_of_merit_null, <span class="dv">4</span>),</span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">skill_over_null =</span> <span class="fu">round</span>(skill_over_null, <span class="dv">2</span>),</span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">producers_accuracy =</span> <span class="fu">round</span>(producers_accuracy, <span class="dv">3</span>),</span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">users_accuracy =</span> <span class="fu">round</span>(users_accuracy, <span class="dv">3</span>)</span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fom <span class="ot">&lt;-</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">figure_of_merit_v</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> <span class="dv">2</span>L,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_reference =</span> id_run_observed,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_simulated =</span> members<span class="sc">$</span>id_run</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  )[</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    members,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ensemble expectation: ratio of the mean counts, not the mean of the ratios</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>fom_ensemble <span class="ot">&lt;-</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  fom[,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">lapply</span>(.SD, mean),</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>      .(</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_sd =</span> <span class="fu">sd</span>(figure_of_merit),</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_min =</span> <span class="fu">min</span>(figure_of_merit),</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">fom_max =</span> <span class="fu">max</span>(figure_of_merit),</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">figure_of_merit_null =</span> <span class="fu">mean</span>(figure_of_merit_null)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> .(ensemble, estimator_label, allocator_label, as_shipped),</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    .SDcols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;hits&quot;</span>, <span class="st">&quot;wrong_hits&quot;</span>, <span class="st">&quot;misses&quot;</span>, <span class="st">&quot;false_alarms&quot;</span>)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  ][,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">figure_of_merit =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> misses <span class="sc">+</span> false_alarms),</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">producers_accuracy =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> misses),</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">users_accuracy =</span> hits <span class="sc">/</span> (hits <span class="sc">+</span> wrong_hits <span class="sc">+</span> false_alarms)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  ][,</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    skill_over_null <span class="sc">:</span><span class="er">=</span> figure_of_merit <span class="sc">/</span> figure_of_merit_null</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>  ][</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">order</span>(<span class="sc">-</span>figure_of_merit)</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>fom_ensemble[,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  .(</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    ensemble,</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">figure_of_merit =</span> <span class="fu">round</span>(figure_of_merit, <span class="dv">4</span>),</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">fom_sd =</span> <span class="fu">round</span>(fom_sd, <span class="dv">4</span>),</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">null =</span> <span class="fu">round</span>(figure_of_merit_null, <span class="dv">4</span>),</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">skill_over_null =</span> <span class="fu">round</span>(skill_over_null, <span class="dv">2</span>),</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">producers_accuracy =</span> <span class="fu">round</span>(producers_accuracy, <span class="dv">3</span>),</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">users_accuracy =</span> <span class="fu">round</span>(users_accuracy, <span class="dv">3</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                                               ensemble figure_of_merit fom_sd
                                                  &lt;char&gt;           &lt;num&gt;  &lt;num&gt;
@@ -2519,23 +2517,23 @@ vertical-align: -.125em;
 12:                              random forest × CLUE-S          0.1647 0.0001
 13:                              naive Bayes × Dinamica          0.1604 0.0023
 14:                      logistic regression × Dinamica          0.1588 0.0025
-15:                                 Bayes-eKDE × greedy          0.1543     NA
-16:                      logistic regression × CLUMondo          0.1542 0.0001
+15:                      logistic regression × CLUMondo          0.1542 0.0001
+16:                                 Bayes-eKDE × greedy          0.1542     NA
 17:                     lulcc GLM × CLUE-S (as shipped)          0.1509 0.0001
 18:                            random forest × Dinamica          0.1498 0.0029
-19:                                Bayes-eKDE × Ordered          0.1433     NA
+19:                                Bayes-eKDE × Ordered          0.1434     NA
 20: Dinamica WoE × Dinamica (simulate.ego) (as shipped)          0.1413 0.0024
-21:                            random forest × CLUMondo          0.1364 0.0003
-22:                                naive Bayes × CLUMPY          0.1357 0.0028
+21:                                naive Bayes × CLUMPY          0.1385 0.0023
+22:                            random forest × CLUMondo          0.1364 0.0003
 23:                    lulcc GLM × Ordered (as shipped)          0.1324 0.0029
 24:                                 Bayes-eKDE × CLUE-S          0.1273 0.0001
 25:                               Bayes-eKDE × Dinamica          0.1268 0.0024
 26:                               Bayes-eKDE × CLUMondo          0.1251 0.0000
-27:                                 Bayes-eKDE × CLUMPY          0.1050 0.0019
-28:                        logistic regression × CLUMPY          0.1000 0.0022
-29:                              random forest × CLUMPY          0.0967 0.0024
+27:                                 Bayes-eKDE × CLUMPY          0.1068 0.0019
+28:                        logistic regression × CLUMPY          0.1015 0.0024
+29:                              random forest × CLUMPY          0.0978 0.0023
 30:                      Weights of Evidence × Dinamica          0.0926 0.0022
-31:                        Weights of Evidence × CLUMPY          0.0693 0.0016
+31:                        Weights of Evidence × CLUMPY          0.0700 0.0026
 32:            CLUinPy logistic × CLUMondo (as shipped)          0.0542 0.0000
 33:                      Weights of Evidence × CLUMondo          0.0390 0.0021
 34:                        Weights of Evidence × CLUE-S          0.0305 0.0001
@@ -2557,23 +2555,23 @@ vertical-align: -.125em;
 12: 0.0210            7.85              0.221          0.361
 13: 0.0359            4.47              0.274          0.274
 14: 0.0359            4.42              0.272          0.272
-15: 0.0359            4.30              0.265          0.265
-16: 0.0180            8.57              0.202          0.353
+15: 0.0180            8.57              0.202          0.353
+16: 0.0359            4.30              0.265          0.265
 17: 0.0387            3.89              0.418          0.186
 18: 0.0359            4.17              0.258          0.259
-19: 0.0332            4.31              0.223          0.281
+19: 0.0332            4.32              0.223          0.281
 20: 0.0359            3.94              0.246          0.246
-21: 0.0167            8.14              0.179          0.322
-22: 0.0359            3.78              0.236          0.236
+21: 0.0359            3.86              0.240          0.240
+22: 0.0167            8.14              0.179          0.322
 23: 0.0228            5.81              0.181          0.318
 24: 0.0320            3.97              0.197          0.259
 25: 0.0359            3.53              0.223          0.224
-26: 0.0313            3.99              0.193          0.256
-27: 0.0359            2.92              0.189          0.189
-28: 0.0359            2.78              0.180          0.180
-29: 0.0359            2.69              0.175          0.175
+26: 0.0313            3.99              0.193          0.257
+27: 0.0359            2.97              0.191          0.191
+28: 0.0359            2.83              0.183          0.183
+29: 0.0359            2.72              0.177          0.177
 30: 0.0359            2.58              0.169          0.169
-31: 0.0359            1.93              0.129          0.129
+31: 0.0359            1.95              0.130          0.130
 32: 0.0104            5.19              0.072          0.147
 33: 0.0093            4.19              0.052          0.111
 34: 0.0102            2.99              0.041          0.085
@@ -2609,20 +2607,20 @@ vertical-align: -.125em;
 <pre><code>Key: &lt;id_lulc_anterior, id_lulc_posterior&gt;
    id_lulc_anterior id_lulc_posterior Bayes-eKDE × CLUE-S Bayes-eKDE × CLUMPY
               &lt;int&gt;             &lt;int&gt;               &lt;num&gt;               &lt;num&gt;
-1:                1                 2              434.15              354.00
-2:                1                 3             3108.35             3971.05
+1:                1                 2              435.75               354.0
+2:                1                 3             3109.15              3971.1
 3:                2                 1                  NA                  NA
 4:                2                 3                  NA                  NA
-5:                3                 1               44.00              744.00
-6:                3                 2             1968.00             2225.05
+5:                3                 1               44.00               744.0
+6:                3                 2             1968.00              2225.0
    Bayes-eKDE × CLUMondo Bayes-eKDE × Dinamica Bayes-eKDE × Ordered
                    &lt;num&gt;                 &lt;num&gt;                &lt;num&gt;
-1:                 544.0                   353                  369
-2:                2999.9                  3970                 3212
+1:                   541                   353                  368
+2:                  3000                  3970                 3213
 3:                    NA                    NA                   NA
 4:                    NA                    NA                   NA
-5:                   0.0                   743                    0
-6:                1951.0                  2224                 2210
+5:                     0                   743                    0
+6:                  1951                  2224                 2211
    Bayes-eKDE × greedy CLUinPy logistic × CLUMondo (as shipped)
                  &lt;num&gt;                                    &lt;num&gt;
 1:                 354                                  2562.20
@@ -2641,12 +2639,12 @@ vertical-align: -.125em;
 6:                                                2224
    Weights of Evidence × CLUE-S Weights of Evidence × CLUMPY
                           &lt;num&gt;                        &lt;num&gt;
-1:                      2589.15                       354.00
-2:                       957.25                      3971.00
+1:                      2589.15                        354.0
+2:                       957.25                       3971.1
 3:                           NA                           NA
 4:                           NA                           NA
-5:                         0.00                       744.00
-6:                         0.00                      2225.05
+5:                         0.00                        744.0
+6:                         0.00                       2225.0
    Weights of Evidence × CLUMondo Weights of Evidence × Dinamica
                             &lt;num&gt;                          &lt;num&gt;
 1:                        2585.85                            353
@@ -2666,11 +2664,11 @@ vertical-align: -.125em;
    logistic regression × CLUE-S logistic regression × CLUMPY
                           &lt;num&gt;                        &lt;num&gt;
 1:                      1479.40                       354.00
-2:                      2052.45                      3971.10
+2:                      2052.45                      3971.15
 3:                           NA                           NA
 4:                           NA                           NA
 5:                         0.00                       744.00
-6:                      1064.10                      2225.05
+6:                      1064.10                      2225.00
    logistic regression × CLUMondo logistic regression × Dinamica
                             &lt;num&gt;                          &lt;num&gt;
 1:                         1834.8                            353
@@ -2698,7 +2696,7 @@ vertical-align: -.125em;
    naive Bayes × CLUE-S naive Bayes × CLUMPY naive Bayes × CLUMondo
                   &lt;num&gt;                &lt;num&gt;                  &lt;num&gt;
 1:                 0.00               354.00                1501.85
-2:              3554.10              3971.15                2062.80
+2:              3554.10              3971.05                2062.80
 3:                   NA                   NA                     NA
 4:                   NA                   NA                     NA
 5:                 0.00               744.00                   0.00
@@ -2714,11 +2712,11 @@ vertical-align: -.125em;
    random forest × CLUE-S random forest × CLUMPY random forest × CLUMondo
                     &lt;num&gt;                  &lt;num&gt;                    &lt;num&gt;
 1:                1618.95                 354.00                  1957.15
-2:                1913.50                3971.05                  1459.55
+2:                1913.50                3971.10                  1459.55
 3:                     NA                     NA                       NA
 4:                     NA                     NA                       NA
 5:                   0.00                 744.00                     0.00
-6:                 929.15                2225.00                   649.50
+6:                 929.15                2225.05                   649.50
    random forest × Dinamica random forest × Ordered random forest × greedy
                       &lt;num&gt;                   &lt;num&gt;                  &lt;num&gt;
 1:                      353                     289                    354
@@ -2734,83 +2732,82 @@ vertical-align: -.125em;
 <h1 data-number="4"><span class="header-section-number">4</span> Quantity and allocation disagreement, gross change</h1>
 <p>Each simulated 1999 map against the observed one (Pontius &amp; Millones 2011), and against the 1991 map for the gross change and the simulated transition counts. One DuckDB query counts the cells of every run by their 1991, observed and simulated class; <code>lulc_crosstab_v()</code> does the same for one pair of runs at a time, but calling it twice per run costs two catalog round trips each (ethzplus/evoland-plus#85), five minutes over the ~500 runs here. Every run stores its complete 1999 map, so the query reads the runs’ own rows.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>crosstab <span class="ot">&lt;-</span> <span class="cf">function</span>(id_run_anterior, id_run_post, id_period_anterior) {</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">lulc_crosstab_v</span>(</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> id_period_anterior,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_anterior =</span> id_run_anterior,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_post =</span> id_run_post</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>pontius <span class="ot">&lt;-</span> <span class="cf">function</span>(ct) {</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># rows: observed class, columns: simulated class, as shares of all cells</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  share <span class="ot">&lt;-</span> ct[, .(id_lulc_anterior, id_lulc_posterior, <span class="at">p =</span> n_cells <span class="sc">/</span> <span class="fu">sum</span>(n_cells))]</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  quantity <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">abs</span>(</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    share[, .(<span class="at">p =</span> <span class="fu">sum</span>(p)), <span class="at">keyby =</span> .(<span class="at">k =</span> id_lulc_anterior)]<span class="sc">$</span>p <span class="sc">-</span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>      share[, .(<span class="at">p =</span> <span class="fu">sum</span>(p)), <span class="at">keyby =</span> .(<span class="at">k =</span> id_lulc_posterior)][<span class="fu">J</span>(lulc_classes), <span class="at">on =</span> <span class="st">&quot;k&quot;</span>][</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">is.na</span>(p),</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">p :=</span> <span class="dv">0</span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>      ]<span class="sc">$</span>p</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">/</span></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  total <span class="ot">&lt;-</span> share[id_lulc_anterior <span class="sc">!=</span> id_lulc_posterior, <span class="fu">sum</span>(p)]</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">quantity =</span> quantity, <span class="at">allocation =</span> total <span class="sc">-</span> quantity, <span class="at">total =</span> total)</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>run_cells <span class="ot">&lt;-</span></span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">get_query</span>(glue<span class="sc">::</span><span class="fu">glue</span>(</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span></span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="st">    select</span></span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_run,</span></span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="st">      a.id_lulc as id_lulc_1991,</span></span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="st">      o.id_lulc as id_lulc_observed,</span></span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_lulc as id_lulc_simulated,</span></span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="st">      count(*)::integer as n_cells</span></span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="st">    from</span></span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="st">      dl_db.lulc_data_t s</span></span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a><span class="st">      inner join dl_db.lulc_data_t a</span></span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="st">        on a.id_coord = s.id_coord and a.id_run = 0 and a.id_period = 2</span></span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="st">      inner join dl_db.lulc_data_t o</span></span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="st">        on o.id_coord = s.id_coord and o.id_run = {id_run_observed} and o.id_period = 3</span></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a><span class="st">    where</span></span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_period = 3</span></span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="st">      and s.id_run in ({paste(members$id_run, collapse = &#39;, &#39;)})</span></span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="st">    group by all</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a><span class="st">    &quot;</span></span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">setequal</span>(run_cells<span class="sc">$</span>id_run, members<span class="sc">$</span>id_run))</span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>simulated_transitions <span class="ot">&lt;-</span></span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>  run_cells[,</span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>    .(<span class="at">n_cells =</span> <span class="fu">sum</span>(n_cells)),</span>
-<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> .(id_run, <span class="at">id_lulc_anterior =</span> id_lulc_1991, <span class="at">id_lulc_posterior =</span> id_lulc_simulated)</span>
-<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>disagreement <span class="ot">&lt;-</span></span>
-<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>  run_cells[,</span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.list</span>(<span class="fu">c</span>(</span>
-<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pontius</span>(.SD[,</span>
-<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>        .(<span class="at">n_cells =</span> <span class="fu">sum</span>(n_cells)),</span>
-<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> .(<span class="at">id_lulc_anterior =</span> id_lulc_observed, <span class="at">id_lulc_posterior =</span> id_lulc_simulated)</span>
-<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>      ]),</span>
-<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>      <span class="at">gross_change =</span> <span class="fu">sum</span>(n_cells[id_lulc_1991 <span class="sc">!=</span> id_lulc_simulated])</span>
-<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>    )),</span>
-<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> id_run</span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>  ][</span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>    members[, .(id_run, ensemble)],</span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
-<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>disagreement_ensemble <span class="ot">&lt;-</span></span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>  disagreement[,</span>
-<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    .(</span>
-<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>      <span class="at">quantity =</span> <span class="fu">mean</span>(quantity),</span>
-<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>      <span class="at">allocation =</span> <span class="fu">mean</span>(allocation),</span>
-<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>      <span class="at">total =</span> <span class="fu">mean</span>(total),</span>
-<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>      <span class="at">gross_change =</span> <span class="fu">mean</span>(gross_change)</span>
-<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> ensemble</span>
-<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>observed_transitions <span class="ot">&lt;-</span> <span class="fu">crosstab</span>(id_run_observed, id_run_observed, <span class="dv">2</span>L)</span>
-<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a>observed_gross_change <span class="ot">&lt;-</span> observed_transitions[id_lulc_anterior <span class="sc">!=</span> id_lulc_posterior, <span class="fu">sum</span>(n_cells)]</span>
-<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a>observed_gross_change</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>crosstab <span class="ot">&lt;-</span> <span class="cf">function</span>(id_run_anterior, id_run_post, id_period_anterior) {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">lulc_crosstab_v</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_anterior =</span> id_period_anterior,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_anterior =</span> id_run_anterior,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run_post =</span> id_run_post</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>pontius <span class="ot">&lt;-</span> <span class="cf">function</span>(ct) {</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># rows: observed class, columns: simulated class, as shares of all cells</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  share <span class="ot">&lt;-</span> ct[, .(id_lulc_anterior, id_lulc_posterior, <span class="at">p =</span> n_cells <span class="sc">/</span> <span class="fu">sum</span>(n_cells))]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  quantity <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">abs</span>(</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    share[, .(<span class="at">p =</span> <span class="fu">sum</span>(p)), <span class="at">keyby =</span> .(<span class="at">k =</span> id_lulc_anterior)]<span class="sc">$</span>p <span class="sc">-</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>      share[, .(<span class="at">p =</span> <span class="fu">sum</span>(p)), <span class="at">keyby =</span> .(<span class="at">k =</span> id_lulc_posterior)][<span class="fu">J</span>(lulc_classes), <span class="at">on =</span> <span class="st">&quot;k&quot;</span>][</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">is.na</span>(p),</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">p :=</span> <span class="dv">0</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>      ]<span class="sc">$</span>p</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">/</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>  total <span class="ot">&lt;-</span> share[id_lulc_anterior <span class="sc">!=</span> id_lulc_posterior, <span class="fu">sum</span>(p)]</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">quantity =</span> quantity, <span class="at">allocation =</span> total <span class="sc">-</span> quantity, <span class="at">total =</span> total)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>run_cells <span class="ot">&lt;-</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">get_query</span>(glue<span class="sc">::</span><span class="fu">glue</span>(</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="st">    select</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_run,</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="st">      a.id_lulc as id_lulc_1991,</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="st">      o.id_lulc as id_lulc_observed,</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_lulc as id_lulc_simulated,</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="st">      count(*)::integer as n_cells</span></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="st">    from</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="st">      dl_db.lulc_data_t s</span></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="st">      inner join dl_db.lulc_data_t a</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a><span class="st">        on a.id_coord = s.id_coord and a.id_run = 0 and a.id_period = 2</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="st">      inner join dl_db.lulc_data_t o</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="st">        on o.id_coord = s.id_coord and o.id_run = {id_run_observed} and o.id_period = 3</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="st">    where</span></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a><span class="st">      s.id_period = 3</span></span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a><span class="st">      and s.id_run in ({paste(members$id_run, collapse = &#39;, &#39;)})</span></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="st">    group by all</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="st">    &quot;</span></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">setequal</span>(run_cells<span class="sc">$</span>id_run, members<span class="sc">$</span>id_run))</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>simulated_transitions <span class="ot">&lt;-</span></span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>  run_cells[,</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>    .(<span class="at">n_cells =</span> <span class="fu">sum</span>(n_cells)),</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> .(id_run, <span class="at">id_lulc_anterior =</span> id_lulc_1991, <span class="at">id_lulc_posterior =</span> id_lulc_simulated)</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>disagreement <span class="ot">&lt;-</span></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>  run_cells[,</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.list</span>(<span class="fu">c</span>(</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pontius</span>(.SD[,</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>        .(<span class="at">n_cells =</span> <span class="fu">sum</span>(n_cells)),</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> .(<span class="at">id_lulc_anterior =</span> id_lulc_observed, <span class="at">id_lulc_posterior =</span> id_lulc_simulated)</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>      ]),</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>      <span class="at">gross_change =</span> <span class="fu">sum</span>(n_cells[id_lulc_1991 <span class="sc">!=</span> id_lulc_simulated])</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>    )),</span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> id_run</span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>  ][</span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>    members[, .(id_run, ensemble)],</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>disagreement_ensemble <span class="ot">&lt;-</span></span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>  disagreement[,</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>    .(</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>      <span class="at">quantity =</span> <span class="fu">mean</span>(quantity),</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>      <span class="at">allocation =</span> <span class="fu">mean</span>(allocation),</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>      <span class="at">total =</span> <span class="fu">mean</span>(total),</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>      <span class="at">gross_change =</span> <span class="fu">mean</span>(gross_change)</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>    by <span class="ot">=</span> ensemble</span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>observed_transitions <span class="ot">&lt;-</span> <span class="fu">crosstab</span>(id_run_observed, id_run_observed, <span class="dv">2</span>L)</span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>observed_gross_change <span class="ot">&lt;-</span> observed_transitions[id_lulc_anterior <span class="sc">!=</span> id_lulc_posterior, <span class="fu">sum</span>(n_cells)]</span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a>observed_gross_change</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 7294</code></pre>
 </div>
@@ -2835,22 +2832,22 @@ vertical-align: -.125em;
 15:                                naive Bayes × greedy 2.775558e-17 0.09568043
 16:                       Weights of Evidence × Ordered 5.551115e-17 0.09668877
 17:                        Weights of Evidence × CLUE-S 4.557908e-04 0.09723368
-18:                                Bayes-eKDE × Ordered 1.387779e-17 0.09908231
-19:                               Bayes-eKDE × CLUMondo 8.555627e-04 0.09954981
-20:                                 Bayes-eKDE × CLUE-S 1.801265e-03 0.09865402
+18:                                Bayes-eKDE × Ordered 0.000000e+00 0.09906194
+19:                               Bayes-eKDE × CLUMondo 8.861185e-04 0.09951009
+20:                                 Bayes-eKDE × CLUE-S 1.784969e-03 0.09870698
 21:                        Weights of Evidence × greedy 0.000000e+00 0.10470458
 22:                              naive Bayes × Dinamica 2.037054e-05 0.10641570
 23:                      logistic regression × Dinamica 2.037054e-05 0.10699372
-24:                                 Bayes-eKDE × greedy 2.775558e-17 0.10800460
+24:                                 Bayes-eKDE × greedy 6.938894e-17 0.10801479
 25:                            random forest × Dinamica 2.037054e-05 0.10899461
-26: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 2.037054e-05 0.11111977
-27:                                naive Bayes × CLUMPY 1.527791e-06 0.11171815
+26:                                naive Bayes × CLUMPY 5.092635e-07 0.11107037
+27: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 2.037054e-05 0.11111977
 28:                               Bayes-eKDE × Dinamica 2.037054e-05 0.11424155
-29:                                 Bayes-eKDE × CLUMPY 1.018527e-06 0.11942586
-30:                        logistic regression × CLUMPY 1.527791e-06 0.12063943
-31:                              random forest × CLUMPY 5.092635e-07 0.12132235
+29:                                 Bayes-eKDE × CLUMPY 1.018527e-06 0.11896395
+30:                        logistic regression × CLUMPY 1.527791e-06 0.12022540
+31:                              random forest × CLUMPY 1.527791e-06 0.12110337
 32:                      Weights of Evidence × Dinamica 2.037054e-05 0.12263625
-33:                        Weights of Evidence × CLUMPY 5.092635e-07 0.12858649
+33:                        Weights of Evidence × CLUMPY 1.018527e-06 0.12842352
 34:                     lulcc GLM × CLUE-S (as shipped) 4.975504e-04 0.17450474
                                                ensemble     quantity allocation
                                                  &lt;char&gt;        &lt;num&gt;      &lt;num&gt;
@@ -2873,22 +2870,22 @@ vertical-align: -.125em;
 15: 0.09568043      7294.00
 16: 0.09668877      6160.00
 17: 0.09768947      3546.40
-18: 0.09908231      5791.00
-19: 0.10040537      5494.90
-20: 0.10045528      5554.50
+18: 0.09906194      5792.00
+19: 0.10039621      5492.00
+20: 0.10049195      5556.90
 21: 0.10470458      7294.00
 22: 0.10643607      7290.00
 23: 0.10701409      7290.00
-24: 0.10800460      7294.00
+24: 0.10801479      7294.00
 25: 0.10901498      7290.00
-26: 0.11114014      7290.00
-27: 0.11171968      7294.15
+26: 0.11107088      7294.05
+27: 0.11114014      7290.00
 28: 0.11426192      7290.00
-29: 0.11942687      7294.10
-30: 0.12064096      7294.15
-31: 0.12132286      7294.05
+29: 0.11896497      7294.10
+30: 0.12022693      7294.15
+31: 0.12110490      7294.15
 32: 0.12265662      7290.00
-33: 0.12858700      7294.05
+33: 0.12842454      7294.10
 34: 0.17500229     16414.80
          total gross_change
          &lt;num&gt;        &lt;num&gt;</code></pre>
@@ -2925,22 +2922,22 @@ vertical-align: -.125em;
 <pre><code>Key: &lt;ensemble&gt;
                                                ensemble    1-&gt;2    1-&gt;3  2-&gt;1
                                                  &lt;char&gt;   &lt;num&gt;   &lt;num&gt; &lt;num&gt;
- 1:                                 Bayes-eKDE × CLUE-S  434.15 3108.35     0
- 2:                                 Bayes-eKDE × CLUMPY  354.00 3971.05     0
- 3:                               Bayes-eKDE × CLUMondo  544.00 2999.90     0
+ 1:                                 Bayes-eKDE × CLUE-S  435.75 3109.15     0
+ 2:                                 Bayes-eKDE × CLUMPY  354.00 3971.10     0
+ 3:                               Bayes-eKDE × CLUMondo  541.00 3000.00     0
  4:                               Bayes-eKDE × Dinamica  353.00 3970.00     0
- 5:                                Bayes-eKDE × Ordered  369.00 3212.00     0
+ 5:                                Bayes-eKDE × Ordered  368.00 3213.00     0
  6:                                 Bayes-eKDE × greedy  354.00 3971.00     0
  7:            CLUinPy logistic × CLUMondo (as shipped) 2562.20  981.45     0
  8: Dinamica WoE × Dinamica (simulate.ego) (as shipped)  353.00 3970.00     0
  9:                        Weights of Evidence × CLUE-S 2589.15  957.25     0
-10:                        Weights of Evidence × CLUMPY  354.00 3971.00     0
+10:                        Weights of Evidence × CLUMPY  354.00 3971.10     0
 11:                      Weights of Evidence × CLUMondo 2585.85  845.65     0
 12:                      Weights of Evidence × Dinamica  353.00 3970.00     0
 13:                       Weights of Evidence × Ordered    0.00 3581.00     0
 14:                        Weights of Evidence × greedy  354.00 3971.00     0
 15:                        logistic regression × CLUE-S 1479.40 2052.45     0
-16:                        logistic regression × CLUMPY  354.00 3971.10     0
+16:                        logistic regression × CLUMPY  354.00 3971.15     0
 17:                      logistic regression × CLUMondo 1834.80 1568.90     0
 18:                      logistic regression × Dinamica  353.00 3970.00     0
 19:                       logistic regression × Ordered  255.00 3326.00     0
@@ -2948,14 +2945,14 @@ vertical-align: -.125em;
 21:                     lulcc GLM × CLUE-S (as shipped) 1477.35 7236.50   270
 22:                    lulcc GLM × Ordered (as shipped)  738.25 1579.10     0
 23:                                naive Bayes × CLUE-S    0.00 3554.10     0
-24:                                naive Bayes × CLUMPY  354.00 3971.15     0
+24:                                naive Bayes × CLUMPY  354.00 3971.05     0
 25:                              naive Bayes × CLUMondo 1501.85 2062.80     0
 26:                              naive Bayes × Dinamica  353.00 3970.00     0
 27:                               naive Bayes × Ordered    0.00 3581.00     0
 28:                                naive Bayes × greedy  354.00 3971.00     0
 29:                                            observed  354.00 3971.00     0
 30:                              random forest × CLUE-S 1618.95 1913.50     0
-31:                              random forest × CLUMPY  354.00 3971.05     0
+31:                              random forest × CLUMPY  354.00 3971.10     0
 32:                            random forest × CLUMondo 1957.15 1459.55     0
 33:                            random forest × Dinamica  353.00 3970.00     0
 34:                             random forest × Ordered  289.00 3292.00     0
@@ -2965,21 +2962,21 @@ vertical-align: -.125em;
       2-&gt;3    3-&gt;1    3-&gt;2
      &lt;num&gt;   &lt;num&gt;   &lt;num&gt;
  1:   0.00   44.00 1968.00
- 2:   0.00  744.00 2225.05
+ 2:   0.00  744.00 2225.00
  3:   0.00    0.00 1951.00
  4:   0.00  743.00 2224.00
- 5:   0.00    0.00 2210.00
+ 5:   0.00    0.00 2211.00
  6:   0.00  744.00 2225.00
  7:   0.00    0.00   16.10
  8:   0.00  743.00 2224.00
  9:   0.00    0.00    0.00
-10:   0.00  744.00 2225.05
+10:   0.00  744.00 2225.00
 11:   0.00    0.00    0.00
 12:   0.00  743.00 2224.00
 13:   0.00    0.00 2579.00
 14:   0.00  744.00 2225.00
 15:   0.00    0.00 1064.10
-16:   0.00  744.00 2225.05
+16:   0.00  744.00 2225.00
 17:   0.00    0.00  764.00
 18:   0.00  743.00 2224.00
 19:   0.00    0.00 2324.00
@@ -2994,7 +2991,7 @@ vertical-align: -.125em;
 28:   0.00  744.00 2225.00
 29:   0.00  744.00 2225.00
 30:   0.00    0.00  929.15
-31:   0.00  744.00 2225.00
+31:   0.00  744.00 2225.05
 32:   0.00    0.00  649.50
 33:   0.00  743.00 2224.00
 34:   0.00    0.00 2290.00
@@ -3070,22 +3067,22 @@ vertical-align: -.125em;
 <pre><code>Key: &lt;ensemble&gt;
                                                ensemble       1-&gt;2      3-&gt;2
                                                  &lt;char&gt;      &lt;num&gt;     &lt;num&gt;
- 1:                                 Bayes-eKDE × CLUE-S 0.28174107 0.3460272
- 2:                                 Bayes-eKDE × CLUMPY 0.25555493 0.4883002
- 3:                               Bayes-eKDE × CLUMondo 0.25415697 0.3398709
+ 1:                                 Bayes-eKDE × CLUE-S 0.28097223 0.3460272
+ 2:                                 Bayes-eKDE × CLUMPY 0.25877909 0.4923465
+ 3:                               Bayes-eKDE × CLUMondo 0.25337507 0.3398709
  4:                               Bayes-eKDE × Dinamica 0.27929707 0.4637591
- 5:                                Bayes-eKDE × Ordered 0.28432799 0.4236061
- 6:                                 Bayes-eKDE × greedy 0.28004503 0.4269430
+ 5:                                Bayes-eKDE × Ordered 0.28397555 0.4238339
+ 6:                                 Bayes-eKDE × greedy 0.28059830 0.4269430
  7:            CLUinPy logistic × CLUMondo (as shipped) 0.15616515 0.0142515
  8: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 0.26366083 0.5643817
  9:                        Weights of Evidence × CLUE-S 0.04043766 0.0000000
-10:                        Weights of Evidence × CLUMPY 0.12551854 0.4585728
+10:                        Weights of Evidence × CLUMPY 0.12512837 0.4615988
 11:                      Weights of Evidence × CLUMondo 0.10662752 0.0000000
 12:                      Weights of Evidence × Dinamica 0.20782098 0.5026998
 13:                       Weights of Evidence × Ordered 0.00000000 0.5668664
 14:                        Weights of Evidence × greedy 0.29420571 0.5290857
 15:                        logistic regression × CLUE-S 0.20179798 0.4168148
-16:                        logistic regression × CLUMPY 0.24024400 0.4742252
+16:                        logistic regression × CLUMPY 0.23500282 0.4778015
 17:                      logistic regression × CLUMondo 0.19653655 0.3454257
 18:                      logistic regression × Dinamica 0.31376538 0.5765783
 19:                       logistic regression × Ordered 0.29383052 0.5667646
@@ -3093,13 +3090,13 @@ vertical-align: -.125em;
 21:                     lulcc GLM × CLUE-S (as shipped) 0.29002377 0.4480703
 22:                    lulcc GLM × Ordered (as shipped) 0.32619410 0.4709606
 23:                                naive Bayes × CLUE-S 0.00000000 0.5899178
-24:                                naive Bayes × CLUMPY 0.22451639 0.5568393
+24:                                naive Bayes × CLUMPY 0.23453607 0.5605334
 25:                              naive Bayes × CLUMondo 0.30400948 0.4652083
 26:                              naive Bayes × Dinamica 0.24086793 0.5510218
 27:                               naive Bayes × Ordered 0.00000000 0.5936463
 28:                                naive Bayes × greedy 0.10554280 0.5644580
 29:                              random forest × CLUE-S 0.19216009 0.3900815
-30:                              random forest × CLUMPY 0.24304112 0.4504813
+30:                              random forest × CLUMPY 0.24242682 0.4515753
 31:                            random forest × CLUMondo 0.19347084 0.3203143
 32:                            random forest × Dinamica 0.30884963 0.5639189
 33:                             random forest × Ordered 0.32171656 0.5636580
@@ -3126,10 +3123,10 @@ vertical-align: -.125em;
 <div class="cell-output cell-output-stdout">
 <pre><code>                component      sum_sq       share p_value
                    &lt;char&gt;       &lt;num&gt;       &lt;num&gt;   &lt;num&gt;
-1:              estimator 0.565077955 0.687862905       0
-2:              allocator 0.121199244 0.147534448       0
-3:            interaction 0.134029280 0.163152304       0
-4: replicate (stochastic) 0.001191454 0.001450344      NA</code></pre>
+1:              estimator 0.569223527 0.697158474       0
+2:              allocator 0.113131921 0.138558710       0
+3:            interaction 0.132907144 0.162778482       0
+4: replicate (stochastic) 0.001228276 0.001504335      NA</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dcast</span>(</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  fom[</span>
@@ -3144,14 +3141,14 @@ vertical-align: -.125em;
 <pre><code>Key: &lt;estimator_label&gt;
        estimator_label     CLUE-S     CLUMPY  CLUMondo  Dinamica   Ordered
                 &lt;char&gt;      &lt;num&gt;      &lt;num&gt;     &lt;num&gt;     &lt;num&gt;     &lt;num&gt;
-1:          Bayes-eKDE 0.12731327 0.10497787 0.1250566 0.1268491 0.1432849
-2: Weights of Evidence 0.03047688 0.06926188 0.0389465 0.0926391 0.1720017
-3: logistic regression 0.18262243 0.09999594 0.1542421 0.1587588 0.2314832
-4:         naive Bayes 0.20321123 0.13570232 0.1723373 0.1604375 0.2012134
-5:       random forest 0.16471460 0.09672812 0.1363985 0.1497600 0.2199870
+1:          Bayes-eKDE 0.12730361 0.10678648 0.1250666 0.1268491 0.1433856
+2: Weights of Evidence 0.03047688 0.06996478 0.0389465 0.0926391 0.1720017
+3: logistic regression 0.18262243 0.10155268 0.1542421 0.1587588 0.2314832
+4:         naive Bayes 0.20321123 0.13853084 0.1723373 0.1604375 0.2012134
+5:       random forest 0.16471460 0.09777274 0.1363985 0.1497600 0.2199870
       greedy
        &lt;num&gt;
-1: 0.1542511
+1: 0.1542388
 2: 0.1715023
 3: 0.2330048
 4: 0.2088597
@@ -3175,27 +3172,24 @@ vertical-align: -.125em;
 <span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  ]</span>
 <span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>timings_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>                tool               stage     n total_s median_s
-              &lt;char&gt;              &lt;char&gt; &lt;int&gt;   &lt;num&gt;    &lt;num&gt;
- 1:          cluinpy            allocate   132 1572.38    1.465
- 2:          cluinpy     fit_suitability     1   11.89   11.890
- 3:       clumpy-kde         fit_predict     2  148.43   74.215
- 4:  dinamica-native            allocate    20    7.42    0.370
- 5:  dinamica-native           calibrate     1    2.62    2.620
- 6:          evoland        alloc_params     1    0.97    0.970
- 7:          evoland         fit_log_reg     1    2.41    2.410
- 8:          evoland     fit_naive_bayes     1    2.00    2.000
- 9:          evoland          fit_ranger     1   74.58   74.580
-10:          evoland          neighbours     1    5.82    5.820
-11:          evoland     predict_log_reg     1    3.41    3.410
-12:          evoland predict_naive_bayes     1   23.16   23.160
-13:          evoland      predict_ranger     1   24.50   24.500
-14:   evoland-clumpy            allocate   100   99.26    0.925
-15: evoland-dinamica            allocate   100  358.20    3.545
-16:   evoland-greedy            allocate     5    7.29    0.810
-17:            lulcc      allocate_clues   120  170.90    1.105
-18:            lulcc    allocate_ordered    25   16.57    0.640
-19:            lulcc             fit_glm     1    1.32    1.320</code></pre>
+<pre><code>              tool               stage     n total_s median_s
+            &lt;char&gt;              &lt;char&gt; &lt;int&gt;   &lt;num&gt;    &lt;num&gt;
+ 1:        cluinpy            allocate   132 1750.93    1.685
+ 2:        cluinpy     fit_suitability     1   14.18   14.180
+ 3:     clumpy-kde         fit_predict     2  148.75   74.375
+ 4:        evoland        alloc_params     1    1.34    1.340
+ 5:        evoland         fit_log_reg     1    3.48    3.480
+ 6:        evoland     fit_naive_bayes     1    2.81    2.810
+ 7:        evoland          fit_ranger     1   94.32   94.320
+ 8:        evoland          neighbours     1    5.59    5.590
+ 9:        evoland     predict_log_reg     1    5.37    5.370
+10:        evoland predict_naive_bayes     1   23.47   23.470
+11:        evoland      predict_ranger     1   30.60   30.600
+12: evoland-clumpy            allocate     1   36.09   36.090
+13: evoland-greedy            allocate     1    9.15    9.150
+14:          lulcc      allocate_clues   120  183.45    1.220
+15:          lulcc    allocate_ordered    25   22.91    0.830
+16:          lulcc             fit_glm     1    1.79    1.790</code></pre>
 </div>
 </div>
 </section>
@@ -3285,15 +3279,16 @@ vertical-align: -.125em;
 <span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>}))</span>
 <span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_parquet</span>(changes_out, <span class="fu">file.path</span>(res_dir, <span class="st">&quot;changes.parquet&quot;</span>))</span>
 <span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>viable <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_meta_t[is_viable <span class="sc">==</span> <span class="cn">TRUE</span>, .(id_trans, id_lulc_anterior, id_lulc_posterior)]</span>
-<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a><span class="fu">fwrite</span>(viable[, .(<span class="at">from =</span> id_lulc_anterior, <span class="at">to =</span> id_lulc_posterior)], <span class="fu">file.path</span>(res_dir, <span class="st">&quot;viable.csv&quot;</span>))</span>
-<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>potentials_out <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(estimators<span class="sc">$</span>id_run, <span class="cf">function</span>(id) {</span>
-<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> id</span>
-<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">adjusted_trans_pot_v</span>(<span class="dv">3</span>L)[viable, on <span class="ot">=</span> <span class="st">&quot;id_trans&quot;</span>, nomatch <span class="ot">=</span> <span class="cn">NULL</span>][,</span>
-<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a>    .(<span class="at">id_run_parent =</span> id, id_coord, <span class="at">class =</span> id_lulc_posterior, <span class="at">p =</span> value)</span>
-<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>}))</span>
-<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_parquet</span>(potentials_out, <span class="fu">file.path</span>(res_dir, <span class="st">&quot;potentials.parquet&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a><span class="fu">fwrite</span>(</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>  viable[, .(<span class="at">from =</span> id_lulc_anterior, <span class="at">to =</span> id_lulc_posterior)],</span>
+<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(res_dir, <span class="st">&quot;viable.csv&quot;</span>)</span>
+<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a>potentials_out <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(estimators<span class="sc">$</span>id_run, <span class="cf">function</span>(id) {</span>
+<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">adjusted_trans_pot_v</span>(<span class="dv">3</span>L, <span class="at">id_run =</span> id)[viable, on <span class="ot">=</span> <span class="st">&quot;id_trans&quot;</span>, nomatch <span class="ot">=</span> <span class="cn">NULL</span>][,</span>
+<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>    .(<span class="at">id_run_parent =</span> id, id_coord, <span class="at">class =</span> id_lulc_posterior, <span class="at">p =</span> value)</span>
+<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_parquet</span>(potentials_out, <span class="fu">file.path</span>(res_dir, <span class="st">&quot;potentials.parquet&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 
