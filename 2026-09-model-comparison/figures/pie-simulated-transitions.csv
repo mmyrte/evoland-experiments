@@ -1,9 +1,9 @@
 ensemble,transition,n_cells
-logistic regression × CLUMPY,1->3,423.9
-logistic regression × CLUMPY,3->1,944.8
-logistic regression × CLUMPY,1->2,2184.25
-logistic regression × CLUMPY,2->3,134.5
-logistic regression × CLUMPY,3->2,1065.75
+logistic regression × CLUMPY,1->2,2183.9
+logistic regression × CLUMPY,1->3,424
+logistic regression × CLUMPY,3->1,944.4
+logistic regression × CLUMPY,2->3,134
+logistic regression × CLUMPY,3->2,1065.55
 logistic regression × Dinamica,3->1,943
 logistic regression × Dinamica,1->3,422
 logistic regression × Dinamica,1->2,2182
@@ -21,11 +21,11 @@ logistic regression × Ordered,3->2,1381
 logistic regression × Ordered,1->2,1724
 logistic regression × CLUMondo,3->2,1567.1
 logistic regression × CLUMondo,1->2,1531.5
-random forest × CLUMPY,1->2,2185.3
-random forest × CLUMPY,3->1,945.6
-random forest × CLUMPY,1->3,424.3
-random forest × CLUMPY,3->2,1065.15
-random forest × CLUMPY,2->3,134.55
+random forest × CLUMPY,1->2,2184.2
+random forest × CLUMPY,3->1,945.45
+random forest × CLUMPY,1->3,424.05
+random forest × CLUMPY,3->2,1065.9
+random forest × CLUMPY,2->3,134
 random forest × Dinamica,2->3,133
 random forest × Dinamica,3->2,1063
 random forest × Dinamica,1->2,2182
@@ -43,11 +43,11 @@ random forest × Ordered,3->2,1422
 random forest × Ordered,3->1,29
 random forest × CLUMondo,3->2,1569.15
 random forest × CLUMondo,1->2,1518.05
-Weights of Evidence × CLUMPY,3->2,1065.3
-Weights of Evidence × CLUMPY,2->3,134.25
-Weights of Evidence × CLUMPY,3->1,944.9
-Weights of Evidence × CLUMPY,1->2,2183.8
-Weights of Evidence × CLUMPY,1->3,424.3
+Weights of Evidence × CLUMPY,3->2,1064.9
+Weights of Evidence × CLUMPY,3->1,945.05
+Weights of Evidence × CLUMPY,1->2,2184.75
+Weights of Evidence × CLUMPY,2->3,134
+Weights of Evidence × CLUMPY,1->3,423.8
 Weights of Evidence × Dinamica,1->2,2182
 Weights of Evidence × Dinamica,3->2,1063
 Weights of Evidence × Dinamica,2->3,133
@@ -58,18 +58,18 @@ Weights of Evidence × greedy,3->1,944
 Weights of Evidence × greedy,1->2,2183
 Weights of Evidence × greedy,2->3,134
 Weights of Evidence × greedy,3->2,1064
-Weights of Evidence × CLUE-S,3->2,1442.3
+Weights of Evidence × CLUE-S,3->2,1442.35
 Weights of Evidence × CLUE-S,1->2,1557.2
 Weights of Evidence × Ordered,1->2,1579
 Weights of Evidence × Ordered,3->2,1526
 Weights of Evidence × Ordered,1->3,75
 Weights of Evidence × CLUMondo,3->2,1555.5
 Weights of Evidence × CLUMondo,1->2,1560.1
-naive Bayes × CLUMPY,1->2,2184.45
-naive Bayes × CLUMPY,3->2,1065.1
-naive Bayes × CLUMPY,3->1,945.3
-naive Bayes × CLUMPY,1->3,424.35
-naive Bayes × CLUMPY,2->3,134.1
+naive Bayes × CLUMPY,1->2,2183.35
+naive Bayes × CLUMPY,3->2,1065.2
+naive Bayes × CLUMPY,3->1,944.85
+naive Bayes × CLUMPY,1->3,424.45
+naive Bayes × CLUMPY,2->3,134
 naive Bayes × Dinamica,3->2,1063
 naive Bayes × Dinamica,1->2,2182
 naive Bayes × Dinamica,3->1,943
@@ -88,11 +88,11 @@ naive Bayes × Ordered,3->1,905
 naive Bayes × Ordered,3->2,546
 naive Bayes × CLUMondo,3->2,1572.3
 naive Bayes × CLUMondo,1->2,1464.25
-Bayes-eKDE × CLUMPY,1->2,2184.35
-Bayes-eKDE × CLUMPY,3->2,1064.45
+Bayes-eKDE × CLUMPY,1->2,2185.05
+Bayes-eKDE × CLUMPY,3->2,1064.65
 Bayes-eKDE × CLUMPY,1->3,423.7
-Bayes-eKDE × CLUMPY,3->1,944.8
-Bayes-eKDE × CLUMPY,2->3,134.35
+Bayes-eKDE × CLUMPY,3->1,944.6
+Bayes-eKDE × CLUMPY,2->3,134
 Bayes-eKDE × Dinamica,2->3,133
 Bayes-eKDE × Dinamica,1->3,422
 Bayes-eKDE × Dinamica,3->1,943
