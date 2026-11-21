@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-18">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: validation metrics compared</title>
 <style>
@@ -2233,7 +2233,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 18, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2319,7 +2319,7 @@ vertical-align: -.125em;
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>))</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">&quot;scored &quot;</span>, <span class="fu">nrow</span>(per_run), <span class="st">&quot; maps in &quot;</span>, <span class="fu">format</span>(<span class="fu">Sys.time</span>() <span class="sc">-</span> t0, <span class="at">digits =</span> <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>scored 490 maps in 55.6 secs</code></pre>
+<pre><code>scored 490 maps in 1.03 mins</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>per_run <span class="ot">&lt;-</span> runs[per_run, on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -2398,28 +2398,28 @@ vertical-align: -.125em;
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">logistic regression × CLUMPY</td>
-<td style="text-align: right;">0.100</td>
-<td style="text-align: right;">0.119</td>
-<td style="text-align: right;">0.119</td>
-<td style="text-align: right;">0.238</td>
-<td style="text-align: right;">0.444</td>
-<td style="text-align: right;">0.121</td>
-<td style="text-align: right;">0.560</td>
-<td style="text-align: right;">0.284</td>
-<td style="text-align: right;">0.259</td>
+<td style="text-align: right;">0.102</td>
+<td style="text-align: right;">0.122</td>
+<td style="text-align: right;">0.122</td>
+<td style="text-align: right;">0.241</td>
+<td style="text-align: right;">0.445</td>
+<td style="text-align: right;">0.120</td>
+<td style="text-align: right;">0.561</td>
+<td style="text-align: right;">0.283</td>
+<td style="text-align: right;">0.262</td>
 <td style="text-align: right;">0.328</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">logistic regression × Dinamica</td>
-<td style="text-align: right;">0.159</td>
-<td style="text-align: right;">0.218</td>
-<td style="text-align: right;">0.218</td>
-<td style="text-align: right;">0.389</td>
-<td style="text-align: right;">0.497</td>
+<td style="text-align: right;">0.158</td>
+<td style="text-align: right;">0.217</td>
+<td style="text-align: right;">0.217</td>
+<td style="text-align: right;">0.388</td>
+<td style="text-align: right;">0.496</td>
 <td style="text-align: right;">0.107</td>
 <td style="text-align: right;">0.609</td>
-<td style="text-align: right;">0.252</td>
-<td style="text-align: right;">0.445</td>
+<td style="text-align: right;">0.253</td>
+<td style="text-align: right;">0.446</td>
 <td style="text-align: right;">0.328</td>
 </tr>
 <tr class="odd">
@@ -2476,15 +2476,15 @@ vertical-align: -.125em;
 </tr>
 <tr class="odd">
 <td style="text-align: left;">random forest × CLUMPY</td>
-<td style="text-align: right;">0.097</td>
-<td style="text-align: right;">0.114</td>
-<td style="text-align: right;">0.114</td>
-<td style="text-align: right;">0.228</td>
-<td style="text-align: right;">0.436</td>
+<td style="text-align: right;">0.098</td>
+<td style="text-align: right;">0.115</td>
+<td style="text-align: right;">0.115</td>
+<td style="text-align: right;">0.230</td>
+<td style="text-align: right;">0.437</td>
 <td style="text-align: right;">0.121</td>
-<td style="text-align: right;">0.557</td>
-<td style="text-align: right;">0.286</td>
-<td style="text-align: right;">0.258</td>
+<td style="text-align: right;">0.558</td>
+<td style="text-align: right;">0.285</td>
+<td style="text-align: right;">0.261</td>
 <td style="text-align: right;">0.323</td>
 </tr>
 <tr class="even">
@@ -2492,12 +2492,12 @@ vertical-align: -.125em;
 <td style="text-align: right;">0.150</td>
 <td style="text-align: right;">0.203</td>
 <td style="text-align: right;">0.203</td>
-<td style="text-align: right;">0.360</td>
-<td style="text-align: right;">0.493</td>
+<td style="text-align: right;">0.362</td>
+<td style="text-align: right;">0.494</td>
 <td style="text-align: right;">0.109</td>
 <td style="text-align: right;">0.602</td>
 <td style="text-align: right;">0.257</td>
-<td style="text-align: right;">0.433</td>
+<td style="text-align: right;">0.432</td>
 <td style="text-align: right;">0.323</td>
 </tr>
 <tr class="odd">
@@ -2554,28 +2554,28 @@ vertical-align: -.125em;
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Weights of Evidence × CLUMPY</td>
-<td style="text-align: right;">0.069</td>
-<td style="text-align: right;">0.061</td>
-<td style="text-align: right;">0.061</td>
-<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">0.070</td>
+<td style="text-align: right;">0.062</td>
+<td style="text-align: right;">0.062</td>
+<td style="text-align: right;">0.173</td>
 <td style="text-align: right;">0.411</td>
-<td style="text-align: right;">0.129</td>
-<td style="text-align: right;">0.532</td>
+<td style="text-align: right;">0.128</td>
+<td style="text-align: right;">0.533</td>
 <td style="text-align: right;">0.303</td>
-<td style="text-align: right;">0.161</td>
+<td style="text-align: right;">0.160</td>
 <td style="text-align: right;">0.168</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Weights of Evidence × Dinamica</td>
-<td style="text-align: right;">0.093</td>
-<td style="text-align: right;">0.104</td>
-<td style="text-align: right;">0.104</td>
-<td style="text-align: right;">0.260</td>
-<td style="text-align: right;">0.438</td>
-<td style="text-align: right;">0.123</td>
-<td style="text-align: right;">0.554</td>
-<td style="text-align: right;">0.289</td>
-<td style="text-align: right;">0.251</td>
+<td style="text-align: right;">0.094</td>
+<td style="text-align: right;">0.106</td>
+<td style="text-align: right;">0.106</td>
+<td style="text-align: right;">0.261</td>
+<td style="text-align: right;">0.440</td>
+<td style="text-align: right;">0.122</td>
+<td style="text-align: right;">0.555</td>
+<td style="text-align: right;">0.288</td>
+<td style="text-align: right;">0.249</td>
 <td style="text-align: right;">0.168</td>
 </tr>
 <tr class="odd">
@@ -2632,25 +2632,25 @@ vertical-align: -.125em;
 </tr>
 <tr class="odd">
 <td style="text-align: left;">naive Bayes × CLUMPY</td>
-<td style="text-align: right;">0.136</td>
-<td style="text-align: right;">0.184</td>
-<td style="text-align: right;">0.184</td>
-<td style="text-align: right;">0.367</td>
-<td style="text-align: right;">0.477</td>
-<td style="text-align: right;">0.112</td>
-<td style="text-align: right;">0.590</td>
-<td style="text-align: right;">0.263</td>
-<td style="text-align: right;">0.350</td>
+<td style="text-align: right;">0.139</td>
+<td style="text-align: right;">0.189</td>
+<td style="text-align: right;">0.189</td>
+<td style="text-align: right;">0.371</td>
+<td style="text-align: right;">0.481</td>
+<td style="text-align: right;">0.111</td>
+<td style="text-align: right;">0.592</td>
+<td style="text-align: right;">0.262</td>
+<td style="text-align: right;">0.355</td>
 <td style="text-align: right;">0.382</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">naive Bayes × Dinamica</td>
 <td style="text-align: right;">0.160</td>
-<td style="text-align: right;">0.222</td>
+<td style="text-align: right;">0.221</td>
 <td style="text-align: right;">0.222</td>
 <td style="text-align: right;">0.393</td>
-<td style="text-align: right;">0.472</td>
-<td style="text-align: right;">0.106</td>
+<td style="text-align: right;">0.471</td>
+<td style="text-align: right;">0.107</td>
 <td style="text-align: right;">0.610</td>
 <td style="text-align: right;">0.251</td>
 <td style="text-align: right;">0.411</td>
@@ -2710,15 +2710,15 @@ vertical-align: -.125em;
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Bayes-eKDE × CLUMPY</td>
-<td style="text-align: right;">0.105</td>
-<td style="text-align: right;">0.127</td>
-<td style="text-align: right;">0.127</td>
-<td style="text-align: right;">0.254</td>
-<td style="text-align: right;">0.451</td>
+<td style="text-align: right;">0.107</td>
+<td style="text-align: right;">0.131</td>
+<td style="text-align: right;">0.131</td>
+<td style="text-align: right;">0.259</td>
+<td style="text-align: right;">0.454</td>
 <td style="text-align: right;">0.119</td>
-<td style="text-align: right;">0.564</td>
-<td style="text-align: right;">0.282</td>
-<td style="text-align: right;">0.381</td>
+<td style="text-align: right;">0.566</td>
+<td style="text-align: right;">0.280</td>
+<td style="text-align: right;">0.384</td>
 <td style="text-align: right;">0.519</td>
 </tr>
 <tr class="even">
@@ -2731,7 +2731,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">0.114</td>
 <td style="text-align: right;">0.583</td>
 <td style="text-align: right;">0.269</td>
-<td style="text-align: right;">0.515</td>
+<td style="text-align: right;">0.514</td>
 <td style="text-align: right;">0.519</td>
 </tr>
 <tr class="odd">
@@ -2763,7 +2763,7 @@ vertical-align: -.125em;
 <tr class="odd">
 <td style="text-align: left;">Bayes-eKDE × Ordered</td>
 <td style="text-align: right;">0.143</td>
-<td style="text-align: right;">0.199</td>
+<td style="text-align: right;">0.200</td>
 <td style="text-align: right;">0.228</td>
 <td style="text-align: right;">0.297</td>
 <td style="text-align: right;">0.371</td>
@@ -2827,14 +2827,14 @@ vertical-align: -.125em;
 </tr>
 <tr class="even">
 <td style="text-align: left;">Dinamica WoE × Dinamica (simulate.ego) (as shipped)</td>
-<td style="text-align: right;">0.141</td>
-<td style="text-align: right;">0.188</td>
-<td style="text-align: right;">0.188</td>
+<td style="text-align: right;">0.143</td>
+<td style="text-align: right;">0.191</td>
+<td style="text-align: right;">0.191</td>
 <td style="text-align: right;">0.359</td>
-<td style="text-align: right;">0.472</td>
+<td style="text-align: right;">0.473</td>
 <td style="text-align: right;">0.111</td>
-<td style="text-align: right;">0.595</td>
-<td style="text-align: right;">0.262</td>
+<td style="text-align: right;">0.597</td>
+<td style="text-align: right;">0.261</td>
 <td style="text-align: right;">0.364</td>
 <td style="text-align: right;">0.168</td>
 </tr>
@@ -2891,58 +2891,58 @@ vertical-align: -.125em;
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">allocation_disagreement</td>
-<td style="text-align: right;">0.818</td>
-<td style="text-align: right;">0.134</td>
-<td style="text-align: right;">0.047</td>
+<td style="text-align: right;">0.815</td>
+<td style="text-align: right;">0.136</td>
+<td style="text-align: right;">0.049</td>
 <td style="text-align: right;">0.001</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">auc_transition</td>
-<td style="text-align: right;">0.147</td>
-<td style="text-align: right;">0.742</td>
-<td style="text-align: right;">0.108</td>
+<td style="text-align: right;">0.137</td>
+<td style="text-align: right;">0.750</td>
+<td style="text-align: right;">0.110</td>
 <td style="text-align: right;">0.002</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">brier</td>
-<td style="text-align: right;">0.804</td>
-<td style="text-align: right;">0.145</td>
-<td style="text-align: right;">0.050</td>
+<td style="text-align: right;">0.801</td>
+<td style="text-align: right;">0.146</td>
+<td style="text-align: right;">0.052</td>
 <td style="text-align: right;">0.001</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">figure_of_merit</td>
-<td style="text-align: right;">0.125</td>
-<td style="text-align: right;">0.712</td>
-<td style="text-align: right;">0.161</td>
-<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">0.116</td>
+<td style="text-align: right;">0.719</td>
+<td style="text-align: right;">0.164</td>
+<td style="text-align: right;">0.001</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">fks_r2</td>
-<td style="text-align: right;">0.152</td>
-<td style="text-align: right;">0.739</td>
-<td style="text-align: right;">0.107</td>
-<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">0.145</td>
+<td style="text-align: right;">0.746</td>
+<td style="text-align: right;">0.108</td>
+<td style="text-align: right;">0.001</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">fks_r4</td>
-<td style="text-align: right;">0.168</td>
-<td style="text-align: right;">0.707</td>
+<td style="text-align: right;">0.163</td>
+<td style="text-align: right;">0.712</td>
 <td style="text-align: right;">0.124</td>
 <td style="text-align: right;">0.001</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">ksim</td>
-<td style="text-align: right;">0.274</td>
-<td style="text-align: right;">0.623</td>
-<td style="text-align: right;">0.102</td>
+<td style="text-align: right;">0.262</td>
+<td style="text-align: right;">0.632</td>
+<td style="text-align: right;">0.105</td>
 <td style="text-align: right;">0.002</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">similarity_of_differences</td>
-<td style="text-align: right;">0.666</td>
-<td style="text-align: right;">0.213</td>
-<td style="text-align: right;">0.120</td>
+<td style="text-align: right;">0.668</td>
+<td style="text-align: right;">0.212</td>
+<td style="text-align: right;">0.119</td>
 <td style="text-align: right;">0.000</td>
 </tr>
 </tbody>
@@ -3073,10 +3073,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.719</td>
-<td style="text-align: right;">0.730</td>
+<td style="text-align: right;">0.725</td>
+<td style="text-align: right;">0.734</td>
 <td style="text-align: right;">0.138</td>
-<td style="text-align: right;">0.144</td>
+<td style="text-align: right;">0.147</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">logistic regression × Dinamica</td>
@@ -3086,9 +3086,9 @@ vertical-align: -.125em;
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
 <td style="text-align: right;">0.754</td>
-<td style="text-align: right;">0.760</td>
-<td style="text-align: right;">0.139</td>
-<td style="text-align: right;">0.137</td>
+<td style="text-align: right;">0.759</td>
+<td style="text-align: right;">0.140</td>
+<td style="text-align: right;">0.134</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">random forest × CLUMPY</td>
@@ -3097,10 +3097,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.715</td>
-<td style="text-align: right;">0.722</td>
+<td style="text-align: right;">0.712</td>
+<td style="text-align: right;">0.723</td>
 <td style="text-align: right;">0.140</td>
-<td style="text-align: right;">0.131</td>
+<td style="text-align: right;">0.132</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">random forest × Dinamica</td>
@@ -3109,8 +3109,8 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.739</td>
-<td style="text-align: right;">0.746</td>
+<td style="text-align: right;">0.740</td>
+<td style="text-align: right;">0.747</td>
 <td style="text-align: right;">0.141</td>
 <td style="text-align: right;">0.124</td>
 </tr>
@@ -3121,10 +3121,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.714</td>
-<td style="text-align: right;">0.721</td>
-<td style="text-align: right;">0.148</td>
-<td style="text-align: right;">0.084</td>
+<td style="text-align: right;">0.717</td>
+<td style="text-align: right;">0.722</td>
+<td style="text-align: right;">0.147</td>
+<td style="text-align: right;">0.089</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Weights of Evidence × CLUMPY</td>
@@ -3133,10 +3133,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.660</td>
-<td style="text-align: right;">0.677</td>
+<td style="text-align: right;">0.662</td>
+<td style="text-align: right;">0.679</td>
 <td style="text-align: right;">0.151</td>
-<td style="text-align: right;">0.061</td>
+<td style="text-align: right;">0.064</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Weights of Evidence potentials</td>
@@ -3157,10 +3157,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.737</td>
-<td style="text-align: right;">0.745</td>
+<td style="text-align: right;">0.739</td>
+<td style="text-align: right;">0.747</td>
 <td style="text-align: right;">0.152</td>
-<td style="text-align: right;">0.055</td>
+<td style="text-align: right;">0.058</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">naive Bayes × Dinamica</td>
@@ -3170,9 +3170,9 @@ vertical-align: -.125em;
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
 <td style="text-align: right;">0.736</td>
-<td style="text-align: right;">0.742</td>
-<td style="text-align: right;">0.153</td>
-<td style="text-align: right;">0.050</td>
+<td style="text-align: right;">0.743</td>
+<td style="text-align: right;">0.154</td>
+<td style="text-align: right;">0.048</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">naive Bayes potentials</td>
@@ -3193,10 +3193,10 @@ vertical-align: -.125em;
 <td style="text-align: left;">TRUE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.704</td>
-<td style="text-align: right;">0.707</td>
-<td style="text-align: right;">0.160</td>
-<td style="text-align: right;">0.011</td>
+<td style="text-align: right;">0.712</td>
+<td style="text-align: right;">0.714</td>
+<td style="text-align: right;">0.157</td>
+<td style="text-align: right;">0.028</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Bayes-eKDE × CLUMPY</td>
@@ -3205,8 +3205,8 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.690</td>
-<td style="text-align: right;">0.697</td>
+<td style="text-align: right;">0.692</td>
+<td style="text-align: right;">0.699</td>
 <td style="text-align: right;">0.160</td>
 <td style="text-align: right;">0.006</td>
 </tr>
@@ -3241,8 +3241,8 @@ vertical-align: -.125em;
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">ensemble</td>
 <td style="text-align: right;">20</td>
-<td style="text-align: right;">0.699</td>
-<td style="text-align: right;">0.707</td>
+<td style="text-align: right;">0.698</td>
+<td style="text-align: right;">0.706</td>
 <td style="text-align: right;">0.175</td>
 <td style="text-align: right;">-0.083</td>
 </tr>
@@ -3460,7 +3460,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">0.592</td>
 <td style="text-align: right;">0.590</td>
 <td style="text-align: right;">0.234</td>
-<td style="text-align: right;">-0.448</td>
+<td style="text-align: right;">-0.447</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Bayes-eKDE × CLUMondo</td>
