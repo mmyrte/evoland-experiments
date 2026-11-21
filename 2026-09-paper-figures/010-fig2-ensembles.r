@@ -414,17 +414,73 @@ db$commit(
   method = "overwrite"
 )
 
+#' Dinamica EGO draws its own seed and cannot be replayed, so its realisations differ from render
+#' to render. Where Dinamica EGO is not installed (`check_dinamica()`), setting
+#' `FIG2_REUSE_DINAMICA=true` imports the Dinamica maps of the previous render from
+#' `results/fig2/` instead of allocating them, so that the other allocators can be rerun; it
+#' stops if the landscape differs from the one those maps were allocated on. The import is
+#' reported below; without the variable the step stops.
+
 #| label: alloc-dinamica
 #| output: false
-allocate(
-  db,
-  id_periods = 3L,
-  allocator = alloc_dinamica_spec(),
-  select_score = "no.crossval",
-  select_maximize = TRUE,
-  id_run = other_members[allocator == "Dinamica", id_run],
-  update_neighbors = FALSE
-)
+dinamica_members <- other_members[allocator == "Dinamica"]
+dinamica_missing <- check_dinamica(quiet = TRUE)$required
+reuse_dinamica <- length(dinamica_missing) > 0L &&
+  tolower(Sys.getenv("FIG2_REUSE_DINAMICA")) %in% c("true", "1", "yes")
+if (length(dinamica_missing) > 0L && !reuse_dinamica) {
+  stop(
+    "Dinamica EGO cannot run: ", toString(dinamica_missing),
+    "; set FIG2_REUSE_DINAMICA=true to reuse the Dinamica maps in results/fig2/",
+    call. = FALSE
+  )
+}
+if (reuse_dinamica) {
+  prev_dir <- "2026-09-paper-figures/results/fig2"
+  prev_cells <- as.data.table(arrow::read_parquet(file.path(prev_dir, "cells.parquet")))
+  prev_runs <- fread(file.path(prev_dir, "runs.csv"))[allocator == "Dinamica"]
+  stopifnot(
+    "the previous Dinamica maps were allocated on another landscape" = {
+      identical(
+        prev_cells[order(id_coord), as.integer(anterior)],
+        lulc_long[id_period == 2L][order(id_coord), as.integer(id_lulc)]
+      )
+    },
+    "the previous render has other Dinamica runs" = setequal(prev_runs$id_run, dinamica_members$id_run)
+  )
+  prev_changes <- as.data.table(arrow::read_parquet(file.path(prev_dir, "changes.parquet")))[
+    id_run %in% dinamica_members$id_run
+  ]
+  db$commit(
+    as_lulc_data_t(
+      CJ(id_run = dinamica_members$id_run, id_coord = prev_cells$id_coord)[
+        prev_cells[, .(id_coord, anterior)],
+        on = "id_coord"
+      ][prev_changes, on = .(id_run, id_coord), anterior := i.simulated][,
+        .(id_run, id_coord, id_period = 3L, id_lulc = as.integer(anterior))
+      ]
+    ),
+    "lulc_data_t",
+    method = "upsert"
+  )
+} else {
+  allocate(
+    db,
+    id_periods = 3L,
+    allocator = alloc_dinamica_spec(),
+    select_score = "no.crossval",
+    select_maximize = TRUE,
+    id_run = dinamica_members$id_run,
+    update_neighbors = FALSE
+  )
+}
+
+#| label: dinamica-source
+if (reuse_dinamica) {
+  cat(
+    "Dinamica EGO not installed (", toString(dinamica_missing), "): its", nrow(dinamica_members),
+    "maps were imported from the previous render in results/fig2/, not allocated.\n"
+  )
+}
 
 #' **uPAM**, CLUMPY's patch allocator, with the patch sizes estimated on period 1 -> 2 (1.1-1.2
 #' cells on average) instead of single cells: what a modeller gets with the default patch
@@ -960,7 +1016,7 @@ knitr::kable(bias_tab, digits = 3)
 #' | `fom-ensemble.csv` | per allocator, from the mean counts |
 #' | `brier.csv` | the multiclass Brier scores and skills above (ensembles and realisations from `db$brier_score_v()`) |
 #' | `bias.csv`, `cdf.csv` | panel (e): shares in the top 5 %, and the curves (median, 5 % and 95 % per allocator, observed, rank-and-fill) |
-#' | `scalars.csv` | `n_realisations`, `fom_null`, `unmodelled_change` |
+#' | `scalars.csv` | `n_realisations`, `fom_null`, `unmodelled_change`, `dinamica_maps` (`allocated`, or `reused` from the previous render) |
 
 #| label: write-results
 res_dir <- "2026-09-paper-figures/results/fig2"
@@ -1068,7 +1124,9 @@ fwrite(
     n_realisations = n_realisations,
     n_window = n_window,
     fom_null = fom_null,
-    unmodelled_change = unmodelled_change
+    unmodelled_change = unmodelled_change,
+    # "reused": the Dinamica maps come from the previous render (FIG2_REUSE_DINAMICA)
+    dinamica_maps = if (reuse_dinamica) "reused" else "allocated"
   ),
   file.path(res_dir, "scalars.csv")
 )
