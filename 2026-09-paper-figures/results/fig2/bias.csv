@@ -1,8 +1,8 @@
 changed_cells,allocator,share_in_top_5_pct,median_percentile
 observed,,0.361256544502618,0.909466082022182
-realisations (median),CLUMPY,0.338516380308822,0.901587494274566
-realisations (median),uPAM,0.254799301919721,0.853433814897052
-realisations (median),uPAM merging,0.295295545944305,0.88328003363205
+realisations (median),CLUMPY,0.338016615578184,0.901342367663298
+realisations (median),uPAM,0.258289703315881,0.85627998681888
+realisations (median),uPAM merging,0.296684118673648,0.884420462128604
 realisations (median),Dinamica,0.424561403508772,0.936294939496272
 realisations (median),CLUMondo,0.705539358600583,0.973665480427046
 realisations (median),CLUE-S,0.957446808510638,0.983561142131211
