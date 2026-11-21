@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: clumpy’s Bayes-eKDE transition probabilities</title>
 <style>
@@ -2232,7 +2232,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2264,9 +2264,8 @@ vertical-align: -.125em;
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;python-env.r&quot;</span>)</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>python <span class="ot">&lt;-</span> <span class="fu">project_python</span>()</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="dv">0</span>L</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>viable <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_meta_t[is_viable <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>trans_preds <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_preds_t[id_run <span class="sc">==</span> <span class="dv">0</span>L <span class="sc">&amp;</span> is_selected <span class="sc">==</span> <span class="cn">TRUE</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>viable <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_meta_t[is_viable <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>trans_preds <span class="ot">&lt;-</span> db<span class="sc">$</span>trans_preds_t[id_run <span class="sc">==</span> <span class="dv">0</span>L <span class="sc">&amp;</span> is_selected <span class="sc">==</span> <span class="cn">TRUE</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="calibration-and-prediction-data" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Calibration and prediction data</h1>
@@ -2334,8 +2333,8 @@ vertical-align: -.125em;
 <div class="cell-output cell-output-stdout">
 <pre><code>   id_lulc_anterior seconds n_train n_pred
               &lt;int&gt;   &lt;num&gt;   &lt;int&gt;  &lt;int&gt;
-1:                1   79.49   48041  44165
-2:                3   68.94   37900  39138</code></pre>
+1:                1   83.90   48041  44165
+2:                3   70.52   37900  39138</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(class_times))) {</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">record_timing</span>(</span>
@@ -2358,18 +2357,17 @@ vertical-align: -.125em;
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> .(id_lulc_anterior, id_lulc_posterior),</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    nomatch <span class="ot">=</span> <span class="cn">NULL</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> id_run_kde</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_trans_pot_t</span>(kde_pot[, .(</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run =</span> id_run_kde,</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    id_trans,</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    id_coord,</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    value</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  )]),</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;trans_pot_t&quot;</span>,</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;upsert&quot;</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span><span class="fu">commit</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_trans_pot_t</span>(kde_pot[, .(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_run =</span> id_run_kde,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    id_trans,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_period_post =</span> <span class="dv">3</span>L,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    id_coord,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    value</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  )]),</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;trans_pot_t&quot;</span>,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;upsert&quot;</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 166606</code></pre>
 </div>
