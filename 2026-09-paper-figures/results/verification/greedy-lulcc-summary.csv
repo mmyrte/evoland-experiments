@@ -1,17 +1,17 @@
 case,expected,comparison,landscapes,identical,cells_differing,changed_cells,share_of_changed_differing,class_totals_equal,evoland_commit
-one transition,identical,lulcc core vs evoland joint,10,10,0,694,0,TRUE,d1d7794
-one transition,identical,lulcc core vs evoland ordered,10,10,0,694,0,TRUE,d1d7794
-one transition,identical,lulcc interface vs evoland ordered,10,10,0,694,0,TRUE,d1d7794
-one transition,identical,lulcc interface vs lulcc core,10,10,0,694,0,TRUE,d1d7794
-swap,different,lulcc core vs evoland joint,10,0,728,434,0.647,TRUE,d1d7794
-swap,different,lulcc core vs evoland ordered,10,0,728,434,0.647,TRUE,d1d7794
-ties,identical,lulcc core vs evoland joint,10,10,0,1346,0,TRUE,d1d7794
-ties,identical,lulcc core vs evoland ordered,10,10,0,1346,0,TRUE,d1d7794
-ties,identical,lulcc interface vs evoland ordered,10,10,0,1346,0,TRUE,d1d7794
-ties,identical,lulcc interface vs lulcc core,10,10,0,1346,0,TRUE,d1d7794
-two disjoint transitions,identical,lulcc core vs evoland joint,10,10,0,1346,0,TRUE,d1d7794
-two disjoint transitions,identical,lulcc core vs evoland ordered,10,10,0,1346,0,TRUE,d1d7794
-two disjoint transitions,identical,lulcc interface vs evoland ordered,10,10,0,1346,0,TRUE,d1d7794
-two disjoint transitions,identical,lulcc interface vs lulcc core,10,10,0,1346,0,TRUE,d1d7794
-two sources,different,lulcc core vs evoland joint,10,0,394,1568,0.238,TRUE,d1d7794
-two sources,different,lulcc core vs evoland ordered,10,0,394,1568,0.238,TRUE,d1d7794
+one transition,identical,lulcc core vs evoland joint,10,10,0,694,0,TRUE,a9236fb
+one transition,identical,lulcc core vs evoland ordered,10,10,0,694,0,TRUE,a9236fb
+one transition,identical,lulcc interface vs evoland ordered,10,10,0,694,0,TRUE,a9236fb
+one transition,identical,lulcc interface vs lulcc core,10,10,0,694,0,TRUE,a9236fb
+swap,different,lulcc core vs evoland joint,10,0,728,434,0.647,TRUE,a9236fb
+swap,different,lulcc core vs evoland ordered,10,0,728,434,0.647,TRUE,a9236fb
+ties,identical,lulcc core vs evoland joint,10,10,0,1346,0,TRUE,a9236fb
+ties,identical,lulcc core vs evoland ordered,10,10,0,1346,0,TRUE,a9236fb
+ties,identical,lulcc interface vs evoland ordered,10,10,0,1346,0,TRUE,a9236fb
+ties,identical,lulcc interface vs lulcc core,10,10,0,1346,0,TRUE,a9236fb
+two disjoint transitions,identical,lulcc core vs evoland joint,10,10,0,1346,0,TRUE,a9236fb
+two disjoint transitions,identical,lulcc core vs evoland ordered,10,10,0,1346,0,TRUE,a9236fb
+two disjoint transitions,identical,lulcc interface vs evoland ordered,10,10,0,1346,0,TRUE,a9236fb
+two disjoint transitions,identical,lulcc interface vs lulcc core,10,10,0,1346,0,TRUE,a9236fb
+two sources,different,lulcc core vs evoland joint,10,0,394,1568,0.238,TRUE,a9236fb
+two sources,different,lulcc core vs evoland ordered,10,0,394,1568,0.238,TRUE,a9236fb
