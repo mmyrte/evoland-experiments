@@ -396,13 +396,26 @@ run_experiment <- function(n_grid, seed = 1337L) {
     use.names = TRUE
   )
 
-  ensemble_rows <- simulated[,
+  # The ensembles are runs in the database: their realised (fair) Brier score comes from
+  # evoland's brier_score_v(), over the same cells (those whose class has a viable
+  # transition). The distance to the truth and the expected score need `q`, which the
+  # database does not hold, so they are computed here from the ensemble frequencies.
+  realised <- db$brier_score_v(
+    id_period_anterior = 2L,
+    id_period_post = 3L,
+    id_run_reference = id_run_observed,
+    ensembles = lapply(split(members$id_run, members$id_parent), as.integer)
+  )[, .(id_parent = as.integer(ensemble), n_cells, brier_realised = brier_fair)]
+  stopifnot(
+    "brier_score_v() scored other cells than the local forecasts" = all(realised$n_cells == length(eligible))
+  )
+  ensemble_rows <- simulated[members[, .(id_run, id_parent)], on = "id_run"][,
     {
       freq <- .SD[, .(p = .N / n_members), by = .(id_coord, class = simulated)]
-      cbind(stage = paste("ensemble,", allocator), score(freq, bt, n_members))
+      cbind(stage = paste("ensemble,", allocator), score(freq, bt, n_members)[, !"brier_realised"])
     },
-    by = .(potentials, allocator)
-  ][, !"allocator"]
+    by = .(id_parent, potentials, allocator)
+  ][realised[, .(id_parent, brier_realised)], on = "id_parent"][, !c("allocator", "id_parent")]
 
   fom_rows <- simulated[
     maps,

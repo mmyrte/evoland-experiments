@@ -679,9 +679,7 @@ fom_null <- mean(fom$figure_of_merit_null)
 
 simulated_all <- db$fetch(
   "lulc_data_t",
-  where = glue::glue(
-    "id_run in ({paste(members$id_run, collapse = ', ')}) and id_period = 3"
-  )
+  where = db$interpolate_sql("id_run in ({members$id_run*}) and id_period = 3")
 )[, .(id_run, id_coord, simulated = id_lulc)][
   members[, .(id_run, learner, allocator)],
   on = "id_run"
@@ -711,7 +709,10 @@ knitr::kable(
 #'
 #' Forecasts compared, per learner: the ensemble frequency (with the fair
 #' correction for a finite ensemble, Ferro 2014), the adjusted potentials the
-#' allocator samples from, the deterministic map and single realisations.
+#' allocator samples from, the deterministic map and single realisations. The
+#' ensembles and single realisations are runs in the database and are scored by
+#' evoland's `db$brier_score_v()`; the other forecasts are not runs and are scored
+#' here, with the same definition.
 #' References: the true probabilities, persistence, and the uniform forecast.
 #' The latter knows the quantity of change but not its location: every cell of
 #' an anterior class gets the same probability for each transition, the
@@ -756,16 +757,11 @@ persist <- function(trans_p) {
 observed_p <- complete_p(maps[, .(id_coord, class = observed, p = 1)])[,
   .(id_coord, class, o = p)
 ]
-brier <- function(f, n_members = NA_integer_) {
+# the forecasts that are not runs in the database (potentials, the deterministic map, the
+# references) are scored here; the ensembles of runs by evoland's brier_score_v() below
+brier <- function(f) {
   d <- complete_p(f)[observed_p, on = .(id_coord, class)]
-  cell <- d[,
-    .(
-      multi = sum((p - o)^2),
-      noise = if (is.na(n_members)) 0 else sum(p * (1 - p)) / (n_members - 1)
-    ),
-    by = id_coord
-  ]
-  cell[, mean(multi - noise)]
+  d[, .(multi = sum((p - o)^2)), by = id_coord][, mean(multi)]
 }
 potentials_long <- function(adjusted) {
   adjusted[viable, on = "id_trans", nomatch = NULL][,
@@ -773,19 +769,37 @@ potentials_long <- function(adjusted) {
   ]
 }
 
+# Every allocator's realisations are runs with a map of their own for period 3: evoland scores
+# their ensemble frequency (fair Brier score, Ferro 2014) and each realisation on its own (an
+# ensemble of one), over the cells whose class has a viable transition, against the observed
+# map in run `id_run_observed`.
+ensemble_runs <- lapply(split(members$id_run, members$allocator), as.integer)
+brier_ensembles <- db$brier_score_v(
+  id_period_anterior = 2L,
+  id_period_post = 3L,
+  id_run_reference = id_run_observed,
+  ensembles = ensemble_runs
+)
+brier_single <- db$brier_score_v(
+  id_period_anterior = 2L,
+  id_period_post = 3L,
+  id_run_reference = id_run_observed,
+  ensembles = setNames(as.list(members$id_run), members$id_run)
+)[, id_run := as.integer(ensemble)][members[, .(id_run, allocator)], on = "id_run"]
+stopifnot(
+  "brier_score_v() scored other cells than the local forecasts" = {
+    all(c(brier_ensembles$n_cells, brier_single$n_cells) == length(eligible))
+  }
+)
+
 scores <- rbindlist(c(
   lapply(levels(members$allocator), function(a) {
-    sims <- simulated_all[allocator == a]
-    draws <- sims[, .(bs = brier(.SD[, .(id_coord, class = simulated, p = 1)])), by = id_run]
     data.table(
       learner = a,
       forecast = c("ensemble frequency (fair)", "single realisation (median)"),
       brier = c(
-        brier(
-          sims[, .(p = .N / n_realisations), by = .(id_coord, class = simulated)],
-          n_realisations
-        ),
-        median(draws$bs)
+        brier_ensembles[ensemble == a, brier_fair],
+        brier_single[allocator == a, median(brier)]
       )
     )
   }),
@@ -814,7 +828,16 @@ scores <- rbindlist(c(
     )
   ))
 ))
-scores[, skill := 1 - brier / scores[forecast == "uniform forecast", brier]]
+brier_uniform <- scores[forecast == "uniform forecast", brier]
+# brier_score_v()'s reference is the same uniform forecast (the observed shares of each class's
+# transitions), as long as every observed transition is viable
+stopifnot(
+  "the uniform forecast differs from brier_score_v()'s reference" = {
+    unmodelled_change > 0 ||
+      isTRUE(all.equal(brier_ensembles$brier_reference, rep(brier_uniform, nrow(brier_ensembles))))
+  }
+)
+scores[, skill := 1 - brier / brier_uniform]
 knitr::kable(scores, digits = 4)
 
 #' # Where change is placed: the bias of a deterministic map
@@ -935,7 +958,7 @@ knitr::kable(bias_tab, digits = 3)
 #' | `viable.csv` | the modelled transitions, `from`, `to` |
 #' | `fom.csv` | figure of merit and components per run (evoland's `figure_of_merit_v()`) |
 #' | `fom-ensemble.csv` | per allocator, from the mean counts |
-#' | `brier.csv` | the multiclass Brier scores and skills above |
+#' | `brier.csv` | the multiclass Brier scores and skills above (ensembles and realisations from `db$brier_score_v()`) |
 #' | `bias.csv`, `cdf.csv` | panel (e): shares in the top 5 %, and the curves (median, 5 % and 95 % per allocator, observed, rank-and-fill) |
 #' | `scalars.csv` | `n_realisations`, `fom_null`, `unmodelled_change` |
 
