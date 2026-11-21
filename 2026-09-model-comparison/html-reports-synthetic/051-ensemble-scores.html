@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>PIE benchmark: ensemble-level scores</title>
 <style>
@@ -2224,7 +2224,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -2247,28 +2247,27 @@ vertical-align: -.125em;
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>members <span class="ot">&lt;-</span> <span class="fu">unique</span>(fom[, .(id_run, ensemble)])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>db<span class="sc">$</span>id_run <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>anterior <span class="ot">&lt;-</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> <span class="st">&quot;id_run = 0 and id_period = 2&quot;</span>)[,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    .(id_coord, <span class="at">anterior =</span> id_lulc)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>observed <span class="ot">&lt;-</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">&quot;id_run = {id_run_observed} and id_period = 3&quot;</span>))[,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    .(id_coord, <span class="at">observed =</span> id_lulc)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>simulated <span class="ot">&lt;-</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;lulc_data_t&quot;</span>,</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">where =</span> glue<span class="sc">::</span><span class="fu">glue</span>(</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;id_period = 3 and id_run in ({paste(members$id_run, collapse = &#39;,&#39;)})&quot;</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  )[</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    members,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  ][,</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    .(ensemble, id_coord, <span class="at">simulated =</span> id_lulc)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> anterior[observed, on <span class="ot">=</span> <span class="st">&quot;id_coord&quot;</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>anterior <span class="ot">&lt;-</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> <span class="st">&quot;id_run = 0 and id_period = 2&quot;</span>)[,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    .(id_coord, <span class="at">anterior =</span> id_lulc)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>observed <span class="ot">&lt;-</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(<span class="st">&quot;lulc_data_t&quot;</span>, <span class="at">where =</span> glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">&quot;id_run = {id_run_observed} and id_period = 3&quot;</span>))[,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    .(id_coord, <span class="at">observed =</span> id_lulc)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>simulated <span class="ot">&lt;-</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  db<span class="sc">$</span><span class="fu">fetch</span>(</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;lulc_data_t&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">where =</span> glue<span class="sc">::</span><span class="fu">glue</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;id_period = 3 and id_run in ({paste(members$id_run, collapse = &#39;,&#39;)})&quot;</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  )[</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    members,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    on <span class="ot">=</span> <span class="st">&quot;id_run&quot;</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  ][,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    .(ensemble, id_coord, <span class="at">simulated =</span> id_lulc)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>cells <span class="ot">&lt;-</span> anterior[observed, on <span class="ot">=</span> <span class="st">&quot;id_coord&quot;</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># forecast probabilities per ensemble, cell and class</span></span>
@@ -2332,18 +2331,18 @@ vertical-align: -.125em;
 <div class="cell-output cell-output-stdout">
 <pre><code>                                               ensemble     brier brier_fair
                                                  &lt;char&gt;     &lt;num&gt;      &lt;num&gt;
- 1:                        logistic regression × CLUMPY 0.1233198  0.1171113
- 2:                      logistic regression × Dinamica 0.1229806  0.1181886
- 3:                              random forest × CLUMPY 0.1250899  0.1189027
- 4:                            random forest × Dinamica 0.1248102  0.1199039
- 5:                      Weights of Evidence × Dinamica 0.1313623  0.1253649
- 6:                        Weights of Evidence × CLUMPY 0.1349588  0.1285264
- 7:                                naive Bayes × CLUMPY 0.1339960  0.1292884
- 8:                              naive Bayes × Dinamica 0.1341790  0.1300373
- 9: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 0.1396929  0.1353462
-10:                                 Bayes-eKDE × CLUMPY 0.1412052  0.1360658
+ 1:                        logistic regression × CLUMPY 0.1229584  0.1167744
+ 2:                      logistic regression × Dinamica 0.1232668  0.1184754
+ 3:                              random forest × CLUMPY 0.1250311  0.1188638
+ 4:                            random forest × Dinamica 0.1248265  0.1199198
+ 5:                      Weights of Evidence × Dinamica 0.1306343  0.1246345
+ 6:                        Weights of Evidence × CLUMPY 0.1345591  0.1281228
+ 7:                                naive Bayes × CLUMPY 0.1335941  0.1289337
+ 8:                              naive Bayes × Dinamica 0.1344943  0.1303585
+ 9: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 0.1375106  0.1330974
+10:                                 Bayes-eKDE × CLUMPY 0.1411613  0.1360675
 11:                    lulcc GLM × Ordered (as shipped) 0.1385126  0.1365134
-12:                               Bayes-eKDE × Dinamica 0.1522774  0.1482644
+12:                               Bayes-eKDE × Dinamica 0.1522703  0.1482578
 13:                        logistic regression × CLUE-S 0.1623593  0.1623558
 14:                      logistic regression × CLUMondo 0.1644013  0.1643953
 15:                              random forest × CLUE-S 0.1663326  0.1663284
@@ -2360,52 +2359,52 @@ vertical-align: -.125em;
 26:                                naive Bayes × greedy 0.1913609  0.1913609
 27:                       Weights of Evidence × Ordered 0.1933775  0.1933775
 28:                        Weights of Evidence × CLUE-S 0.1947991  0.1947686
-29:                                Bayes-eKDE × Ordered 0.1981646  0.1981646
-30:                               Bayes-eKDE × CLUMondo 0.2008089  0.2008088
-31:                                 Bayes-eKDE × CLUE-S 0.2008921  0.2008912
+29:                                Bayes-eKDE × Ordered 0.1981239  0.1981239
+30:                               Bayes-eKDE × CLUMondo 0.2007924  0.2007924
+31:                                 Bayes-eKDE × CLUE-S 0.2009590  0.2009577
 32:                        Weights of Evidence × greedy 0.2094092  0.2094092
-33:                                 Bayes-eKDE × greedy 0.2160092  0.2160092
+33:                                 Bayes-eKDE × greedy 0.2160296  0.2160296
 34:                     lulcc GLM × CLUE-S (as shipped) 0.3498918  0.3498859
                                                ensemble     brier brier_fair
                                                  &lt;char&gt;     &lt;num&gt;      &lt;num&gt;
-    brier_skill brier_fair_skill
-          &lt;num&gt;            &lt;num&gt;
- 1:  0.09904605      0.144404524
- 2:  0.10152471      0.136534098
- 3:  0.08611438      0.131316652
- 4:  0.08815773      0.124002357
- 5:  0.04028895      0.084105064
- 6:  0.01401375      0.061007620
- 7:  0.02104790      0.055440438
- 8:  0.01971072      0.049969599
- 9: -0.02057252      0.011183784
-10: -0.03162156      0.005925998
-11: -0.01195004      0.002656184
-12: -0.11251284     -0.083194744
-13: -0.18616980     -0.186143954
-14: -0.20108789     -0.201044342
-15: -0.21519787     -0.215166931
-16: -0.21990814     -0.219908142
-17: -0.22952364     -0.229210801
-18: -0.23210983     -0.232050201
-19: -0.24639877     -0.246398767
-20: -0.29779988     -0.297673243
-21: -0.31277415     -0.312774152
-22: -0.34328302     -0.343283017
-23: -0.35619310     -0.356186818
-24: -0.37111306     -0.371113055
-25: -0.38720127     -0.386711741
-26: -0.39805015     -0.398050151
-27: -0.41278370     -0.412783701
-28: -0.42316974     -0.422946795
-29: -0.44775728     -0.447757278
-30: -0.46707609     -0.467075382
-31: -0.46768403     -0.467676943
-32: -0.52990798     -0.529907979
-33: -0.57812687     -0.578126868
-34: -1.55625076     -1.556207410
-    brier_skill brier_fair_skill
-          &lt;num&gt;            &lt;num&gt;</code></pre>
+     brier_skill brier_fair_skill
+           &lt;num&gt;            &lt;num&gt;
+ 1:  0.101686923      0.146865990
+ 2:  0.099433360      0.134438817
+ 3:  0.086543736      0.131600983
+ 4:  0.088038299      0.123886039
+ 5:  0.045607908      0.089441570
+ 6:  0.016933668      0.063956288
+ 7:  0.023983820      0.058031929
+ 8:  0.017407299      0.047622492
+ 9: -0.004629031      0.027612750
+10: -0.031300849      0.005913466
+11: -0.011950043      0.002656184
+12: -0.112461499     -0.083146573
+13: -0.186169802     -0.186143954
+14: -0.201087893     -0.201044342
+15: -0.215197871     -0.215166931
+16: -0.219908142     -0.219908142
+17: -0.229523644     -0.229210801
+18: -0.232109828     -0.232050201
+19: -0.246398767     -0.246398767
+20: -0.297799880     -0.297673243
+21: -0.312774152     -0.312774152
+22: -0.343283017     -0.343283017
+23: -0.356193104     -0.356186818
+24: -0.371113055     -0.371113055
+25: -0.387201273     -0.386711741
+26: -0.398050151     -0.398050151
+27: -0.412783701     -0.412783701
+28: -0.423169737     -0.422946795
+29: -0.447459631     -0.447459631
+30: -0.466955540     -0.466955540
+31: -0.468172918     -0.468163362
+32: -0.529907979     -0.529907979
+33: -0.578275692     -0.578275692
+34: -1.556250765     -1.556207410
+     brier_skill brier_fair_skill
+           &lt;num&gt;            &lt;num&gt;</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -2416,80 +2415,80 @@ vertical-align: -.125em;
 <div class="cell-output cell-output-stdout">
 <pre><code>                                               ensemble     brier brier_fair
                                                  &lt;char&gt;     &lt;num&gt;      &lt;num&gt;
- 1:                                 Bayes-eKDE × CLUE-S 0.2008921  0.2008912
- 2:                                 Bayes-eKDE × CLUMPY 0.1412052  0.1360658
- 3:                               Bayes-eKDE × CLUMondo 0.2008089  0.2008088
- 4:                               Bayes-eKDE × Dinamica 0.1522774  0.1482644
- 5:                                Bayes-eKDE × Ordered 0.1981646  0.1981646
- 6:                                 Bayes-eKDE × greedy 0.2160092  0.2160092
+ 1:                                 Bayes-eKDE × CLUE-S 0.2009590  0.2009577
+ 2:                                 Bayes-eKDE × CLUMPY 0.1411613  0.1360675
+ 3:                               Bayes-eKDE × CLUMondo 0.2007924  0.2007924
+ 4:                               Bayes-eKDE × Dinamica 0.1522703  0.1482578
+ 5:                                Bayes-eKDE × Ordered 0.1981239  0.1981239
+ 6:                                 Bayes-eKDE × greedy 0.2160296  0.2160296
  7:            CLUinPy logistic × CLUMondo (as shipped) 0.1856316  0.1856307
- 8: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 0.1396929  0.1353462
+ 8: Dinamica WoE × Dinamica (simulate.ego) (as shipped) 0.1375106  0.1330974
  9:                        Weights of Evidence × CLUE-S 0.1947991  0.1947686
-10:                        Weights of Evidence × CLUMPY 0.1349588  0.1285264
+10:                        Weights of Evidence × CLUMPY 0.1345591  0.1281228
 11:                      Weights of Evidence × CLUMondo 0.1898759  0.1898089
-12:                      Weights of Evidence × Dinamica 0.1313623  0.1253649
+12:                      Weights of Evidence × Dinamica 0.1306343  0.1246345
 13:                       Weights of Evidence × Ordered 0.1933775  0.1933775
 14:                        Weights of Evidence × greedy 0.2094092  0.2094092
 15:                        logistic regression × CLUE-S 0.1623593  0.1623558
-16:                        logistic regression × CLUMPY 0.1233198  0.1171113
+16:                        logistic regression × CLUMPY 0.1229584  0.1167744
 17:                      logistic regression × CLUMondo 0.1644013  0.1643953
-18:                      logistic regression × Dinamica 0.1229806  0.1181886
+18:                      logistic regression × Dinamica 0.1232668  0.1184754
 19:                       logistic regression × Ordered 0.1669773  0.1669773
 20:                        logistic regression × greedy 0.1838645  0.1838645
 21:                     lulcc GLM × CLUE-S (as shipped) 0.3498918  0.3498859
 22:                    lulcc GLM × Ordered (as shipped) 0.1385126  0.1365134
 23:                                naive Bayes × CLUE-S 0.1776389  0.1776216
-24:                                naive Bayes × CLUMPY 0.1339960  0.1292884
+24:                                naive Bayes × CLUMPY 0.1335941  0.1289337
 25:                              naive Bayes × CLUMondo 0.1682935  0.1682506
-26:                              naive Bayes × Dinamica 0.1341790  0.1300373
+26:                              naive Bayes × Dinamica 0.1344943  0.1303585
 27:                               naive Bayes × Ordered 0.1796885  0.1796885
 28:                                naive Bayes × greedy 0.1913609  0.1913609
 29:                              random forest × CLUE-S 0.1663326  0.1663284
-30:                              random forest × CLUMPY 0.1250899  0.1189027
+30:                              random forest × CLUMPY 0.1250311  0.1188638
 31:                            random forest × CLUMondo 0.1686474  0.1686393
-32:                            random forest × Dinamica 0.1248102  0.1199039
+32:                            random forest × Dinamica 0.1248265  0.1199198
 33:                             random forest × Ordered 0.1706033  0.1706033
 34:                              random forest × greedy 0.1876738  0.1876738
                                                ensemble     brier brier_fair
                                                  &lt;char&gt;     &lt;num&gt;      &lt;num&gt;
-    brier_skill brier_fair_skill figure_of_merit
-          &lt;num&gt;            &lt;num&gt;           &lt;num&gt;
- 1: -0.46768403     -0.467676943      0.12731327
- 2: -0.03162156      0.005925998      0.10497531
- 3: -0.46707609     -0.467075382      0.12505658
- 4: -0.11251284     -0.083194744      0.12684415
- 5: -0.44775728     -0.447757278      0.14328490
- 6: -0.57812687     -0.578126868      0.15425108
- 7: -0.35619310     -0.356186818      0.05418420
- 8: -0.02057252      0.011183784      0.14133672
- 9: -0.42316974     -0.422946795      0.03047686
-10:  0.01401375      0.061007620      0.06925927
-11: -0.38720127     -0.386711741      0.03895944
-12:  0.04028895      0.084105064      0.09263487
-13: -0.41278370     -0.412783701      0.17200174
-14: -0.52990798     -0.529907979      0.17150226
-15: -0.18616980     -0.186143954      0.18262242
-16:  0.09904605      0.144404524      0.09999164
-17: -0.20108789     -0.201044342      0.15424209
-18:  0.10152471      0.136534098      0.15875335
-19: -0.21990814     -0.219908142      0.23148322
-20: -0.34328302     -0.343283017      0.23300476
-21: -1.55625076     -1.556207410      0.15085066
-22: -0.01195004      0.002656184      0.13238438
-23: -0.29779988     -0.297673243      0.20321121
-24:  0.02104790      0.055440438      0.13569619
-25: -0.22952364     -0.229210801      0.17234452
-26:  0.01971072      0.049969599      0.16043352
-27: -0.31277415     -0.312774152      0.20121344
-28: -0.39805015     -0.398050151      0.20885969
-29: -0.21519787     -0.215166931      0.16471460
-30:  0.08611438      0.131316652      0.09672331
-31: -0.23210983     -0.232050201      0.13639869
-32:  0.08815773      0.124002357      0.14975354
-33: -0.24639877     -0.246398767      0.21998696
-34: -0.37111306     -0.371113055      0.22305616
-    brier_skill brier_fair_skill figure_of_merit
-          &lt;num&gt;            &lt;num&gt;           &lt;num&gt;</code></pre>
+     brier_skill brier_fair_skill figure_of_merit
+           &lt;num&gt;            &lt;num&gt;           &lt;num&gt;
+ 1: -0.468172918     -0.468163362      0.12730360
+ 2: -0.031300849      0.005913466      0.10674069
+ 3: -0.466955540     -0.466955540      0.12506657
+ 4: -0.112461499     -0.083146573      0.12687534
+ 5: -0.447459631     -0.447459631      0.14338559
+ 6: -0.578275692     -0.578275692      0.15423878
+ 7: -0.356193104     -0.356186818      0.05418420
+ 8: -0.004629031      0.027612750      0.14346745
+ 9: -0.423169737     -0.422946795      0.03047686
+10:  0.016933668      0.063956288      0.06995862
+11: -0.387201273     -0.386711741      0.03895944
+12:  0.045607908      0.089441570      0.09398824
+13: -0.412783701     -0.412783701      0.17200174
+14: -0.529907979     -0.529907979      0.17150226
+15: -0.186169802     -0.186143954      0.18262242
+16:  0.101686923      0.146865990      0.10154778
+17: -0.201087893     -0.201044342      0.15424209
+18:  0.099433360      0.134438817      0.15816049
+19: -0.219908142     -0.219908142      0.23148322
+20: -0.343283017     -0.343283017      0.23300476
+21: -1.556250765     -1.556207410      0.15085066
+22: -0.011950043      0.002656184      0.13238438
+23: -0.297799880     -0.297673243      0.20321121
+24:  0.023983820      0.058031929      0.13852638
+25: -0.229523644     -0.229210801      0.17234452
+26:  0.017407299      0.047622492      0.16001269
+27: -0.312774152     -0.312774152      0.20121344
+28: -0.398050151     -0.398050151      0.20885969
+29: -0.215197871     -0.215166931      0.16471460
+30:  0.086543736      0.131600983      0.09776798
+31: -0.232109828     -0.232050201      0.13639869
+32:  0.088038299      0.123886039      0.14977304
+33: -0.246398767     -0.246398767      0.21998696
+34: -0.371113055     -0.371113055      0.22305616
+     brier_skill brier_fair_skill figure_of_merit
+           &lt;num&gt;            &lt;num&gt;           &lt;num&gt;</code></pre>
 </div>
 </div>
 
