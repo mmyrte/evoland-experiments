@@ -198,6 +198,20 @@ them only where the allocator or estimator is stochastic, see Rerun on `d1d7794`
 - `PIE_N_REALISATIONS` (default 20) lowers the replicate count for quick tests;
   `PIE_ESTIMATORS` (default `log_reg,ranger,woe,naive_bayes,kde`) restricts the estimators.
 
+## Rerun on `a9236fb` (2026-11-21)
+
+Both datasets rerun on evoland.plus `a9236fb` (develop after ethzplus/evoland.plus#150: uPAM quantity fix,
+rook patch labelling, `avoid_aggregation = TRUE` as default; Dinamica runs with
+`additional_args` since #141 dropped `disable_parallel`), same tool versions as below. Every
+step ran. PIE, against `d1d7794`: 23 of 34 ensembles reproduce exactly; the 11 that move are the
+CLUMPY (uSAM/uPAM, #150) and Dinamica (fresh seed per run) pairings. The largest move is
+Dinamica standalone, as shipped (0.0307 -> 0.0290); CLUMPY moves by at most 0.0008 (random
+forest x CLUMPY 0.0292 -> 0.0300). Variance shares of the per-map FoM: estimator 39.6 %,
+allocator 37.1 %, interaction 12.9 %; of the per-map Brier score: allocator 99.2 %,
+estimator 0.3 %. Fair Brier skill: CLUMPY -0.03 to 0.00, Dinamica -0.18 to -0.06, class
+totals -0.79 to -0.57, rank-and-fill -0.96 to -0.90, CLUE-S as shipped -3.2. The greedy vs.
+lulcc Ordered check (`052`) is unchanged.
+
 ## Rerun on `d1d7794` (2026-11-19)
 
 Both datasets rerun from scratch (`./execute-all.sh --workers 2 '2026-09-model-comparison/0*.r'`,
@@ -212,8 +226,8 @@ CLUinPy `7d18dfe`, R 4.6.2, under `LC_ALL=C.UTF-8`. Every step ran. Against the 
 - **Synthetic:** the same pattern; only the Dinamica and Bayes-eKDE pairings move. Variance
   shares: estimator 68.8 % (68.4 %), allocator 14.8 % (14.9 %).
 
-The tables further down still give the numbers of `3bc7856`; the CSVs in `figures/`,
-`figures-synthetic/`, `results/` and `results-synthetic/` are those of `d1d7794`.
+The tables further down still give the numbers of `3bc7856`; the CSVs in `figures/`, `figures-synthetic/`,
+`results/` and `results-synthetic/` are those of `a9236fb`.
 
 ## Results: the 5 × 6 crossing (2026-10-22, rerun 2026-11-01 on `3bc7856`)
 
