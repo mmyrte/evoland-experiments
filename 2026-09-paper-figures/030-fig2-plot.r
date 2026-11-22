@@ -418,8 +418,13 @@ ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 # one legend for both panels, underneath: the colours mean the same allocators in both
 # where change is placed first (overconcentration), then what it does to the FoM and to a
 # probabilistic score
-fig2b <- p_e + p_d + plot_layout(widths = c(1, 1.35), guides = "collect") &
-  theme(legend.position = "bottom", legend.box = "horizontal")
+# the asterisk is explained in the figure itself, under the legend (too easily missed in the caption)
+fig2b <- (p_e + p_d + plot_layout(widths = c(1, 1.35), guides = "collect") &
+  theme(legend.position = "bottom", legend.box = "horizontal")) +
+  plot_annotation(
+    caption = "* as implemented in evoland.plus",
+    theme = theme(plot.caption = element_text(size = 8, hjust = 0.5, face = "bold"))
+  )
 ggsave(file.path(out_dir, "fig2b-ensembles.pdf"), fig2b, width = 7.2, height = 3.9)
 fig2a
 fig2b
