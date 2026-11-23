@@ -679,7 +679,7 @@ if (identical(Sys.getenv("EKDE_TIMING"), "0")) {
       )
       timings <- rbind(timings, data.table(n = n, d = d, what = "reference", fit = ref$timing[["fit"]], predict = ref$timing[["predict"]]))
     }
-    print(timings[.(n, d), on = .(n, d)])
+    print(utils::tail(timings, 4L))
   }
   message("(g) wall time in seconds; fit: the class densities (and for ipf the prior factors), ",
           "predict: the densities at all rows (and for clumpy and the reference, P(z) fitted on them)")
