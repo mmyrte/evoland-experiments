@@ -18,6 +18,37 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "Formula"
+version = "1.2-6"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "Hmisc"
+version = "5.3-1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "ggplot2",
+    "cluster",
+    "rpart",
+    "nnet",
+    "foreign",
+    "gtable",
+    "gridExtra",
+    "data.table",
+    { name = "htmlTable", requirement = "(>= 1.11.0)" },
+    "viridisLite",
+    "htmltools",
+    "base64enc",
+    "colorspace",
+    "rmarkdown",
+    "knitr",
+    "Formula",
+]
+
+[[packages]]
 name = "KernSmooth"
 version = "2.23-26"
 source = { builtin = true }
@@ -102,6 +133,15 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "ROCR"
+version = "1.0-12"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "gplots",
+]
+
+[[packages]]
 name = "Rcpp"
 version = "1.1.2"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -132,11 +172,35 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "SQUAREM"
+version = "2026.1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "abind"
 version = "1.4-8"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "arrow"
+version = "26.0.1.1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "assertthat",
+    { name = "bit64", requirement = "(>= 0.9-7)" },
+    "glue",
+    "purrr",
+    "R6",
+    { name = "rlang", requirement = "(>= 1.0.0)" },
+    { name = "tidyselect", requirement = "(>= 1.0.0)" },
+    "vctrs",
+    { name = "cpp11", requirement = "(>= 0.4.2)" },
+]
 
 [[packages]]
 name = "askpass"
@@ -146,6 +210,13 @@ force_source = false
 dependencies = [
     { name = "sys", requirement = "(>= 2.1)" },
 ]
+
+[[packages]]
+name = "assertthat"
+version = "0.2.1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "backports"
@@ -176,6 +247,13 @@ force_source = false
 dependencies = [
     { name = "bit", requirement = "(>= 4.0.0)" },
 ]
+
+[[packages]]
+name = "bitops"
+version = "1.1-0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "blob"
@@ -240,6 +318,15 @@ dependencies = [
 ]
 
 [[packages]]
+name = "caTools"
+version = "1.18.4"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "bitops",
+]
+
+[[packages]]
 name = "cachem"
 version = "1.1.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -258,6 +345,26 @@ dependencies = [
     { name = "otel", requirement = "(>= 0.2.0)" },
     { name = "processx", requirement = "(>= 3.6.1)" },
     "R6",
+]
+
+[[packages]]
+name = "caret"
+version = "7.1-0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "ggplot2",
+    { name = "lattice", requirement = "(>= 0.20)" },
+    "cli",
+    "e1071",
+    "foreach",
+    "nlme",
+    "plyr",
+    { name = "recipes", requirement = "(>= 0.1.10)" },
+    "reshape2",
+    "vctrs",
+    { name = "withr", requirement = "(>= 2.0.0)" },
+    { name = "yardstick", requirement = "(>= 1.4.0)" },
 ]
 
 [[packages]]
@@ -314,6 +421,27 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "clock"
+version = "0.7.4"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "cli", requirement = "(>= 3.6.4)" },
+    { name = "lifecycle", requirement = "(>= 1.0.4)" },
+    { name = "rlang", requirement = "(>= 1.1.5)" },
+    { name = "tzdb", requirement = "(>= 0.5.0)" },
+    { name = "vctrs", requirement = "(>= 0.6.5)" },
+    { name = "cpp11", requirement = "(>= 0.5.2)" },
+]
+
+[[packages]]
+name = "cluster"
+version = "2.1.8.2"
+source = { builtin = true }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "codetools"
 version = "0.2-20"
 source = { builtin = true }
@@ -323,6 +451,13 @@ dependencies = []
 [[packages]]
 name = "collections"
 version = "0.3.12"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "colorspace"
+version = "2.1-4"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = []
@@ -423,6 +558,13 @@ dependencies = [
 ]
 
 [[packages]]
+name = "deldir"
+version = "2.0-4"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "desc"
 version = "1.4.3"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -459,6 +601,15 @@ dependencies = [
     { name = "testthat", requirement = "(>= 3.3.2)" },
     { name = "urlchecker", requirement = "(>= 1.0.1)" },
     { name = "withr", requirement = "(>= 3.0.2)" },
+]
+
+[[packages]]
+name = "diagram"
+version = "1.6.5"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "shape",
 ]
 
 [[packages]]
@@ -569,7 +720,7 @@ dependencies = []
 [[packages]]
 name = "evoland.plus"
 version = "0.1.1.9000"
-source = { git = "https://github.com/ethzplus/evoland.plus/", sha = "2ca273c6f92308999f53029f01b7f457ed458fae" }
+source = { git = "https://github.com/ethzplus/evoland.plus/", sha = "a9236fb17d54b27246a5ec64ed3fe94946374e38" }
 force_source = true
 dependencies = [
     "DBI",
@@ -643,6 +794,23 @@ dependencies = [
     { name = "rlang", requirement = "(>= 1.0.0)" },
     "tibble",
 ]
+
+[[packages]]
+name = "foreach"
+version = "1.5.2"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "codetools",
+    "iterators",
+]
+
+[[packages]]
+name = "foreign"
+version = "0.8-91"
+source = { builtin = true }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "fs"
@@ -763,6 +931,20 @@ dependencies = [
 ]
 
 [[packages]]
+name = "ggrepel"
+version = "0.9.8"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "ggplot2", requirement = "(>= 3.5.2)" },
+    "Rcpp",
+    { name = "rlang", requirement = "(>= 1.1.6)" },
+    "S7",
+    { name = "scales", requirement = "(>= 1.4.0)" },
+    { name = "withr", requirement = "(>= 3.0.2)" },
+]
+
+[[packages]]
 name = "ggspatial"
 version = "1.1.11"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -872,12 +1054,39 @@ dependencies = [
 ]
 
 [[packages]]
+name = "gower"
+version = "1.0.2"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "gplots"
+version = "3.3.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "gtools",
+    "caTools",
+    "KernSmooth",
+]
+
+[[packages]]
 name = "gridExtra"
 version = "2.3.1"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = [
     "gtable",
+]
+
+[[packages]]
+name = "gsubfn"
+version = "0.7"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "proto",
 ]
 
 [[packages]]
@@ -890,6 +1099,27 @@ dependencies = [
     "glue",
     "lifecycle",
     { name = "rlang", requirement = "(>= 1.1.0)" },
+]
+
+[[packages]]
+name = "gtools"
+version = "3.9.5"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "hardhat"
+version = "1.4.3"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "cli", requirement = "(>= 3.6.0)" },
+    { name = "glue", requirement = "(>= 1.6.2)" },
+    { name = "rlang", requirement = "(>= 1.1.0)" },
+    { name = "sparsevctrs", requirement = "(>= 0.2.0)" },
+    { name = "tibble", requirement = "(>= 3.2.1)" },
+    { name = "vctrs", requirement = "(>= 0.6.0)" },
 ]
 
 [[packages]]
@@ -908,6 +1138,15 @@ dependencies = [
     "tidyselect",
     { name = "vctrs", requirement = "(>= 0.3.0)" },
     "cpp11",
+]
+
+[[packages]]
+name = "hexbin"
+version = "1.28.6"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "lattice",
 ]
 
 [[packages]]
@@ -930,6 +1169,21 @@ dependencies = [
     "pkgconfig",
     { name = "rlang", requirement = "(>= 1.0.2)" },
     { name = "vctrs", requirement = "(>= 0.3.8)" },
+]
+
+[[packages]]
+name = "htmlTable"
+version = "2.5.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "stringr",
+    { name = "knitr", requirement = "(>= 1.6)" },
+    { name = "magrittr", requirement = "(>= 1.5)" },
+    "checkmate",
+    "htmlwidgets",
+    "htmltools",
+    { name = "rstudioapi", requirement = "(>= 0.6)" },
 ]
 
 [[packages]]
@@ -1029,6 +1283,31 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "interp"
+version = "1.1-6"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 0.12.9)" },
+    "deldir",
+    "RcppEigen",
+]
+
+[[packages]]
+name = "ipred"
+version = "0.9-16"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "rpart", requirement = "(>= 3.1-8)" },
+    "MASS",
+    "survival",
+    "nnet",
+    "class",
+    "prodlim",
+]
+
+[[packages]]
 name = "isoband"
 version = "0.3.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -1038,6 +1317,13 @@ dependencies = [
     "rlang",
     "cpp11",
 ]
+
+[[packages]]
+name = "iterators"
+version = "1.0.14"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "jpeg"
@@ -1127,6 +1413,34 @@ version = "0.22-9"
 source = { builtin = true }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "latticeExtra"
+version = "0.6-31"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "lattice",
+    "png",
+    "jpeg",
+    "RColorBrewer",
+    "interp",
+    "MASS",
+]
+
+[[packages]]
+name = "lava"
+version = "1.11"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "cli",
+    "future.apply",
+    "numDeriv",
+    "progressr",
+    "survival",
+    "SQUAREM",
+]
 
 [[packages]]
 name = "lazyeval"
@@ -1258,6 +1572,18 @@ force_source = false
 dependencies = [
     "generics",
     { name = "timechange", requirement = "(>= 0.4.0)" },
+]
+
+[[packages]]
+name = "lulcc"
+version = "1.0.4"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "raster",
+    "ROCR",
+    "lattice",
+    "rasterVis",
 ]
 
 [[packages]]
@@ -1458,6 +1784,29 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "nlme"
+version = "3.1-170"
+source = { builtin = true }
+force_source = false
+dependencies = [
+    "lattice",
+]
+
+[[packages]]
+name = "nnet"
+version = "7.3-20"
+source = { builtin = true }
+force_source = false
+dependencies = []
+
+[[packages]]
+name = "numDeriv"
+version = "2016.8-1.1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "openssl"
 version = "2.4.2"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -1506,6 +1855,19 @@ version = "1.48.0"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = []
+
+[[packages]]
+name = "patchwork"
+version = "1.3.2"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "ggplot2", requirement = "(>= 3.0.0)" },
+    { name = "gtable", requirement = "(>= 0.3.6)" },
+    { name = "rlang", requirement = "(>= 1.0.0)" },
+    "cli",
+    "farver",
+]
 
 [[packages]]
 name = "pillar"
@@ -1627,6 +1989,23 @@ dependencies = [
 ]
 
 [[packages]]
+name = "prodlim"
+version = "2026.03.11"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "Rcpp", requirement = "(>= 0.11.5)" },
+    "rlang",
+    "data.table",
+    "ggplot2",
+    "scales",
+    "diagram",
+    "survival",
+    "KernSmooth",
+    "lava",
+]
+
+[[packages]]
 name = "profvis"
 version = "0.4.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -1650,6 +2029,13 @@ dependencies = [
 ]
 
 [[packages]]
+name = "progressr"
+version = "1.1.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "promises"
 version = "1.5.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -1663,6 +2049,13 @@ dependencies = [
     "R6",
     "rlang",
 ]
+
+[[packages]]
+name = "proto"
+version = "1.0.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "proxy"
@@ -1781,6 +2174,23 @@ dependencies = [
 ]
 
 [[packages]]
+name = "rasterVis"
+version = "0.51.7"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "lattice", requirement = "(>= 0.22-5)" },
+    { name = "raster", requirement = "(>= 3.4-13)" },
+    { name = "terra", requirement = "(>= 1.7-17)" },
+    "latticeExtra",
+    "RColorBrewer",
+    "hexbin",
+    { name = "sp", requirement = "(>= 1.0-6)" },
+    "zoo",
+    "viridisLite",
+]
+
+[[packages]]
 name = "rcmdcheck"
 version = "1.4.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -1838,6 +2248,35 @@ dependencies = [
     { name = "tibble", requirement = "(>= 2.0.1)" },
     { name = "cpp11", requirement = "(>= 0.5.5)" },
     "progress",
+]
+
+[[packages]]
+name = "recipes"
+version = "1.4.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "dplyr", requirement = "(>= 1.1.0)" },
+    "cli",
+    { name = "clock", requirement = "(>= 0.6.1)" },
+    { name = "generics", requirement = "(>= 0.1.2)" },
+    "glue",
+    "gower",
+    { name = "hardhat", requirement = "(>= 1.4.1)" },
+    { name = "ipred", requirement = "(>= 0.9-12)" },
+    { name = "lifecycle", requirement = "(>= 1.0.3)" },
+    { name = "lubridate", requirement = "(>= 1.8.0)" },
+    "magrittr",
+    "Matrix",
+    { name = "purrr", requirement = "(>= 1.0.0)" },
+    { name = "rlang", requirement = "(>= 1.1.0)" },
+    { name = "sparsevctrs", requirement = "(>= 0.3.3)" },
+    "tibble",
+    { name = "tidyr", requirement = "(>= 1.0.0)" },
+    { name = "tidyselect", requirement = "(>= 1.2.0)" },
+    "timeDate",
+    { name = "vctrs", requirement = "(>= 0.5.0)" },
+    "withr",
 ]
 
 [[packages]]
@@ -2109,6 +2548,13 @@ dependencies = [
 ]
 
 [[packages]]
+name = "shape"
+version = "1.4.6.1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
+
+[[packages]]
 name = "shiny"
 version = "1.14.0"
 source = { repository = "https://p3m.dev/cran/latest" }
@@ -2150,6 +2596,17 @@ source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = [
     "lattice",
+]
+
+[[packages]]
+name = "sparsevctrs"
+version = "0.4.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "cli", requirement = "(>= 3.4.0)" },
+    { name = "rlang", requirement = "(>= 1.1.0)" },
+    "vctrs",
 ]
 
 [[packages]]
@@ -2210,6 +2667,15 @@ dependencies = [
     { name = "rprojroot", requirement = "(>= 1.1)" },
     { name = "vctrs", requirement = "(>= 0.4.1)" },
     { name = "withr", requirement = "(>= 2.3.0)" },
+]
+
+[[packages]]
+name = "survival"
+version = "3.8-9"
+source = { builtin = true }
+force_source = false
+dependencies = [
+    "Matrix",
 ]
 
 [[packages]]
@@ -2377,6 +2843,13 @@ dependencies = [
     { name = "tidyr", requirement = "(>= 1.3.0)" },
     { name = "xml2", requirement = "(>= 1.3.3)" },
 ]
+
+[[packages]]
+name = "timeDate"
+version = "4052.112"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = []
 
 [[packages]]
 name = "timechange"
@@ -2626,10 +3099,37 @@ force_source = false
 dependencies = []
 
 [[packages]]
+name = "yardstick"
+version = "1.5.0"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    "cli",
+    { name = "dplyr", requirement = "(>= 1.1.0)" },
+    { name = "generics", requirement = "(>= 0.1.2)" },
+    { name = "hardhat", requirement = "(>= 1.4.3)" },
+    { name = "lifecycle", requirement = "(>= 1.0.3)" },
+    { name = "rlang", requirement = "(>= 1.1.4)" },
+    "tibble",
+    { name = "tidyselect", requirement = "(>= 1.2.0)" },
+    { name = "vctrs", requirement = "(>= 0.5.0)" },
+    "withr",
+]
+
+[[packages]]
 name = "zip"
 version = "3.0.2"
 source = { repository = "https://p3m.dev/cran/latest" }
 force_source = false
 dependencies = [
     "cli",
+]
+
+[[packages]]
+name = "zoo"
+version = "1.9-1"
+source = { repository = "https://p3m.dev/cran/latest" }
+force_source = false
+dependencies = [
+    { name = "lattice", requirement = "(>= 0.20-27)" },
 ]

@@ -50,4 +50,5 @@ dependencies = [
     "patchwork",
     # 2026-09-paper-figures: allocator labels in Fig. 2b
     "ggrepel",
+    "arrow",
 ]

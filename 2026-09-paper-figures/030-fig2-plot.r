@@ -92,7 +92,10 @@ window_wrong_hits <- function(run) {
 }
 candidates <- fom_clumpy[abs(figure_of_merit - median(figure_of_merit)) <= 0.005]
 candidates[, wrong_in_window := vapply(id_run, window_wrong_hits, integer(1))]
-shown_run <- candidates[order(-wrong_in_window, abs(figure_of_merit - median(fom_clumpy$figure_of_merit)))][1, id_run]
+shown_run <- candidates[order(
+  -wrong_in_window,
+  abs(figure_of_merit - median(fom_clumpy$figure_of_merit))
+)][1, id_run]
 stopifnot(candidates[id_run == shown_run, wrong_in_window] > 0)
 panel_draw <- maps[simulated_map(shown_run), on = "id_coord"][,
   .(id_coord, status = outcome(anterior, observed, simulated))
@@ -144,8 +147,26 @@ theme_map <- theme_void(base_size = 9) +
 outline <- function() {
   changed <- coords_xy[observed_change_cells, on = "id_coord", nomatch = NULL]
   list(
-    geom_tile(data = changed, aes(x, y), fill = NA, colour = "white", linewidth = 0.55, width = 84, height = 84, inherit.aes = FALSE),
-    geom_tile(data = changed, aes(x, y), fill = NA, colour = "#1a1a1a", linewidth = 0.28, width = 84, height = 84, inherit.aes = FALSE)
+    geom_tile(
+      data = changed,
+      aes(x, y),
+      fill = NA,
+      colour = "white",
+      linewidth = 0.55,
+      width = 84,
+      height = 84,
+      inherit.aes = FALSE
+    ),
+    geom_tile(
+      data = changed,
+      aes(x, y),
+      fill = NA,
+      colour = "#1a1a1a",
+      linewidth = 0.28,
+      width = 84,
+      height = 84,
+      inherit.aes = FALSE
+    )
   )
 }
 
@@ -204,27 +225,68 @@ p_c <- ggplot(coords_xy[panel_freq, on = "id_coord", nomatch = NULL], aes(x, y))
 # Fig. 2a (c): the realisation's cells by outcome, and the figure of merit computed from them
 fom_shown <- fom[id_run == shown_run]
 decomp <- data.table(
-  status = factor(c("hit", "wrong hit", "miss", "false alarm"), levels = c("hit", "wrong hit", "miss", "false alarm")),
+  status = factor(
+    c("hit", "wrong hit", "miss", "false alarm"),
+    levels = c("hit", "wrong hit", "miss", "false alarm")
+  ),
   n = c(fom_shown$hits, fom_shown$wrong_hits, fom_shown$misses, fom_shown$false_alarms)
 )
 decomp[, `:=`(xmax = cumsum(n), xmin = cumsum(n) - n)]
 total <- decomp[, sum(n)]
-p_fom <- ggplot(decomp) +
-  geom_rect(aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 1, fill = status), colour = "white", linewidth = 0.4) +
+p_fom <-
+  ggplot(decomp) +
+  geom_rect(
+    aes(xmin = xmin, xmax = xmax, ymin = 0.1, ymax = 0.7, fill = status),
+    colour = "white",
+    linewidth = 0.4
+  ) +
   # each segment named with its count, alternating in height so narrow segments stay legible
   geom_text(
-    aes(x = (xmin + xmax) / 2, y = ifelse(as.integer(status) %% 2L == 1L, 1.2, 1.65), label = paste0(status, "\n", n)),
-    size = 2.4, colour = "#333333", lineheight = 0.85
+    aes(
+      x = (xmin + xmax) / 2,
+      y = ifelse(as.integer(status) %% 2L == 1L, 1, 1.25),
+      label = paste0(status, "\n", n)
+    ),
+    size = 2.4,
+    colour = "#333333",
+    lineheight = 1
   ) +
-  annotate("segment", x = 0, xend = decomp[status == "hit", xmax], y = -0.18, yend = -0.18, colour = "#1a1a1a", linewidth = 0.5) +
-  annotate("segment", x = 0, xend = total, y = -0.42, yend = -0.42, colour = "#1a1a1a", linewidth = 0.5) +
-  annotate("text", x = decomp[status == "hit", xmax] + 8, y = -0.18, label = "hits", hjust = 0, size = 2.5) +
-  annotate("text", x = total + 8, y = -0.42, label = "all changed cells, observed or simulated", hjust = 1, vjust = -0.6, size = 2.5) +
   annotate(
-    "text", x = 0, y = -1.0, hjust = 0, size = 2.9,
+    "segment",
+    x = 0,
+    xend = decomp[status == "hit", xmax],
+    y = -0.35,
+    colour = "#1a1a1a",
+    linewidth = 0.5
+  ) +
+  annotate("text", x = 0, y = -0.2, label = "hits", hjust = 0, size = 2.5) +
+  annotate(
+    "segment",
+    x = 0,
+    xend = total,
+    y = -0.7,
+    colour = "#1a1a1a",
+    linewidth = 0.5
+  ) +
+  annotate(
+    "text",
+    x = 0,
+    y = -0.55,
+    label = "all changed cells, observed or simulated",
+    hjust = 0,
+    size = 2.5
+  ) +
+  annotate(
+    "text",
+    x = 0,
+    y = -1.22,
+    hjust = 0,
+    size = 2.5,
     label = sprintf(
       "FoM = hits / all changed cells\n        = %d / %d = %.2f",
-      fom_shown$hits, total, fom_shown$figure_of_merit
+      fom_shown$hits,
+      total,
+      fom_shown$figure_of_merit
     )
   ) +
   # the FoM of random placement is given in the text and caption, not drawn (Overleaf C034)
@@ -238,7 +300,7 @@ p_fom <- ggplot(decomp) +
   theme_void(base_size = 9) +
   theme_panel_text +
   theme(plot.margin = margin(2, 6, 2, 6)) +
-  guides(fill = "none")  # same colours as (b), whose legend sits next to it
+  guides(fill = "none") # same colours as (b), whose legend sits next to it
 
 # Fig. 2b: (a) where change is placed, then (b) what that does to the figure of merit of each
 # realisation and to the Brier skill of each ensemble, one score on each axis. The
@@ -272,8 +334,12 @@ allocator_linetypes <- c(
 # rows: the stochastic allocators a little apart, the (near-)deterministic ones close together
 # (names(row_y) also selects which allocators the scatter shows)
 row_y <- c(
-  "uSAM" = 5.0, "uPAM" = 4.3, "Dinamica" = 3.6,
-  "CLUE-S" = 2.5, "CLUMondo" = 2.0, "rank-and-fill" = 1.5
+  "uSAM" = 5.0,
+  "uPAM" = 4.3,
+  "Dinamica" = 3.6,
+  "CLUE-S" = 2.5,
+  "CLUMondo" = 2.0,
+  "rank-and-fill" = 1.5
 )
 y_lim <- c(1.1, 5.9)
 fom <- fom[allocator %in% names(row_y)]
@@ -289,7 +355,10 @@ brier <- fread(file.path(res_dir, "brier.csv"))
 brier <- relabel_dt(brier, "learner")
 skill <- rbind(
   brier[forecast == "ensemble frequency (fair)", .(allocator = learner, skill)],
-  brier[learner == "random forest" & forecast == "deterministic", .(allocator = "rank-and-fill", skill)]
+  brier[
+    learner == "random forest" & forecast == "deterministic",
+    .(allocator = "rank-and-fill", skill)
+  ]
 )[allocator %in% names(row_y)]
 skill[, y := row_y[allocator]]
 skill_potentials <- brier[learner == "random forest" & forecast == "adjusted potentials", skill]
@@ -301,8 +370,15 @@ null_label <- function(x, label, linetype, from = "top") {
   list(
     geom_vline(xintercept = x, colour = "#9a9a9a", linewidth = 0.4, linetype = linetype),
     annotate(
-      "text", x = x, y = if (from == "top") y_lim[2] else y_lim[1], label = label, angle = 90,
-      hjust = if (from == "top") 1 else 0, vjust = 1.4, size = 2.3, colour = "#555555"
+      "text",
+      x = x,
+      y = if (from == "top") y_lim[2] else y_lim[1],
+      label = label,
+      angle = 90,
+      hjust = if (from == "top") 1 else 0,
+      vjust = 1.4,
+      size = 2.3,
+      colour = "#555555"
     )
   )
 }
@@ -325,10 +401,16 @@ per_run[, skill := 1 - brier / brier_uniform]
 singles <- per_run[allocator %in% names(row_y) & allocator != "rank-and-fill"]
 single_median <- singles[, .(fom = median(figure_of_merit), skill = median(skill)), by = allocator]
 ensembles <- fom_ensemble[, .(allocator = as.character(allocator), fom = figure_of_merit)][
-  skill[, .(allocator, skill)], on = "allocator", nomatch = NULL
+  skill[, .(allocator, skill)],
+  on = "allocator",
+  nomatch = NULL
 ]
 deterministic <- per_run[allocator == "rank-and-fill", .(allocator, fom = figure_of_merit, skill)]
-arrows <- single_median[ensembles, on = "allocator", .(allocator, x = fom, y = skill, xend = i.fom, yend = i.skill)]
+arrows <- single_median[
+  ensembles,
+  on = "allocator",
+  .(allocator, x = fom, y = skill, xend = i.fom, yend = i.skill)
+]
 # labels next to the markers, placed by ggrepel with short leader lines where markers crowd
 labels_dt <- rbind(ensembles, deterministic)
 
@@ -336,28 +418,94 @@ set.seed(7)
 p_d <- ggplot() +
   # references: FoM nulls vertical, Brier null and potentials horizontal, labelled along the lines
   geom_vline(xintercept = fom_null, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = fom_null, y = -0.83, label = "FoM null: random placement", angle = 90, hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
-  geom_hline(yintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
-  annotate("text", x = 0.003, y = 0, label = "Brier null: uniform forecast", hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
-  geom_hline(yintercept = skill_potentials, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = 0.003, y = skill_potentials, label = "potentials (no allocation)", hjust = 0, vjust = 1.5, size = 2.3, colour = "#555555") +
-  geom_hline(yintercept = skill_true, colour = "#9a9a9a", linewidth = 0.4, linetype = "11") +
-  annotate("text", x = 0.003, y = skill_true, label = "true process (maximum)", hjust = 0, vjust = -0.5, size = 2.3, colour = "#555555") +
-  geom_jitter(data = singles, aes(figure_of_merit, skill, colour = allocator), width = 0, height = 0.004, size = 0.7, alpha = 0.45) +
-  geom_segment(
-    data = arrows, aes(x, y, xend = xend, yend = yend, colour = allocator),
-    linewidth = 0.35, arrow = grid::arrow(length = unit(3, "pt"), type = "closed")
+  annotate(
+    "text",
+    x = fom_null,
+    y = -0.83,
+    label = "FoM null: random placement",
+    angle = 90,
+    hjust = 0,
+    vjust = -0.5,
+    size = 2.3,
+    colour = "#555555"
   ) +
-  geom_point(data = ensembles, aes(fom, skill, fill = allocator, shape = "ensemble"), size = 2.8, colour = "#1a1a1a", stroke = 0.5) +
-  geom_point(data = deterministic, aes(fom, skill, fill = allocator, shape = "single map"), size = 3, colour = "#1a1a1a", stroke = 0.5) +
+  geom_hline(yintercept = 0, colour = "#9a9a9a", linewidth = 0.4) +
+  annotate(
+    "text",
+    x = 0.003,
+    y = 0,
+    label = "Brier null: uniform forecast",
+    hjust = 0,
+    vjust = -0.5,
+    size = 2.3,
+    colour = "#555555"
+  ) +
+  geom_hline(yintercept = skill_potentials, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
+  annotate(
+    "text",
+    x = 0.003,
+    y = skill_potentials,
+    label = "potentials (no allocation)",
+    hjust = 0,
+    vjust = 1.5,
+    size = 2.3,
+    colour = "#555555"
+  ) +
+  geom_hline(yintercept = skill_true, colour = "#9a9a9a", linewidth = 0.4, linetype = "11") +
+  annotate(
+    "text",
+    x = 0.003,
+    y = skill_true,
+    label = "true process (maximum)",
+    hjust = 0,
+    vjust = -0.5,
+    size = 2.3,
+    colour = "#555555"
+  ) +
+  geom_jitter(
+    data = singles,
+    aes(figure_of_merit, skill, colour = allocator),
+    width = 0,
+    height = 0.004,
+    size = 0.7,
+    alpha = 0.45
+  ) +
+  geom_segment(
+    data = arrows,
+    aes(x, y, xend = xend, yend = yend, colour = allocator),
+    linewidth = 0.35,
+    arrow = grid::arrow(length = unit(3, "pt"), type = "closed")
+  ) +
+  geom_point(
+    data = ensembles,
+    aes(fom, skill, fill = allocator, shape = "ensemble"),
+    size = 2.8,
+    colour = "#1a1a1a",
+    stroke = 0.5
+  ) +
+  geom_point(
+    data = deterministic,
+    aes(fom, skill, fill = allocator, shape = "single map"),
+    size = 3,
+    colour = "#1a1a1a",
+    stroke = 0.5
+  ) +
   ggrepel::geom_text_repel(
-    data = labels_dt, aes(fom, skill, label = display_name(allocator), colour = allocator),
+    data = labels_dt,
+    aes(fom, skill, label = display_name(allocator), colour = allocator),
     # CLUE-S to the right of its marker, clear of uSAM's arrow
     nudge_x = ifelse(labels_dt$allocator == "CLUE-S", 0.02, 0),
-    size = 2.5, fontface = "bold", seed = 3, box.padding = 0.35, point.padding = 0.3,
-    min.segment.length = 0.2, segment.size = 0.3, max.overlaps = Inf,
+    size = 2.5,
+    fontface = "bold",
+    seed = 3,
+    box.padding = 0.35,
+    point.padding = 0.3,
+    min.segment.length = 0.2,
+    segment.size = 0.3,
+    max.overlaps = Inf,
     # the reference labels sit on the left; keep the allocator labels to the right of them
-    xlim = c(0.085, 0.27), ylim = c(-0.75, 0.26)
+    xlim = c(0.085, 0.27),
+    ylim = c(-0.75, 0.26)
   ) +
   scale_colour_manual(values = allocator_cols, guide = "none") +
   scale_fill_manual(values = allocator_cols, guide = "none") +
@@ -376,7 +524,10 @@ p_d <- ggplot() +
   ) +
   theme_minimal(base_size = 9) +
   theme_panel_text +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)
+  ) +
   guides(shape = guide_legend(order = 2, override.aes = list(fill = "#9a9a9a")))
 
 # (a): colour = allocator; the observed change drawn last as a thin dashed black line, so the
@@ -388,13 +539,39 @@ what_cols <- c("observed change" = "#1a1a1a", allocator_cols)
 cdf_lines[, what := factor(what, levels = names(what_cols))]
 p_e <- ggplot() +
   geom_abline(slope = 1, intercept = 0, colour = "#9a9a9a", linewidth = 0.4, linetype = "22") +
-  annotate("text", x = 0.62, y = 0.62, label = "random placement", angle = 45, vjust = -0.4, size = 2.3, colour = "#555555") +
-  geom_ribbon(data = cdf[!is.na(lo)], aes(x = x, ymin = lo, ymax = hi, fill = what), alpha = 0.18, show.legend = FALSE) +
+  annotate(
+    "text",
+    x = 0.62,
+    y = 0.62,
+    label = "random placement",
+    angle = 45,
+    vjust = -0.4,
+    size = 2.3,
+    colour = "#555555"
+  ) +
+  geom_ribbon(
+    data = cdf[!is.na(lo)],
+    aes(x = x, ymin = lo, ymax = hi, fill = what),
+    alpha = 0.18,
+    show.legend = FALSE
+  ) +
   geom_line(data = cdf_lines, aes(x, cdf, colour = what, linetype = what), linewidth = 0.6) +
-  geom_line(data = cdf_observed, aes(x, cdf, colour = "observed change", linetype = "observed change"), linewidth = 0.55) +
+  geom_line(
+    data = cdf_observed,
+    aes(x, cdf, colour = "observed change", linetype = "observed change"),
+    linewidth = 0.55
+  ) +
   scale_fill_manual(values = allocator_cols, guide = "none") +
-  scale_colour_manual(values = what_cols, breaks = names(what_cols), labels = display_name(names(what_cols))) +
-  scale_linetype_manual(values = allocator_linetypes, breaks = names(what_cols), labels = display_name(names(what_cols))) +
+  scale_colour_manual(
+    values = what_cols,
+    breaks = names(what_cols),
+    labels = display_name(names(what_cols))
+  ) +
+  scale_linetype_manual(
+    values = allocator_linetypes,
+    breaks = names(what_cols),
+    labels = display_name(names(what_cols))
+  ) +
   scale_x_continuous(labels = function(v) paste0(v * 100, " %"), expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(
@@ -405,7 +582,10 @@ p_e <- ggplot() +
   ) +
   theme_minimal(base_size = 9) +
   theme_panel_text +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(colour = "#e6e6e6", linewidth = 0.3)
+  ) +
   theme(aspect.ratio = 1) +
   guides(
     colour = guide_legend(order = 1, nrow = 2, byrow = TRUE, override.aes = list(linewidth = 0.7)),
@@ -419,7 +599,9 @@ ggsave(file.path(out_dir, "fig2a-fom.pdf"), fig2a, width = 7.2, height = 3.2)
 # where change is placed first (overconcentration), then what it does to the FoM and to a
 # probabilistic score
 # the asterisk is explained in the figure itself, under the legend (too easily missed in the caption)
-fig2b <- (p_e + p_d + plot_layout(widths = c(1, 1.35), guides = "collect") &
+fig2b <- (p_e +
+  p_d +
+  plot_layout(widths = c(1, 1.35), guides = "collect") &
   theme(legend.position = "bottom", legend.box = "horizontal")) +
   plot_annotation(
     caption = "* as implemented in evoland.plus",
